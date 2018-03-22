@@ -2,6 +2,9 @@
     "name": "JeeH",
     "description": "Headers for framework-agnostic code",
     "keywords": "experimental",
+    "authors": {
+        "name": "Jean-Claude Wippler"
+    },
     "repository": {
         "type": "git",
         "url": "jeelabs/jeeh"
