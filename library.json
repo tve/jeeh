@@ -6,6 +6,6 @@
         "type": "git",
         "url": "https://github.com/jeelabs/jeeh.git"
     },
-    "frameworks": [ "*" ],
+    "frameworks": "*",
     "platforms": "ststm32"
 }
