@@ -1,4 +1,6 @@
+#include <stdarg.h>
 #include <stdint.h>
+
 #define MMIO32(x) (*(volatile uint32_t*) (x))
 
 struct Periph {
@@ -197,3 +199,8 @@ CK SpiDev<MO,MI,CK,SS>::sclk;
 
 template< typename MO, typename MI, typename CK, typename SS >
 SS SpiDev<MO,MI,CK,SS>::nss;
+
+// formatted OUTPUT
+
+extern void putInt (void (*emit)(int), int val, int base =10, int width =0, char fill =' ');
+extern void veprintf(void (*emit)(int), const char* fmt, va_list ap);
