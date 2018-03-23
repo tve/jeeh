@@ -6,6 +6,8 @@ struct Periph {
     constexpr static uint32_t rcc  = 0x40021000U;
 };
 
+// GPIO
+
 template<char port>
 struct Port {
     constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
@@ -45,7 +47,8 @@ struct Pin {
     constexpr static uint16_t mask = 1U << pin;
 
     static void mode (Pinmode m) {
-        MMIO32(Periph::rcc + 0x18) |= 1 << (port-'A'+2); // enable GPIOx clock
+        // enable GPIOx and AFIO clocks
+        MMIO32(Periph::rcc + 0x18) |= (1 << (port-'A'+2)) | (1<<0);
 
         auto mval = static_cast<int>(m);
         if (mval == 0b1000 || mval == 0b1100) {
@@ -80,6 +83,63 @@ struct Pin {
         MMIO32(gpio::bsrr) = mask & MMIO32(gpio::odr) ? mask << 16 : mask;
     }
 };
+
+// USART1
+
+template< typename TX, typename RX >
+class UartDev {
+    constexpr static uint32_t base = 0x40013800;  // TODO only USART1 for now
+    constexpr static uint32_t sr  = base + 0x00;
+    constexpr static uint32_t dr  = base + 0x04;
+    constexpr static uint32_t brr = base + 0x08;
+    constexpr static uint32_t cr1 = base + 0x0C;
+
+public:
+    UartDev () {
+        tx.mode(Pinmode::alt_out);
+        rx.mode(Pinmode::in_float);
+
+        MMIO32(Periph::rcc + 0x18) |= 1 << 14; // enable USART1 clock
+        MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
+        MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE TE RE
+    }
+
+    static void puts (const char* s) {
+        while (*s)
+            putc(*s++);
+    }
+
+    static void putc (int c) {
+        while (!writable())
+            ;
+        MMIO32(dr) = (uint8_t) c;
+    }
+
+    static int getc () {
+        while (!readable())
+            ;
+        return MMIO32(dr);
+    }
+
+    static bool writable () {
+        return (MMIO32(sr) & 0x80) != 0;
+    }
+
+    static bool readable () {
+        return (MMIO32(sr) & 0x20) != 0;
+    }
+
+    static TX tx;
+    static RX rx;
+};
+
+template< typename TX, typename RX >
+TX UartDev<TX,RX>::tx;
+
+template< typename TX, typename RX >
+RX UartDev<TX,RX>::rx;
+
+// SPI, bit-banged on any GPIO pins
 
 template< typename MO, typename MI, typename CK, typename SS >
 class SpiDev {
