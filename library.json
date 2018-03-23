@@ -6,6 +6,6 @@
         "type": "git",
         "url": "https://github.com/jeelabs/jeeh.git"
     },
-    "frameworks": "*",
+    "frameworks": [ "arduino", "cmsis", "libopencm3", "mbed", "stm32cube" ],
     "platforms": "ststm32"
 }
