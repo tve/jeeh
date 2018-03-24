@@ -62,6 +62,7 @@ void veprintf(void (*emit)(int), const char* fmt, va_list ap) {
                         base = 16;
                         break;
                     case 'c':
+                        putFiller(emit, width - 1, fill);
                         c = va_arg(ap, int);
                         // fall through
                     case '%':

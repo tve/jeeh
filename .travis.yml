@@ -25,6 +25,7 @@ cache:
 env:
     - PLATFORMIO_CI_SRC=examples/blink.cpp
     - PLATFORMIO_CI_SRC=examples/hello.cpp
+#   - PLATFORMIO_CI_SRC=examples/printf.cpp
 
 install:
     - pip install -U platformio
