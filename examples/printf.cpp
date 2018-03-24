@@ -9,6 +9,8 @@ void printf(const char* fmt, ...) {
     va_end(ap);
 }
 
+// the above is standard code for a debug console with printf support
+
 int main () {
     printf("%%b <%b> %%3o <%3o> %%d <%d> %%04x <%04x> %%2c <%2c> %%2s <%2s>\n",
             '!', '!', '!', '!', '!', "!");

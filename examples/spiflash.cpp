@@ -1,11 +1,16 @@
+// boilerplate
+
 #include <jee.h>
-#include <jee/spi-flash.h>
 
 UartDev<Pin<'A',9>,Pin<'A',10>> uart;
 
 void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
 }
+
+// the spi flash chip is attached to the SPI1 pins
+
+#include <jee/spi-flash.h>
 
 SpiFlash<SpiDev<Pin<'A',7>,Pin<'A',6>,Pin<'A',5>,Pin<'A',4>>> mem;
 
