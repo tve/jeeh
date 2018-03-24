@@ -10,9 +10,9 @@ void printf(const char* fmt, ...) {
 
 // definition of I2C bus and some code to detect devices on it
 
-template< typename T >
 I2cDev<Pin<'B',7>,Pin<'B',6>> i2cbus;
 
+template< typename T >
 void detectI2c (T bus) {
     for (int i = 0; i < 128; i += 16) {
         printf("%02x:", i);
