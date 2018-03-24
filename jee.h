@@ -210,7 +210,7 @@ class I2cDev {
             __asm("");
     }
 
-    static void sclHi () { scl = 1; hold(); }
+    static void sclHi () { scl = 1; while (!scl); hold(); }
     static void sclLo () { scl = 0; hold(); }
 
 public:
