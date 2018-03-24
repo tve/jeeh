@@ -26,6 +26,7 @@ env:
     - PLATFORMIO_CI_SRC=examples/blink.cpp
     - PLATFORMIO_CI_SRC=examples/hello.cpp
 #   - PLATFORMIO_CI_SRC=examples/printf.cpp
+#   - PLATFORMIO_CI_SRC=examples/i2c.cpp
 
 install:
     - pip install -U platformio

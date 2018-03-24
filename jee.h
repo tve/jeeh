@@ -200,6 +200,81 @@ CK SpiDev<MO,MI,CK,SS>::sclk;
 template< typename MO, typename MI, typename CK, typename SS >
 SS SpiDev<MO,MI,CK,SS>::nss;
 
+// I2C, bit-banged on any GPIO pins
+
+template< typename SDA, typename SCL >
+class I2cDev {
+    static void hold () {
+        // TODO make configurabe, this is ≈ 360 kHz for STM32F1 @ 72 MHz
+        for (int i = 0; i < 5; ++i)
+            __asm("");
+    }
+
+    static void sclHi () { scl = 1; hold(); }
+    static void sclLo () { scl = 0; hold(); }
+
+public:
+    I2cDev () {
+        sda = 1;
+        sda.mode(Pinmode::out_od);
+        scl = 1;
+        scl.mode(Pinmode::out_od);
+    }
+
+    static uint8_t start(int addr) {
+        sclLo();
+        sclHi();
+        sda = 0;
+        return write(addr);
+    }
+
+    static void stop() {
+        sda = 0;
+        sclHi();
+        sda = 1;
+    }
+
+    static bool write(int data) {
+        sclLo();
+        for (int mask = 0x80; mask != 0; mask >>= 1) {
+            sda = data & mask;
+            sclHi();
+            sclLo();
+        }
+        sda = 1;
+        sclHi();
+        bool ack = !sda;
+        sclLo();
+        return ack;
+    }
+
+    static int read(bool last) {
+        int data = 0;
+        for (int mask = 0x80; mask != 0; mask >>= 1) {
+            sclHi();
+            if (sda)
+                data |= mask;
+            sclLo();
+        }
+        sda = last;
+        sclHi();
+        sclLo();
+        if (last)
+            stop();
+        sda = 1;
+        return data;
+    }
+
+    static SDA sda;
+    static SCL scl;
+};
+
+template< typename SDA, typename SCL >
+SDA I2cDev<SDA,SCL>::sda;
+
+template< typename SDA, typename SCL >
+SCL I2cDev<SDA,SCL>::scl;
+
 // formatted OUTPUT
 
 extern void putInt (void (*emit)(int), int val, int base =10, int width =0, char fill =' ');
