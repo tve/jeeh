@@ -10,9 +10,9 @@ void printf(const char* fmt, ...) {
 }
 
 int main () {
-    printf(" d %d o %o x %x b %b c %c",
+    printf("d %d o %o x %x b %b c %c ",
             '!', '!', '!', '!', '!');
-    printf(" %%3d <%3d> %%03d <%03d> %%s <%s> %%3s <%3s> ",
+    printf("%%3d <%3d> %%03d <%03d> %%s <%s> %%3s <%3s> ",
             -1, 12, "ab", "ab");
     uart.puts("Hello!\n");
 }
