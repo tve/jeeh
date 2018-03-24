@@ -7,7 +7,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
 }
 
-SpiFlash<SpiDev<Pin<'B',15>,Pin<'B',14>,Pin<'B',13>,Pin<'G',13>>> mem;
+SpiFlash<SpiDev<Pin<'A',7>,Pin<'A',6>,Pin<'A',5>,Pin<'A',4>>> mem;
 
 int main () {
     printf("id %06x, %dK\n", mem.devId(), mem.size());
