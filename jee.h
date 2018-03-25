@@ -41,7 +41,7 @@ extern uint32_t volatile ticks;
 extern void enableSysTick (uint32_t divider =8000000/1000);
 extern void wait_ms (uint16_t ms);
 
-// GPIO
+// gpio
 
 template<char port>
 struct Port {
@@ -120,14 +120,48 @@ struct Pin {
     }
 };
 
-// USART1
+// general-purpose ring buffer
+
+template< int N >
+class RingBuffer {
+    uint16_t volatile in, out;
+    uint8_t volatile buf [N];
+
+public:
+    RingBuffer () : in (0), out (0) {}
+
+    int avail () const {
+        int r = in - out;
+        return r >= 0 ? r : r + N;
+    }
+
+    bool free () const {
+        return avail() < N-1;
+    }
+
+    void put (uint8_t v) {
+        uint16_t pos = in;
+        buf[pos++] = v;
+        in = pos < N ? pos : 0;
+    }
+
+    uint8_t get () {
+        uint16_t pos = out;
+        uint8_t v = buf[pos++];
+        out = pos < N ? pos : 0;
+        return v;
+    }
+};
+
+// u(s)art
 
 template< typename TX, typename RX >
 class UartDev {
+public:
     // TODO does not recognise alternate TX pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
                                 TX::id ==  2 ? 1 :  // PA2, USART2
-                                TX::id == 26 ? 2 :  // PB10, UART3
+                                TX::id == 26 ? 2 :  // PB10, USART3
                                 TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
                                                0;   // else USART1
@@ -138,7 +172,6 @@ class UartDev {
     constexpr static uint32_t brr = base + 0x08;
     constexpr static uint32_t cr1 = base + 0x0C;
 
-public:
     UartDev () {
         tx.mode(Pinmode::alt_out);
         rx.mode(Pinmode::in_pullup);
@@ -149,12 +182,11 @@ public:
             MMIO32(Periph::rcc + 0x1C) |= 1 << (16+uidx); // UART 2..5
 
         MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
-        MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE TE RE
+        MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
     }
 
-    static void puts (const char* s) {
-        while (*s)
-            putc(*s++);
+    static bool writable () {
+        return (MMIO32(sr) & 0x80) != 0;  // TXE
     }
 
     static void putc (int c) {
@@ -163,18 +195,14 @@ public:
         MMIO32(dr) = (uint8_t) c;
     }
 
+    static bool readable () {
+        return (MMIO32(sr) & 0x24) != 0;  // RXNE or ORE
+    }
+
     static int getc () {
         while (!readable())
             ;
         return MMIO32(dr);
-    }
-
-    static bool writable () {
-        return (MMIO32(sr) & 0x80) != 0;
-    }
-
-    static bool readable () {
-        return (MMIO32(sr) & 0x20) != 0;
     }
 
     static TX tx;
@@ -187,7 +215,79 @@ TX UartDev<TX,RX>::tx;
 template< typename TX, typename RX >
 RX UartDev<TX,RX>::rx;
 
-// SPI, bit-banged on any GPIO pins
+// interrupt-enabled uart, sits of top of polled uart
+
+template< typename TX, typename RX, int N =50 >
+class UartBufDev {
+public:
+    UartBufDev () {
+        auto uartHandler = []() {
+            if (uart.readable()) {
+                int c = uart.getc();
+                if (recv.free())
+                    recv.put(c);
+                // else discard the input
+            }
+            if (uart.writable()) {
+                if (xmit.avail() > 0)
+                    uart.putc(xmit.get());
+                else
+                    MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
+            }
+        };
+
+        switch (uart.uidx) {
+            case 0: VTableRam().usart1 = uartHandler; break;
+            case 1: VTableRam().usart2 = uartHandler; break;
+            case 2: VTableRam().usart3 = uartHandler; break;
+            case 3: VTableRam().uart4  = uartHandler; break;
+            case 4: VTableRam().uart5  = uartHandler; break;
+        }
+
+        // nvic interrupt numbers are 37, 38, 39, 52, and 53, respectively
+        constexpr uint32_t nvic_en1r = 0xE000E104;
+        constexpr int irq = (uart.uidx < 3 ? 37 : 49) + uart.uidx;
+        MMIO32(nvic_en1r) |= 1 << (irq-32);  // enable USART interrupt
+
+        MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
+    }
+
+    static bool writable () {
+        return xmit.free();
+    }
+
+    static void putc (int c) {
+        while (!writable())
+            ;
+        xmit.put(c);
+        MMIO32(uart.cr1) |= (1<<7);  // enable TXEIE
+    }
+
+    static bool readable () {
+        return recv.avail() > 0;
+    }
+
+    static int getc () {
+        while (!readable())
+            ;
+        return recv.get();
+    }
+
+    static UartDev<TX,RX> uart;
+    static RingBuffer<N> recv;
+    static RingBuffer<N> xmit;
+};
+
+template< typename TX, typename RX, int N >
+UartDev<TX,RX> UartBufDev<TX,RX,N>::uart;
+
+template< typename TX, typename RX, int N >
+RingBuffer<N> UartBufDev<TX,RX,N>::recv;
+
+template< typename TX, typename RX, int N >
+RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+
+// spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS >
 class SpiDev {
@@ -246,7 +346,7 @@ CK SpiDev<MO,MI,CK,SS>::sclk;
 template< typename MO, typename MI, typename CK, typename SS >
 SS SpiDev<MO,MI,CK,SS>::nss;
 
-// I2C, bit-banged on any GPIO pins
+// i2c, bit-banged on any gpio pins
 
 template< typename SDA, typename SCL >
 class I2cDev {
@@ -321,7 +421,7 @@ SDA I2cDev<SDA,SCL>::sda;
 template< typename SDA, typename SCL >
 SCL I2cDev<SDA,SCL>::scl;
 
-// formatted OUTPUT
+// formatted output
 
 extern void putInt (void (*emit)(int), int val, int base =10, int width =0, char fill =' ');
 extern void veprintf(void (*emit)(int), const char* fmt, va_list ap);
