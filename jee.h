@@ -141,7 +141,7 @@ class UartDev {
 public:
     UartDev () {
         tx.mode(Pinmode::alt_out);
-        rx.mode(Pinmode::in_float);
+        rx.mode(Pinmode::in_pullup);
 
         if (uidx == 0)
             MMIO32(Periph::rcc + 0x18) |= 1 << 14; // enable USART1 clock
