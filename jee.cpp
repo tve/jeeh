@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-// interrupt vector table in VTableRam
+// interrupt vector table in ram
 
 VTable& VTableRam () {
     static VTable vtable __attribute__((aligned (512)));
@@ -19,6 +19,21 @@ VTable& VTableRam () {
     }
 
     return vtable;
+}
+
+// systick and delays
+
+uint32_t volatile ticks;
+
+void enableSysTick (uint32_t clockRate, uint16_t hz) {
+    VTableRam().systick = []() { ++ticks; };
+    MMIO32(0xE000E014) = clockRate / hz - 1;
+    MMIO32(0xE000E010) = 7;
+}
+
+void wait_ms (uint16_t ms) {
+    uint32_t start = ticks;
+    while ((uint16_t) (ticks - start) < ms) ;
 }
 
 // formatted output
@@ -57,8 +72,8 @@ void putInt (void (*emit)(int), int val, int base, int width, char fill) {
     }
 }
 
-void veprintf(void (*emit)(int), const char* fmt, va_list ap) {
-    const char* s;
+void veprintf(void (*emit)(int), char const* fmt, va_list ap) {
+    char const* s;
 
     while (*fmt) {
         char c = *fmt++;
@@ -89,7 +104,7 @@ void veprintf(void (*emit)(int), const char* fmt, va_list ap) {
                         base = 1;
                         break;
                     case 's':
-                        s = va_arg(ap, const char*);
+                        s = va_arg(ap, char const*);
                         width -= strlen(s);
                         while (*s)
                             emit(*s++);

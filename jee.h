@@ -10,7 +10,7 @@ struct Periph {
     constexpr static uint32_t rcc  = 0x40021000U;
 };
 
-// interrupt vector table in VTableRam
+// interrupt vector table in ram
 
 struct VTable {
     typedef void (*VTableEntry)();
@@ -33,6 +33,13 @@ struct VTable {
 };
 
 extern VTable& VTableRam ();
+
+// systick and delays
+
+extern uint32_t volatile ticks;
+
+extern void enableSysTick (uint32_t clockRate =8000000, uint16_t hz =1000);
+extern void wait_ms (uint16_t ms);
 
 // GPIO
 
