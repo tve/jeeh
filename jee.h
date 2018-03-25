@@ -38,7 +38,7 @@ extern VTable& VTableRam ();
 
 extern uint32_t volatile ticks;
 
-extern void enableSysTick (uint32_t clockRate =8000000, uint16_t hz =1000);
+extern void enableSysTick (uint32_t divider =8000000/1000);
 extern void wait_ms (uint16_t ms);
 
 // GPIO

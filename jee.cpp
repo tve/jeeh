@@ -21,9 +21,9 @@ VTable& VTableRam () {
 
 uint32_t volatile ticks;
 
-void enableSysTick (uint32_t clockRate, uint16_t hz) {
+void enableSysTick (uint32_t divider) {
     VTableRam().systick = []() { ++ticks; };
-    MMIO32(0xE000E014) = clockRate / hz - 1;
+    MMIO32(0xE000E014) = divider - 1;
     MMIO32(0xE000E010) = 7;
 }
 
