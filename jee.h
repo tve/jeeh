@@ -80,6 +80,7 @@ template<char port,int pin>
 struct Pin {
     typedef Port<port> gpio;
     constexpr static uint16_t mask = 1U << pin;
+    constexpr static int id = 16 * (port-'A') + pin;
 
     static void mode (Pinmode m) {
         // enable GPIOx and AFIO clocks
@@ -123,7 +124,15 @@ struct Pin {
 
 template< typename TX, typename RX >
 class UartDev {
-    constexpr static uint32_t base = 0x40013800;  // TODO only USART1 for now
+    // TODO does not recognise alternate TX pins
+    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
+                                TX::id ==  2 ? 1 :  // PA2, USART2
+                                TX::id == 26 ? 2 :  // PB10, UART3
+                                TX::id == 42 ? 3 :  // PC10, UART4
+                                TX::id == 44 ? 4 :  // PC12, UART5
+                                               0;   // else USART1
+    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
+                                                 0x40004000 + 0x400 * uidx;
     constexpr static uint32_t sr  = base + 0x00;
     constexpr static uint32_t dr  = base + 0x04;
     constexpr static uint32_t brr = base + 0x08;
@@ -134,7 +143,11 @@ public:
         tx.mode(Pinmode::alt_out);
         rx.mode(Pinmode::in_float);
 
-        MMIO32(Periph::rcc + 0x18) |= 1 << 14; // enable USART1 clock
+        if (uidx == 0)
+            MMIO32(Periph::rcc + 0x18) |= 1 << 14; // enable USART1 clock
+        else
+            MMIO32(Periph::rcc + 0x1C) |= 1 << (16+uidx); // UART 2..5
+
         MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE TE RE
     }
