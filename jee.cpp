@@ -2,6 +2,25 @@
 #include <stdarg.h>
 #include <string.h>
 
+// interrupt vector table in VTableRam
+
+VTable& VTableRam () {
+    static VTable vtable __attribute__((aligned (512)));
+
+    constexpr uint32_t ppbi  = 0xE0000000U;
+    constexpr uint32_t scs   = ppbi + 0xE000;
+    constexpr uint32_t scb   = scs + 0x0D00;
+    constexpr uint32_t vtor  = scb + 0x8;
+    constexpr uint32_t flash = 0x08000000;
+
+    if ((void*) MMIO32(vtor) != &vtable) {
+        vtable = *(VTable*) flash;
+        MMIO32(vtor) = (uint32_t) &vtable;
+    }
+
+    return vtable;
+}
+
 // formatted output
 
 static int splitInt (uint32_t val, int base, uint8_t* buf) {
