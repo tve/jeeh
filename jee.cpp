@@ -7,15 +7,11 @@
 VTable& VTableRam () {
     static VTable vtable __attribute__((aligned (512)));
 
-    constexpr uint32_t ppbi  = 0xE0000000U;
-    constexpr uint32_t scs   = ppbi + 0xE000;
-    constexpr uint32_t scb   = scs + 0x0D00;
-    constexpr uint32_t vtor  = scb + 0x8;
-    constexpr uint32_t flash = 0x08000000;
-
-    if ((void*) MMIO32(vtor) != &vtable) {
-        vtable = *(VTable*) flash;
-        MMIO32(vtor) = (uint32_t) &vtable;
+    // if SCB_VTOR isn't pointing to vtable, then copy current vtable to it
+    VTable* volatile& vtor = *(VTable* volatile*) 0xE000ED08;
+    if (vtor != &vtable) {
+        vtable = *vtor;
+        vtor = &vtable;
     }
 
     return vtable;

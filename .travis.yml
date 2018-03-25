@@ -28,6 +28,7 @@ env:
 #   - PLATFORMIO_CI_SRC=examples/printf.cpp
 #   - PLATFORMIO_CI_SRC=examples/i2c.cpp
 #   - PLATFORMIO_CI_SRC=examples/spiflash.cpp
+#   - PLATFORMIO_CI_SRC=examples/systick.cpp
 
 install:
     - pip install -U platformio
