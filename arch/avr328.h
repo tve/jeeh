@@ -19,28 +19,18 @@ enum class Pinmode {
 
 template<char port,int pin>
 struct Pin {
-    constexpr static int off = port == 'B' ?  8 :  // PB 0..7
-                               port == 'C' ? 14 :  // PC 0..7
-                                              0;   // else PD 0..7
-    constexpr static int id = off + pin;
+    constexpr static int offset = port == 'B' ?  8 :  // PB 0..5 =>  8..13
+                                  port == 'C' ? 14 :  // PC 0..7 => 14..21
+                                                 0;   // PD 0..7 =>  0..7
+    constexpr static int id = offset + pin;
 
-    static void mode (Pinmode m) {
-        pinMode(id, (int) m);
-    }
-
-    static int read () {
-        return digitalRead(id);
-    }
-
-    static void write (int v) {
-        digitalWrite(id, v);
-    }
+    static void mode (Pinmode m) { pinMode(id, (int) m); }
+    static int read () { return digitalRead(id); }
+    static void write (int v) { digitalWrite(id, v); }
 
     // shorthand
     operator int () const { return read(); }
     void operator= (int v) const { write(v); }
 
-    static void toggle () {
-        write(!read());
-    }
+    static void toggle () { write(!read()); }
 };
