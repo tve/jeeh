@@ -1,6 +1,6 @@
 #include <jee.h>
 
-UartDev<Pin<'A',9>,Pin<'A',10>> uart;
+UartDev< Pin<'A',9>, Pin<'A',10> > uart;
 
 void printf(const char* fmt, ...) {
     va_list ap;

@@ -13,13 +13,13 @@ struct Periph {
 // interrupt vector table in ram
 
 struct VTable {
-    typedef void (*VTableEntry)();
+    typedef void (*Handler)();
 
     uint32_t* initial_sp_value;
-    VTableEntry
+    Handler
         reset, nmi, hard_fault, memory_manage_fault, bus_fault, usage_fault,
         dummy_x001c[4], sv_call, debug_monitor, dummy_x0034, pend_sv, systick;
-    VTableEntry
+    Handler
         wwdg, pvd, tamper, rtc, flash, rcc, exti0, exti1, exti2, exti3, exti4,
         dma1_channel1, dma1_channel2, dma1_channel3, dma1_channel4,
         dma1_channel5, dma1_channel6, dma1_channel7, adc1_2, usb_hp_can_tx,
@@ -221,7 +221,7 @@ template< typename TX, typename RX, int N =50 >
 class UartBufDev {
 public:
     UartBufDev () {
-        auto uartHandler = []() {
+        auto handler = []() {
             if (uart.readable()) {
                 int c = uart.getc();
                 if (recv.free())
@@ -237,11 +237,11 @@ public:
         };
 
         switch (uart.uidx) {
-            case 0: VTableRam().usart1 = uartHandler; break;
-            case 1: VTableRam().usart2 = uartHandler; break;
-            case 2: VTableRam().usart3 = uartHandler; break;
-            case 3: VTableRam().uart4  = uartHandler; break;
-            case 4: VTableRam().uart5  = uartHandler; break;
+            case 0: VTableRam().usart1 = handler; break;
+            case 1: VTableRam().usart2 = handler; break;
+            case 2: VTableRam().usart3 = handler; break;
+            case 3: VTableRam().uart4  = handler; break;
+            case 4: VTableRam().uart5  = handler; break;
         }
 
         // nvic interrupt numbers are 37, 38, 39, 52, and 53, respectively

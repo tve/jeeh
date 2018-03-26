@@ -2,38 +2,38 @@
 
 // driver for WinBond W25Qxx spi flash memory
 
-template< typename SPI >
-class SpiFlash : public SPI {
+template< typename MO, typename MI, typename CK, typename SS >
+class SpiFlash {
     static void cmd (int arg) {
-        SPI::enable();
-        SPI::transfer(arg);
+        spi.enable();
+        spi.transfer(arg);
     }
     static void wait () {
-        SPI::disable();
+        spi.disable();
         cmd(0x05);
-        while (SPI::transfer(0) & 1)
+        while (spi.transfer(0) & 1)
             ;
-        SPI::disable();
+        spi.disable();
     }
     static void wcmd (int arg) {
         wait();
         cmd(0x06);
-        SPI::disable();
+        spi.disable();
         cmd(arg);
     }
     static void w24b (int page) {
-        SPI::transfer(page >> 8);
-        SPI::transfer(page);
-        SPI::transfer(0);
+        spi.transfer(page >> 8);
+        spi.transfer(page);
+        spi.transfer(0);
     }
 
 public:
     static int devId () {
         cmd(0x9F);
-        int r = SPI::transfer(0) << 16;
-        r |= SPI::transfer(0) << 8;
-        r |= SPI::transfer(0);
-        SPI::disable();
+        int r = spi.transfer(0) << 16;
+        r |= spi.transfer(0) << 8;
+        r |= spi.transfer(0);
+        spi.disable();
         return r;
     }
 
@@ -57,15 +57,20 @@ public:
         cmd(0x03);
         w24b(page);
         for (int i = 0; i < 256; ++i)
-            ((uint8_t*) buf)[i] = SPI::transfer(0);
-        SPI::disable();
+            ((uint8_t*) buf)[i] = spi.transfer(0);
+        spi.disable();
     }
 
     static void write256 (int page, const void* buf) {
         wcmd(0x02);
         w24b(page);
         for (int i = 0; i < 256; ++i)
-            SPI::transfer(((uint8_t*) buf)[i]);
+            spi.transfer(((uint8_t*) buf)[i]);
         wait();
     }
+
+    static SpiDev<MO,MI,CK,SS> spi;
 };
+
+template< typename MO, typename MI, typename CK, typename SS >
+SpiDev<MO,MI,CK,SS> SpiFlash<MO,MI,CK,SS>::spi;
