@@ -58,7 +58,9 @@ extern VTable& VTableRam ();
 
 // systick and delays
 
+#ifndef ticks
 extern uint32_t volatile ticks;
+#endif
 
 extern void wait_ms (uint32_t ms);
 

@@ -6,11 +6,13 @@
 
 #if ARDUINO_ARCH_AVR
 
-#include <Arduino.h>
-
 void enableSysTick (uint32_t divider) {}  // ignored
 
-void setup () { myMain(); }
+void setup () {
+    Serial.begin(115200);
+    myMain();
+}
+
 void loop () {}
 
 #endif // ARDUINO_ARCH_AVR

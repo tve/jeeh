@@ -1,20 +1,19 @@
+#include <Arduino.h>
+#undef putc
+
 #define main myMain
 extern int myMain ();
 
 #define wait_ms delay
+#define ticks millis()
 
-extern "C" {
-    void pinMode (uint8_t,uint8_t);
-    int digitalRead (uint8_t);
-    void digitalWrite (uint8_t,uint8_t);
-    void delay (unsigned long);
-}
+extern void enableSysTick (uint32_t divider =0);
 
 enum class Pinmode {
-    in_float  = 0,
-    in_pullup = 2,
-    out       = 1,
-    out_od    = 2,
+    in_float  = INPUT,
+    in_pullup = INPUT_PULLUP,
+    out       = OUTPUT,
+    out_od    = INPUT_PULLUP,
 };
 
 template<char port,int pin>
@@ -33,4 +32,13 @@ struct Pin {
     void operator= (int v) const { write(v); }
 
     static void toggle () { write(!read()); }
+};
+
+template< typename TX, typename RX >
+class UartDev {
+public:
+    static bool writable () { return Serial.availableForWrite(); }
+    static void putc (int c) { Serial.write((char) c); }
+    static bool readable () { return Serial.available(); }
+    static int getc () { return Serial.read(); }
 };
