@@ -7,5 +7,5 @@
         "url": "https://github.com/jeelabs/jeeh.git"
     },
     "frameworks": [ "arduino", "cmsis", "libopencm3", "mbed", "stm32cube" ],
-    "platforms": [ "atmelavr", "ststm32" ]
+    "platforms": [ "atmelavr", "espressif32", "ststm32" ]
 }

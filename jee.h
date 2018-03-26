@@ -55,6 +55,9 @@ extern VTable& VTableRam ();
 #if ARDUINO_ARCH_AVR
 #include "arch/avr328.h"
 #endif
+#if ARDUINO_ARCH_ESP32
+#include "arch/esp32.h"
+#endif
 
 // systick and delays
 

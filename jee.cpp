@@ -2,9 +2,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-// alternate code for the 8-bit AVR series
+// alternate code for the 8-bit AVR and 32-bit ESP32 series
 
-#if ARDUINO_ARCH_AVR
+#if ARDUINO_ARCH_AVR || ARDUINO_ARCH_ESP32
 
 void enableSysTick (uint32_t divider) {}  // ignored
 
@@ -15,7 +15,7 @@ void setup () {
 
 void loop () {}
 
-#endif // ARDUINO_ARCH_AVR
+#endif // ARDUINO_ARCH_AVR || ARDUINO_ARCH_ESP32
 
 #if __arm__
 
