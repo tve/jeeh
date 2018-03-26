@@ -44,10 +44,13 @@ struct VTable;
 extern VTable& VTableRam ();
 
 #if STM32F1
-#include "jee-stm32f1.h"
+#include "arch/stm32f1.h"
 #endif
 #if STM32L0
-#include "jee-stm32l0.h"
+#include "arch/stm32l0.h"
+#endif
+#if STM32L4
+#include "arch/stm32l4.h"
 #endif
 
 // systick and delays
