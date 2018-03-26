@@ -5,121 +5,6 @@
 
 #define MMIO32(x) (*(volatile uint32_t*) (x))
 
-struct Periph {
-    constexpr static uint32_t gpio = 0x40010800U;
-    constexpr static uint32_t rcc  = 0x40021000U;
-};
-
-// interrupt vector table in ram
-
-struct VTable {
-    typedef void (*Handler)();
-
-    uint32_t* initial_sp_value;
-    Handler
-        reset, nmi, hard_fault, memory_manage_fault, bus_fault, usage_fault,
-        dummy_x001c[4], sv_call, debug_monitor, dummy_x0034, pend_sv, systick;
-    Handler
-        wwdg, pvd, tamper, rtc, flash, rcc, exti0, exti1, exti2, exti3, exti4,
-        dma1_channel1, dma1_channel2, dma1_channel3, dma1_channel4,
-        dma1_channel5, dma1_channel6, dma1_channel7, adc1_2, usb_hp_can_tx,
-        usb_lp_can_rx0, can_rx1, can_sce, exti9_5, tim1_brk, tim1_up,
-        tim1_trg_com, tim1_cc, tim2, tim3, tim4, i2c1_ev, i2c1_er, i2c2_ev,
-        i2c2_er, spi1, spi2, usart1, usart2, usart3, exti15_10, rtc_alarm,
-        usb_wakeup, tim8_brk, tim8_up, tim8_trg_com, tim8_cc, adc3, fsmc, sdio,
-        tim5, spi3, uart4, uart5, tim6, tim7, dma2_channel1, dma2_channel2,
-        dma2_channel3, dma2_channel4_5, dma2_channel5, eth, eth_wkup, can2_tx,
-        can2_rx0, can2_rx1, can2_sce, otg_fs;
-};
-
-extern VTable& VTableRam ();
-
-// systick and delays
-
-extern uint32_t volatile ticks;
-
-extern void enableSysTick (uint32_t divider =8000000/1000);
-extern void wait_ms (uint16_t ms);
-
-// gpio
-
-template<char port>
-struct Port {
-    constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
-    constexpr static uint32_t crl  = base + 0x00;
-    constexpr static uint32_t crh  = base + 0x04;
-    constexpr static uint32_t idr  = base + 0x08;
-    constexpr static uint32_t odr  = base + 0x0C;
-    constexpr static uint32_t bsrr = base + 0x10;
-    constexpr static uint32_t brr  = base + 0x14;
-};
-
-enum class Pinmode {
-    in_analog        = 0b0000,
-    in_float         = 0b0100,
-    in_pulldown      = 0b1000,  // pseudo mode, also clears output
-    in_pullup        = 0b1100,  // pseudo mode, also sets output
-
-    out_10mhz        = 0b0001,
-    out_od_10mhz     = 0b0101,
-    alt_out_10mhz    = 0b1001,
-    alt_out_od_10mhz = 0b1101,
-
-    out_2mhz         = 0b0010,
-    out_od_2mhz      = 0b0110,
-    alt_out_2mhz     = 0b1010,
-    alt_out_od_2mhz  = 0b1110,
-
-    out              = 0b0011,
-    out_od           = 0b0111,
-    alt_out          = 0b1011,
-    alt_out_od       = 0b1111,
-};
-
-template<char port,int pin>
-struct Pin {
-    typedef Port<port> gpio;
-    constexpr static uint16_t mask = 1U << pin;
-    constexpr static int id = 16 * (port-'A') + pin;
-
-    static void mode (Pinmode m) {
-        // enable GPIOx and AFIO clocks
-        MMIO32(Periph::rcc + 0x18) |= (1 << (port-'A'+2)) | (1<<0);
-
-        auto mval = static_cast<int>(m);
-        if (mval == 0b1000 || mval == 0b1100) {
-            MMIO32(gpio::bsrr) = mval & 0b0100 ? mask : mask << 16;
-            mval = 0b1000;
-        }
-
-        constexpr uint32_t cr = pin & 8 ? gpio::crh : gpio::crl;
-        constexpr int shift = 4 * (pin & 7);
-        MMIO32(cr) = (MMIO32(cr) & ~(0xF << shift)) | (mval << shift);
-    }
-
-    static int read () {
-        return mask & MMIO32(gpio::idr) ? 1 : 0;
-    }
-
-    static void write (int v) {
-        // MMIO32(v ? gpio::bsrr : gpio::brr) = mask;
-        // this is slightly faster when v is not known at compile time:
-        MMIO32(gpio::bsrr) = v ? mask : mask << 16;
-    }
-
-    // shorthand
-    operator int () const { return read(); }
-    void operator= (int v) const { write(v); }
-
-    static void toggle () {
-        // both versions below are non-atomic, they access and set in two steps
-        // this is smaller and faster (1.6 vs 1.2 MHz on F103 @ 72 MHz):
-        // MMIO32(gpio::odr) ^= mask;
-        // but this code is safer, because it can't interfere with nearby pins:
-        MMIO32(gpio::bsrr) = mask & MMIO32(gpio::odr) ? mask << 16 : mask;
-    }
-};
-
 // general-purpose ring buffer
 
 template< int N >
@@ -153,139 +38,23 @@ public:
     }
 };
 
-// u(s)art
+// interrupt vector table in ram
 
-template< typename TX, typename RX >
-class UartDev {
-public:
-    // TODO does not recognise alternate TX pins
-    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
-                                TX::id ==  2 ? 1 :  // PA2, USART2
-                                TX::id == 26 ? 2 :  // PB10, USART3
-                                TX::id == 42 ? 3 :  // PC10, UART4
-                                TX::id == 44 ? 4 :  // PC12, UART5
-                                               0;   // else USART1
-    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
-                                                 0x40004000 + 0x400 * uidx;
-    constexpr static uint32_t sr  = base + 0x00;
-    constexpr static uint32_t dr  = base + 0x04;
-    constexpr static uint32_t brr = base + 0x08;
-    constexpr static uint32_t cr1 = base + 0x0C;
+struct VTable;
+extern VTable& VTableRam ();
 
-    UartDev () {
-        tx.mode(Pinmode::alt_out);
-        rx.mode(Pinmode::in_pullup);
+#if STM32F1
+#include "jee-stm32f1.h"
+#endif
+#if STM32L0
+#include "jee-stm32l0.h"
+#endif
 
-        if (uidx == 0)
-            MMIO32(Periph::rcc + 0x18) |= 1 << 14; // enable USART1 clock
-        else
-            MMIO32(Periph::rcc + 0x1C) |= 1 << (16+uidx); // UART 2..5
+// systick and delays
 
-        MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
-        MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
-    }
+extern uint32_t volatile ticks;
 
-    static bool writable () {
-        return (MMIO32(sr) & 0x80) != 0;  // TXE
-    }
-
-    static void putc (int c) {
-        while (!writable())
-            ;
-        MMIO32(dr) = (uint8_t) c;
-    }
-
-    static bool readable () {
-        return (MMIO32(sr) & 0x24) != 0;  // RXNE or ORE
-    }
-
-    static int getc () {
-        while (!readable())
-            ;
-        return MMIO32(dr);
-    }
-
-    static TX tx;
-    static RX rx;
-};
-
-template< typename TX, typename RX >
-TX UartDev<TX,RX>::tx;
-
-template< typename TX, typename RX >
-RX UartDev<TX,RX>::rx;
-
-// interrupt-enabled uart, sits of top of polled uart
-
-template< typename TX, typename RX, int N =50 >
-class UartBufDev {
-public:
-    UartBufDev () {
-        auto handler = []() {
-            if (uart.readable()) {
-                int c = uart.getc();
-                if (recv.free())
-                    recv.put(c);
-                // else discard the input
-            }
-            if (uart.writable()) {
-                if (xmit.avail() > 0)
-                    uart.putc(xmit.get());
-                else
-                    MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
-            }
-        };
-
-        switch (uart.uidx) {
-            case 0: VTableRam().usart1 = handler; break;
-            case 1: VTableRam().usart2 = handler; break;
-            case 2: VTableRam().usart3 = handler; break;
-            case 3: VTableRam().uart4  = handler; break;
-            case 4: VTableRam().uart5  = handler; break;
-        }
-
-        // nvic interrupt numbers are 37, 38, 39, 52, and 53, respectively
-        constexpr uint32_t nvic_en1r = 0xE000E104;
-        constexpr int irq = (uart.uidx < 3 ? 37 : 49) + uart.uidx;
-        MMIO32(nvic_en1r) |= 1 << (irq-32);  // enable USART interrupt
-
-        MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
-    }
-
-    static bool writable () {
-        return xmit.free();
-    }
-
-    static void putc (int c) {
-        while (!writable())
-            ;
-        xmit.put(c);
-        MMIO32(uart.cr1) |= (1<<7);  // enable TXEIE
-    }
-
-    static bool readable () {
-        return recv.avail() > 0;
-    }
-
-    static int getc () {
-        while (!readable())
-            ;
-        return recv.get();
-    }
-
-    static UartDev<TX,RX> uart;
-    static RingBuffer<N> recv;
-    static RingBuffer<N> xmit;
-};
-
-template< typename TX, typename RX, int N >
-UartDev<TX,RX> UartBufDev<TX,RX,N>::uart;
-
-template< typename TX, typename RX, int N >
-RingBuffer<N> UartBufDev<TX,RX,N>::recv;
-
-template< typename TX, typename RX, int N >
-RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+extern void wait_ms (uint16_t ms);
 
 // spi, bit-banged on any gpio pins
 
