@@ -64,17 +64,12 @@ struct Pin {
         MMIO32(Periph::rcc + 0x2C) |= 1 << (port-'A');
 
         auto mval = static_cast<int>(m);
-        if (mval == 0b1000 || mval == 0b1100) {
-            MMIO32(gpio::bsrr) = mval & 0b0100 ? mask : mask << 16;
-            mval = 0b1000;
-        }
-
         constexpr int shift = pin & 15;
         MMIO32(gpio::moder) = (MMIO32(gpio::moder) & ~(3 << 2*shift))
                             | ((mval >> 3) << 2*shift);
         MMIO32(gpio::typer) = (MMIO32(gpio::typer) & ~(1 << shift))
                             | (((mval >> 2) & 1) << shift);
-        MMIO32(gpio::pupdr) = (MMIO32(gpio::pupdr) & ~(31 << 2*shift))
+        MMIO32(gpio::pupdr) = (MMIO32(gpio::pupdr) & ~(3 << 2*shift))
                             | ((mval & 3) << 2*shift);
 
         MMIO32(gpio::ospeedr) = (MMIO32(gpio::ospeedr) & ~(3 << 2*shift))
