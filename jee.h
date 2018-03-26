@@ -52,12 +52,15 @@ extern VTable& VTableRam ();
 #if STM32L4
 #include "arch/stm32l4.h"
 #endif
+#if ARDUINO_ARCH_AVR
+#include "arch/avr328.h"
+#endif
 
 // systick and delays
 
 extern uint32_t volatile ticks;
 
-extern void wait_ms (uint16_t ms);
+extern void wait_ms (uint32_t ms);
 
 // spi, bit-banged on any gpio pins
 

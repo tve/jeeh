@@ -21,7 +21,7 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =2100000/1000);
+extern void enableSysTick (uint32_t divider =2097000/1000);
 
 // gpio
 

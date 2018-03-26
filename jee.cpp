@@ -2,6 +2,21 @@
 #include <stdarg.h>
 #include <string.h>
 
+// alternate code for the 8-bit AVR series
+
+#if ARDUINO_ARCH_AVR
+
+#include <Arduino.h>
+
+void enableSysTick (uint32_t divider) {}  // ignored
+
+void setup () { myMain(); }
+void loop () {}
+
+#endif // ARDUINO_ARCH_AVR
+
+#if __arm__
+
 // interrupt vector table in ram
 
 VTable& VTableRam () {
@@ -27,10 +42,12 @@ void enableSysTick (uint32_t divider) {
     MMIO32(0xE000E010) = 7;
 }
 
-void wait_ms (uint16_t ms) {
+void wait_ms (uint32_t ms) {
     uint32_t start = ticks;
     while ((uint16_t) (ticks - start) < ms) ;
 }
+
+#endif // __arm__
 
 // formatted output
 
