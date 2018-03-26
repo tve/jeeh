@@ -43,6 +43,8 @@ public:
 struct VTable;
 extern VTable& VTableRam ();
 
+// architecture-specific definitions
+
 #if STM32F1
 #include "arch/stm32f1.h"
 #endif
