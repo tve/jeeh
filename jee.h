@@ -48,6 +48,9 @@ extern VTable& VTableRam ();
 #if STM32F1
 #include "arch/stm32f1.h"
 #endif
+#if STM32F4
+#include "arch/stm32f4.h"
+#endif
 #if STM32L0
 #include "arch/stm32l0.h"
 #endif
@@ -63,17 +66,17 @@ extern VTable& VTableRam ();
 
 // shorthand: PinA<1> expands to Pin<'A',1>, etc
 
-template <int I> using PinA = Pin<'A',I>;
-template <int I> using PinB = Pin<'B',I>;
-template <int I> using PinC = Pin<'C',I>;
-template <int I> using PinD = Pin<'D',I>;
-template <int I> using PinE = Pin<'E',I>;
-template <int I> using PinF = Pin<'F',I>;
-template <int I> using PinG = Pin<'G',I>;
-template <int I> using PinH = Pin<'H',I>;
-template <int I> using PinI = Pin<'I',I>;
-template <int I> using PinJ = Pin<'J',I>;
-template <int I> using PinK = Pin<'K',I>;
+template <int N> using PinA = Pin<'A',N>;
+template <int N> using PinB = Pin<'B',N>;
+template <int N> using PinC = Pin<'C',N>;
+template <int N> using PinD = Pin<'D',N>;
+template <int N> using PinE = Pin<'E',N>;
+template <int N> using PinF = Pin<'F',N>;
+template <int N> using PinG = Pin<'G',N>;
+template <int N> using PinH = Pin<'H',N>;
+template <int N> using PinI = Pin<'I',N>;
+template <int N> using PinJ = Pin<'J',N>;
+template <int N> using PinK = Pin<'K',N>;
 
 // systick and delays
 
@@ -97,13 +100,8 @@ public:
         mosi.mode(Pinmode::out);
     }
 
-    static void enable () {
-        nss = 0;
-    }
-
-    static void disable () {
-        nss = 1;
-    }
+    static void enable () { nss = 0; }
+    static void disable () { nss = 1; }
 
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
