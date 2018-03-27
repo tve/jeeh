@@ -72,20 +72,19 @@ struct Pin {
         MMIO32(Periph::rcc + 0x4C) |= 1 << (port-'A');
 
         auto mval = static_cast<int>(m);
-        constexpr int shift = pin & 15;
-        MMIO32(gpio::moder) = (MMIO32(gpio::moder) & ~(3 << 2*shift))
-                            | ((mval >> 3) << 2*shift);
-        MMIO32(gpio::typer) = (MMIO32(gpio::typer) & ~(1 << shift))
-                            | (((mval >> 2) & 1) << shift);
-        MMIO32(gpio::pupdr) = (MMIO32(gpio::pupdr) & ~(3 << 2*shift))
-                            | ((mval & 3) << 2*shift);
+        MMIO32(gpio::moder) = (MMIO32(gpio::moder) & ~(3 << 2*pin))
+                            | ((mval >> 3) << 2*pin);
+        MMIO32(gpio::typer) = (MMIO32(gpio::typer) & ~(1 << pin))
+                            | (((mval >> 2) & 1) << pin);
+        MMIO32(gpio::pupdr) = (MMIO32(gpio::pupdr) & ~(3 << 2*pin))
+                            | ((mval & 3) << 2*pin);
 
-        MMIO32(gpio::ospeedr) = (MMIO32(gpio::ospeedr) & ~(3 << 2*shift))
-                              | (0b11 << 2*shift);
+        MMIO32(gpio::ospeedr) = (MMIO32(gpio::ospeedr) & ~(3 << 2*pin))
+                              | (0b11 << 2*pin);
 
         constexpr uint32_t afr = pin & 8 ? gpio::afrh : gpio::afrl;
-        constexpr int shift4 = 4 * (pin & 7);
-        MMIO32(afr) = (MMIO32(afr) & ~(0xF << shift4)) | (alt << shift4);
+        constexpr int shift = 4 * (pin & 7);
+        MMIO32(afr) = (MMIO32(afr) & ~(0xF << shift)) | (alt << shift);
     }
 
     static int read () {
