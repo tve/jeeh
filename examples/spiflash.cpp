@@ -2,7 +2,7 @@
 
 #include <jee.h>
 
-UartDev< Pin<'A',9>, Pin<'A',10> > uart;
+UartDev< PinA<9>, PinA<10> > uart;
 
 void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
@@ -12,7 +12,7 @@ void printf(const char* fmt, ...) {
 
 #include <jee/spi-flash.h>
 
-SpiFlash< Pin<'A',7>, Pin<'A',6>, Pin<'A',5>, Pin<'A',4> > mem;
+SpiFlash< PinA<7>, PinA<6>, PinA<5>, PinA<4> > mem;
 
 int main () {
     printf("id %06x, %dK\n", mem.devId(), mem.size());

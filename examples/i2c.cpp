@@ -2,7 +2,7 @@
 
 #include <jee.h>
 
-UartDev< Pin<'A',9>, Pin<'A',10> > uart;
+UartDev< PinA<9>, PinA<10> > uart;
 
 void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
@@ -10,7 +10,7 @@ void printf(const char* fmt, ...) {
 
 // definition of I2C bus and some code to detect devices on it
 
-I2cDev< Pin<'B',7>, Pin<'B',6> > i2cbus;
+I2cDev< PinB<7>, PinB<6> > i2cbus;
 
 template< typename T >
 void detectI2c (T bus) {

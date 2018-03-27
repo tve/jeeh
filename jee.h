@@ -61,6 +61,20 @@ extern VTable& VTableRam ();
 #include "arch/esp32.h"
 #endif
 
+// shorthand: PinA<1> expands to Pin<'A',1>, etc
+
+template <int I> using PinA = Pin<'A',I>;
+template <int I> using PinB = Pin<'B',I>;
+template <int I> using PinC = Pin<'C',I>;
+template <int I> using PinD = Pin<'D',I>;
+template <int I> using PinE = Pin<'E',I>;
+template <int I> using PinF = Pin<'F',I>;
+template <int I> using PinG = Pin<'G',I>;
+template <int I> using PinH = Pin<'H',I>;
+template <int I> using PinI = Pin<'I',I>;
+template <int I> using PinJ = Pin<'J',I>;
+template <int I> using PinK = Pin<'K',I>;
+
 // systick and delays
 
 #ifndef ticks

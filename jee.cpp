@@ -40,13 +40,14 @@ uint32_t volatile ticks;
 
 void enableSysTick (uint32_t divider) {
     VTableRam().systick = []() { ++ticks; };
-    MMIO32(0xE000E014) = divider - 1;
-    MMIO32(0xE000E010) = 7;
+    constexpr static uint32_t tick = 0xE000E000;
+    MMIO32(tick + 0x14) = divider - 1;
+    MMIO32(tick + 0x10) = 7;
 }
 
 void wait_ms (uint32_t ms) {
     uint32_t start = ticks;
-    while ((uint16_t) (ticks - start) < ms) ;
+    while ((uint32_t) (ticks - start) < ms) ;
 }
 
 #endif // __arm__

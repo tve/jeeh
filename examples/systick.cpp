@@ -1,6 +1,6 @@
 #include <jee.h>
 
-Pin<'C',13> led;
+PinC<13> led;
 
 int main () {
     enableSysTick();
