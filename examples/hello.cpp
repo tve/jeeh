@@ -1,3 +1,5 @@
+// Minimal serial output to USART1.
+
 #include <jee.h>
 
 UartDev< PinA<9>, PinA<10> > uart;
@@ -8,7 +10,7 @@ void puts (const char* s) {
 }
 
 int main () {
-    // TODO adjustable baud rate, it's fixed at 115200 baud @ 8 MHz for now
+    // TODO the baud rate is fixed at 115200 baud @ 8 MHz for now
 
     while (true) {
         puts("Hello!\n");

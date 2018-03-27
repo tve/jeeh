@@ -1,4 +1,4 @@
-// boilerplate
+// Show a map of devices found on the I2C bus.
 
 #include <jee.h>
 
@@ -8,9 +8,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
 }
 
-// definition of I2C bus and some code to detect devices on it
-
-I2cDev< PinB<7>, PinB<6> > i2cbus;
+I2cDev< PinB<7>, PinB<6> > i2cbus;  // standard I2C pins
 
 template< typename T >
 void detectI2c (T bus) {

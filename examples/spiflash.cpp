@@ -1,6 +1,7 @@
-// boilerplate
+// Test a W25Q64 flash chip attached to SPI.
 
 #include <jee.h>
+#include <jee/spi-flash.h>
 
 UartDev< PinA<9>, PinA<10> > uart;
 
@@ -8,11 +9,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
 }
 
-// the spi flash chip is attached to the SPI1 pins
-
-#include <jee/spi-flash.h>
-
-SpiFlash< PinA<7>, PinA<6>, PinA<5>, PinA<4> > mem;
+SpiFlash< PinA<7>, PinA<6>, PinA<5>, PinA<4> > mem;  // default SPI1 pins
 
 int main () {
     printf("id %06x, %dK\n", mem.devId(), mem.size());
