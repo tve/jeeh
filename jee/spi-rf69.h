@@ -12,8 +12,7 @@
 #endif
 
 template< typename MO, typename MI, typename CK, typename SS >
-class RF69 {
-public:
+struct RF69 {
     void init (uint8_t id, uint8_t group, int freq);
     void encrypt (const char* key);
     void txPower (uint8_t level);
@@ -35,7 +34,6 @@ public:
         spi.rwReg(addr | 0x80, val);
     }
 
-protected:
     enum {
         REG_FIFO          = 0x00,
         REG_OPMODE        = 0x01,
