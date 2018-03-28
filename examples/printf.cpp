@@ -2,10 +2,10 @@
 
 #include <jee.h>
 
-UartDev< PinA<9>, PinA<10> > uart;
+UartDev< PinA<9>, PinA<10> > console;
 
 void printf(const char* fmt, ...) {
-    va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
+    va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
 int main () {

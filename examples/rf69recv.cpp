@@ -3,10 +3,10 @@
 #include <jee.h>
 #include <jee/spi-rf69.h>
 
-UartBufDev< PinA<9>, PinA<10> > uart;  // use buffering to avoid missed packets
+UartBufDev< PinA<9>, PinA<10> > console;  // buffering avoids missed packets
 
 void printf(const char* fmt, ...) {
-    va_list ap; va_start(ap, fmt); veprintf(uart.putc, fmt, ap); va_end(ap);
+    va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
 RF69< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;  // default SPI1 pins

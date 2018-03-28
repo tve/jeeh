@@ -2,11 +2,11 @@
 
 #include <jee.h>
 
-UartDev< PinA<9>, PinA<10> > uart;
+UartDev< PinA<9>, PinA<10> > console;
 
 void puts (const char* s) {
     while (*s)
-        uart.putc(*s++);
+        console.putc(*s++);
 }
 
 int main () {
