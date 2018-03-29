@@ -1,4 +1,4 @@
-// Driver foran ILI9325-based 320x240 LCD TFT display, connected over SPI
+// Driver for an ILI9325-based 320x240 LCD TFT display, connected over SPI
 // tested with http://www.hotmcu.com/x-p-121.html
 
 template< typename MO, typename MI, typename CK, typename SS>
@@ -31,9 +31,9 @@ struct ILI9325 {
         spi.disable();
     }
 
-    static void pixel (int x, int y, int rgb) {
-        write(0x20, x);
-        write(0x21, y);
+    static void pixel (int y, int x, int rgb) {
+        write(0x20, y);
+        write(0x21, x);
         write(0x22, rgb);
     }
 
