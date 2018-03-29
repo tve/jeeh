@@ -92,24 +92,24 @@ template< typename MO, typename MI, typename CK, typename SS >
 class SpiDev {
 public:
     SpiDev () {
-        nss = 1;
-        nss.mode(Pinmode::out);
+        nsel = 1;
+        nsel.mode(Pinmode::out);
         sclk = 0;
         sclk.mode(Pinmode::out);
         miso.mode(Pinmode::in_float);
         mosi.mode(Pinmode::out);
     }
 
-    static void enable () { nss = 0; }
-    static void disable () { nss = 1; }
+    static void enable () { nsel = 0; }
+    static void disable () { nsel = 1; }
 
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
             mosi = v & 0x80;
-            sclk = 1;
+            sclk.toggle();
             v <<= 1;
             v |= miso;
-            sclk = 0;
+            sclk.toggle();
         }
         return v;
     }
@@ -125,7 +125,7 @@ public:
     static MO mosi;
     static MI miso;
     static CK sclk;
-    static SS nss;
+    static SS nsel;
 };
 
 template< typename MO, typename MI, typename CK, typename SS >
@@ -138,7 +138,7 @@ template< typename MO, typename MI, typename CK, typename SS >
 CK SpiDev<MO,MI,CK,SS>::sclk;
 
 template< typename MO, typename MI, typename CK, typename SS >
-SS SpiDev<MO,MI,CK,SS>::nss;
+SS SpiDev<MO,MI,CK,SS>::nsel;
 
 // i2c, bit-banged on any gpio pins
 
