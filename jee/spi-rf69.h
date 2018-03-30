@@ -114,7 +114,7 @@ void RF69<MO,MI,CK,SS>::configure (const uint8_t* p) {
     while (true) {
         uint8_t cmd = p[0];
         if (cmd == 0)
-        break;
+            break;
         writeReg(cmd, p[1]);
         p += 2;
     }
@@ -174,7 +174,7 @@ void RF69<MO,MI,CK,SS>::encrypt (const char* key) {
         for (int i = 0; i < 16; ++i) {
             writeReg(REG_AESKEYMSB + i, *key);
             if (*key != 0)
-            ++key;
+                ++key;
         }
         cfg |= 0x01;
     }
@@ -194,7 +194,7 @@ void RF69<MO,MI,CK,SS>::sleep () {
 template< typename MO, typename MI, typename CK, typename SS >
 int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
     if (mode != MODE_RECEIVE)
-    setMode(MODE_RECEIVE);
+        setMode(MODE_RECEIVE);
     else {
         static uint8_t lastFlag;
         if ((readReg(REG_IRQFLAGS1) & IRQ1_RXREADY) != lastFlag) {
@@ -224,7 +224,7 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
             for (int i = 0; i < count; ++i) {
                 uint8_t v = spi.transfer(0);
                 if (i < len)
-                ((uint8_t*) ptr)[i] = v;
+                    ((uint8_t*) ptr)[i] = v;
             }
             spi.disable();
 #else
@@ -232,7 +232,7 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
             for (int i = 0; i < count; ++i) {
                 uint8_t v = readReg(REG_FIFO);
                 if (i < len)
-                ((uint8_t*) ptr)[i] = v;
+                    ((uint8_t*) ptr)[i] = v;
             }
 #endif
 
@@ -242,7 +242,7 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
             if ((dest & 0xC0) == parity) {
                 uint8_t destId = dest & 0x3F;
                 if (destId == myId || destId == 0 || myId == 63)
-                return count;
+                    return count;
             }
         }
     }
