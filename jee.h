@@ -88,13 +88,13 @@ extern void wait_ms (uint32_t ms);
 
 // spi, bit-banged on any gpio pins
 
-template< typename MO, typename MI, typename CK, typename SS >
+template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 class SpiDev {
 public:
     SpiDev () {
         nsel = 1;
         nsel.mode(Pinmode::out);
-        sclk = 0;
+        sclk = CP;
         sclk.mode(Pinmode::out);
         miso.mode(Pinmode::in_float);
         mosi.mode(Pinmode::out);
@@ -106,10 +106,10 @@ public:
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
             mosi = v & 0x80;
-            sclk.toggle();
+            sclk = !CP;
             v <<= 1;
             v |= miso;
-            sclk.toggle();
+            sclk = CP;
         }
         return v;
     }
@@ -128,17 +128,17 @@ public:
     static SS nsel;
 };
 
-template< typename MO, typename MI, typename CK, typename SS >
-MO SpiDev<MO,MI,CK,SS>::mosi;
+template< typename MO, typename MI, typename CK, typename SS, int CP >
+MO SpiDev<MO,MI,CK,SS,CP>::mosi;
 
-template< typename MO, typename MI, typename CK, typename SS >
-MI SpiDev<MO,MI,CK,SS>::miso;
+template< typename MO, typename MI, typename CK, typename SS, int CP >
+MI SpiDev<MO,MI,CK,SS,CP>::miso;
 
-template< typename MO, typename MI, typename CK, typename SS >
-CK SpiDev<MO,MI,CK,SS>::sclk;
+template< typename MO, typename MI, typename CK, typename SS, int CP >
+CK SpiDev<MO,MI,CK,SS,CP>::sclk;
 
-template< typename MO, typename MI, typename CK, typename SS >
-SS SpiDev<MO,MI,CK,SS>::nsel;
+template< typename MO, typename MI, typename CK, typename SS, int CP >
+SS SpiDev<MO,MI,CK,SS,CP>::nsel;
 
 // i2c, bit-banged on any gpio pins
 

@@ -37,12 +37,12 @@ struct ILI9325 {
         write(0x22, rgb);
     }
 
-    static SpiDev<MO,MI,CK,SS> spi;
+    static SpiDev<MO,MI,CK,SS,1> spi;
     static uint16_t const config [];
 };
 
 template< typename MO, typename MI, typename CK, typename SS>
-SpiDev<MO,MI,CK,SS> ILI9325<MO,MI,CK,SS>::spi;
+SpiDev<MO,MI,CK,SS,1> ILI9325<MO,MI,CK,SS>::spi;
 
 template< typename MO, typename MI, typename CK, typename SS>
 uint16_t const ILI9325<MO,MI,CK,SS>::config [] = {
