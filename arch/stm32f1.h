@@ -241,3 +241,26 @@ RingBuffer<N> UartBufDev<TX,RX,N>::recv;
 
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+
+// system clock
+
+static void enableClkAt72mhz () {
+    constexpr uint32_t rcc   = 0x40021000;
+    constexpr uint32_t flash = 0x40022000;
+
+    MMIO32(flash + 0x00) = 0x12; // flash acr, two wait states
+    MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
+    while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
+    // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6
+    MMIO32(rcc + 0x04) = (1<<16) | (7<<18) | (4<<8) | (2<<14) | (1<<1);
+    MMIO32(rcc + 0x00) |= (1<<24); // rcc cr, set PLLON
+    while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
+}
+
+static int fullSpeedClock () {
+    constexpr uint32_t hz = 72000000;
+    enableClkAt72mhz();                 // using external 8 MHz crystal
+    enableSysTick(hz/1000);             // systick once every 1 ms
+    MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
+    return hz;
+}
