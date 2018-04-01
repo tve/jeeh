@@ -11,13 +11,6 @@ struct ILI9325 {
                 write(p[0], p[1]);
     }
 
-    static void clear () {
-        write(0x21, 0);
-        write(0x20, 0);
-        for (int i = 0; i < 240 * 320; ++i)
-            write(0x22, 0);
-    }
-
     static void write (int reg, int val) {
         spi.enable();
         spi.transfer(0x70);
@@ -31,10 +24,35 @@ struct ILI9325 {
         spi.disable();
     }
 
-    static void pixel (int y, int x, int rgb) {
+    static void pixel (int y, int x, uint16_t rgb) {
         write(0x20, y);
         write(0x21, x);
         write(0x22, rgb);
+    }
+
+    static void pixels (int y, int x, uint16_t const* rgb, int len) {
+        pixel(y, x, *rgb);
+
+        spi.enable();
+        spi.transfer(0x72);
+        for (int i = 1; i < len; ++i) {
+            uint16_t val = rgb[i];
+            spi.transfer(val >> 8);
+            spi.transfer(val);
+        }
+        spi.disable();
+    }
+
+    static void clear () {
+        pixel(0, 0, 0);
+
+        spi.enable();
+        spi.transfer(0x72);
+        for (int i = 1; i < 240 * 320 - 1; ++i) {
+            spi.transfer(0);
+            spi.transfer(0);
+        }
+        spi.disable();
     }
 
     static SpiDev<MO,MI,CK,SS,1> spi;
