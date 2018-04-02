@@ -4,9 +4,9 @@ This code produces a real-time [867.7-868.9] MHz spectrum "waterfall" display:
 
 ![](waterfall.jpg)
 
-Colours are mapped from black (min) => blue => yellow => red => white (max).
-The display scrolls smoothly and continuously from right to left, with a
-horizontal marker every ≈ 420 ms, and a vertical marker every ≈ 200 KHz.
+Colours are mapped from black (min) => blue => yellow => red => white (max).  
+The display scrolls smoothly and continuously from right to left, with a  
+horizontal marker every ≈ 420 ms, and a vertical marker every ≈ 200 KHz.  
 In other words: the screen shows approximately 4 seconds x 1200 KHz.
 
 ### Hardware
