@@ -37,8 +37,8 @@ Other pins can be assigned by adjusting the source code.
 
 This project is set up for [PlatformIO](https://platformio.org) as toolchain:
 
-* adjust `platformio.ini` as needed, in particular the upload port
 * open this project in a supported IDE or do `cd examples/waterfall/`
+* adjust `platformio.ini` as needed, in particular the upload port
 * then build and upload, e.g. `pio run -t upload` from the command line
 
 Found a bug? Please post on [GitHub](https://github.com/jeelabs/jeeh/issues).
