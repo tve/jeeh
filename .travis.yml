@@ -31,6 +31,7 @@ env:
 #   - PLATFORMIO_CI_SRC=examples/systick.cpp
 #   - PLATFORMIO_CI_SRC=examples/rf69recv.cpp
 #   - PLATFORMIO_CI_SRC=examples/waterfall/src/main.cpp
+#   - PLATFORMIO_CI_SRC=examples/oled.cpp
 
 install:
     - pip install -U platformio
