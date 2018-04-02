@@ -1,4 +1,4 @@
-// Driver for an SSD1306-based 128x64 LCD OLED display, connected over I2C
+// Driver for an SSD1306-based 128x64 OLED display, connected over I2C
 
 template< typename I2C, int addr =0x3C >
 struct SSD1306 {

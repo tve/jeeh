@@ -1,10 +1,10 @@
-// Display a logo on an OLED 128x64 LCD display via I2C.
+// Display a logo on a 128x64 OLED display via I2C.
 
 #include <jee.h>
 #include <jee/i2c-ssd1306.h>
 
 I2cDev< PinB<7>, PinB<6> > bus;  // default I2C pins for SDA and SCL
-SSD1306< decltype(bus) > lcd;
+SSD1306< decltype(bus) > oled;
 
 const uint32_t logo [] = {
     0b00000000000000000000000000000111,0b11100000000000000000000000000000,
@@ -74,7 +74,7 @@ const uint32_t logo [] = {
 };
 
 int main () {
-    lcd.init();
-    lcd.clear();
-    lcd.show64x64(logo);
+    oled.init();
+    oled.clear();
+    oled.show64x64(logo);
 }
