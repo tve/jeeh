@@ -159,8 +159,7 @@ SS SpiDev<MO,MI,CK,SS,CP>::nsel;
 
 template< typename SDA, typename SCL, int N =0 >
 class I2cDev {
-    static void sclHi () { scl = 1; while (!scl); }
-    static void sclLo () { scl = 0; }
+    static void sclHi () { scl = 1; while (!scl) ; }
 
 public:
     I2cDev () {
@@ -171,7 +170,7 @@ public:
     }
 
     static uint8_t start(int addr) {
-        sclLo();
+        scl = 0;
         sclHi();
         sda = 0;
         return write(addr);
@@ -184,16 +183,16 @@ public:
     }
 
     static bool write(int data) {
-        sclLo();
+        scl = 0;
         for (int mask = 0x80; mask != 0; mask >>= 1) {
             sda = data & mask;
             sclHi();
-            sclLo();
+            scl = 0;
         }
         sda = 1;
         sclHi();
         bool ack = !sda;
-        sclLo();
+        scl = 0;
         return ack;
     }
 
@@ -203,11 +202,11 @@ public:
             sclHi();
             if (sda)
                 data |= mask;
-            sclLo();
+            scl = 0;
         }
         sda = last;
         sclHi();
-        sclLo();
+        scl = 0;
         if (last)
             stop();
         return data;
