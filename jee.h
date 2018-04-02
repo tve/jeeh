@@ -86,6 +86,21 @@ extern uint32_t volatile ticks;
 
 extern void wait_ms (uint32_t ms);
 
+// slowed-down pin, adds a configurable delay after setting the pin
+
+template< typename T, int N >
+struct SlowPin : public T {
+
+    static void write (int v) {
+        T::write(v);
+        for (int i = 0; i < N; ++i)
+            __asm("");  // avoid getting optimised away
+    }
+
+    // shorthand
+    void operator= (int v) const { write(v); }
+};
+
 // spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
@@ -142,16 +157,10 @@ SS SpiDev<MO,MI,CK,SS,CP>::nsel;
 
 // i2c, bit-banged on any gpio pins
 
-template< typename SDA, typename SCL >
+template< typename SDA, typename SCL, int N =0 >
 class I2cDev {
-    static void hold () {
-        // TODO make configurabe, this is ≈ 360 kHz for STM32F1 @ 72 MHz
-        for (int i = 0; i < 5; ++i)
-            __asm("");
-    }
-
-    static void sclHi () { scl = 1; while (!scl); hold(); }
-    static void sclLo () { scl = 0; hold(); }
+    static void sclHi () { scl = 1; while (!scl); }
+    static void sclLo () { scl = 0; }
 
 public:
     I2cDev () {
@@ -201,19 +210,18 @@ public:
         sclLo();
         if (last)
             stop();
-        sda = 1;
         return data;
     }
 
     static SDA sda;
-    static SCL scl;
+    static SlowPin<SCL,N> scl;
 };
 
-template< typename SDA, typename SCL >
-SDA I2cDev<SDA,SCL>::sda;
+template< typename SDA, typename SCL, int N >
+SDA I2cDev<SDA,SCL,N>::sda;
 
-template< typename SDA, typename SCL >
-SCL I2cDev<SDA,SCL>::scl;
+template< typename SDA, typename SCL, int N >
+SlowPin<SCL,N> I2cDev<SDA,SCL,N>::scl;
 
 // formatted output
 
