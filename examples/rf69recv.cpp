@@ -15,7 +15,7 @@ PinC<13> led;
 
 int main () {
     led.mode(Pinmode::out);
-    rf.init(1, 6, 8686);
+    rf.init(63, 42, 8683);  // node 63, group 42, 868.3 MHz
 
     while (true) {
         uint8_t rxBuf [64];
