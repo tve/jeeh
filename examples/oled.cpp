@@ -4,7 +4,7 @@
 #include <jee/i2c-ssd1306.h>
 #include <jee/text-font.h>
 
-I2cDev< PinB<7>, PinB<6> > bus;  // standard I2C pins for SDA and SCL
+I2cBus< PinB<7>, PinB<6> > bus;  // standard I2C pins for SDA and SCL
 SSD1306< decltype(bus) > oled;
 Font5x7< decltype(oled) > console;
 

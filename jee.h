@@ -158,11 +158,11 @@ SS SpiDev<MO,MI,CK,SS,CP>::nsel;
 // i2c, bit-banged on any gpio pins
 
 template< typename SDA, typename SCL, int N =0 >
-class I2cDev {
+class I2cBus {
     static void sclHi () { scl = 1; while (!scl) ; }
 
 public:
-    I2cDev () {
+    I2cBus () {
         sda = 1;
         sda.mode(Pinmode::out_od);
         scl = 1;
@@ -217,10 +217,10 @@ public:
 };
 
 template< typename SDA, typename SCL, int N >
-SDA I2cDev<SDA,SCL,N>::sda;
+SDA I2cBus<SDA,SCL,N>::sda;
 
 template< typename SDA, typename SCL, int N >
-SlowPin<SCL,N> I2cDev<SDA,SCL,N>::scl;
+SlowPin<SCL,N> I2cBus<SDA,SCL,N>::scl;
 
 // formatted output
 

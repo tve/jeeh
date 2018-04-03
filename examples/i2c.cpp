@@ -8,7 +8,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-I2cDev< PinB<7>, PinB<6> > bus;  // standard I2C pins for SDA and SCL
+I2cBus< PinB<7>, PinB<6> > bus;  // standard I2C pins for SDA and SCL
 
 template< typename T >
 void detectI2c (T bus) {
