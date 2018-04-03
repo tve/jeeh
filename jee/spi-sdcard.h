@@ -117,7 +117,3 @@ SpiDev<MO,MI,CK,SS> SdCard<MO,MI,CK,SS>::spi;
 
 template< typename MO, typename MI, typename CK, typename SS >
 struct SdCard<MO,MI,CK,SS>::FatInfo SdCard<MO,MI,CK,SS>::info;
-
-// SpiDev< PinB<5>, PinB<4>, PinB<3>, PinA<15> > sd;
-typedef SlowPin< PinA<15>, 10 > SdSel;
-SdCard< PinB<5>, PinB<4>, PinB<3>, PinA<15> > sd;
