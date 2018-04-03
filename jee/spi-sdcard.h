@@ -7,7 +7,7 @@ struct SdCard {
     static bool init () {
         // try *without* and then *with* HCS bit 30 set
         // this determines whether it's an SD (v1) or an SDHD (v2) card
-        for (type = 0; type < 2; ++type) {
+        for (sdhd = 0; sdhd < 2; ++sdhd) {
             // reset SPI register to known state
             spi.disable();
             for (int i = 0; i < 10; ++i)
@@ -23,50 +23,28 @@ struct SdCard {
 
             for (int i = 0; i < 15; ++i) {
                 cmd(55, 0); wait();
-                if (cmd(41, type << 30) == 0)
+                if (cmd(41, sdhd << 30) == 0)
                     return true;
             }
         }
         return false;  // no valid card found
     }
 
-    // TODO move elsewhere, it does not belong in this low-level block driver
-    static void fat16 () {
-        read512(0);                                 // find boot sector
-        info.base = *(uint32_t*) (buf + 0x1C6);     // base for everything
-
-        read512(info.base);                         // location of boot rec
-        info.spc = buf[0x0D];                       // sectors per cluster
-        uint16_t rsec = *(uint16_t*) (buf + 0x0E);  // reserved sectors
-        uint8_t nfc = buf[0x10];                    // number of FAT copies
-        uint16_t spf = *(uint16_t*) (buf + 0x16);   // sectors per fat
-        info.rdir = nfc * spf + rsec + info.base;   // location of root dir
-        info.rmax = *(uint16_t*) (buf + 0x11);      // max root entries
-        info.data = (info.rmax >> 4) + info.rdir;   // start of data area
-
-      //printf("base %d spc %d rsec %d nfc %d spf %d rdir %d rmax %d data %d\n",
-      //  info.base, info.spc, rsec, nfc, spf, info.rdir, info.rmax, info.data);
-    }
-
-    static void read512 (int page) {
-        if (type == 0)
-            page <<= 9;
-        int last = cmd(17, page);
+    static void read512 (int page, void* buf) {
+        int last = cmd(17, sdhd ? page : page << 9);
         while (last != 0xFE)
             last = spi.transfer(0xFF);
         for (int i = 0; i < 512; ++i)
-            buf[i] = spi.transfer(0xFF);
+            ((uint8_t*) buf)[i] = spi.transfer(0xFF);
         send16b(0xFFFF);
         wait();
     }
 
-    static void write512 (int page) {
-        if (type == 0)
-            page <<= 9;
-        int r = cmd(24, page);
+    static void write512 (int page, uint8_t const* buf) {
+        cmd(24, sdhd ? page : page << 9);
         send16b(0xFFFE);
         for (int i = 0; i < 512; ++i)
-            spi.transfer(buf[i]);
+            spi.transfer(((uint8_t const*) buf)[i]);
         send16b(0xFFFF);
         wait();
     }
@@ -98,27 +76,11 @@ struct SdCard {
     }
 
     static SpiDev<MO,MI,CK,SS> spi;
-    static uint8_t type; // 0 = SD, 1 = SDHD
-    static uint8_t buf [];
-
-    // TODO move elsewhere, it does not belong in this low-level block driver
-    static struct FatInfo {
-        uint32_t base;      // base sector for everything
-        uint32_t rdir;      // location of root dir
-        uint32_t data;      // start sector of data area
-        uint16_t rmax;      // max root entries
-        uint8_t spc;        // sectors per cluster
-    } info;
+    static uint8_t sdhd; // 0 = SD, 1 = SDHD
 };
 
 template< typename MO, typename MI, typename CK, typename SS >
 SpiDev<MO,MI,CK,SS> SdCard<MO,MI,CK,SS>::spi;
 
 template< typename MO, typename MI, typename CK, typename SS >
-uint8_t SdCard<MO,MI,CK,SS>::type;
-
-template< typename MO, typename MI, typename CK, typename SS >
-uint8_t SdCard<MO,MI,CK,SS>::buf [512];
-
-template< typename MO, typename MI, typename CK, typename SS >
-struct SdCard<MO,MI,CK,SS>::FatInfo SdCard<MO,MI,CK,SS>::info;
+uint8_t SdCard<MO,MI,CK,SS>::sdhd;
