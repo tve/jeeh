@@ -11,9 +11,6 @@ struct PCD8544 {
 
         en = 1;
         ck = 0;
-
-        rs = 0;
-        wait_ms(50);
         rs = 1;
 
         cmd(0x21);  // extended mode
@@ -28,6 +25,21 @@ struct PCD8544 {
         en = 0;
         write(v);
         en = 1;
+    }
+
+    static void clear () {
+        // this is not needed, since the entire graphics ram will be cleared
+        // in horizontal mode, writes will wrap no matter where they started
+        //
+        // cmd(0x40);
+        // cmd(0x80);
+
+        dc = 1;
+        en = 0;
+        for (int i = 0; i < 6*84; ++i)
+            write(0);
+        en = 1;
+        dc = 0;
     }
 
     // data is written in "bands" of 8 pixels high, bit 0 is the topmost line

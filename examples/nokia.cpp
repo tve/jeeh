@@ -9,7 +9,7 @@
 //  PA4 = RST
 //  PA5 = LIGHT
 //
-// Change pins below as needed. The backlight is optional, coudl be PWM'ed.
+// Change pins below as needed. The backlight is optional, could be PWM'ed.
 
 #include <jee.h>
 #include <jee/dio-pcd8544.h>
@@ -28,6 +28,7 @@ int main() {
 
     light.mode(Pinmode::out);
     lcd.init();
+    lcd.clear();
 
     while (1) {
         printf("%d ", ticks);

@@ -50,7 +50,7 @@ struct SSD1306 {
 
         I2C::start(addr<<1);
         I2C::write(0x40);
-        for (int i = 0; i < 1024; ++i)
+        for (int i = 0; i < 8*128; ++i)
             I2C::write(0);
         I2C::stop();
     }
