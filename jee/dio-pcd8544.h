@@ -2,6 +2,9 @@
 
 template< typename C, typename I, typename D, typename E, typename R >
 struct PCD8544 {
+    constexpr static int width = 84;
+    constexpr static int height = 48;
+
     static void init (int contrast =0x38) {
         ck.mode(Pinmode::out);
         in.mode(Pinmode::out);
@@ -36,7 +39,7 @@ struct PCD8544 {
 
         dc = 1;
         en = 0;
-        for (int i = 0; i < 6*84; ++i)
+        for (int i = 0; i < width*height/8; ++i)
             write(0);
         en = 1;
         dc = 0;

@@ -2,6 +2,9 @@
 
 template< typename I2C, int addr =0x3C >
 struct SSD1306 {
+    constexpr static int width = 128;
+    constexpr static int height = 64;
+
     static void init () {
         static uint8_t config [] = {
             0xAE,  // DISPLAYOFF
@@ -50,7 +53,7 @@ struct SSD1306 {
 
         I2C::start(addr<<1);
         I2C::write(0x40);
-        for (int i = 0; i < 8*128; ++i)
+        for (int i = 0; i < width*height/8; ++i)
             I2C::write(0);
         I2C::stop();
     }
