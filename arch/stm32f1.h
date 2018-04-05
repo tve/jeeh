@@ -264,3 +264,55 @@ static int fullSpeedClock () {
     MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
     return hz;
 }
+
+// real-time clock
+
+struct RTC {
+    constexpr static uint32_t bdcr = Periph::rcc + 0x20;
+    constexpr static uint32_t pwr  = 0x40007000;
+    constexpr static uint32_t rtc  = 0x40002800;
+    constexpr static uint32_t crl  = rtc + 0x04;
+    constexpr static uint32_t prll = rtc + 0x0C;
+    constexpr static uint32_t cnth = rtc + 0x18;
+    constexpr static uint32_t cntl = rtc + 0x1C;
+
+    static void init () {
+        MMIO32(Periph::rcc + 0x18) |= (0b11 << 27);  // enable PWREN and BKPEN
+        MMIO32(pwr) |= (1 << 8);          // set DBP
+        MMIO32(bdcr) |= (1 << 16);        // reset backup domain
+        MMIO32(bdcr) &= ~(1 << 16);       // release backup domain
+        MMIO32(bdcr) |= (1 << 0);         // LESON backup domain
+        wait();
+        MMIO32(bdcr) |= (1 << 8);         // RTSEL = LSE
+        MMIO32(bdcr) |= (1 << 15);        // RTCEN
+        MMIO32(crl) &= ~(1 << 3) ;        // clear RSF
+        while (MMIO32(crl) & (1 << 3)) ;  // wait for RSF
+        wait();
+        MMIO32(crl) |= (1 << 4);          // set CNF
+        MMIO32(prll) = 32767;             // set PRLL for 32 kHz crystal
+        MMIO32(crl) &= ~(1 << 4);         // clear CNF
+        wait();
+    }
+
+    static void wait () {
+        while ((MMIO32(bdcr) & (1<<1)) == 0) ;
+    }
+
+    operator int () {
+        while (true) {
+            uint16_t lo = MMIO32(cntl);
+            uint16_t hi = MMIO32(cnth);
+            if (lo == MMIO32(cntl))
+                return lo | (hi << 16);
+            // if low word changed, try again
+        }
+    }
+
+    void operator= (int v) {
+        wait();
+        MMIO32(crl) |= (1 << 4);      // set CNF
+        MMIO32(cntl) = (uint16_t) v;  // set lower 16 bits
+        MMIO32(cnth) = v >> 16;       // set upper 16 bits
+        MMIO32(crl) &= ~(1 << 4);     // clear CNF
+    }
+};
