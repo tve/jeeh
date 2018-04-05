@@ -3,6 +3,9 @@
 
 template< typename MO, typename MI, typename CK, typename SS>
 struct ILI9325 {
+    constexpr static int width = 320;
+    constexpr static int height = 240;
+
     static void init () {
         for (uint16_t const* p = config; p[0] != 9999; p += 2)
             if (p[0] == 999)
@@ -48,7 +51,7 @@ struct ILI9325 {
 
         spi.enable();
         spi.transfer(0x72);
-        for (int i = 1; i < 240 * 320 - 1; ++i) {
+        for (int i = 1; i < width * height; ++i) {
             spi.transfer(0);
             spi.transfer(0);
         }
