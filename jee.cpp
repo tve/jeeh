@@ -71,7 +71,7 @@ static void putFiller (void (*emit)(int), int n, char fill) {
 void putInt (void (*emit)(int), int val, int base, int width, char fill) {
     uint8_t buf [32];
     int n;
-    if (val < 0) {
+    if (val < 0 && base == 10) {
         n = splitInt(-val, base, buf);
         if (fill != ' ')
             emit('-');
