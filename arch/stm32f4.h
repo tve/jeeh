@@ -242,3 +242,29 @@ RingBuffer<N> UartBufDev<TX,RX,N>::recv;
 
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+
+// system clock
+// FIXME - appears to be a bit erratic on F407VE eBay board (h/w or s/w issue?)
+
+static void enableClkAt168mhz () {
+    constexpr uint32_t rcc   = 0x40023800;
+    constexpr uint32_t flash = 0x40023C00;
+
+    MMIO32(flash + 0x00) = 0x103; // flash acr, 3 wait states
+    MMIO32(rcc + 0x00) = (1<<16); // HSEON
+    while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
+    MMIO32(rcc + 0x08) = 1; // switch to HSE
+    MMIO32(rcc + 0x04) = (7<<24) | (1<<22) | (0<<16) | (336<<6) | (8<<0);
+    MMIO32(rcc + 0x00) |= (1<<24); // PLLON
+    while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
+    MMIO32(rcc + 0x08) = (4<<13) | (5<<10) | (1<<1);
+}
+
+static int fullSpeedClock () {
+    constexpr uint32_t hz = 168000000;
+    enableClkAt168mhz();                // using external 8 MHz crystal
+    enableSysTick(hz/1000);             // systick once every 1 ms
+    // TODO USART1 is still running off the (less accurate) 16 MHz HSI clock
+    // MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
+    return hz;
+}
