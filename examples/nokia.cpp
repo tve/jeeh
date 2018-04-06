@@ -1,15 +1,14 @@
 // Print some numbers to an 84x48 Nokia 5110 graphics LCD.
 //
 // This assumes that the display is connected as follows:
-//
 //  PA0 = CLK
 //  PA1 = DIN
 //  PA2 = DC
 //  PA3 = CE
 //  PA4 = RST
 //  PA5 = LIGHT
-//
-// Change pins below as needed. The backlight is optional, could be PWM'ed.
+// Change pins below as needed.
+// The backlight is optional, could be PWM'ed.
 
 #include <jee.h>
 #include <jee/dio-pcd8544.h>

@@ -4,7 +4,8 @@
 //  STB => Pin A6
 //  CLK => Pin A5
 //  DIO => Pin A4
-// Adjust pins as needed below. Kepresses are reported on the serial console.
+// Change pins below as needed.
+// Kepresses are reported on the serial console.
 //
 // The board is available from eBay, e.g. https://www.ebay.com/itm/400531985021
 
