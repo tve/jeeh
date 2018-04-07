@@ -2,7 +2,7 @@
 
 // driver for WinBond W25Qxx spi flash memory
 
-template< SPI >
+template< typename SPI >
 class SpiFlash {
     static void cmd (int arg) {
         SPI::enable();
