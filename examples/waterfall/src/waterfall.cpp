@@ -57,6 +57,7 @@ int main () {
     rtpcs = 1;
     rtpcs.mode(Pinmode::out);
 
+    spiB.init();
     lcd.init();
     lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
     lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
@@ -64,6 +65,7 @@ int main () {
 
     initPalette();
 
+    spiA.init();
     rf.init(63, 42, 8683);    // node 63, group 42, 868.3 MHz
     rf.writeReg(0x29, 0xFF);  // minimal RSSI threshold
     rf.writeReg(0x2E, 0xB8);  // sync size 7+1

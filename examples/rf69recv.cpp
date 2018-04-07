@@ -16,6 +16,7 @@ PinC<13> led;
 
 int main () {
     led.mode(Pinmode::out);
+    spi.init();
     rf.init(63, 42, 8683);  // node 63, group 42, 868.3 MHz
 
     while (true) {
