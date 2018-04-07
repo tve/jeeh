@@ -1,8 +1,12 @@
 # JeeH
 
-Headers for framework-agnostic code.
+Headers for framework-and platform-agnostic code.
 
-> Note: This is just a landing spot for a crazy idea ...
+* This code can be used in combination with arduino, libopencm3, mbed, and other frameworks.
+* A C++ compiler with C++11 support is required, due to the heavy use of C++ templates.
+* The resulting code is small (_really small_, sometimes) and fast (_really fast_, sometimes).
+* Everything here is in flux. API's will change, as better idioms are being discovered.
+* This library is intended for use with [PlatformIO](https://platformio.org/lib/show/3082/JeeH): just add `JeeH` to `lib_deps`.
 
 ### License
 
