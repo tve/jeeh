@@ -9,7 +9,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-SpiDev< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
 RF69< decltype(spi) > rf;
 
 PinC<13> led;

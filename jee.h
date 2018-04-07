@@ -104,7 +104,7 @@ struct SlowPin : public T {
 // spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
-struct SpiDev {
+struct SpiGpio {
     static void init () {
         SS::write(1);
         SS::mode(Pinmode::out);
