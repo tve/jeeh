@@ -33,6 +33,14 @@ struct RF69 {
     void writeReg (uint8_t addr, uint8_t val) {
         SPI::rwReg(addr | 0x80, val);
     }
+    // TODO somewhat redundant to have readReg, writeReg, and rwReg ...
+    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
+        enable();
+        transfer(cmd);
+        uint8_t r = transfer(val);
+        disable();
+        return r;
+    }
 
     enum {
         REG_FIFO          = 0x00,

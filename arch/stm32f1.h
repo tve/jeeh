@@ -349,12 +349,4 @@ struct SpiHw {
         while ((MMIO32(sr) & 1) == 0) ;
         return MMIO32(dr);
     }
-
-    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
-        enable();
-        transfer(cmd);
-        uint8_t r = transfer(val);
-        disable();
-        return r;
-    }
 };

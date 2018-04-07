@@ -129,14 +129,6 @@ public:
         return v;
     }
 
-    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
-        enable();
-        transfer(cmd);
-        uint8_t r = transfer(val);
-        disable();
-        return r;
-    }
-
     static MO mosi;
     static MI miso;
     static CK sclk;
