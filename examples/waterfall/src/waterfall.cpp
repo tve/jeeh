@@ -11,8 +11,11 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-RF69< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;
-ILI9325< PinB<5>, PinB<4>, PinB<3>, PinB<0> > lcd;
+SpiDev< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiA;
+RF69< decltype(spiA) > rf;
+
+SpiDev< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiB;
+ILI9325< decltype(spiB) > lcd;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
