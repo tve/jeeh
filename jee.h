@@ -104,56 +104,30 @@ struct SlowPin : public T {
 // spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
-class SpiDev {
-public:
-    SpiDev () {
-        nsel = 1;
-        nsel.mode(Pinmode::out);
-        sclk = CP;
-        sclk.mode(Pinmode::out);
-        miso.mode(Pinmode::in_float);
-        mosi.mode(Pinmode::out);
+struct SpiGpio {
+    static void init () {
+        SS::write(1);
+        SS::mode(Pinmode::out);
+        CK::write(CP);
+        CK::mode(Pinmode::out);
+        MI::mode(Pinmode::in_float);
+        MO::mode(Pinmode::out);
     }
 
-    static void enable () { nsel = 0; }
-    static void disable () { nsel = 1; }
+    static void enable () { SS::write(0); }
+    static void disable () { SS::write(1); }
 
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
-            mosi = v & 0x80;
-            sclk = !CP;
+            MO::write(v & 0x80);
+            CK::write(!CP);
             v <<= 1;
-            v |= miso;
-            sclk = CP;
+            v |= MI::read();
+            CK::write(CP);
         }
         return v;
     }
-
-    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
-        enable();
-        transfer(cmd);
-        uint8_t r = transfer(val);
-        disable();
-        return r;
-    }
-
-    static MO mosi;
-    static MI miso;
-    static CK sclk;
-    static SS nsel;
 };
-
-template< typename MO, typename MI, typename CK, typename SS, int CP >
-MO SpiDev<MO,MI,CK,SS,CP>::mosi;
-
-template< typename MO, typename MI, typename CK, typename SS, int CP >
-MI SpiDev<MO,MI,CK,SS,CP>::miso;
-
-template< typename MO, typename MI, typename CK, typename SS, int CP >
-CK SpiDev<MO,MI,CK,SS,CP>::sclk;
-
-template< typename MO, typename MI, typename CK, typename SS, int CP >
-SS SpiDev<MO,MI,CK,SS,CP>::nsel;
 
 // i2c, bit-banged on any gpio pins
 

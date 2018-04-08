@@ -2,16 +2,16 @@
 //
 // Some cards may not work, this does not use slow SPI access during init.
 
-template< typename MO, typename MI, typename CK, typename SS >
+template< typename SPI >
 struct SdCard {
     static bool init () {
         // try *without* and then *with* HCS bit 30 set
         // this determines whether it's an SD (v1) or an SDHC (v2) card
         for (sdhc = 0; sdhc < 2; ++sdhc) {
             // reset SPI register to known state
-            spi.disable();
+            SPI::disable();
             for (int i = 0; i < 10; ++i)
-                spi.transfer(0xFF);
+                SPI::transfer(0xFF);
 
             bool ok = false;
             for (int i = 0; !ok && i < 100; ++i)
@@ -33,9 +33,9 @@ struct SdCard {
     static void read512 (int page, void* buf) {
         int last = cmd(17, sdhc ? page : page << 9);
         while (last != 0xFE)
-            last = spi.transfer(0xFF);
+            last = SPI::transfer(0xFF);
         for (int i = 0; i < 512; ++i)
-            ((uint8_t*) buf)[i] = spi.transfer(0xFF);
+            ((uint8_t*) buf)[i] = SPI::transfer(0xFF);
         send16b(0xFFFF);
         wait();
     }
@@ -44,43 +44,39 @@ struct SdCard {
         cmd(24, sdhc ? page : page << 9);
         send16b(0xFFFE);
         for (int i = 0; i < 512; ++i)
-            spi.transfer(((uint8_t const*) buf)[i]);
+            SPI::transfer(((uint8_t const*) buf)[i]);
         send16b(0xFFFF);
         wait();
     }
 
     static void send16b (uint16_t v) {
-        spi.transfer(v >> 8);
-        spi.transfer(v);
+        SPI::transfer(v >> 8);
+        SPI::transfer(v);
     }
 
     static int cmd (int req, uint32_t arg, uint8_t crc =0) {
-        spi.disable();
+        SPI::disable();
 
-        spi.enable();
+        SPI::enable();
         send16b(0xFF40 | req);
         send16b(arg >> 16);
         send16b(arg);
-        spi.transfer(crc);
+        SPI::transfer(crc);
 
         for (;;) {
-            int r = spi.transfer(0xFF);
+            int r = SPI::transfer(0xFF);
             if ((r & 0x80) == 0)
                 return r;
         }
     }
 
     static void wait () {
-        while (spi.transfer(0xFF) != 0xFF) ;
-        spi.disable();
+        while (SPI::transfer(0xFF) != 0xFF) ;
+        SPI::disable();
     }
 
-    static SpiDev<MO,MI,CK,SS> spi;
     static uint8_t sdhc; // 0 = SD, 1 = SDHC
 };
 
-template< typename MO, typename MI, typename CK, typename SS >
-SpiDev<MO,MI,CK,SS> SdCard<MO,MI,CK,SS>::spi;
-
-template< typename MO, typename MI, typename CK, typename SS >
-uint8_t SdCard<MO,MI,CK,SS>::sdhc;
+template< typename SPI >
+uint8_t SdCard<SPI>::sdhc;

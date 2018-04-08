@@ -3,7 +3,6 @@
 
 #include <jee.h>
 #include <jee/spi-rf69.h>
-#include <jee/spi-ili9325.h>
 
 UartDev< PinA<9>, PinA<10> > console;
 
@@ -11,8 +10,18 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-RF69< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;
-ILI9325< PinB<5>, PinB<4>, PinB<3>, PinB<0> > lcd;
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
+
+#if 1
+#include <jee/spi-ili9325.h>
+ILI9325< decltype(spiA) > lcd;
+#else
+#include <jee/spi-ili9341.h>
+ILI9341< decltype(spiA), PinA<3> > lcd;
+#endif
+
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+RF69< decltype(spiB) > rf;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
@@ -54,13 +63,13 @@ int main () {
     rtpcs = 1;
     rtpcs.mode(Pinmode::out);
 
+    spiA.init();
     lcd.init();
-    lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
-    lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
     // lcd.clear();
 
     initPalette();
 
+    spiB.init();
     rf.init(63, 42, 8683);    // node 63, group 42, 868.3 MHz
     rf.writeReg(0x29, 0xFF);  // minimal RSSI threshold
     rf.writeReg(0x2E, 0xB8);  // sync size 7+1
@@ -78,14 +87,14 @@ int main () {
     }
     printf("\n");
 
-    static uint16_t scan [240];
+    static uint16_t pixelRow [lcd.width];
     rf.setMode(rf.MODE_RECEIVE);
 
     while (true) {
         uint32_t start = ticks;
 
-        for (int x = 0; x < 320; ++x) {
-            lcd.write(0x6A, x);  // scroll
+        for (int y = 0; y < lcd.height; ++y) {
+            //lcd.write(0x6A, y);  // scroll
 
             // 868.3 MHz = 0xD91300, with 80 steps per pixel, a sweep can cover
             // 240*80*61.03515625 = 1,171,875 Hz, i.e. slightly under ± 600 kHz
@@ -93,8 +102,8 @@ int main () {
             constexpr uint32_t step = 80;
             uint32_t first = middle - 120 * step;
 
-            for (int y = 0; y < 240; ++y) {
-                uint32_t freq = first + y * step;
+            for (int x = 0; x < lcd.width; ++x) {
+                uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
                 rf.writeReg(rf.REG_FRFMSB+2, freq);
@@ -107,12 +116,13 @@ int main () {
                 uint8_t rssi = ~sum >> 2;
 #endif
                 // add some grid points for reference
-                if ((x & 0x1F) == 0 && y % 40 == 0)
+                if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
-                scan[y] = palette[rssi];
+                pixelRow[x] = palette[rssi];
             }
 
-            lcd.pixels(0, x, scan, 240);  // update display
+            lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
+            lcd.pixels(0, y, pixelRow, lcd.width);  // update the display
         }
 
         printf("%d ms\n", ticks - start);

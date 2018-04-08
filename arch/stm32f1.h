@@ -316,3 +316,37 @@ struct RTC {
         MMIO32(crl) &= ~(1 << 4);     // clear CNF
     }
 };
+
+// hardware spi support (TODO only SPI1 for now)
+
+template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
+struct SpiHw {
+    constexpr static uint32_t spi1 = 0x40013000;
+    constexpr static uint32_t cr1 = spi1 + 0x00;
+    constexpr static uint32_t cr2 = spi1 + 0x04;
+    constexpr static uint32_t sr  = spi1 + 0x08;
+    constexpr static uint32_t dr  = spi1 + 0x0C;
+
+    static void init () {
+        disable();
+        SS::mode(Pinmode::out);
+        CK::mode(Pinmode::alt_out);
+        MI::mode(Pinmode::in_float);
+        MO::mode(Pinmode::alt_out);
+
+        MMIO32(Periph::rcc + 0x18) |= (1<<12);  // SPI1EN
+        // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)
+        MMIO32(cr1) = (1<<6) | (2<<3) | (1<<2) | (CP<<1);
+        (void) MMIO32(sr);  // appears to be needed to avoid hang in some cases
+        MMIO32(cr1) |= (1<<2);  // SSOE
+    }
+
+    static void enable () { SS::write(0); }
+    static void disable () { SS::write(1); }
+
+    static uint8_t transfer (uint8_t v) {
+        MMIO32(dr) = v;
+        while ((MMIO32(sr) & 1) == 0) ;
+        return MMIO32(dr);
+    }
+};

@@ -17,22 +17,39 @@ struct Font5x7 {
                 y = 0;
             // fill the new line with spaces
             for (int i = 0; i < width-5; i += S)
-                T::copyBand(y, i, font5x7, 5);
+                T::copyBand(i, y, font5x7, 5);
         }
         if (c != '\n') {
             if (c < ' ' || c > 127)
                 c = 127;
             uint8_t const* p = font5x7 + 5 * (c-' ');
-            T::copyBand(y, x, p, 5);
+            T::copyBand(x, y, p, 5);
             x += S;
         }
     }
 
-    static uint8_t y, x;
+    static uint16_t y, x;
 };
 
 template< typename T, int S >
-uint8_t Font5x7<T,S>::y;
+uint16_t Font5x7<T,S>::y;
 
 template< typename T, int S >
-uint8_t Font5x7<T,S>::x;
+uint16_t Font5x7<T,S>::x;
+
+// optional adapter to print text on pixel-oriented displays
+
+template< typename LCD >
+struct TextLcd : LCD {
+    // TODO write the vertically and enable hardware vertical scrolling
+    static void copyBand (int x, int y, uint8_t const* ptr, int len) {
+        // TODO this is very inefficient code, but it avoids an extra buffer
+        for (int xi = 0; xi < len; ++xi) {
+            uint8_t v = *ptr++;
+            for (int yi = 0; yi < 8; ++yi) {
+                LCD::pixel(x+xi, y+yi, v&1 ? 0xFFFF : 0x0000);
+                v >>= 1;
+            }
+        }
+    }
+};
