@@ -82,8 +82,8 @@ void testPattern() {
 }
 
 int main () {
-    fullSpeedClock();
-    //enableSysTick();
+    //fullSpeedClock();
+    enableSysTick();
     printf("\r\n===== Waterfall 2 starting...\r\n");
 
     // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
@@ -117,7 +117,7 @@ int main () {
     testPattern();
     //lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
     //lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
-    // lcd.clear();
+    lcd.clear();
 
     initPalette();
 

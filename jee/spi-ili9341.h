@@ -38,11 +38,11 @@ struct ILI9341 {
     static void pixel (int x, int y, uint16_t rgb) {
         spi.enable();
 
-        cmd(0x2A);
+        cmd(0x2B);
         out16(x);
         out16(width-1);
 
-        cmd(0x2B);
+        cmd(0x2A);
         out16(y);
         out16(height-1);
 
@@ -94,7 +94,7 @@ uint8_t const ILI9341<MO,MI,CK,SS,DC>::config [] = {
     0xC1, 1, 0x10,                           // PWCTR2
     0xC5, 2, 0x3e, 0x28,                     // VMCTR1
     0xC7, 1, 0x86,                           // VMCTR2
-    0x36, 1, 0x88,                           // memory access ctrl: column order, BGR filter
+    0x36, 1, 0x68,                           // memory access ctrl: column order, BGR filter
     0x37, 2, 0, 0,                           // vertical scrolling start
     0x3A, 1, 0x55,                           // pixel format: 16 bits/pixel
     0xB1, 2, 0x00, 0x18,                     // FRMCTR1
