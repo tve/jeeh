@@ -86,19 +86,20 @@ extern uint32_t volatile ticks;
 
 extern void wait_ms (uint32_t ms);
 
-template< int HZ >
+template< uint32_t HZ >
 struct SysTick {
-    // FIXME this is ARM-specific, needs to move out to support other µCs
+    // FIXME this is ARM-specific, must move elsewhere to support other µCs
     constexpr static uint32_t tick = 0xE000E000;
 
     static uint32_t us () {
-        int t, u;
+        uint32_t t, u;
         do {
             t = ticks;
             u = MMIO32(tick + 0x18);
         } while (t != ticks);
         uint32_t v = MMIO32(tick + 0x14) + 1 - u;
-        return t * 1000 + (v / (HZ / 1000000));
+        // keep as much precision as possible, i.e. sysclk in 10 KHz steps
+        return t * 1000 + ((v * 100) / (HZ / 10000));
     }
 
     static void micros (int n) {
