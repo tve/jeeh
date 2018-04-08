@@ -3,7 +3,6 @@
 
 #include <jee.h>
 #include <jee/spi-rf69.h>
-#include <jee/spi-ili9325.h>
 
 UartDev< PinA<9>, PinA<10> > console;
 
@@ -12,7 +11,14 @@ void printf(const char* fmt, ...) {
 }
 
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
+
+#if 0
+#include <jee/spi-ili9325.h>
 ILI9325< decltype(spiA) > lcd;
+#else
+#include <jee/spi-ili9341.h>
+ILI9341< decltype(spiA), PinA<3> > lcd;
+#endif
 
 SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
