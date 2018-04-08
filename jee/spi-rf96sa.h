@@ -21,10 +21,17 @@ struct RF96sa {
     void sleep ();
 
     uint8_t readReg (uint8_t addr) {
-        return SPI::rwReg(addr, 0);
+        return rwReg(addr, 0);
     }
     void writeReg (uint8_t addr, uint8_t val) {
-        SPI::rwReg(addr | 0x80, val);
+        rwReg(addr | 0x80, val);
+    }
+    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
+        SPI::enable();
+        SPI::transfer(cmd);
+        uint8_t r = SPI::transfer(val);
+        SPI::disable();
+        return r;
     }
 
     enum {

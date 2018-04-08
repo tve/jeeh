@@ -61,7 +61,6 @@ static void initPalette () {
 PinA<1> led;
 
 void testPattern() {
-    lcd.clear();
     wait_ms(500);
 
     for (int x = 0; x < 240; ++x) {
@@ -102,8 +101,8 @@ void testPattern() {
 }
 
 int main () {
-    fullSpeedClock();
-    //enableSysTick();
+    //fullSpeedClock();
+    enableSysTick();
     printf("\r\n===== Waterfall 2 starting...\r\n");
 
     // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
@@ -120,10 +119,11 @@ int main () {
     PinB<7> lcd_reset;
     lcd_reset = 0;
     lcd_reset.mode(Pinmode::out);
-    wait_ms(1);
-    lcd_reset = 1;
-    // init the LCD controller
     spiA.init();
+    wait_ms(2);
+    lcd_reset = 1;
+    wait_ms(10); // data sheet says to wait 5ms
+    // init the LCD controller
     lcd.init();
     // turn backlighting on
     PinA<15> lcd_light;
@@ -134,8 +134,8 @@ int main () {
     printf("PB crh: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+4));
     printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
 
-    //testPattern();
     lcd.clear();
+    testPattern();
 
     initPalette();
 

@@ -10,6 +10,22 @@ struct ILI9341 {
         DC::mode(Pinmode::out);
         SPI::enable();
 
+        cmd(0x09); // read display status
+        SPI::transfer(0);
+        uint32_t st = SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        printf("Disp status: %08x\r\n", st);
+
+        cmd(0x04); // read display ID
+        SPI::transfer(0);
+        st = SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        printf("Disp ID: %08x\r\n", st);
+
         static uint8_t const config [] = {
             // cmd, count, data bytes ...
             0xEF, 3, 0x03, 0x80, 0x02,               // ??
@@ -43,11 +59,18 @@ struct ILI9341 {
             while (--n >= 0)
                 SPI::transfer(*++p);
         }
+        wait_ms(120);
 
         bounds();
-
-        wait_ms(120);
         cmd(0x29);      // DISPON
+        cmd(0x09); // read display status
+        SPI::transfer(0);
+        st = SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        st = (st<<8) | SPI::transfer(0);
+        printf("Disp status: %08x\r\n", st);
+
         SPI::disable();
     }
 
@@ -76,7 +99,7 @@ struct ILI9341 {
         cmd(0x2C);
         out16(rgb);
 
-        SPI::disable();
+        //SPI::disable();
     }
 
     static void pixels (int x, int y, uint16_t const* rgb, int len) {
@@ -96,12 +119,13 @@ struct ILI9341 {
     }
 
     static void clear () {
+        SPI::enable();
         bounds();
         pixel(0, 0, 0);
 
         SPI::enable();
         for (int i = 1; i < width * height; ++i)
-            out16(0);
+            out16(i);
         SPI::disable();
     }
 
