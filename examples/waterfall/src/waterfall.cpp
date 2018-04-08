@@ -81,7 +81,7 @@ int main () {
     }
     printf("\n");
 
-    static uint16_t scan [lcd.width];
+    static uint16_t pixelRow [lcd.width];
     rf.setMode(rf.MODE_RECEIVE);
 
     while (true) {
@@ -112,11 +112,11 @@ int main () {
                 // add some grid points for reference
                 if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
-                scan[x] = palette[rssi];
+                pixelRow[x] = palette[rssi];
             }
 
             lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
-            lcd.pixels(0, y, scan, lcd.width);  // update display
+            lcd.pixels(0, y, pixelRow, lcd.width);  // update the display
         }
 
         printf("%d ms\n", ticks - start);
