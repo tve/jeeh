@@ -11,7 +11,7 @@
 #define Yield()
 #endif
 
-template< typename MO, typename MI, typename CK, typename SS >
+template< typename SPI >
 struct RF69 {
     void init (uint8_t id, uint8_t group, int freq);
     void encrypt (const char* key);
@@ -28,10 +28,18 @@ struct RF69 {
     uint8_t parity;
 
     uint8_t readReg (uint8_t addr) {
-        return spi.rwReg(addr, 0);
+        return rwReg(addr, 0);
     }
     void writeReg (uint8_t addr, uint8_t val) {
-        spi.rwReg(addr | 0x80, val);
+        rwReg(addr | 0x80, val);
+    }
+    // TODO somewhat redundant to have readReg, writeReg, and rwReg ...
+    static uint8_t rwReg (uint8_t cmd, uint8_t val) {
+        SPI::enable();
+        SPI::transfer(cmd);
+        uint8_t r = SPI::transfer(val);
+        SPI::disable();
+        return r;
     }
 
     enum {
@@ -77,22 +85,21 @@ struct RF69 {
     void configure (const uint8_t* p);
     void setFrequency (uint32_t freq);
 
-    SpiDev< MO, MI, CK, SS > spi;
     uint8_t mode;
 };
 
 // driver implementation
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::setMode (uint8_t newMode) {
+template< typename SPI >
+void RF69<SPI>::setMode (uint8_t newMode) {
     mode = newMode;
     writeReg(REG_OPMODE, (readReg(REG_OPMODE) & 0xE3) | newMode);
     while ((readReg(REG_IRQFLAGS1) & IRQ1_MODEREADY) == 0)
         Yield();
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::setFrequency (uint32_t hz) {
+template< typename SPI >
+void RF69<SPI>::setFrequency (uint32_t hz) {
     // accept any frequency scale as input, including KHz and MHz
     // multiply by 10 until freq >= 100 MHz (don't specify 0 as input!)
     while (hz < 100000000)
@@ -109,8 +116,8 @@ void RF69<MO,MI,CK,SS>::setFrequency (uint32_t hz) {
     writeReg(REG_FRFMSB+2, frf << 6);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::configure (const uint8_t* p) {
+template< typename SPI >
+void RF69<SPI>::configure (const uint8_t* p) {
     while (true) {
         uint8_t cmd = p[0];
         if (cmd == 0)
@@ -146,8 +153,8 @@ static const uint8_t configRegs [] = {
     0
 };
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::init (uint8_t id, uint8_t group, int freq) {
+template< typename SPI >
+void RF69<SPI>::init (uint8_t id, uint8_t group, int freq) {
     myId = id;
 
     // b7 = group b7^b5^b3^b1, b6 = group b6^b4^b2^b0
@@ -167,8 +174,8 @@ void RF69<MO,MI,CK,SS>::init (uint8_t id, uint8_t group, int freq) {
     writeReg(REG_SYNCVALUE2, group);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::encrypt (const char* key) {
+template< typename SPI >
+void RF69<SPI>::encrypt (const char* key) {
     uint8_t cfg = readReg(REG_PKTCONFIG2) & ~0x01;
     if (key) {
         for (int i = 0; i < 16; ++i) {
@@ -181,18 +188,18 @@ void RF69<MO,MI,CK,SS>::encrypt (const char* key) {
     writeReg(REG_PKTCONFIG2, cfg);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::txPower (uint8_t level) {
+template< typename SPI >
+void RF69<SPI>::txPower (uint8_t level) {
     writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & ~0x1F) | level);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::sleep () {
+template< typename SPI >
+void RF69<SPI>::sleep () {
     setMode(MODE_SLEEP);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
+template< typename SPI >
+int RF69<SPI>::receive (void* ptr, int len) {
     if (mode != MODE_RECEIVE)
         setMode(MODE_RECEIVE);
     else {
@@ -203,11 +210,11 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
                 rssi = readReg(REG_RSSIVALUE);
                 lna = (readReg(REG_LNAVALUE) >> 3) & 0x7;
 #if RF69_SPI_BULK
-                spi.enable();
-                spi.transfer(REG_AFCMSB);
-                afc = spi.transfer(0) << 8;
-                afc |= spi.transfer(0);
-                spi.disable();
+                SPI::enable();
+                SPI::transfer(REG_AFCMSB);
+                afc = SPI::transfer(0) << 8;
+                afc |= SPI::transfer(0);
+                SPI::disable();
 #else
                 afc = readReg(REG_AFCMSB) << 8;
                 afc |= readReg(REG_AFCLSB);
@@ -218,15 +225,15 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
         if (readReg(REG_IRQFLAGS2) & IRQ2_PAYLOADREADY) {
 
 #if RF69_SPI_BULK
-            spi.enable();
-            spi.transfer(REG_FIFO);
-            int count = spi.transfer(0);
+            SPI::enable();
+            SPI::transfer(REG_FIFO);
+            int count = SPI::transfer(0);
             for (int i = 0; i < count; ++i) {
-                uint8_t v = spi.transfer(0);
+                uint8_t v = SPI::transfer(0);
                 if (i < len)
                     ((uint8_t*) ptr)[i] = v;
             }
-            spi.disable();
+            SPI::disable();
 #else
             int count = readReg(REG_FIFO);
             for (int i = 0; i < count; ++i) {
@@ -249,19 +256,19 @@ int RF69<MO,MI,CK,SS>::receive (void* ptr, int len) {
     return -1;
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF69<MO,MI,CK,SS>::send (uint8_t header, const void* ptr, int len) {
+template< typename SPI >
+void RF69<SPI>::send (uint8_t header, const void* ptr, int len) {
     setMode(MODE_SLEEP);
 
 #if RF69_SPI_BULK
-    spi.enable();
-    spi.transfer(REG_FIFO | 0x80);
-    spi.transfer(len + 2);
-    spi.transfer((header & 0x3F) | parity);
-    spi.transfer((header & 0xC0) | myId);
+    SPI::enable();
+    SPI::transfer(REG_FIFO | 0x80);
+    SPI::transfer(len + 2);
+    SPI::transfer((header & 0x3F) | parity);
+    SPI::transfer((header & 0xC0) | myId);
     for (int i = 0; i < len; ++i)
-        spi.transfer(((const uint8_t*) ptr)[i]);
-    spi.disable();
+        SPI::transfer(((const uint8_t*) ptr)[i]);
+    SPI::disable();
 #else
     writeReg(REG_FIFO, len + 2);
     writeReg(REG_FIFO, (header & 0x3F) | parity);

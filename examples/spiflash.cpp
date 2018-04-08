@@ -9,9 +9,13 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-SpiFlash< PinA<7>, PinA<6>, PinA<5>, PinA<4> > mem;  // default SPI1 pins
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
+SpiFlash< decltype(spi) > mem;  // default SPI1 pins
 
 int main () {
+    spi.init();
+    mem.init();
+
     printf("id %06x, %dK\n", mem.devId(), mem.size());
 
     mem.erase(0);

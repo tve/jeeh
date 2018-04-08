@@ -9,12 +9,14 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-RF69< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;  // default SPI1 pins
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
+RF69< decltype(spi) > rf;
 
 PinC<13> led;
 
 int main () {
     led.mode(Pinmode::out);
+    spi.init();
     rf.init(63, 42, 8683);  // node 63, group 42, 868.3 MHz
 
     while (true) {

@@ -11,7 +11,7 @@
 #define Yield()
 #endif
 
-template< typename MO, typename MI, typename CK, typename SS >
+template< typename SPI >
 struct RF96sa {
     void init (uint8_t bw=0, bool hf=true); // init radio with HF/LF and given bandwidth config
     void setMode (uint8_t newMode);
@@ -21,10 +21,10 @@ struct RF96sa {
     void sleep ();
 
     uint8_t readReg (uint8_t addr) {
-        return spi.rwReg(addr, 0);
+        return SPI::rwReg(addr, 0);
     }
     void writeReg (uint8_t addr, uint8_t val) {
-        spi.rwReg(addr | 0x80, val);
+        SPI::rwReg(addr | 0x80, val);
     }
 
     enum {
@@ -44,14 +44,12 @@ struct RF96sa {
     };
 
     void configure(const uint8_t* p); // configure given an array of regs/values
-
-    SpiDev< MO, MI, CK, SS, 0 > spi;
 };
 
 // driver implementation
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF96sa<MO,MI,CK,SS>::setMode (uint8_t newMode) {
+template< typename SPI >
+void RF96sa<SPI>::setMode (uint8_t newMode) {
     writeReg(REG_OPMODE, (readReg(REG_OPMODE) & 0xF8) | newMode);
     while ((readReg(REG_IRQFLAGS1) & IRQ1_MODEREADY) == 0) {
         //printf("Mode new:%02x now:%02x IRQ:%02x\r\n", newMode, readReg(REG_OPMODE), readReg(REG_IRQFLAGS1));
@@ -60,8 +58,8 @@ void RF96sa<MO,MI,CK,SS>::setMode (uint8_t newMode) {
     }
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF96sa<MO,MI,CK,SS>::setFrequency (uint32_t hz) {
+template< typename SPI >
+void RF96sa<SPI>::setFrequency (uint32_t hz) {
     // accept any frequency scale as input, including KHz and MHz
     // multiply by 10 until freq >= 100 MHz (don't specify 0 as input!)
     while (hz < 100000000)
@@ -78,8 +76,8 @@ void RF96sa<MO,MI,CK,SS>::setFrequency (uint32_t hz) {
     writeReg(REG_FRFMSB+2, frf << 6);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF96sa<MO,MI,CK,SS>::configure (const uint8_t* p) {
+template< typename SPI >
+void RF96sa<SPI>::configure (const uint8_t* p) {
     while (true) {
         uint8_t cmd = p[0];
         if (cmd == 0)
@@ -110,9 +108,8 @@ static const struct { uint8_t bw; uint16_t br, fdev; } bwConfigs [] = {
     { 0x15, 3200, 164 }, // for 10kHz step: 10.4 RxBW (single-sided), 10kbps, 10kHz Fdev
 };
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF96sa<MO,MI,CK,SS>::init (uint8_t bw, bool hf) {
-    spi.init();
+template< typename SPI >
+void RF96sa<SPI>::init (uint8_t bw, bool hf) {
     configure(configRegs);
     writeReg(REG_OPMODE, readReg(REG_OPMODE) & (!hf << 3)); // set/clear HF mode
     auto c = bwConfigs[bw];
@@ -124,12 +121,12 @@ void RF96sa<MO,MI,CK,SS>::init (uint8_t bw, bool hf) {
     writeReg(0x05, c.fdev);    // set Fdev LSB
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-void RF96sa<MO,MI,CK,SS>::sleep () {
+template< typename SPI >
+void RF96sa<SPI>::sleep () {
     setMode(MODE_SLEEP);
 }
 
-template< typename MO, typename MI, typename CK, typename SS >
-uint8_t RF96sa<MO,MI,CK,SS>::rssi () {
+template< typename SPI >
+uint8_t RF96sa<SPI>::rssi () {
     return readReg(REG_RSSIVALUE)/2;
 }

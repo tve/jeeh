@@ -3,7 +3,6 @@
 
 #include <jee.h>
 #include <jee/spi-rf96sa.h>
-#include <jee/spi-ili9341.h>
 
 UartDev< PinA<9>, PinA<10> > console;
 
@@ -11,8 +10,27 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-RF96sa< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;
-ILI9341< PinB<5>, PinB<4>, PinB<3>, PinB<0>, PinB<6> > lcd;
+// Display
+
+#if 0
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
+#include <jee/spi-ili9325.h>
+ILI9325< decltype(spiA) > lcd;
+#else
+#include <jee/spi-ili9341.h>
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 0 > spiA;
+ILI9341< decltype(spiA), PinB<6> > lcd;
+#endif
+
+// Radio
+
+#if 0
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+RF69< decltype(spiB) > rf;
+#else
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+RF96sa< decltype(spiB) > rf;
+#endif
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
@@ -66,6 +84,7 @@ void testPattern() {
       lcd.pixel(i, i+240, 0x001F);
     }
     wait_ms(1000);
+#if 0
     for (int i=0; i<100; i++) {
       lcd.spi.enable();
       lcd.cmd(0x37);
@@ -73,6 +92,7 @@ void testPattern() {
       lcd.spi.disable();
       wait_ms(200);
     }
+#endif
 
     while (true) {
         printf("\r%d", ticks);
@@ -103,6 +123,7 @@ int main () {
     wait_ms(1);
     lcd_reset = 1;
     // init the LCD controller
+    spiA.init();
     lcd.init();
     // turn backlighting on
     PinA<15> lcd_light;
@@ -113,7 +134,6 @@ int main () {
     printf("PB crh: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+4));
     printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
 
-    lcd.init();
     //testPattern();
     lcd.clear();
 
@@ -125,6 +145,7 @@ int main () {
     wait_ms(1);
     rf_reset = 1;
     wait_ms(1);
+    spiB.init();
     rf.init(1, true);    // init for 10Khz steps
     rf.setFrequency(912); // start at 912Mhz for now...
 
@@ -142,29 +163,22 @@ int main () {
     printf("\r\n");
     wait_ms(500);
 
-    static uint16_t scan [240];
-    rf.setMode(rf.MODE_STANDBY);
-    rf.setMode(rf.MODE_FSRX);
+    static uint16_t pixelRow [lcd.width];
     rf.setMode(rf.MODE_RECEIVE);
-    wait_ms(100);
+    wait_ms(10);
 
     while (true) {
         uint32_t start = ticks;
 
-        for (int x = 0; x < 320; ++x) {
-            // scroll
-            lcd.spi.enable();
-            lcd.cmd(0x37);
-            lcd.out16(x);
-            lcd.spi.disable();
-            printf("Scan: ");
+        for (int y = 0; y < lcd.height; ++y) {
 
             constexpr uint32_t middle = (912000000<<2) / (32000000 >> 11);
             constexpr uint32_t step = 164;
             uint32_t first = middle - 120 * step;
 
-            for (int y = 0; y < 240; ++y) {
-                uint32_t freq = first + y * step;
+            printf("Scan: ");
+            for (int x = 0; x < 240; ++x) {
+                uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 10);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 2);
                 rf.writeReg(rf.REG_FRFMSB+2, freq << 6);
@@ -173,13 +187,14 @@ int main () {
                 printf(" %02x", rssi);
 
                 // add some grid points for reference
-                if ((x & 0x1F) == 0 && y % 40 == 0)
+                if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
-                scan[y] = palette[rssi];
+                pixelRow[x] = palette[rssi];
             }
             printf("\r\n"); wait_ms(100);
 
-            lcd.pixels(x, 0, scan, 240);  // update display
+            lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
+            lcd.pixels(y, 0, pixelRow, lcd.width);  // update display
         }
 
         printf("%d ms\n", ticks - start);
