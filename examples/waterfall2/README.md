@@ -5,7 +5,12 @@ This code produces a real-time [432-434] or [914-916] MHz spectrum "waterfall" d
 ![](waterfall.jpg)
 
 Colours are mapped from black (min) => blue => yellow => red => white (max).  
-The display scrolls smoothly and continuously from right to left, with a  
+The display scrolls smoothly and continuously from right to left.
+
+The frequency step is approx 10kHz, resulting in a width of `240*10=2.4Mhz` across the display.
+Each sweep takes approx 12ms and 4 sweeps are performed per pixel scan line.
+
+OLD: with a  
 horizontal marker every ≈ 420 ms, and a vertical marker every ≈ 200 KHz.  
 In other words: the screen shows approximately 4 seconds x 1200 KHz.
 

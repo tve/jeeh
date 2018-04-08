@@ -2,7 +2,7 @@
 // See https://github.com/jeelabs/jeeh/tree/master/examples/waterfall2
 
 #include <jee.h>
-#include <jee/spi-rf69.h>
+#include <jee/spi-rf96sa.h>
 #include <jee/spi-ili9341.h>
 
 UartDev< PinA<9>, PinA<10> > console;
@@ -11,7 +11,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-RF69< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;
+RF96sa< PinA<7>, PinA<6>, PinA<5>, PinA<4> > rf;
 ILI9341< PinB<5>, PinB<4>, PinB<3>, PinB<0>, PinB<6> > lcd;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
@@ -82,8 +82,8 @@ void testPattern() {
 }
 
 int main () {
-    //fullSpeedClock();
-    enableSysTick();
+    fullSpeedClock();
+    //enableSysTick();
     printf("\r\n===== Waterfall 2 starting...\r\n");
 
     // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
@@ -114,65 +114,72 @@ int main () {
     printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
 
     lcd.init();
-    testPattern();
-    //lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
-    //lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
+    //testPattern();
     lcd.clear();
 
     initPalette();
 
-    rf.init(63, 42, 8683);    // node 63, group 42, 868.3 MHz
-    rf.writeReg(0x29, 0xFF);  // minimal RSSI threshold
-    rf.writeReg(0x2E, 0xB8);  // sync size 7+1
-    rf.writeReg(0x58, 0x29);  // high sensitivity mode
-    rf.writeReg(0x19, 0x4C);  // reduced Rx bandwidth
+    PinA<11> rf_reset;
+    rf_reset = 0;
+    rf_reset.mode(Pinmode::out);
+    wait_ms(1);
+    rf_reset = 1;
+    wait_ms(1);
+    rf.init(1, true);    // init for 10Khz steps
+    rf.setFrequency(912); // start at 912Mhz for now...
 
-    // dump all RFM69 registers
+    printf("Radio rev: %02x\r\n", rf.readReg(0x42));
+
+    // dump all radio registers
     printf("   ");
     for (int i = 0; i < 16; ++i)
         printf("%3x", i);
     for (int i = 0; i < 0x80; i += 16) {
-        printf("\n%02x:", i);
+        printf("\r\n%02x:", i);
         for (int j = 0; j < 16; ++j)
             printf(" %02x", rf.readReg(i+j));
     }
-    printf("\n");
+    printf("\r\n");
+    wait_ms(500);
 
     static uint16_t scan [240];
+    rf.setMode(rf.MODE_STANDBY);
+    rf.setMode(rf.MODE_FSRX);
     rf.setMode(rf.MODE_RECEIVE);
+    wait_ms(100);
 
     while (true) {
         uint32_t start = ticks;
 
         for (int x = 0; x < 320; ++x) {
-            //lcd.write(0x6A, x);  // scroll
+            // scroll
+            lcd.spi.enable();
+            lcd.cmd(0x37);
+            lcd.out16(x);
+            lcd.spi.disable();
+            printf("Scan: ");
 
-            // 868.3 MHz = 0xD91300, with 80 steps per pixel, a sweep can cover
-            // 240*80*61.03515625 = 1,171,875 Hz, i.e. slightly under ± 600 kHz
-            constexpr uint32_t middle = 0xD91300;  // 0xE4C000 for 915.0 MHz
-            constexpr uint32_t step = 80;
+            constexpr uint32_t middle = (912000000<<2) / (32000000 >> 11);
+            constexpr uint32_t step = 164;
             uint32_t first = middle - 120 * step;
 
             for (int y = 0; y < 240; ++y) {
                 uint32_t freq = first + y * step;
-                rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
-                rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
-                rf.writeReg(rf.REG_FRFMSB+2, freq);
-#if 0
-                uint8_t rssi = ~rf.readReg(rf.REG_RSSIVALUE) + 00;
-#else
-                int sum = 0;
-                for (int i = 0; i < 4; ++i)
-                    sum += rf.readReg(rf.REG_RSSIVALUE);
-                uint8_t rssi = ~sum >> 2;
-#endif
+                rf.writeReg(rf.REG_FRFMSB,   freq >> 10);
+                rf.writeReg(rf.REG_FRFMSB+1, freq >> 2);
+                rf.writeReg(rf.REG_FRFMSB+2, freq << 6);
+
+                uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
+                printf(" %02x", rssi);
+
                 // add some grid points for reference
                 if ((x & 0x1F) == 0 && y % 40 == 0)
                     rssi = 0xFF; // white dot
                 scan[y] = palette[rssi];
             }
+            printf("\r\n"); wait_ms(100);
 
-            lcd.pixels(0, x, scan, 240);  // update display
+            lcd.pixels(x, 0, scan, 240);  // update display
         }
 
         printf("%d ms\n", ticks - start);

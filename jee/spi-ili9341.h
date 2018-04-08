@@ -53,7 +53,7 @@ struct ILI9341 {
     }
 
     static void pixels (int x, int y, uint16_t const* rgb, int len) {
-        pixel(y, x, *rgb);
+        pixel(x, y, *rgb);
 
         spi.enable();
         for (int i = 1; i < len; ++i)
