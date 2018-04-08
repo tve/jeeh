@@ -114,9 +114,8 @@ template< typename T, int N >
 struct SlowPin : public T {
 
     static void write (int v) {
-        T::write(v);
-        for (int i = 0; i < N; ++i)
-            __asm("");  // avoid getting optimised away
+        for (int i = 0; i <= N; ++i)
+            T::write(v);  // simply set a few times to consume more time
     }
 
     // shorthand
