@@ -17,13 +17,13 @@ struct Font5x7 {
                 y = 0;
             // fill the new line with spaces
             for (int i = 0; i < width-5; i += S)
-                T::copyBand(y, i, font5x7, 5);
+                T::copyBand(i, y, font5x7, 5);
         }
         if (c != '\n') {
             if (c < ' ' || c > 127)
                 c = 127;
             uint8_t const* p = font5x7 + 5 * (c-' ');
-            T::copyBand(y, x, p, 5);
+            T::copyBand(x, y, p, 5);
             x += S;
         }
     }

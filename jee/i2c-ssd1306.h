@@ -59,7 +59,7 @@ struct SSD1306 {
     }
 
     // data is written in "bands" of 8 pixels high, bit 0 is the topmost line
-    static void copyBand (int y, int x, uint8_t const* ptr, int len) {
+    static void copyBand (int x, int y, uint8_t const* ptr, int len) {
         cmd(0xB0 + (y>>3));   // SET PAGE START
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
@@ -81,7 +81,7 @@ struct SSD1306 {
                     buf[x] >>= 1;
                     buf[x] |= (((logo[((y+i)<<1)|(x>>5)]>>(~x&0x1F))&1) << 7);
                 }
-            copyBand(y, 32, buf, sizeof buf);
+            copyBand(32, y, buf, sizeof buf);
         }
     }
 

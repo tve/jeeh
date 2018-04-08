@@ -60,7 +60,7 @@ struct ILI9341 {
         SPI::transfer(v);
     }
 
-    static void pixel (int y, int x, uint16_t rgb) {
+    static void pixel (int x, int y, uint16_t rgb) {
         SPI::enable();
 
         cmd(0x2A);
@@ -77,8 +77,8 @@ struct ILI9341 {
         SPI::disable();
     }
 
-    static void pixels (int y, int x, uint16_t const* rgb, int len) {
-        pixel(y, x, *rgb);
+    static void pixels (int x, int y, uint16_t const* rgb, int len) {
+        pixel(x, y, *rgb);
 
         SPI::enable();
         for (int i = 1; i < len; ++i)

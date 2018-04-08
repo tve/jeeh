@@ -46,7 +46,7 @@ struct PCD8544 {
     }
 
     // data is written in "bands" of 8 pixels high, bit 0 is the topmost line
-    static void copyBand (int y, int x, uint8_t const* ptr, int len) {
+    static void copyBand (int x, int y, uint8_t const* ptr, int len) {
         cmd(0x40 + (y >> 3));
         cmd(0x80 + x);
         dc = 1;

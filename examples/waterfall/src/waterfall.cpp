@@ -117,7 +117,7 @@ int main () {
                 scan[y] = palette[rssi];
             }
 
-            lcd.pixels(0, x, scan, 240);  // update display
+            lcd.pixels(x, 0, scan, 240);  // update display
         }
 
         printf("%d ms\n", ticks - start);

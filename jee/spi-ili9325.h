@@ -46,14 +46,14 @@ struct ILI9325 {
         SPI::disable();
     }
 
-    static void pixel (int y, int x, uint16_t rgb) {
+    static void pixel (int x, int y, uint16_t rgb) {
         write(0x20, y);
         write(0x21, x);
         write(0x22, rgb);
     }
 
-    static void pixels (int y, int x, uint16_t const* rgb, int len) {
-        pixel(y, x, *rgb);
+    static void pixels (int x, int y, uint16_t const* rgb, int len) {
+        pixel(x, y, *rgb);
 
         SPI::enable();
         SPI::transfer(0x72);
