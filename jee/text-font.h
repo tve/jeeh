@@ -53,8 +53,10 @@ struct TextLcd : LCD {
             LCD::pixels(x+xi, y, col, 8);
         }
 
-        // adjust vertical scroll so that the band is always at the bottom
-        y += 8;
-        LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : 0);
+        // when in col 0: adjust v-scroll so the band is always at the bottom
+        if (x == 0) {
+            y += 8;
+            LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : 0);
+        }
     }
 };
