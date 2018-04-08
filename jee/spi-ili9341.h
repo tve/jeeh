@@ -8,6 +8,7 @@ struct ILI9341 {
 
     static void init () {
         static uint8_t const config [] = {
+            // cmd, count, data bytes ...
             0xEF, 3, 0x03, 0x80, 0x02,
             0xCF, 3, 0x00, 0xC1, 0x30,
             0xED, 4, 0x64, 0x03, 0x12, 0x81,
@@ -41,7 +42,7 @@ struct ILI9341 {
             cmd(*p);
             int n = *++p;
             while (--n >= 0)
-                cmd(*++p);
+                SPI::transfer(*++p);
         }
     
         wait_ms(120);
