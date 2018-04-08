@@ -28,11 +28,29 @@ struct Font5x7 {
         }
     }
 
-    static uint8_t y, x;
+    static uint16_t y, x;
 };
 
 template< typename T, int S >
-uint8_t Font5x7<T,S>::y;
+uint16_t Font5x7<T,S>::y;
 
 template< typename T, int S >
-uint8_t Font5x7<T,S>::x;
+uint16_t Font5x7<T,S>::x;
+
+// optional adapter to print text on pixel-oriented displays
+
+template< typename LCD >
+struct TextLcd : LCD {
+    // TODO write the vertically and enable hardware vertical scrolling
+    static void copyBand (int x, int y, uint8_t const* ptr, int len) {
+        // TODO this is very inefficient code, but it avoids an extra buffer
+        for (int xi = 0; xi < len; ++xi) {
+            uint8_t v = *ptr++;
+            for (int yi = 0; yi < 8; ++yi) {
+                // FIXME vertical axis has to be flipped, why?
+                LCD::pixel(x+xi, LCD::height-1-(y+yi), v&1 ? 0xFFFF : 0x0000);
+                v >>= 1;
+            }
+        }
+    }
+};
