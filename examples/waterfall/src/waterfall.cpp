@@ -11,11 +11,11 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiA;
-RF69< decltype(spiA) > rf;
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
+ILI9325< decltype(spiA) > lcd;
 
-SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiB;
-ILI9325< decltype(spiB) > lcd;
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+RF69< decltype(spiB) > rf;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
@@ -57,7 +57,7 @@ int main () {
     rtpcs = 1;
     rtpcs.mode(Pinmode::out);
 
-    spiB.init();
+    spiA.init();
     lcd.init();
     lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
     lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
@@ -65,7 +65,7 @@ int main () {
 
     initPalette();
 
-    spiA.init();
+    spiB.init();
     rf.init(63, 42, 8683);    // node 63, group 42, 868.3 MHz
     rf.writeReg(0x29, 0xFF);  // minimal RSSI threshold
     rf.writeReg(0x2E, 0xB8);  // sync size 7+1
