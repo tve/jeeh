@@ -10,13 +10,13 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
-
 #if 1
 #include <jee/spi-ili9325.h>
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 ILI9325< decltype(spiA) > lcd;
 #else
 #include <jee/spi-ili9341.h>
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiA;
 ILI9341< decltype(spiA), PinA<3> > lcd;
 #endif
 
