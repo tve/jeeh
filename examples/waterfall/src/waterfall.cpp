@@ -59,8 +59,6 @@ int main () {
 
     spiA.init();
     lcd.init();
-    lcd.write(0x61, 0x0003);  // (was 0x0001) enable vertical scrolling
-    lcd.write(0x03, 0x1030);  // (was 0x1038) set horizontal writing direction
     // lcd.clear();
 
     initPalette();
@@ -83,14 +81,14 @@ int main () {
     }
     printf("\n");
 
-    static uint16_t scan [240];
+    static uint16_t scan [lcd.width];
     rf.setMode(rf.MODE_RECEIVE);
 
     while (true) {
         uint32_t start = ticks;
 
-        for (int x = 0; x < 320; ++x) {
-            lcd.write(0x6A, x);  // scroll
+        for (int y = 0; y < lcd.height; ++y) {
+            //lcd.write(0x6A, y);  // scroll
 
             // 868.3 MHz = 0xD91300, with 80 steps per pixel, a sweep can cover
             // 240*80*61.03515625 = 1,171,875 Hz, i.e. slightly under ± 600 kHz
@@ -98,8 +96,8 @@ int main () {
             constexpr uint32_t step = 80;
             uint32_t first = middle - 120 * step;
 
-            for (int y = 0; y < 240; ++y) {
-                uint32_t freq = first + y * step;
+            for (int x = 0; x < lcd.width; ++x) {
+                uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
                 rf.writeReg(rf.REG_FRFMSB+2, freq);
@@ -112,12 +110,13 @@ int main () {
                 uint8_t rssi = ~sum >> 2;
 #endif
                 // add some grid points for reference
-                if ((x & 0x1F) == 0 && y % 40 == 0)
+                if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
-                scan[y] = palette[rssi];
+                scan[x] = palette[rssi];
             }
 
-            lcd.pixels(x, 0, scan, 240);  // update display
+            lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
+            lcd.pixels(0, y, scan, lcd.width);  // update display
         }
 
         printf("%d ms\n", ticks - start);

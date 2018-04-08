@@ -47,8 +47,7 @@ struct TextLcd : LCD {
         for (int xi = 0; xi < len; ++xi) {
             uint8_t v = *ptr++;
             for (int yi = 0; yi < 8; ++yi) {
-                // FIXME vertical axis has to be flipped, why?
-                LCD::pixel(x+xi, LCD::height-1-(y+yi), v&1 ? 0xFFFF : 0x0000);
+                LCD::pixel(x+xi, y+yi, v&1 ? 0xFFFF : 0x0000);
                 v >>= 1;
             }
         }
