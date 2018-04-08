@@ -17,6 +17,8 @@ struct ILI9341 {
         st = (st<<8) | SPI::transfer(0);
         st = (st<<8) | SPI::transfer(0);
         printf("Disp status: %08x\r\n", st);
+        SPI::disable();
+        SPI::enable();
 
         cmd(0x04); // read display ID
         SPI::transfer(0);
@@ -25,6 +27,8 @@ struct ILI9341 {
         st = (st<<8) | SPI::transfer(0);
         st = (st<<8) | SPI::transfer(0);
         printf("Disp ID: %08x\r\n", st);
+        SPI::disable();
+        SPI::enable();
 
         static uint8_t const config [] = {
             // cmd, count, data bytes ...
