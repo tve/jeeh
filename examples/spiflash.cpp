@@ -14,6 +14,7 @@ SpiFlash< decltype(spi) > mem;  // default SPI1 pins
 
 int main () {
     spi.init();
+    mem.init();
 
     printf("id %06x, %dK\n", mem.devId(), mem.size());
 

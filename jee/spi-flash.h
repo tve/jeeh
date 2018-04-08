@@ -28,6 +28,8 @@ class SpiFlash {
     }
 
 public:
+    static void init () {}
+
     static int devId () {
         cmd(0x9F);
         int r = SPI::transfer(0) << 16;
