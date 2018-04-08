@@ -13,7 +13,7 @@ void printf(const char* fmt, ...) {
 }
 
 // this code can be used with two different kinds of TFT LCD boards
-#if 1
+#if 0
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 ILI9325< decltype(spiA) > lcd;
 #else

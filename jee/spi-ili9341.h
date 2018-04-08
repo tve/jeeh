@@ -44,8 +44,6 @@ struct ILI9341 {
                 SPI::transfer(*++p);
         }
 
-        bounds();
-    
         wait_ms(120);
         cmd(0x29);      // DISPON
         SPI::disable();
@@ -91,8 +89,11 @@ struct ILI9341 {
     static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
         xEnd = xend;
         yEnd = yend;
+
+        SPI::enable();
         cmd(0x37);
         out16(vscroll);
+        SPI::disable();
     }
 
     static void clear () {
@@ -109,7 +110,7 @@ struct ILI9341 {
 };
 
 template< typename SPI, typename DC>
-uint16_t ILI9341<SPI,DC>::xEnd;
+uint16_t ILI9341<SPI,DC>::xEnd = width-1;
 
 template< typename SPI, typename DC>
-uint16_t ILI9341<SPI,DC>::yEnd;
+uint16_t ILI9341<SPI,DC>::yEnd = height-1;
