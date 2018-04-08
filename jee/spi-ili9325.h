@@ -50,7 +50,9 @@ struct ILI9325 {
     }
 
     static void pixel (int x, int y, uint16_t rgb) {
+        write(0x20, x);
         write(0x50, x);
+        write(0x21, y);
         write(0x52, y);
         write(0x22, rgb);
     }
@@ -60,7 +62,7 @@ struct ILI9325 {
 
         SPI::enable();
         SPI::transfer(0x72);
-        for (int i = 0; i < len; ++i)
+        for (int i = 1; i < len; ++i)
             out16(rgb[i]);
         SPI::disable();
     }

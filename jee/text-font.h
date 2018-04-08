@@ -37,19 +37,24 @@ uint16_t Font5x7<T,S>::y;
 template< typename T, int S >
 uint16_t Font5x7<T,S>::x;
 
-// optional adapter to print text on pixel-oriented displays
+// optional adapter to print scrolling text on pixel-oriented displays
 
 template< typename LCD >
 struct TextLcd : LCD {
-    // TODO write the vertically and enable hardware vertical scrolling
     static void copyBand (int x, int y, uint8_t const* ptr, int len) {
-        // TODO this is very inefficient code, but it avoids an extra buffer
+        // not very efficient code, but it avoids a large buffer
+        uint16_t col [8];
         for (int xi = 0; xi < len; ++xi) {
             uint8_t v = *ptr++;
-            for (int yi = 0; yi < 8; ++yi) {
-                LCD::pixel(x+xi, y+yi, v&1 ? 0xFFFF : 0x0000);
+            for (int i = 0; i < 8; ++i) {
+                col[i] = v & 1 ? 0xFFFF : 0x0000;
                 v >>= 1;
             }
+            LCD::pixels(x+xi, y, col, 8);
         }
+
+        // adjust vertical scroll so that the band is always at the bottom
+        y += 8;
+        LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : 0);
     }
 };
