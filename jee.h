@@ -86,6 +86,27 @@ extern uint32_t volatile ticks;
 
 extern void wait_ms (uint32_t ms);
 
+template< int HZ >
+struct SysTick {
+    constexpr static uint32_t tick = 0xE000E000;
+
+    static uint32_t us () {
+        int t, u;
+        do {
+            t = ticks;
+            u = MMIO32(tick + 0x18);
+        } while (t != ticks);
+        u = MMIO32(tick + 0x14) + 1 - u;
+        u /= HZ / 100000;
+        return t * 1000 + u;
+    }
+
+    static void micros (int n) {
+        uint32_t t = us();
+        while ((uint32_t) (us() - t) < n) ;
+    }
+};
+
 // slowed-down pin, adds a configurable delay after setting the pin
 
 template< typename T, int N >
