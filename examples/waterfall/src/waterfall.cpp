@@ -12,7 +12,7 @@ void printf(const char* fmt, ...) {
 
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 
-#if 0
+#if 1
 #include <jee/spi-ili9325.h>
 ILI9325< decltype(spiA) > lcd;
 #else
