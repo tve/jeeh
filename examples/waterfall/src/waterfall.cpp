@@ -23,6 +23,7 @@ ILI9341< decltype(spiA), PinA<3> > lcd;
 
 SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
+PinA<1> led;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
@@ -52,6 +53,7 @@ static void initPalette () {
 
 int main () {
     fullSpeedClock();
+    led.mode(Pinmode::out);
 
     printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 
@@ -127,5 +129,6 @@ int main () {
         }
 
         printf("%d ms\n", ticks - start);
+        led.toggle();
     }
 }
