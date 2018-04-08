@@ -5,6 +5,9 @@
 
 #define MMIO32(x) (*(volatile uint32_t*) (x))
 
+// forward declaration, needs to be implemented in main.cpp
+void printf(const char* fmt, ...);
+
 // general-purpose ring buffer
 
 template< int N >
@@ -106,12 +109,15 @@ struct SlowPin : public T {
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 class SpiDev {
 public:
-    SpiDev () {
+    SpiDev () { }
+
+    static void init () {
         nsel = 1;
         nsel.mode(Pinmode::out);
         sclk = CP;
         sclk.mode(Pinmode::out);
         miso.mode(Pinmode::in_float);
+        mosi = 0;
         mosi.mode(Pinmode::out);
     }
 
