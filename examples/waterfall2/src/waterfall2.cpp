@@ -28,7 +28,7 @@ ILI9341< decltype(spiA), PinB<6> > lcd;
 SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
 #else
-SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+SpiHw< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF96sa< decltype(spiB) > rf;
 #endif
 
@@ -100,6 +100,13 @@ void testPattern() {
     }
 }
 
+void setFreq(uint32_t freq) {
+    rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
+    rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
+    rf.writeReg(rf.REG_FRFMSB+2, freq);
+    //rf.writeReg(rf.REG_RXCONFIG, 0x28);
+}
+
 int main () {
     fullSpeedClock();
     //enableSysTick();
@@ -147,7 +154,7 @@ int main () {
     wait_ms(1);
     spiB.init();
     rf.init(1, true);    // init for 10Khz steps
-    rf.setFrequency(912); // start at 912Mhz for now...
+    rf.setFrequency(915); // start at 915Mhz for now...
 
     printf("Radio rev: %02x\r\n", rf.readReg(0x42));
 
@@ -167,36 +174,95 @@ int main () {
     rf.setMode(rf.MODE_RECEIVE);
     wait_ms(10);
 
+    uint8_t toggle = 0;
+
     while (true) {
         uint32_t start = ticks;
+        uint32_t sum=0, cnt=0;
+        uint32_t max=0xff;
+
+        constexpr uint32_t middle = (((uint32_t)912000000<<2) / (32000000 >> 11)) << 6;
+        constexpr uint32_t step = 164;
+        printf("middle: %d %x\r\n", middle, middle);
 
         for (int y = 0; y < lcd.height; ++y) {
 
-            constexpr uint32_t middle = (912000000<<2) / (32000000 >> 11);
-            constexpr uint32_t step = 164;
             uint32_t first = middle - 120 * step;
 
-            //printf("Scan: ");
-            for (int x = 0; x < lcd.width; ++x) {
-                uint32_t freq = first + x * step;
-                rf.writeReg(rf.REG_FRFMSB,   freq >> 10);
-                rf.writeReg(rf.REG_FRFMSB+1, freq >> 2);
-                rf.writeReg(rf.REG_FRFMSB+2, freq << 6);
+            // sanity checks
+            uint8_t mode = rf.readReg(rf.REG_OPMODE);
+            if (mode != rf.MODE_RECEIVE) {
+                printf("OOPS: mode=%02x\r\n", mode);
+            }
+            uint8_t irq1 = rf.readReg(rf.REG_IRQFLAGS1);
+            if (irq1 != 0xd0) {
+                printf("OOPS: irq1=%02x\r\n", irq1);
+            }
 
+if (toggle > 0) {
+            for (int x = 0; x < lcd.width; ++x) {
+                uint32_t freq = first + (uint32_t)x * step;
+                setFreq(freq);
+
+                //if (y==0 && x>=120 && x<=125)
+                //    printf("first=%x x=%d step=%d freq=%x=%d=%d\r\n", first, x, step, freq, freq, freq*61);
+
+                SysTick<72000000> now;
+                // if toggle == 5: no delay
+                if (toggle == 4) now.micros(120-2);
+                if (toggle == 3) now.micros(70-2);
+                if (toggle == 2) now.micros(35-2);
+                if (toggle == 1) now.micros(10-2);
+
+                //uint8_t irq1 = rf.readReg(rf.REG_IRQFLAGS1);
                 uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
-                //printf(" %02x", rssi);
+                sum += (uint32_t)rssi;
+                cnt++;
+                if (rssi < max) max = rssi;
+                //printf(" %x/%d", irq1, -(int)(rssi/2));
 
                 // add some grid points for reference
-                if ((y & 0x1F) == 0 && x % 40 == 0)
-                    rssi = 0xFF; // white dot
+                if ((y & 0x1F) == 0 && x % 10 == 0)
+                    rssi = 0; // white dot
+
+                //if (y==0 && x>=120 && x<=125) {
+                //    uint32_t f = rf.readReg(rf.REG_FRFMSB);
+                //      f = (f<<8) | rf.readReg(rf.REG_FRFMSB+1);
+                //      f = (f<<8) | rf.readReg(rf.REG_FRFMSB+2);
+                //    printf("x=%d f=%x=%d=%d\r\n", x, f, f, f*61);
+                //}
+                rssi = ~rssi;
                 pixelRow[x] = palette[rssi];
             }
-            //printf("\r\n"); wait_ms(100);
+} else {
+            uint32_t freq = first;
+            setFreq(freq);
+            SysTick<72000000> now;
+            now.micros(10-2);
+            for (int x = 0; x < lcd.width; ++x) {
+                setFreq(freq);
+                uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
+                sum += (uint32_t)rssi;
+                cnt++;
+                if (rssi < max) max = rssi;
+                if ((y & 0x1F) == 0 && x % 10 == 0)
+                    rssi = 0; // white dot
+                rssi = ~rssi;
+                pixelRow[x] = palette[rssi];
+                freq += step;
+                now.micros(10-2);
+            }
+}
+            //printf("\r\n"); wait_ms(1000); while(1);
+            setFreq(first); // step back takes longer, so start now
 
             lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
             lcd.pixels(0, y, pixelRow, lcd.width);  // update display
+
+            if (y%40==0) toggle = (toggle + 1) % 6;
         }
 
-        printf("screen:%dms sweep:%dms\r\n", ticks - start, (ticks-start)/lcd.height);
+        printf("screen=%dms sweep=%dms avg=%ddBm max=%ddBm\r\n",
+            ticks - start, (ticks-start)/lcd.height, -(int)(sum/cnt/2), -(int)(max/2));
     }
 }

@@ -338,7 +338,7 @@ struct SpiHw {
         // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)
         MMIO32(cr1) = (1<<6) | (2<<3) | (1<<2) | (CP<<1);
         (void) MMIO32(sr);  // appears to be needed to avoid hang in some cases
-        MMIO32(cr1) |= (1<<2);  // SSOE
+        MMIO32(cr2) |= (1<<2);  // SSOE
     }
 
     static void enable () { SS::write(0); }

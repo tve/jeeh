@@ -105,7 +105,7 @@ struct SysTick {
         return t * 1000 + ((v * 100) / (HZ / 10000));
     }
 
-    static void micros (int n) {
+    static void micros (uint32_t n) {
         uint32_t t = us();
         while ((uint32_t) (us() - t) < n) ;
     }

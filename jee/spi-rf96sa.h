@@ -37,8 +37,9 @@ struct RF96sa {
     enum {
         REG_FIFO          = 0x00,
         REG_OPMODE        = 0x01,
-        REG_FRFMSB        = 0x07,
+        REG_FRFMSB        = 0x06,
         REG_RSSIVALUE     = 0x11,
+        REG_RXCONFIG      = 0x28,
         REG_IRQFLAGS1     = 0x3e,
         REG_IRQFLAGS2     = 0x3f,
 
@@ -95,11 +96,13 @@ void RF96sa<SPI>::configure (const uint8_t* p) {
 }
 
 static const uint8_t configRegs [] = {
-    0x01, 0x00, // FSK mode, high-freq regs, sleep mode
+    0x01, 0x20, // FSK mode, high-freq regs, sleep mode
+    0x01, 0x20, // FSK mode, high-freq regs, sleep mode
     0x0b, 0x32, // Over-current protection @150mA
     0x0c, 0x20, // max LNA gain, no boost
     0x0d, 0x08, // AFC off, AGC on
     0x0e, 0x02, // 8-sample rssi smoothing
+    0x0e, 0x00, // 2-sample rssi smoothing
     0x10, 0x01, // unattainable rssi threshold: keep RX "seeking"
     0x1f, 0x00, // disable preamble detector: keep RX "seeking"
     0x27, 0x17, // sync size 8 bytes
