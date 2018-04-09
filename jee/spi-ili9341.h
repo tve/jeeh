@@ -66,7 +66,6 @@ struct ILI9341 {
         }
         wait_ms(120);
 
-        bounds();
         cmd(0x29);      // DISPON
 #if 0
         { // read display status
@@ -136,12 +135,14 @@ struct ILI9341 {
     static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
         xEnd = xend;
         yEnd = yend;
+
+        SPI::enable();
         cmd(0x37);
         out16(vscroll);
+        SPI::disable();
     }
 
     static void clear () {
-        SPI::enable();
         bounds();
         pixel(0, 0, 0);
 
@@ -155,7 +156,7 @@ struct ILI9341 {
 };
 
 template< typename SPI, typename DC>
-uint16_t ILI9341<SPI,DC>::xEnd;
+uint16_t ILI9341<SPI,DC>::xEnd = width-1;
 
 template< typename SPI, typename DC>
-uint16_t ILI9341<SPI,DC>::yEnd;
+uint16_t ILI9341<SPI,DC>::yEnd = height-1;

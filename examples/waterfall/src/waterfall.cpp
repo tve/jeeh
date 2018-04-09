@@ -3,6 +3,8 @@
 
 #include <jee.h>
 #include <jee/spi-rf69.h>
+#include <jee/spi-ili9325.h>
+#include <jee/spi-ili9341.h>
 
 UartDev< PinA<9>, PinA<10> > console;
 
@@ -10,18 +12,18 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
+// this code can be used with two different kinds of TFT LCD boards
+#if 0
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
-
-#if 1
-#include <jee/spi-ili9325.h>
 ILI9325< decltype(spiA) > lcd;
 #else
-#include <jee/spi-ili9341.h>
+SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiA;
 ILI9341< decltype(spiA), PinA<3> > lcd;
 #endif
 
 SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
+PinA<1> led;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
 // gleaned from the GQRX project by Moe Wheatley and Alexandru Csete (BSD, 2013)
@@ -51,6 +53,7 @@ static void initPalette () {
 
 int main () {
     fullSpeedClock();
+    led.mode(Pinmode::out);
 
     printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 
@@ -126,5 +129,6 @@ int main () {
         }
 
         printf("%d ms\n", ticks - start);
+        led.toggle();
     }
 }

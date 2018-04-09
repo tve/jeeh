@@ -89,15 +89,36 @@ extern uint32_t volatile ticks;
 
 extern void wait_ms (uint32_t ms);
 
+template< uint32_t HZ >
+struct SysTick {
+    // FIXME this is ARM-specific, must move elsewhere to support other µCs
+    constexpr static uint32_t tick = 0xE000E000;
+
+    static uint32_t us () {
+        uint32_t t, u;
+        do {
+            t = ticks;
+            u = MMIO32(tick + 0x18);
+        } while (t != ticks);
+        uint32_t v = MMIO32(tick + 0x14) + 1 - u;
+        // keep as much precision as possible, i.e. sysclk in 10 KHz steps
+        return t * 1000 + ((v * 100) / (HZ / 10000));
+    }
+
+    static void micros (int n) {
+        uint32_t t = us();
+        while ((uint32_t) (us() - t) < n) ;
+    }
+};
+
 // slowed-down pin, adds a configurable delay after setting the pin
 
 template< typename T, int N >
 struct SlowPin : public T {
 
     static void write (int v) {
-        T::write(v);
-        for (int i = 0; i < N; ++i)
-            __asm("");  // avoid getting optimised away
+        for (int i = 0; i <= N; ++i)
+            T::write(v);  // simply set a few times to consume more time
     }
 
     // shorthand
