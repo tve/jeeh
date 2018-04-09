@@ -101,8 +101,8 @@ void testPattern() {
 }
 
 int main () {
-    //fullSpeedClock();
-    enableSysTick();
+    fullSpeedClock();
+    //enableSysTick();
     printf("\r\n===== Waterfall 2 starting...\r\n");
 
     // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
@@ -135,7 +135,7 @@ int main () {
     printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
 
     lcd.clear();
-    testPattern();
+    //testPattern();
 
     initPalette();
 
@@ -176,7 +176,7 @@ int main () {
             constexpr uint32_t step = 164;
             uint32_t first = middle - 120 * step;
 
-            printf("Scan: ");
+            //printf("Scan: ");
             for (int x = 0; x < 240; ++x) {
                 uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 10);
@@ -184,19 +184,19 @@ int main () {
                 rf.writeReg(rf.REG_FRFMSB+2, freq << 6);
 
                 uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
-                printf(" %02x", rssi);
+                //printf(" %02x", rssi);
 
                 // add some grid points for reference
                 if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
                 pixelRow[x] = palette[rssi];
             }
-            printf("\r\n"); wait_ms(100);
+            //printf("\r\n"); wait_ms(100);
 
             lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
-            lcd.pixels(y, 0, pixelRow, lcd.width);  // update display
+            lcd.pixels(0, y, pixelRow, lcd.width);  // update display
         }
 
-        printf("%d ms\n", ticks - start);
+        printf("%d ms\r\n", ticks - start);
     }
 }

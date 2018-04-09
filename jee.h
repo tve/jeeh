@@ -113,6 +113,7 @@ struct SpiGpio {
         SS::mode(Pinmode::out);
         CK::write(CP);
         CK::mode(Pinmode::out);
+        //MI::mode(Pinmode::in_pulldown);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::out);
     }
