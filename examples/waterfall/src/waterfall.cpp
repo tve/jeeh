@@ -113,14 +113,12 @@ int main () {
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
                 rf.writeReg(rf.REG_FRFMSB+2, freq);
-#if 0
-                uint8_t rssi = ~rf.readReg(rf.REG_RSSIVALUE) + 00;
-#else
+
                 int sum = 0;
-                for (int i = 0; i < 4; ++i)
+                for (int i = 0; i < 16; ++i)
                     sum += rf.readReg(rf.REG_RSSIVALUE);
-                uint8_t rssi = ~sum >> 2;
-#endif
+                uint8_t rssi = ~sum >> 4;
+
                 // add some grid points for reference
                 if ((y & 0x1F) == 0 && x % 40 == 0)
                     rssi = 0xFF; // white dot
