@@ -177,7 +177,7 @@ int main () {
             uint32_t first = middle - 120 * step;
 
             //printf("Scan: ");
-            for (int x = 0; x < 240; ++x) {
+            for (int x = 0; x < lcd.width; ++x) {
                 uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 10);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 2);
@@ -197,6 +197,6 @@ int main () {
             lcd.pixels(0, y, pixelRow, lcd.width);  // update display
         }
 
-        printf("%d ms\r\n", ticks - start);
+        printf("screen:%dms sweep:%dms\r\n", ticks - start, (ticks-start)/lcd.height);
     }
 }
