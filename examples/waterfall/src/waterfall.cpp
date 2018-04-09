@@ -12,7 +12,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-// this code can be used with two different kinds of TFT LCD boards
+// this code can be used with two different types of TFT LCD boards
 #if 1
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 ILI9325< decltype(spiA) > lcd;
@@ -21,8 +21,10 @@ SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiA;
 ILI9341< decltype(spiA), PinA<3> > lcd;
 #endif
 
+// controlling the radio takes most time, use hardware SPI @ 9 MHz for it
 SpiHw< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
+
 PinA<1> led;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
@@ -114,6 +116,7 @@ int main () {
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
                 rf.writeReg(rf.REG_FRFMSB+2, freq);
 
+                // take the average of 16 RSSI readings
                 int sum = 0;
                 for (int i = 0; i < 16; ++i)
                     sum += rf.readReg(rf.REG_RSSIVALUE);
