@@ -6,10 +6,14 @@ template< typename T, int S =6 >
 struct Font5x7 {
     constexpr static int width = T::width;
     constexpr static int height = T::height;
+    constexpr static int tabsize = 8 * 6;
 
     static void putc (int c) {
-        if (c == '\n')
-            x = width;
+        switch (c) {
+            case '\t': x += tabsize - x % tabsize; return;
+            case '\r': x = 0; return;
+            case '\n': x = width; break;
+        }
         if (x + S > width) {
             x = 0;
             y += 8;
