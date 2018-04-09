@@ -13,7 +13,7 @@ void printf(const char* fmt, ...) {
 }
 
 // this code can be used with two different kinds of TFT LCD boards
-#if 0
+#if 1
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 ILI9325< decltype(spiA) > lcd;
 #else
@@ -65,6 +65,9 @@ int main () {
     PinB<2> rtpcs;
     rtpcs = 1;
     rtpcs.mode(Pinmode::out);
+
+    // the following is needed to use h/w SPI1 with pins B5..B3/A15 iso A7..A4
+    //MMIO32(afio + 0x04) |= (1<<0);  // SPI1_REMAP in AFIO's MAPR
 
     spiA.init();
     lcd.init();
