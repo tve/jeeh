@@ -47,7 +47,7 @@ struct TextLcd : LCD {
         for (int xi = 0; xi < len; ++xi) {
             uint8_t v = *ptr++;
             for (int i = 0; i < 8; ++i) {
-                col[i] = v & 1 ? 0xFFFF : 0x0000;
+                col[i] = v & 1 ? fg : bg;
                 v >>= 1;
             }
             LCD::pixels(x+xi, y, col, 8);
@@ -59,4 +59,12 @@ struct TextLcd : LCD {
             LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : 0);
         }
     }
+
+    static uint16_t fg, bg;
 };
+
+template< typename LCD >
+uint16_t TextLcd<LCD>::fg = 0xFFFF;
+
+template< typename LCD >
+uint16_t TextLcd<LCD>::bg;
