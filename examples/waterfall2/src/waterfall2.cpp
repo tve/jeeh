@@ -236,21 +236,23 @@ if (toggle > 0) {
             }
 } else {
             uint32_t freq = first;
-            setFreq(freq);
             SysTick<72000000> now;
-            now.micros(10-2);
+            setFreq(freq);
             for (int x = 0; x < lcd.width; ++x) {
+                now.micros(10-2);
+                // set next freq before reading RSSI, gains a few us and doesn't affect the
+                // RSSI that is in the pipeline...
+                freq += step;
                 setFreq(freq);
+                // read RSSI
                 uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
                 sum += (uint32_t)rssi;
                 cnt++;
                 if (rssi < max) max = rssi;
-                if ((y & 0x1F) == 0 && x % 10 == 0)
+                if ((y & 0x1F) == 0 && x % 20 == 0)
                     rssi = 0; // white dot
                 rssi = ~rssi;
                 pixelRow[x] = palette[rssi];
-                freq += step;
-                now.micros(10-2);
             }
 }
             //printf("\r\n"); wait_ms(1000); while(1);
