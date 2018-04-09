@@ -21,7 +21,7 @@ SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiA;
 ILI9341< decltype(spiA), PinA<3> > lcd;
 #endif
 
-SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
+SpiHw< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
 PinA<1> led;
 
