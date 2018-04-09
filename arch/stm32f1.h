@@ -329,10 +329,10 @@ struct SpiHw {
 
     static void init () {
         disable();
-        SS::mode(Pinmode::out);
-        CK::mode(Pinmode::alt_out);
+        SS::mode(Pinmode::out_10mhz);
+        CK::mode(Pinmode::alt_out_10mhz);
         MI::mode(Pinmode::in_float);
-        MO::mode(Pinmode::alt_out);
+        MO::mode(Pinmode::alt_out_10mhz);
 
         MMIO32(Periph::rcc + 0x18) |= (1<<12);  // SPI1EN
         // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)
