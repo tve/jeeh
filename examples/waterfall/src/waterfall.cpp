@@ -12,7 +12,7 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
-// this code can be used with two different kinds of TFT LCD boards
+// this code can be used with two different types of TFT LCD boards
 #if 1
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 1 > spiA;
 ILI9325< decltype(spiA) > lcd;
@@ -21,8 +21,10 @@ SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0> > spiA;
 ILI9341< decltype(spiA), PinA<3> > lcd;
 #endif
 
+// controlling the radio takes most time, use hardware SPI @ 9 MHz for it
 SpiHw< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spiB;
 RF69< decltype(spiB) > rf;
+
 PinA<1> led;
 
 // the range 0..255 is mapped as black -> blue -> yellow -> red -> white
@@ -93,27 +95,28 @@ int main () {
     }
     printf("\n");
 
-    static uint16_t pixelRow [lcd.width];
     rf.setMode(rf.MODE_RECEIVE);
 
     while (true) {
         uint32_t start = ticks;
 
         for (int y = 0; y < lcd.height; ++y) {
-            //lcd.write(0x6A, y);  // scroll
-
             // 868.3 MHz = 0xD91300, with 80 steps per pixel, a sweep can cover
             // 240*80*61.03515625 = 1,171,875 Hz, i.e. slightly under ± 600 kHz
             constexpr uint32_t middle = 0xD91300;  // 0xE4C000 for 915.0 MHz
             constexpr uint32_t step = 80;
             uint32_t first = middle - 120 * step;
 
+            static uint16_t pixelRow [lcd.width];
+
             for (int x = 0; x < lcd.width; ++x) {
+                // step to a new frequency
                 uint32_t freq = first + x * step;
                 rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
                 rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
                 rf.writeReg(rf.REG_FRFMSB+2, freq);
 
+                // take the average of 16 RSSI readings
                 int sum = 0;
                 for (int i = 0; i < 16; ++i)
                     sum += rf.readReg(rf.REG_RSSIVALUE);
