@@ -63,7 +63,7 @@ struct R61505U {
     }
 
     static void clear () {
-        //bounds();
+        bounds();
         pixel(0, 0, 0);
 
         for (int i = 1; i < width * height; ++i)
