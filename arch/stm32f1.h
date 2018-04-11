@@ -126,7 +126,7 @@ struct Pin {
 template< typename TX, typename RX >
 class UartDev {
 public:
-    // TODO does not recognise alternate TX pins
+    // TODO does not recognise alternate pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
                                 TX::id ==  2 ? 1 :  // PA2, USART2
                                 TX::id == 26 ? 2 :  // PB10, USART3
@@ -330,24 +330,33 @@ struct RTC {
     }
 };
 
-// hardware spi support (TODO only SPI1 for now)
+// hardware spi support
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiHw {
-    constexpr static uint32_t spi1 = 0x40013000;
-    constexpr static uint32_t cr1 = spi1 + 0x00;
-    constexpr static uint32_t cr2 = spi1 + 0x04;
-    constexpr static uint32_t sr  = spi1 + 0x08;
-    constexpr static uint32_t dr  = spi1 + 0x0C;
+    // TODO does not recognise alternate pins
+    constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7, SPI1
+                                MO::id == 31 ? 1 :  // PB15, SPI2
+                                MO::id == 21 ? 2 :  // PB5, SPI3
+                                               0;   // else SPI1
+    constexpr static uint32_t base = sidx == 0 ? 0x40013000 :
+                                                 0x40003400 + 0x400 * sidx;
+    constexpr static uint32_t cr1 = base + 0x00;
+    constexpr static uint32_t cr2 = base + 0x04;
+    constexpr static uint32_t sr  = base + 0x08;
+    constexpr static uint32_t dr  = base + 0x0C;
 
     static void init () {
-        disable();
-        SS::mode(Pinmode::out_10mhz);
+        SS::mode(Pinmode::out_10mhz); disable();
         CK::mode(Pinmode::alt_out_10mhz);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::alt_out_10mhz);
 
-        MMIO32(Periph::rcc + 0x18) |= (1<<12);  // SPI1EN
+        if (sidx == 0)
+            MMIO32(Periph::rcc + 0x18) |= 1 << 12;  // SPI1
+        else
+            MMIO32(Periph::rcc + 0x1C) |= 1 << (sidx+13);  // SPI 2..3
+
         // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)
         MMIO32(cr1) = (1<<6) | (2<<3) | (1<<2) | (CP<<1);
         (void) MMIO32(sr);  // appears to be needed to avoid hang in some cases
