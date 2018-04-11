@@ -100,22 +100,7 @@ void testPattern() {
     }
 }
 
-void setFreq(uint32_t freq) {
-    rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
-    rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
-    rf.writeReg(rf.REG_FRFMSB+2, freq);
-    //rf.writeReg(rf.REG_RXCONFIG, 0x28);
-}
-
-int main () {
-    fullSpeedClock();
-    //enableSysTick();
-    printf("\r\n===== Waterfall 2 starting...\r\n");
-
-    // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
-    constexpr uint32_t afio = 0x40010000;
-    MMIO32(afio + 0x04) |= 1 << 25; // disable JTAG, keep SWD enabled
-
+void initLcd() {
     // rtp touch screen is on the same SPI bus, make sure it's disabled
     //PinB<2> rtpcs;
     //rtpcs = 1;
@@ -126,6 +111,7 @@ int main () {
     PinB<7> lcd_reset;
     lcd_reset = 0;
     lcd_reset.mode(Pinmode::out);
+    // init SPI and end reset
     spiA.init();
     wait_ms(2);
     lcd_reset = 1;
@@ -136,26 +122,34 @@ int main () {
     PinA<15> lcd_light;
     lcd_light = 1;
     lcd_light.mode(Pinmode::out);
-
-    printf("PB crl: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+0));
-    printf("PB crh: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+4));
-    printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
-
     lcd.clear();
-    //testPattern();
+}
 
-    initPalette();
+void sweepDisplay(int y, int count, uint8_t buf[]) {
+    uint16_t pixelRow[count];
+    for (int x = 0; x < count; ++x)
+        pixelRow[x] = palette[(uint8_t)(~buf[x])];
+    if ((y & 0x1F) == 0) {
+        for (int x=0; x<count; x+=count/4)
+            pixelRow[x] = 0xFFFF; // white dot
+    }
+    lcd.bounds(count-1, y, y);     // write one line and set scroll
+    lcd.pixels(0, y, pixelRow, count);  // update display
+}
 
+void initRadio() {
+    // issue reset pulse
     PinA<11> rf_reset;
     rf_reset = 0;
     rf_reset.mode(Pinmode::out);
     wait_ms(1);
+    // init SPI and end reset
+    spiB.init();
     rf_reset = 1;
     wait_ms(1);
-    spiB.init();
+    // init radio itself
     rf.init(1, true);    // init for 10Khz steps
     rf.setFrequency(915); // start at 915Mhz for now...
-
     printf("Radio rev: %02x\r\n", rf.readReg(0x42));
 
     // dump all radio registers
@@ -168,27 +162,120 @@ int main () {
             printf(" %02x", rf.readReg(i+j));
     }
     printf("\r\n");
-    wait_ms(500);
+}
 
-    static uint16_t pixelRow [lcd.width];
+void setFreq(uint32_t freq) {
+    rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
+    rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);
+    rf.writeReg(rf.REG_FRFMSB+2, freq);
+    //rf.writeReg(rf.REG_RXCONFIG, 0x28); // trigger RX restart not needed with FastHopOn
+}
+
+// sweepRadio performs one spectrum sweep from first by step for count steps. It stores the
+// samples in the provided buffer in the form -2*rssi, e.g., for -109dBm it stores 238.
+// The speed of the sweep is govered by usDelay, which is the number of microseconds to wait
+// between setting the frequency and reading the RSSI value.
+void sweepRadio(uint32_t first, uint32_t step, int count, uint8_t usDelay, uint8_t buf[]) {
+    uint32_t freq = first;
+#if 1
+    freq += count/2*step;
+    step /= 2;
+#endif
+    SysTick<72000000> delay;
+    usDelay = usDelay > 2 ? usDelay - 2 : 0;
+    setFreq(freq);
+    for (int x = 0; x < count; ++x) {
+        if (usDelay > 0) delay.micros(usDelay);
+        // set next freq before reading RSSI, gains a few us and doesn't seem to
+        // affect the RSSI that is in the pipeline...
+        freq += step;
+        setFreq(freq);
+        // read RSSI
+        *buf++ = rf.readReg(rf.REG_RSSIVALUE);
+#if 1
+        *buf++ = rf.readReg(rf.REG_RSSIVALUE);
+#endif
+    }
+    setFreq(first); // step back takes longer, so start now
+}
+
+void dumpRow(int count, uint8_t buf[]) {
+    for (int x = 0; x < count; ++x) {
+        printf(" %d", buf[x]);
+    }
+    printf("\r\n");
+    wait_ms(10000);
+}
+
+// packetDump prints the scanline if a threshold is exceeded
+void packetDump(int count, uint8_t buf[]) {
+    // calculate some RSSI stats
+    uint32_t sum=0, cnt=0;
+    uint32_t max=0xff;
+    for (int x = 0; x < count; ++x) {
+        uint8_t rssi = buf[x];
+        sum += (uint32_t)rssi;
+        cnt++;
+        if (rssi < max) max = rssi;
+    }
+    // dump if RSSI exceeds 80dBm
+    if (max > 2*80) return;
+    for (int x = 0; x < count; ++x) {
+        printf(" %d", buf[x]);
+    }
+    printf("\r\n");
+    wait_ms(500);
+}
+
+
+// statsDisplay is not functional yet...
+void statsDisplay(int count, uint8_t buf[]) {
+    uint32_t sum=0, cnt=0;
+    uint32_t max=0xff;
+    for (int x = 0; x < count; ++x) {
+        uint8_t rssi = buf[x];
+        sum += (uint32_t)rssi;
+        cnt++;
+        if (rssi < max) max = rssi;
+    }
+}
+
+int main () {
+#if 1
+    fullSpeedClock(); // 72Mhz
+#else
+    enableSysTick();  // 8Mhz
+#endif
+    printf("\r\n===== Waterfall 2 starting...\r\n");
+
+    // disable JTAG in AFIO-MAPR to release PB3, PB4, and PA15
+    constexpr uint32_t afio = 0x40010000;
+    MMIO32(afio + 0x04) |= 1 << 25; // disable JTAG, keep SWD enabled
+
+    initLcd();
+    //testPattern();
+
+    //printf("PB crl: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+0));
+    //printf("PB crh: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+4));
+    //printf("PB odr: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+12));
+
+    initPalette();
+
+    initRadio();
     rf.setMode(rf.MODE_RECEIVE);
     wait_ms(10);
 
-    uint8_t toggle = 0;
-
     while (true) {
         uint32_t start = ticks;
-        uint32_t sum=0, cnt=0;
-        uint32_t max=0xff;
 
         constexpr uint32_t middle = (((uint32_t)912000000<<2) / (32000000 >> 11)) << 6;
         constexpr uint32_t step = 164;
+        uint32_t first = middle - lcd.width/2 * step;
         printf("middle: %d %x\r\n", middle, middle);
 
+        static uint8_t rssiRow [lcd.width];
+
         for (int y = 0; y < lcd.height; ++y) {
-
-            uint32_t first = middle - 120 * step;
-
             // sanity checks
             uint8_t mode = rf.readReg(rf.REG_OPMODE);
             if (mode != rf.MODE_RECEIVE) {
@@ -199,72 +286,13 @@ int main () {
                 printf("OOPS: irq1=%02x\r\n", irq1);
             }
 
-if (toggle > 0) {
-            for (int x = 0; x < lcd.width; ++x) {
-                uint32_t freq = first + (uint32_t)x * step;
-                setFreq(freq);
-
-                //if (y==0 && x>=120 && x<=125)
-                //    printf("first=%x x=%d step=%d freq=%x=%d=%d\r\n", first, x, step, freq, freq, freq*61);
-
-                SysTick<72000000> now;
-                // if toggle == 5: no delay
-                if (toggle == 4) now.micros(120-2);
-                if (toggle == 3) now.micros(70-2);
-                if (toggle == 2) now.micros(35-2);
-                if (toggle == 1) now.micros(10-2);
-
-                //uint8_t irq1 = rf.readReg(rf.REG_IRQFLAGS1);
-                uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
-                sum += (uint32_t)rssi;
-                cnt++;
-                if (rssi < max) max = rssi;
-                //printf(" %x/%d", irq1, -(int)(rssi/2));
-
-                // add some grid points for reference
-                if ((y & 0x1F) == 0 && x % 10 == 0)
-                    rssi = 0; // white dot
-
-                //if (y==0 && x>=120 && x<=125) {
-                //    uint32_t f = rf.readReg(rf.REG_FRFMSB);
-                //      f = (f<<8) | rf.readReg(rf.REG_FRFMSB+1);
-                //      f = (f<<8) | rf.readReg(rf.REG_FRFMSB+2);
-                //    printf("x=%d f=%x=%d=%d\r\n", x, f, f, f*61);
-                //}
-                rssi = ~rssi;
-                pixelRow[x] = palette[rssi];
-            }
-} else {
-            uint32_t freq = first;
-            SysTick<72000000> now;
-            setFreq(freq);
-            for (int x = 0; x < lcd.width; ++x) {
-                now.micros(10-2);
-                // set next freq before reading RSSI, gains a few us and doesn't affect the
-                // RSSI that is in the pipeline...
-                freq += step;
-                setFreq(freq);
-                // read RSSI
-                uint8_t rssi = rf.readReg(rf.REG_RSSIVALUE);
-                sum += (uint32_t)rssi;
-                cnt++;
-                if (rssi < max) max = rssi;
-                if ((y & 0x1F) == 0 && x % 20 == 0)
-                    rssi = 0; // white dot
-                rssi = ~rssi;
-                pixelRow[x] = palette[rssi];
-            }
-}
-            //printf("\r\n"); wait_ms(1000); while(1);
-            setFreq(first); // step back takes longer, so start now
-
-            lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
-            lcd.pixels(0, y, pixelRow, lcd.width);  // update display
-
-            if (y%40==0) toggle = (toggle + 1) % 6;
+            sweepRadio(first, step, lcd.width, 10, rssiRow);
+            //dumpRow(lcd.width, rssiRow);
+            sweepDisplay(y, lcd.width, rssiRow);
+            packetDump(lcd.width, rssiRow);
         }
 
-        printf("screen=%dms sweep=%dms avg=%ddBm max=%ddBm\r\n",
-            ticks - start, (ticks-start)/lcd.height, -(int)(sum/cnt/2), -(int)(max/2));
+        printf("screen=%dms sweep=%dms step=%dus\r\n",
+            ticks - start, (ticks-start)/lcd.height, (ticks-start)*1000/lcd.height/lcd.width);
     }
 }
