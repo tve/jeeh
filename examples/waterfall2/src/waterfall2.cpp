@@ -3,6 +3,7 @@
 
 #include <jee.h>
 #include <jee/spi-rf96sa.h>
+#include <jee/text-font.h>
 
 UartDev< PinA<9>, PinA<10> > console;
 
@@ -21,6 +22,12 @@ ILI9325< decltype(spiA) > lcd;
 SpiGpio< PinB<5>, PinB<4>, PinB<3>, PinB<0>, 0 > spiA;
 ILI9341< decltype(spiA), PinB<6> > lcd;
 #endif
+
+TextLcd< decltype(lcd) > text;
+Font5x7< decltype(text) > lcd_text;
+void lcd_printf(const char* fmt, ...) {
+    va_list ap; va_start(ap, fmt); veprintf(lcd_text.putc, fmt, ap); va_end(ap);
+}
 
 // Radio
 
@@ -267,10 +274,6 @@ int main () {
     initLcd();
     //testPattern();
     lcd.freeze(16, 0);
-    for (int x = 0; x < 240; ++x) {
-        lcd.pixel(x, 0, 0xFFFF);
-        lcd.pixel(x, 15, 0xFFFF);
-    }
 
     //printf("PB crl: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+0));
     //printf("PB crh: 0x%08x\r\n", MMIO32(Periph::gpio+0x400+4));
@@ -286,6 +289,22 @@ int main () {
     uint32_t center = 912500000;
     uint32_t middle = ((center<<2) / (32000000 >> 11)) << 6;
 
+    //uint32_t step = bwConfigs[bwConfig].fdev;
+    uint32_t step = 82;
+    uint32_t first = middle - lcd.width/2 * step;
+    uint32_t dF = lcd.width/2*step*61035/1000;
+    //printf("middle: %d %x\r\n", middle, middle);
+
+    for (int x=0; x<lcd.width; x+=lcd.width/4) {
+        lcd.pixel(x, 12, 0xFFFF);
+        lcd.pixel(x, 13, 0xFFFF);
+        lcd.pixel(x, 14, 0xFFFF);
+        lcd.pixel(x, 15, 0xFFFF);
+        lcd_text.x = x;
+        lcd_text.y = 1;
+        lcd_printf("%dkHz", (center-dF+x*step*61035/1000)/1000);
+    }
+
     initRadio(bwConfig);
     rf.setMode(rf.MODE_RECEIVE);
     wait_ms(10);
@@ -293,12 +312,6 @@ int main () {
     while (true) {
         uint32_t start = ticks;
 
-        //uint32_t step = bwConfigs[bwConfig].fdev;
-        uint32_t step = 82;
-        uint32_t first = middle - lcd.width/2 * step;
-        //printf("middle: %d %x\r\n", middle, middle);
-
-        uint32_t dF = lcd.width/2*step*61035/1000;
         printf("center %dkHz +/-%dkHz %d..%dkHz RxBW=%dHz step=%dHz\r\n",
             center / 1000, dF/1000, (center-dF)/1000, (center+dF)/1000,
             bwConfigs[bwConfig].fdev*61, step*61);
@@ -329,7 +342,7 @@ int main () {
                 }
             }
             sweepDisplay(y, lcd.width, rssiRow);
-            packetDump(lcd.width, rssiRow);
+            //packetDump(lcd.width, rssiRow);
             statsDisplay(lcd.width, rssiRow, center-dF, step*61);
         }
 
