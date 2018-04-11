@@ -101,7 +101,7 @@ static const uint8_t configRegs [] = {
     0x0b, 0x32, // Over-current protection @150mA
     0x0c, 0x20, // max LNA gain, no boost
     0x0d, 0x08, // AFC off, AGC on
-    0x0e, 0x02, // 8-sample rssi smoothing
+    //0x0e, 0x02, // 8-sample rssi smoothing
     0x0e, 0x00, // 2-sample rssi smoothing
     0x10, 0x01, // unattainable rssi threshold: keep RX "seeking"
     0x1f, 0x00, // disable preamble detector: keep RX "seeking"
@@ -111,12 +111,20 @@ static const uint8_t configRegs [] = {
     0
 };
 
-// Step size and bandwidth configuration. n is the number of 61.035Hz oscillator
-// steps to take for each scan step and bw is the mant/exp value for the RxBVW register.
-static const struct { uint8_t bw; uint16_t br, fdev; } bwConfigs [] = {
-    { 0x07, 6667,  82 }, // 80*61.035=4.8kHz step, 3.9kHz rxBW, 4.8kbps bit rate, 5kHz Fdev
-    { 0x15, 3200, 164 }, // for 10kHz step: 10.4 RxBW (single-sided), 10kbps, 10kHz Fdev
+// The RSSI sampling rate in the sx1276 is determined by the RxBW setting. The formula for the
+// update rate in milliseconds is oversampling/4*RxBW, where oversampling is the smothing value
+// configured in RegRssiConfig (minimum of 2) and RxBW is in kHz. E.g. for RxBw=10.4kHz and
+// smoothing=2 the updates of RegRssiValue happen every 48us.
+// bw is the mant/exp value for the RxBW register, delay the time for RSSI to settle,
+// br and fDev are the bit-rate and freq dev settings that go with it although they may have no
+// impact...
+const struct { uint8_t bw, delay; uint16_t br, fdev; } bwConfigs [] = {
+    { 0x15, 48, 3200, 164 }, // for 10kHz step: 10.4 RxBW (single-sided), 48us, 10kbps, 10kHz Fdev
+    { 0x14, 24, 1600, 328 }, // for 20kHz step: 20.8 RxBW (single-sided), 24us, 20kbps, 20kHz Fdev
 };
+
+// 10.4kHz RxBW, 48us/step: 11.5ms per sweep, 10kHz/step: 2.4Mhz
+// 20.8kHz RxBW, 24us/step: 5.77ms per sweep
 
 template< typename SPI >
 void RF96sa<SPI>::init (uint8_t bw, bool hf) {

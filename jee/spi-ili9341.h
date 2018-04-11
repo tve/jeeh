@@ -142,6 +142,14 @@ struct ILI9341 {
         SPI::disable();
     }
 
+    // freeze top scanlines at the top of the display and bot at the bottom.
+    // (freezing prevents scrolling not updating)
+    static void freeze (int top, int bot) {
+        SPI::enable();
+        cmd(0x33); out16(top), out16(320-top), out16(bot);
+        SPI::disable();
+    }
+
     static void clear () {
         bounds();
         pixel(0, 0, 0);
