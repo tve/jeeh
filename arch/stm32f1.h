@@ -31,17 +31,6 @@ extern void enableSysTick (uint32_t divider =8000000/1000);
 
 // gpio
 
-template<char port>
-struct Port {
-    constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
-    constexpr static uint32_t crl  = base + 0x00;
-    constexpr static uint32_t crh  = base + 0x04;
-    constexpr static uint32_t idr  = base + 0x08;
-    constexpr static uint32_t odr  = base + 0x0C;
-    constexpr static uint32_t bsrr = base + 0x10;
-    constexpr static uint32_t brr  = base + 0x14;
-};
-
 enum class Pinmode {
     in_analog        = 0b0000,
     in_float         = 0b0100,
@@ -64,6 +53,41 @@ enum class Pinmode {
     alt_out_od       = 0b1111,
 };
 
+template<char port>
+struct Port {
+    constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
+    constexpr static uint32_t crl  = base + 0x00;
+    constexpr static uint32_t crh  = base + 0x04;
+    constexpr static uint32_t idr  = base + 0x08;
+    constexpr static uint32_t odr  = base + 0x0C;
+    constexpr static uint32_t bsrr = base + 0x10;
+    constexpr static uint32_t brr  = base + 0x14;
+
+    static void mode (int pin, Pinmode m) {
+        // enable GPIOx and AFIO clocks
+        MMIO32(Periph::rcc + 0x18) |= (1 << (port-'A'+2)) | (1<<0);
+
+        auto mval = static_cast<int>(m);
+        if (mval == 0b1000 || mval == 0b1100) {
+            uint16_t mask = 1U << pin;
+            MMIO32(bsrr) = mval & 0b0100 ? mask : mask << 16;
+            mval = 0b1000;
+        }
+
+        uint32_t cr = pin & 8 ? crh : crl;
+        int shift = 4 * (pin & 7);
+        MMIO32(cr) = (MMIO32(cr) & ~(0xF << shift)) | (mval << shift);
+    }
+
+    static void modeMap (uint16_t pins, Pinmode m) {
+        for (int i = 0; i < 16; ++i) {
+            if (pins & 1)
+                mode(i, m);
+            pins >>= 1;
+        }
+    }
+};
+
 template<char port,int pin>
 struct Pin {
     typedef Port<port> gpio;
@@ -71,18 +95,7 @@ struct Pin {
     constexpr static int id = 16 * (port-'A') + pin;
 
     static void mode (Pinmode m) {
-        // enable GPIOx and AFIO clocks
-        MMIO32(Periph::rcc + 0x18) |= (1 << (port-'A'+2)) | (1<<0);
-
-        auto mval = static_cast<int>(m);
-        if (mval == 0b1000 || mval == 0b1100) {
-            MMIO32(gpio::bsrr) = mval & 0b0100 ? mask : mask << 16;
-            mval = 0b1000;
-        }
-
-        constexpr uint32_t cr = pin & 8 ? gpio::crh : gpio::crl;
-        constexpr int shift = 4 * (pin & 7);
-        MMIO32(cr) = (MMIO32(cr) & ~(0xF << shift)) | (mval << shift);
+        gpio::mode(pin, m);
     }
 
     static int read () {
@@ -329,10 +342,10 @@ struct SpiHw {
 
     static void init () {
         disable();
-        SS::mode(Pinmode::out);
-        CK::mode(Pinmode::alt_out);
+        SS::mode(Pinmode::out_10mhz);
+        CK::mode(Pinmode::alt_out_10mhz);
         MI::mode(Pinmode::in_float);
-        MO::mode(Pinmode::alt_out);
+        MO::mode(Pinmode::alt_out_10mhz);
 
         MMIO32(Periph::rcc + 0x18) |= (1<<12);  // SPI1EN
         // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)

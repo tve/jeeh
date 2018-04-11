@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define MMIO32(x) (*(volatile uint32_t*) (x))
+#define MMIO16(x) (*(volatile uint16_t*) (x))
 
 // forward declaration, needs to be implemented in main.cpp
 void printf(const char* fmt, ...);

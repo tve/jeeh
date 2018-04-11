@@ -6,10 +6,14 @@ template< typename T, int S =6 >
 struct Font5x7 {
     constexpr static int width = T::width;
     constexpr static int height = T::height;
+    constexpr static int tabsize = 8 * 6;
 
     static void putc (int c) {
-        if (c == '\n')
-            x = width;
+        switch (c) {
+            case '\t': x += tabsize - x % tabsize; return;
+            case '\r': x = 0; return;
+            case '\n': x = width; break;
+        }
         if (x + S > width) {
             x = 0;
             y += 8;
@@ -47,7 +51,7 @@ struct TextLcd : LCD {
         for (int xi = 0; xi < len; ++xi) {
             uint8_t v = *ptr++;
             for (int i = 0; i < 8; ++i) {
-                col[i] = v & 1 ? 0xFFFF : 0x0000;
+                col[i] = v & 1 ? fg : bg;
                 v >>= 1;
             }
             LCD::pixels(x+xi, y, col, 8);
@@ -59,4 +63,12 @@ struct TextLcd : LCD {
             LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : 0);
         }
     }
+
+    static uint16_t fg, bg;
 };
+
+template< typename LCD >
+uint16_t TextLcd<LCD>::fg = 0xFFFF;
+
+template< typename LCD >
+uint16_t TextLcd<LCD>::bg;
