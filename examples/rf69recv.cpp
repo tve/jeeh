@@ -5,8 +5,9 @@
 
 UartBufDev< PinA<9>, PinA<10> > console;  // buffering avoids missed packets
 
-void printf(const char* fmt, ...) {
+int printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
+    return 0;
 }
 
 SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
