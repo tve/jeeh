@@ -1,4 +1,7 @@
-struct Periph {
+// Hardware access for STM32F103 family microcontrollers
+// see [1] https://jeelabs.org/ref/STM32F1-RM0008.pdf
+
+struct Periph {  // [1] p.49-50
     constexpr static uint32_t gpio = 0x40010800U;
     constexpr static uint32_t rcc  = 0x40021000U;
 };
@@ -31,7 +34,7 @@ extern void enableSysTick (uint32_t divider =8000000/1000);
 
 // gpio
 
-enum class Pinmode {
+enum class Pinmode {  // [1] p.170
     in_analog        = 0b0000,
     in_float         = 0b0100,
     in_pulldown      = 0b1000,  // pseudo mode, also clears output
@@ -54,7 +57,7 @@ enum class Pinmode {
 };
 
 template<char port>
-struct Port {
+struct Port {  // [1] pp.170
     constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
     constexpr static uint32_t crl  = base + 0x00;
     constexpr static uint32_t crh  = base + 0x04;
@@ -105,7 +108,7 @@ struct Pin {
     static void write (int v) {
         // MMIO32(v ? gpio::bsrr : gpio::brr) = mask;
         // this is slightly faster when v is not known at compile time:
-        MMIO32(gpio::bsrr) = v ? mask : mask << 16;
+        MMIO32(gpio::bsrr) = v ? mask : mask << 16;  // [1] p.172
     }
 
     // shorthand
@@ -124,7 +127,7 @@ struct Pin {
 // u(s)art
 
 template< typename TX, typename RX >
-class UartDev {
+class UartDev {  // [1] pp.819
 public:
     // TODO does not recognise alternate pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
@@ -133,7 +136,7 @@ public:
                                 TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
                                                0;   // else USART1
-    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
+    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :  // [1] p.50-51
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t sr  = base + 0x00;
     constexpr static uint32_t dr  = base + 0x04;
@@ -257,7 +260,7 @@ RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
 
 // system clock
 
-static void enableClkAt72mhz () {
+static void enableClkAt72mhz () {  // [1] p.49
     constexpr uint32_t rcc   = 0x40021000;
     constexpr uint32_t flash = 0x40022000;
 
@@ -280,7 +283,7 @@ static int fullSpeedClock () {
 
 // real-time clock
 
-struct RTC {
+struct RTC {  // [1] pp.486
     constexpr static uint32_t bdcr = Periph::rcc + 0x20;
     constexpr static uint32_t pwr  = 0x40007000;
     constexpr static uint32_t rtc  = 0x40002800;
@@ -333,7 +336,7 @@ struct RTC {
 // hardware spi support
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
-struct SpiHw {
+struct SpiHw {  // [1] pp.742
     // TODO does not recognise alternate pins
     constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7, SPI1
                                 MO::id == 31 ? 1 :  // PB15, SPI2
