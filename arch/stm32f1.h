@@ -375,3 +375,24 @@ struct SpiHw {  // [1] pp.742
         return MMIO32(dr);
     }
 };
+
+// independent watchdog
+
+struct Iwdg {  // [1] pp.495
+    constexpr static uint32_t iwdg = 0x40003000;
+    constexpr static uint32_t kr  = iwdg + 0x00;
+    constexpr static uint32_t pr  = iwdg + 0x04;
+    constexpr static uint32_t rlr = iwdg + 0x08;
+    constexpr static uint32_t sr  = iwdg + 0x0C;
+
+    Iwdg (int rate =7) {
+        while (sr & (1<<0)) ;  // wait until !PVU
+        MMIO32(kr) = 0x5555;   // unlock PR
+        MMIO32(pr) = rate;     // max timeout, 0 = 400ms, 7 = 26s
+        MMIO32(kr) = 0xCCCC;   // start watchdog
+    }
+
+    static void reset () {
+        MMIO32(kr) = 0xAAAA;
+    }
+};
