@@ -40,20 +40,20 @@ enum class Pinmode {  // [1] p.170
     in_pulldown      = 0b1000,  // pseudo mode, also clears output
     in_pullup        = 0b1100,  // pseudo mode, also sets output
 
-    out_10mhz        = 0b0001,
-    out_od_10mhz     = 0b0101,
-    alt_out_10mhz    = 0b1001,
-    alt_out_od_10mhz = 0b1101,
+    out              = 0b0001,
+    out_od           = 0b0101,
+    alt_out          = 0b1001,
+    alt_out_od       = 0b1101,
 
     out_2mhz         = 0b0010,
     out_od_2mhz      = 0b0110,
     alt_out_2mhz     = 0b1010,
     alt_out_od_2mhz  = 0b1110,
 
-    out              = 0b0011,
-    out_od           = 0b0111,
-    alt_out          = 0b1011,
-    alt_out_od       = 0b1111,
+    out_50mhz        = 0b0011,
+    out_od_50mhz     = 0b0111,
+    alt_out_50mhz    = 0b1011,
+    alt_out_od_50mhz = 0b1111,
 };
 
 template<char port>
@@ -350,10 +350,10 @@ struct SpiHw {  // [1] pp.742
     constexpr static uint32_t dr  = base + 0x0C;
 
     static void init () {
-        SS::mode(Pinmode::out_10mhz); disable();
-        CK::mode(Pinmode::alt_out_10mhz);
+        SS::mode(Pinmode::out); disable();
+        CK::mode(Pinmode::alt_out);
         MI::mode(Pinmode::in_float);
-        MO::mode(Pinmode::alt_out_10mhz);
+        MO::mode(Pinmode::alt_out);
 
         if (sidx == 0)
             MMIO32(Periph::rcc + 0x18) |= 1 << 12;  // SPI1
