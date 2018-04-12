@@ -29,7 +29,7 @@ struct DHT22 {
         if ((uint8_t) (buf[0] + buf[1] + buf[2] + buf[3]) != buf[4])
             return false;  // checksum is not valid
 
-        // for DHT11, adjust readings using: h = (h>>8) * 10; t = (t>>8) * 10;
+        // for DHT11, adjust readings using: h = (h>>8)*10; t = (t>>8)*10;
         // (optionally leave off the "*10" part to get integral values)
         h = (buf[0]<<8) + buf[1];
         t = (buf[2]<<8) + buf[3];
