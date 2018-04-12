@@ -92,7 +92,7 @@ struct SysTick {
     // FIXME this is ARM-specific, must move elsewhere to support other µCs
     constexpr static uint32_t tick = 0xE000E000;
 
-    static uint32_t us () {
+    static uint32_t micros () {
         uint32_t t, u;
         do {
             t = ticks;
@@ -103,9 +103,9 @@ struct SysTick {
         return t * 1000 + ((v * 100) / (HZ / 10000));
     }
 
-    static void micros (int n) {
-        uint32_t t = us();
-        while ((uint32_t) (us() - t) < n) ;
+    static void wait_us (int n) {
+        uint32_t t = micros();
+        while ((uint32_t) (micros() - t) < n) ;
     }
 };
 
