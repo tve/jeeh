@@ -1,5 +1,6 @@
 // Driver for an R61509V-based 400x240 LCD TFT display, using 16b-mode FSMC
 // tested with a "PZ6806L" board, e.g. https://www.ebay.com/itm/371993346994
+// see https://jeelabs.org/ref/R61509V.pdf
 
 // TODO vertical scrolling has been disabled, see below
 

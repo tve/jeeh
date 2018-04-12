@@ -1,5 +1,6 @@
 // Driver for an ILI9325-based 320x240 LCD TFT display, connected over SPI
 // tested with http://www.hotmcu.com/x-p-121.html
+// see https://jeelabs.org/ref/ILI9325.pdf
 
 template< typename SPI >
 struct ILI9325 {

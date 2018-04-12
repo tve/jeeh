@@ -1,5 +1,6 @@
 // Driver for an R61505U-based 320x240 LCD TFT display, using 16b-mode FSMC
 // tested with http://www.hotmcu.com/x-p-5.html
+// see https://jeelabs.org/ref/R61505U.pdf
 
 template< uint32_t REG, uint32_t DAT >
 struct R61505U {

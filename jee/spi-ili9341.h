@@ -1,4 +1,5 @@
 // Driver for an ILI9341-based 320x240 LCD TFT display, connected over SPI
+// see https://jeelabs.org/ref/ILI9341.pdf
 
 template< typename SPI, typename DC>
 struct ILI9341 {

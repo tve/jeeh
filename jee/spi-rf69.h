@@ -1,4 +1,5 @@
 // Native mode RF69 driver.
+// see https://jeelabs.org/ref/RFM69.pdf
 //
 // JeeLabs packet format:
 //  0: packet length N = 2..65

@@ -1,4 +1,5 @@
 // Driver for the PCD8544, as used in the 84x48 Nokia 5110 graphics LCD.
+// see https://jeelabs.org/ref/PCD8544.pdf
 
 template< typename C, typename I, typename D, typename E, typename R >
 struct PCD8544 {
