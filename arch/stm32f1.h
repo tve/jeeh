@@ -129,13 +129,16 @@ struct Pin {
 template< typename TX, typename RX >
 class UartDev {  // [1] pp.819
 public:
-    // TODO does not recognise alternate pins
-    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
-                                TX::id ==  2 ? 1 :  // PA2, USART2
+    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9,  USART1
+                                TX::id == 22 ? 0 :  // PB6,  USART1, remapped
+                                TX::id ==  2 ? 1 :  // PA2,  USART2
+                                TX::id == 53 ? 1 :  // PD5,  USART2, remapped
                                 TX::id == 26 ? 2 :  // PB10, USART3
+                                TX::id == 42 ? 2 :  // PC10, USART3, remapped
+                                TX::id == 56 ? 2 :  // PD8,  USART3, remapped
                                 TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
-                                               0;   // else USART1
+                                               0;   // else  USART1
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :  // [1] p.50-51
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t sr  = base + 0x00;
@@ -337,11 +340,13 @@ struct RTC {  // [1] pp.486
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiHw {  // [1] pp.742
-    // TODO does not recognise alternate pins
-    constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7, SPI1
+    constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7,  SPI1
+                                MO::id == 21 ? 0 :  // PB5,  SPI1, remapped
                                 MO::id == 31 ? 1 :  // PB15, SPI2
-                                MO::id == 21 ? 2 :  // PB5, SPI3
-                                               0;   // else SPI1
+                            // oops, this is not possible, also remapped SPI1!
+                            //  MO::id == 21 ? 2 :  // PB5,  SPI3
+                                MO::id == 44 ? 2 :  // PC12, SPI3, remapped
+                                               0;   // else  SPI1
     constexpr static uint32_t base = sidx == 0 ? 0x40013000 :
                                                  0x40003400 + 0x400 * sidx;
     constexpr static uint32_t cr1 = base + 0x00;
