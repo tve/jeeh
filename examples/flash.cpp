@@ -32,6 +32,6 @@ int main () {
 
 // sample output:
 //
-//  before 12345678 12345678
+//  before 01234567 FEDCBA98
 //  erased FFFFFFFF FFFFFFFF
-//   after 12345679 12345677
+//   after 01234568 FEDCBA97
