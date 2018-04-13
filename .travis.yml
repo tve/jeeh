@@ -35,6 +35,8 @@ env:
 #   - PLATFORMIO_CI_SRC=examples/systick.cpp
 #   - PLATFORMIO_CI_SRC=examples/dht22.cpp
 #   - PLATFORMIO_CI_SRC=examples/snake.cpp
+#   - PLATFORMIO_CI_SRC=examples/flash.cpp
+#   - PLATFORMIO_CI_SRC=examples/ihex.cpp
 #   - PLATFORMIO_CI_SRC=examples/waterfall/src/main.cpp
 
 install:
