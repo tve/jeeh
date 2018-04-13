@@ -401,3 +401,45 @@ struct Iwdg {  // [1] pp.495
         MMIO32(kr) = 0xAAAA;
     }
 };
+
+// flash memory writing and erasing
+
+struct Flash {
+    constexpr static uint32_t base = 0x40022000;
+    constexpr static uint32_t keyr = base + 0x04;
+    constexpr static uint32_t sr   = base + 0x0C;
+    constexpr static uint32_t cr   = base + 0x10;
+    constexpr static uint32_t ar   = base + 0x14;
+
+    static void write16 (void* addr, uint16_t val) {
+        if (*(uint16_t*) addr != 0xFFFF)
+            return;
+        unlock();
+        MMIO32(cr) = 0x01;
+        MMIO16(addr) = val;
+        finish();
+    }
+
+    static void write32 (void* addr, uint32_t val) {
+        write16(addr, val);
+        write16((uint16_t*) addr + 1, val >> 16);
+    }
+
+    static void erasePage (void* addr) {
+        unlock();
+        MMIO32(cr) = 0x02;
+        MMIO32(ar) = (uint32_t) addr | 0x08000000;
+        MMIO32(cr) = 0x42;
+        finish();
+    }
+
+    static void unlock () {
+        MMIO32(keyr) = 0x45670123;
+        MMIO32(keyr) = 0xCDEF89AB;
+    }
+
+    static void finish () {
+        while (MMIO32(sr) & (1<<0)) ;
+        MMIO32(cr) = 0x80;
+    }
+};
