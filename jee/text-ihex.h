@@ -1,5 +1,5 @@
 // Intel hex parser, the template argument specifies maximum data bytes.
-// see https://jeelabs.org/ref/IntelHex.pdf
+// see https://en.wikipedia.org/wiki/Intel_HEX
 
 template< int MAX >
 struct IntelHex {
@@ -33,15 +33,15 @@ struct IntelHex {
             case RECLEN:  len = value;
                           break;
             case OFFSET:
-            case OFFSET2: off = value;
+            case OFFSET2: addr = value;
                           break;
             case RECTYP:  type = value;
                           if (len == 0)
                               ++state; // no DATA
                           break;
             case DATA:    pos = count/2 - 5;
-                          if (pos < sizeof buf)
-                              buf[pos] = value;
+                          if (pos < sizeof data)
+                              data[pos] = value;
                           if (pos + 1 < len)
                               --state; // more DATA
                           break;
@@ -55,10 +55,10 @@ struct IntelHex {
 
     uint16_t value;
     uint16_t count;
-    uint16_t off;
+    uint16_t addr;
     uint8_t check;
     uint8_t len;
     uint8_t state;
     uint8_t type;
-    uint8_t buf [MAX];
+    uint8_t data [MAX];
 };
