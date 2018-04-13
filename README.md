@@ -1,6 +1,6 @@
 # JeeH
 
-Headers for framework-and platform-agnostic code.
+Headers for framework- and platform-agnostic code.
 
 * This code can be used in combination with arduino, libopencm3, mbed, and other frameworks.
 * A good C++ compiler with C++11 support is essential, due to heavy use of C++ templates.

@@ -1,6 +1,7 @@
 {
     "name": "JeeH",
-    "description": "Headers for framework-agnostic code",
+    "description": "Headers for framework- and platform-agnostic code",
+    "version": "1.1",
     "keywords": "experimental",
     "repository": {
         "type": "git",
