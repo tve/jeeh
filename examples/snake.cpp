@@ -14,12 +14,12 @@ int main() {
 
     while (true)
         for (int y = 0; y < 8; ++y) {
-            // first turn each of the X pixels on
+            // first turn each X pixel on
             for (int x = 0; x < 16; ++x) {
                 matrix.pixel(x, y, 1);
                 wait_ms(20);
             }
-            // then turn each of the X pixels off again
+            // then turn each X pixel off again
             for (int x = 0; x < 16; ++x) {
                 matrix.pixel(x, y, 0);
                 wait_ms(20);

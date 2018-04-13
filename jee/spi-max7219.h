@@ -3,10 +3,10 @@
 
 template< typename SPI, int NUM =1 >
 struct MAX7219 {
-    static void init () {
+    static void init (int intensity =0) {
         sendAll(0xC, 0x01);
         sendAll(0xB, 0x07);
-        intensity(0);
+        sendAll(0xA, intensity);
         clear();
     }
 
@@ -24,12 +24,10 @@ struct MAX7219 {
     }
 
     static void clear () {
-        for (int i = 1; i <= 8; ++i)
-            sendAll(i, 0);
-    }
-
-    static void intensity (int i) {
-        sendAll(0xA, i);
+        for (int i = 0; i < 8; ++i)
+            sendAll(i+1, 0);
+        for (int i = 0; i <= sizeof buf; ++i)
+            buf[i] = 0;
     }
 
     static void sendAll (uint8_t reg, uint8_t val) {
