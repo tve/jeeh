@@ -128,10 +128,8 @@ struct SlowPin : public T {
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiGpio {
     static void init () {
-        SS::write(1);
-        SS::mode(Pinmode::out);
-        CK::write(CP);
-        CK::mode(Pinmode::out);
+        SS::mode(Pinmode::out); SS::write(1);
+        CK::mode(Pinmode::out); CK::write(CP);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::out);
     }
@@ -159,10 +157,8 @@ class I2cBus {
 
 public:
     I2cBus () {
-        sda = 1;
-        sda.mode(Pinmode::out_od);
-        scl = 1;
-        scl.mode(Pinmode::out_od);
+        sda.mode(Pinmode::out_od); sda = 1;
+        scl.mode(Pinmode::out_od); scl = 1;
     }
 
     static uint8_t start(int addr) {
