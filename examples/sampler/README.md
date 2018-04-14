@@ -8,13 +8,13 @@ with output ending in something like this:
 
 ```text
 [...]
-===================================== [SUMMARY] =====================================
+================================== [SUMMARY] ===================================
 Environment blink   	[SUCCESS]
 Environment dht22   	[SUCCESS]
 [...]
 Environment spiflash	[SUCCESS]
 Environment systick 	[SUCCESS]
-=========================== [SUCCESS] Took 185.23 seconds ===========================
+======================== [SUCCESS] Took 25.72 seconds ==========================
 ```
 
 To build a single example, specify its environment name as follows:
