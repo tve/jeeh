@@ -8,6 +8,10 @@ Headers for framework- and platform-agnostic code.
 * Everything here is in flux. API's will change, as better idioms are being discovered.
 * This library is intended for use with [PlatformIO](https://platformio.org/lib/show/3082/JeeH): just add `JeeH` to `lib_deps`.
 
+### Examples
+
+See the [Sampler](https://github.com/jeelabs/jeeh/tree/master/examples/sampler) project.
+
 ### License
 
 JeeH wants to stand on the shoulders of giants. As every giant tends to prefer
