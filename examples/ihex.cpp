@@ -11,13 +11,14 @@ int printf(const char* fmt, ...) {
 }
 
 static void testIntelHex (const char* s) {
-    IntelHex<32> hex;
-
     printf("<%s>\n", s);
+
+    IntelHex<32> hex;
+    if (*s++ == ':')
+        hex.init();
+
     while (*s)
-        if (*s++ == ':')
-            hex.init();
-        else if (hex.parse(s[-1])) {
+        if (hex.parse(*s++)) {
             printf("check %3d count %2d len %2d state %d type %d addr $%04x\n",
                 hex.check, hex.count, hex.len, hex.state, hex.type, hex.addr);
             if (hex.state == hex.CHKSUM) {
@@ -30,6 +31,7 @@ static void testIntelHex (const char* s) {
                 printf("not fully parsed: %s\n", s);
             return;
         }
+
     printf("huh?");
 }
 
