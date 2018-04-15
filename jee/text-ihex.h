@@ -40,7 +40,7 @@ struct IntelHex {
                               ++state; // no DATA
                           break;
             case DATA:    pos = count/2 - 5;
-                          if (pos < sizeof data)
+                          if (pos < MAX)
                               data[pos] = value;
                           if (pos + 1 < len)
                               --state; // more DATA
