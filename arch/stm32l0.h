@@ -191,7 +191,7 @@ public:
         // nvic interrupt numbers are 27 and 28, respectively
         constexpr uint32_t nvic_en0r = 0xE000E100;
         constexpr int irq = 27 + uart.uidx;
-        MMIO32(nvic_en0r) |= 1 << irq;  // enable USART interrupt
+        MMIO32(nvic_en0r) = 1 << irq;  // enable USART interrupt
 
         MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
     }
