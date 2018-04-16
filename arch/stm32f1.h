@@ -191,26 +191,11 @@ RX UartDev<TX,RX>::rx;
 
 // interrupt-enabled uart, sits of top of polled uart
 
-template< typename TX, typename RX, int NTX =50, int NRX =NTX >
+template< typename TX, typename RX, int NTX =25, int NRX =NTX >
 class UartBufDev {
 public:
     static void init () {
         auto handler = []() {
-#if 1
-            uint32_t sr = MMIO32(uart.sr);
-            if (sr & ((1<<5) | (1<<3))) {
-                int c = MMIO32(uart.dr);
-                if (recv.free())
-                    recv.put(c);
-                // else discard the input
-            }
-            if (sr & (1<<7)) {
-                if (xmit.avail() > 0)
-                    MMIO32(uart.dr) = xmit.get();
-                else
-                    MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
-            }
-#else
             if (uart.readable()) {
                 int c = uart.getc();
                 if (recv.free())
@@ -223,7 +208,6 @@ public:
                 else
                     MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
             }
-#endif
         };
 
         switch (uart.uidx) {
