@@ -146,7 +146,7 @@ struct ILI9341 {
     // (freezing prevents scrolling not updating)
     static void freeze (int top, int bot) {
         SPI::enable();
-        cmd(0x33); out16(top), out16(320-top), out16(bot);
+        cmd(0x33); out16(top), out16(height-top), out16(bot);
         SPI::disable();
     }
 
@@ -155,7 +155,7 @@ struct ILI9341 {
         pixel(0, 0, 0);
 
         SPI::enable();
-        for (int i = 1; i < width * height; ++i)
+        for (int i=1; i<width*height; ++i)
             out16(0);
         SPI::disable();
     }
