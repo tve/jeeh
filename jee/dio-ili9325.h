@@ -1,5 +1,6 @@
 // Driver for an ILI9325-based 320x240 LCD TFT display, using 16b parallel mode
 // tested with http://www.hotmcu.com/x-p-44.html
+// see https://jeelabs.org/ref/ILI9325.pdf
 
 template< typename RD, typename WR, typename RS >
 struct ILI9325 {

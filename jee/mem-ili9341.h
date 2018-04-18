@@ -1,4 +1,5 @@
 // Driver for an ILI9341-based 320x240 LCD TFT display, using 16b-mode FSMC
+// see https://jeelabs.org/ref/ILI9341.pdf
 
 template< uint32_t REG, uint32_t DAT >
 struct ILI9341 {

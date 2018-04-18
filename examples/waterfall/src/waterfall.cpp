@@ -8,8 +8,9 @@
 
 UartDev< PinA<9>, PinA<10> > console;
 
-void printf(const char* fmt, ...) {
+int printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
+    return 0;
 }
 
 // this code can be used with two different types of TFT LCD boards

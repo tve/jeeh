@@ -18,8 +18,9 @@ PinA<6> light;
 PCD8544< PinA<0>, PinA<1>, PinA<3>, PinA<4>, PinA<5> > lcd;
 Font5x7< decltype(lcd) > console;
 
-void printf(const char* fmt, ...) {
+int printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
+    return 0;
 }
 
 int main() {

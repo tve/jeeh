@@ -1,4 +1,5 @@
 // Driver for the TM1638 led / 7-segment / keyboard controller.
+// see https://jeelabs.org/ref/TM1638.pdf
 
 // N and M are used to slow down the STB and CLK pins, 5/20 are ok for 72 MHz
 template< typename STB, typename CLK, typename DIO, int N =5, int M =20 >

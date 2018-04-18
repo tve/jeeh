@@ -24,16 +24,6 @@ cache:
 
 env:
     - PLATFORMIO_CI_SRC=examples/rf69recv.cpp
-#   - PLATFORMIO_CI_SRC=examples/blink.cpp
-#   - PLATFORMIO_CI_SRC=examples/hello.cpp
-#   - PLATFORMIO_CI_SRC=examples/i2c.cpp
-#   - PLATFORMIO_CI_SRC=examples/logo.cpp
-#   - PLATFORMIO_CI_SRC=examples/nokia.cpp
-#   - PLATFORMIO_CI_SRC=examples/oled.cpp
-#   - PLATFORMIO_CI_SRC=examples/printf.cpp
-#   - PLATFORMIO_CI_SRC=examples/spiflash.cpp
-#   - PLATFORMIO_CI_SRC=examples/systick.cpp
-#   - PLATFORMIO_CI_SRC=examples/waterfall/src/main.cpp
 
 install:
     - pip install -U platformio

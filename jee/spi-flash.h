@@ -1,6 +1,5 @@
-#include <jee.h>
-
-// driver for WinBond W25Qxx spi flash memory
+// Driver for WinBond W25Qxx spi flash memory
+// see https://jeelabs.org/ref/W25Q128F.pdf
 
 template< typename SPI >
 class SpiFlash {

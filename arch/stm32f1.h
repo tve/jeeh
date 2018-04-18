@@ -1,4 +1,7 @@
-struct Periph {
+// Hardware access for STM32F103 family microcontrollers
+// see [1] https://jeelabs.org/ref/STM32F1-RM0008.pdf
+
+struct Periph {  // [1] p.49-50
     constexpr static uint32_t gpio = 0x40010800U;
     constexpr static uint32_t rcc  = 0x40021000U;
 };
@@ -31,30 +34,30 @@ extern void enableSysTick (uint32_t divider =8000000/1000);
 
 // gpio
 
-enum class Pinmode {
+enum class Pinmode {  // [1] p.170
     in_analog        = 0b0000,
     in_float         = 0b0100,
     in_pulldown      = 0b1000,  // pseudo mode, also clears output
     in_pullup        = 0b1100,  // pseudo mode, also sets output
 
-    out_10mhz        = 0b0001,
-    out_od_10mhz     = 0b0101,
-    alt_out_10mhz    = 0b1001,
-    alt_out_od_10mhz = 0b1101,
+    out              = 0b0001,
+    out_od           = 0b0101,
+    alt_out          = 0b1001,
+    alt_out_od       = 0b1101,
 
     out_2mhz         = 0b0010,
     out_od_2mhz      = 0b0110,
     alt_out_2mhz     = 0b1010,
     alt_out_od_2mhz  = 0b1110,
 
-    out              = 0b0011,
-    out_od           = 0b0111,
-    alt_out          = 0b1011,
-    alt_out_od       = 0b1111,
+    out_50mhz        = 0b0011,
+    out_od_50mhz     = 0b0111,
+    alt_out_50mhz    = 0b1011,
+    alt_out_od_50mhz = 0b1111,
 };
 
 template<char port>
-struct Port {
+struct Port {  // [1] pp.170
     constexpr static uint32_t base = Periph::gpio + 0x400 * (port-'A');
     constexpr static uint32_t crl  = base + 0x00;
     constexpr static uint32_t crh  = base + 0x04;
@@ -105,7 +108,7 @@ struct Pin {
     static void write (int v) {
         // MMIO32(v ? gpio::bsrr : gpio::brr) = mask;
         // this is slightly faster when v is not known at compile time:
-        MMIO32(gpio::bsrr) = v ? mask : mask << 16;
+        MMIO32(gpio::bsrr) = v ? mask : mask << 16;  // [1] p.172
     }
 
     // shorthand
@@ -124,16 +127,19 @@ struct Pin {
 // u(s)art
 
 template< typename TX, typename RX >
-class UartDev {
+class UartDev {  // [1] pp.819
 public:
-    // TODO does not recognise alternate pins
-    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
-                                TX::id ==  2 ? 1 :  // PA2, USART2
+    constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9,  USART1
+                                TX::id == 22 ? 0 :  // PB6,  USART1, remapped
+                                TX::id ==  2 ? 1 :  // PA2,  USART2
+                                TX::id == 53 ? 1 :  // PD5,  USART2, remapped
                                 TX::id == 26 ? 2 :  // PB10, USART3
+                                TX::id == 42 ? 2 :  // PC10, USART3, remapped
+                                TX::id == 56 ? 2 :  // PD8,  USART3, remapped
                                 TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
-                                               0;   // else USART1
-    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
+                                               0;   // else  USART1
+    constexpr static uint32_t base = uidx == 0 ? 0x40013800 :  // [1] p.50-51
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t sr  = base + 0x00;
     constexpr static uint32_t dr  = base + 0x04;
@@ -154,7 +160,7 @@ public:
     }
 
     static bool writable () {
-        return (MMIO32(sr) & 0x80) != 0;  // TXE
+        return (MMIO32(sr) & (1<<7)) != 0;  // TXE
     }
 
     static void putc (int c) {
@@ -164,7 +170,7 @@ public:
     }
 
     static bool readable () {
-        return (MMIO32(sr) & 0x24) != 0;  // RXNE or ORE
+        return (MMIO32(sr) & ((1<<5) | (1<<3))) != 0;  // RXNE or ORE
     }
 
     static int getc () {
@@ -185,10 +191,10 @@ RX UartDev<TX,RX>::rx;
 
 // interrupt-enabled uart, sits of top of polled uart
 
-template< typename TX, typename RX, int N =50 >
+template< typename TX, typename RX, int NTX =25, int NRX =NTX >
 class UartBufDev {
 public:
-    UartBufDev () {
+    static void init () {
         auto handler = []() {
             if (uart.readable()) {
                 int c = uart.getc();
@@ -215,7 +221,7 @@ public:
         // nvic interrupt numbers are 37, 38, 39, 52, and 53, respectively
         constexpr uint32_t nvic_en1r = 0xE000E104;
         constexpr int irq = (uart.uidx < 3 ? 37 : 49) + uart.uidx;
-        MMIO32(nvic_en1r) |= 1 << (irq-32);  // enable USART interrupt
+        MMIO32(nvic_en1r) = 1 << (irq-32);  // enable USART interrupt
 
         MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
     }
@@ -242,22 +248,22 @@ public:
     }
 
     static UartDev<TX,RX> uart;
-    static RingBuffer<N> recv;
-    static RingBuffer<N> xmit;
+    static RingBuffer<NRX> recv;
+    static RingBuffer<NTX> xmit;
 };
 
-template< typename TX, typename RX, int N >
-UartDev<TX,RX> UartBufDev<TX,RX,N>::uart;
+template< typename TX, typename RX, int NTX, int NRX >
+UartDev<TX,RX> UartBufDev<TX,RX,NTX,NRX>::uart;
 
-template< typename TX, typename RX, int N >
-RingBuffer<N> UartBufDev<TX,RX,N>::recv;
+template< typename TX, typename RX, int NTX, int NRX >
+RingBuffer<NRX> UartBufDev<TX,RX,NTX,NRX>::recv;
 
-template< typename TX, typename RX, int N >
-RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+template< typename TX, typename RX, int NTX, int NRX >
+RingBuffer<NTX> UartBufDev<TX,RX,NTX,NRX>::xmit;
 
 // system clock
 
-static void enableClkAt72mhz () {
+static void enableClkAt72mhz () {  // [1] p.49
     constexpr uint32_t rcc   = 0x40021000;
     constexpr uint32_t flash = 0x40022000;
 
@@ -280,7 +286,7 @@ static int fullSpeedClock () {
 
 // real-time clock
 
-struct RTC {
+struct RTC {  // [1] pp.486
     constexpr static uint32_t bdcr = Periph::rcc + 0x20;
     constexpr static uint32_t pwr  = 0x40007000;
     constexpr static uint32_t rtc  = 0x40002800;
@@ -333,12 +339,14 @@ struct RTC {
 // hardware spi support
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
-struct SpiHw {
-    // TODO does not recognise alternate pins
-    constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7, SPI1
+struct SpiHw {  // [1] pp.742
+    constexpr static int sidx = MO::id ==  7 ? 0 :  // PA7,  SPI1
+                                MO::id == 21 ? 0 :  // PB5,  SPI1, remapped
                                 MO::id == 31 ? 1 :  // PB15, SPI2
-                                MO::id == 21 ? 2 :  // PB5, SPI3
-                                               0;   // else SPI1
+                            // oops, this is not possible, also remapped SPI1!
+                            //  MO::id == 21 ? 2 :  // PB5,  SPI3
+                                MO::id == 44 ? 2 :  // PC12, SPI3, remapped
+                                               0;   // else  SPI1
     constexpr static uint32_t base = sidx == 0 ? 0x40013000 :
                                                  0x40003400 + 0x400 * sidx;
     constexpr static uint32_t cr1 = base + 0x00;
@@ -347,10 +355,10 @@ struct SpiHw {
     constexpr static uint32_t dr  = base + 0x0C;
 
     static void init () {
-        SS::mode(Pinmode::out_10mhz); disable();
-        CK::mode(Pinmode::alt_out_10mhz);
+        SS::mode(Pinmode::out); disable();
+        CK::mode(Pinmode::alt_out);
         MI::mode(Pinmode::in_float);
-        MO::mode(Pinmode::alt_out_10mhz);
+        MO::mode(Pinmode::alt_out);
 
         if (sidx == 0)
             MMIO32(Periph::rcc + 0x18) |= 1 << 12;  // SPI1
@@ -370,5 +378,68 @@ struct SpiHw {
         MMIO32(dr) = v;
         while ((MMIO32(sr) & 1) == 0) ;
         return MMIO32(dr);
+    }
+};
+
+// independent watchdog
+
+struct Iwdg {  // [1] pp.495
+    constexpr static uint32_t iwdg = 0x40003000;
+    constexpr static uint32_t kr  = iwdg + 0x00;
+    constexpr static uint32_t pr  = iwdg + 0x04;
+    constexpr static uint32_t rlr = iwdg + 0x08;
+    constexpr static uint32_t sr  = iwdg + 0x0C;
+
+    Iwdg (int rate =7) {
+        while (sr & (1<<0)) ;  // wait until !PVU
+        MMIO32(kr) = 0x5555;   // unlock PR
+        MMIO32(pr) = rate;     // max timeout, 0 = 400ms, 7 = 26s
+        MMIO32(kr) = 0xCCCC;   // start watchdog
+    }
+
+    static void reset () {
+        MMIO32(kr) = 0xAAAA;
+    }
+};
+
+// flash memory writing and erasing
+
+struct Flash {
+    constexpr static uint32_t base = 0x40022000;
+    constexpr static uint32_t keyr = base + 0x04;
+    constexpr static uint32_t sr   = base + 0x0C;
+    constexpr static uint32_t cr   = base + 0x10;
+    constexpr static uint32_t ar   = base + 0x14;
+
+    static void write16 (void* addr, uint16_t val) {
+        if (*(uint16_t*) addr != 0xFFFF)
+            return;
+        unlock();
+        MMIO32(cr) = 0x01;
+        MMIO16(addr) = val;
+        finish();
+    }
+
+    static void write32 (void* addr, uint32_t val) {
+        write16(addr, val);
+        write16((uint16_t*) addr + 1, val >> 16);
+    }
+
+    static void erasePage (void* addr) {
+        unlock();
+        MMIO32(cr) = 0x02;
+        MMIO32(ar) = (uint32_t) addr | 0x08000000;
+        MMIO32(cr) = 0x42;
+        finish();
+    }
+
+    static void unlock () {
+        MMIO32(keyr) = 0x45670123;
+        MMIO32(keyr) = 0xCDEF89AB;
+    }
+
+    static void finish () {
+        while (MMIO32(sr) & (1<<0)) ;
+        MMIO32(cr) = 0x80;
     }
 };

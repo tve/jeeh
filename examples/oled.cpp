@@ -8,8 +8,9 @@ I2cBus< PinB<7>, PinB<6> > bus;  // standard I2C pins for SDA and SCL
 SSD1306< decltype(bus) > oled;
 Font5x7< decltype(oled) > console;
 
-void printf(const char* fmt, ...) {
+int printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
+    return 0;
 }
 
 int main () {

@@ -95,7 +95,7 @@ struct SysTick {
     // FIXME this is ARM-specific, must move elsewhere to support other µCs
     constexpr static uint32_t tick = 0xE000E000;
 
-    static uint32_t us () {
+    static uint32_t micros () {
         uint32_t t, u;
         do {
             t = ticks;
@@ -106,9 +106,9 @@ struct SysTick {
         return t * 1000 + ((v * 100) / (HZ / 10000));
     }
 
-    static void micros (uint32_t n) {
-        uint32_t t = us();
-        while ((uint32_t) (us() - t) < n) ;
+    static void wait_us (int n) {
+        uint32_t t = micros();
+        while ((uint32_t) (micros() - t) < n) ;
     }
 };
 
@@ -131,11 +131,8 @@ struct SlowPin : public T {
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiGpio {
     static void init () {
-        SS::write(1);
-        SS::mode(Pinmode::out);
-        CK::write(CP);
-        CK::mode(Pinmode::out);
-        //MI::mode(Pinmode::in_pulldown);
+        SS::mode(Pinmode::out); SS::write(1);
+        CK::mode(Pinmode::out); CK::write(CP);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::out);
     }
@@ -163,10 +160,8 @@ class I2cBus {
 
 public:
     I2cBus () {
-        sda = 1;
-        sda.mode(Pinmode::out_od);
-        scl = 1;
-        scl.mode(Pinmode::out_od);
+        sda.mode(Pinmode::out_od); sda = 1;
+        scl.mode(Pinmode::out_od); scl = 1;
     }
 
     static uint8_t start(int addr) {
@@ -226,3 +221,4 @@ SlowPin<SCL,N> I2cBus<SDA,SCL,N>::scl;
 
 extern void putInt (void (*emit)(int), int val, int base =10, int width =0, char fill =' ');
 extern void veprintf(void (*emit)(int), const char* fmt, va_list ap);
+extern int printf(const char* fmt, va_list ap);  // to be defined in app
