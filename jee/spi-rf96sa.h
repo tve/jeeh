@@ -60,8 +60,6 @@ template< typename SPI >
 void RF96sa<SPI>::setMode (uint8_t newMode) {
     writeReg(REG_OPMODE, (readReg(REG_OPMODE) & 0xF8) | newMode);
     while ((readReg(REG_IRQFLAGS1) & IRQ1_MODEREADY) == 0) {
-        //printf("Mode new:%02x now:%02x IRQ:%02x\r\n", newMode, readReg(REG_OPMODE), readReg(REG_IRQFLAGS1));
-        //wait_ms(100);
         Yield();
     }
 }
