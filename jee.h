@@ -123,6 +123,18 @@ struct SlowPin : public T {
     void operator= (int v) const { write(v); }
 };
 
+// dummy pin, this ignores all calls
+
+struct NoPin {
+    static void mode (Pinmode) {}
+    static int read () { return 0; }
+    static void write (int) {}
+    static void toggle () {}
+
+    operator int () const { return read(); }
+    void operator= (int v) const { write(v); }
+};
+
 // spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
