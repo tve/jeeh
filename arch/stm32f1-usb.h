@@ -27,7 +27,7 @@ constexpr uint32_t USB_BASE           = (APB1PERIPH_BASE + 0x00005C00U);
 constexpr uint32_t USB_PMAADDR        = (APB1PERIPH_BASE + 0x00006000U);
 
 constexpr uint32_t AHBPERIPH_BASE     = (PERIPH_BASE + 0x00020000U);
-constexpr uint32_t RCC_BASE           = (AHBPERIPH_BASE + 0x00001000U);
+constexpr uint32_t RCCBASE            = (AHBPERIPH_BASE + 0x00001000U);
 constexpr uint32_t FLASH_R_BASE       = (AHBPERIPH_BASE + 0x00002000U);
 
 constexpr uint32_t USB_EP_ISOCHRONOUS = 0x00000400U;
@@ -42,17 +42,14 @@ constexpr uint32_t USB_EP_RX_VALID    = 0x00003000U;
 constexpr uint32_t USB_EP_CONTROL     = 0x00000200U;
 constexpr uint32_t USB_EP_INTERRUPT   = 0x00000600U;
 constexpr uint32_t USB_EP_RX_NAK      = 0x00002000U;
-constexpr uint32_t RCC_CFGR_SW_PLL    = 0x00000002U;
-constexpr uint32_t RCC_CFGR_SWS_PLL   = 0x00000008U;
 
 #define USBDEV                ((USB_TypeDef *)USB_BASE)
-#define RCC                   ((RCC_TypeDef *)RCC_BASE)
+#define RCC                   ((RCC_TypeDef *)RCCBASE)
 #define FLASH                 ((FLASH_TypeDef *)FLASH_R_BASE)
 
 constexpr uint32_t USB_EP_T_FIELD      = (3<<9);
 constexpr uint32_t USB_EPTX_STAT       = (3<<4);
 constexpr uint32_t USB_EP_KIND         = (1<<8);
-constexpr uint32_t RCC_APB1RSTR_USBRST = (1<<23);
 constexpr uint32_t USB_CNTR_CTRM       = (1<<15);
 constexpr uint32_t USB_CNTR_RESETM     = (1<<10);
 constexpr uint32_t USB_CNTR_ERRM       = (1<<13);
@@ -246,8 +243,6 @@ static void usbd_init() {
     endpoint[CDC_TXD_EP&3] = cdc_tx;
 
     RCC->APB1ENR |= (1<<23); // enable usb
-    //RCC->APB1RSTR |= RCC_APB1RSTR_USBRST;
-    //RCC->APB1RSTR &= ~RCC_APB1RSTR_USBRST;
     USBDEV->CNTR = USB_CNTR_CTRM | USB_CNTR_RESETM | USB_CNTR_ERRM |
                    USB_CNTR_SOFM | USB_CNTR_SUSPM | USB_CNTR_WKUPM;
 }
