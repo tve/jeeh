@@ -12,6 +12,10 @@ void printf(const char* fmt, ...) {
     va_list ap; va_start(ap, fmt); veprintf(console.putc, fmt, ap); va_end(ap);
 }
 
+bool nextMode();
+template <typename RF> void initRadio(RF& rf, uint8_t id, uint32_t freq);
+template <typename RF> void dumpRadioRegs(RF& rf);
+
 // Display
 
 #if 0
@@ -40,6 +44,11 @@ RF96sa< decltype(spiB1) > rf915;
 RF96fsk< decltype(spiB1) > fsk915;
 SpiHw< PinA<7>, PinA<6>, PinA<5>, PinA<8> > spiB2;
 RF96sa< decltype(spiB2) > rf433;
+
+int group = 6;
+
+#include "waterfall.h"
+#include "monitor.h"
 
 // Button
 
@@ -97,7 +106,7 @@ static void initLcd() {
 }
 
 template <typename RF>
-void initRadio(RF& rf, uint8_t config, uint32_t freq) {
+void initRadio(RF& rf, uint8_t id, uint32_t freq) {
     // issue reset pulse (note: this resets both radios!)
     PinA<11> rf_reset;
     rf_reset = 0;
@@ -109,12 +118,25 @@ void initRadio(RF& rf, uint8_t config, uint32_t freq) {
     rf_reset = 1;
     wait_ms(1);
     // init radio
-    rf.init(config, freq > 600);
+    rf.init(id, group, freq);
     rf.setFrequency(freq);
     printf("Radio rev: %02x\r\n", rf.readReg(0x42));
 }
 
-#include "waterfall.h"
+// dump all radio registers
+template <typename RF>
+void dumpRadioRegs(RF& rf) {
+    printf("   ");
+    for (int i = 0; i < 16; ++i)
+        printf("%3x", i);
+    for (int i = 0; i < 0x80; i += 16) {
+        printf("\r\n%02x:", i);
+        for (int j = 0; j < 16; ++j)
+            printf(" %02x", rf.readReg(i+j));
+    }
+    printf("\r\n");
+}
+
 
 int main () {
 #if 1
@@ -133,11 +155,13 @@ int main () {
     initLcd();
     //testPattern();
     lcd.freeze(16, 0);
+    text.top = 16;
 
     waterfall<decltype(rf915), decltype(lcd)> wf1;
     waterfall<decltype(rf433), decltype(lcd)> wf2;
+    pktmon<decltype(fsk915), decltype(lcd)> pkt1;
 
-    int which = 0;
+    int which = 2;
     while (true) {
       switch (which) {
       case 0:
@@ -146,7 +170,10 @@ int main () {
       case 1:
         wf2.run(rf433, lcd, which);
         break;
+      case 2:
+        pkt1.run(fsk915, lcd, 912500);
+        break;
       }
-      which = (which+1)%2;
+      which = (which+1)%3;
     }
 }

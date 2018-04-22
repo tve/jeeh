@@ -22,7 +22,7 @@ struct RF96fsk {
     void send (uint8_t header, const void* ptr, int len);
     void sleep (); // put the radio to sleep to save power
 
-    int32_t fei;    // FEI freq error of RX'd packet in Hz
+    int32_t afc;    // AFC freq correction applied
     uint8_t rssi;   // -RSSI*2 of last packet received
     uint8_t lna;    // LNA attenuation in dB
     uint8_t myId;
@@ -125,6 +125,7 @@ void RF96fsk<SPI>::configure (const uint8_t* p) {
         writeReg(cmd, p[1]);
         p += 2;
     }
+    mode = MODE_SLEEP;
 }
 
 // configRegs contains register-address, register-value pairs for initialization.
@@ -186,6 +187,7 @@ void RF96fsk<SPI>::init (uint8_t id, uint8_t group, int freq) {
     setFrequency(freq);
 
     writeReg(REG_SYNCVALUE3, group);
+
 }
 
 // txPower sets the transmit power to the requested level in dB. The driver assumes that the
@@ -218,21 +220,22 @@ static uint8_t RF96lnaMap[] = { 0, 0, 6, 12, 24, 36, 48, 48 };
 // valid when a packet has been received but may change with the next call to receive().
 template< typename SPI >
 int RF96fsk<SPI>::receive (void* ptr, int len) {
-    if (mode != MODE_RECEIVE)
+    static uint8_t lastFlag;
+    if (mode != MODE_RECEIVE) {
         setMode(MODE_RECEIVE);
-    else {
-        static uint8_t lastFlag;
-        if ((readReg(REG_IRQFLAGS1) & IRQ1_RXREADY) != lastFlag) {
-            lastFlag ^= IRQ1_RXREADY;
+        lastFlag = 0;
+    } else {
+        if ((readReg(REG_IRQFLAGS1) & IRQ1_SYNADDRMATCH) != lastFlag) {
+            lastFlag ^= IRQ1_SYNADDRMATCH;
             if (lastFlag) { // flag just went from 0 to 1
                 rssi = readReg(REG_RSSIVALUE);
                 lna = RF96lnaMap[ (readReg(REG_LNAVALUE) >> 5) & 0x7 ];
                 SPI::enable();
-                SPI::transfer(REG_FEIMSB);
-                fei = SPI::transfer(0) << 8;
-                fei |= SPI::transfer(0);
+                SPI::transfer(REG_AFCMSB);
+                int16_t f = SPI::transfer(0) << 8;
+                f |= SPI::transfer(0);
                 SPI::disable();
-                fei *= 61;
+                afc = (int32_t)f * 61;
             }
         }
 

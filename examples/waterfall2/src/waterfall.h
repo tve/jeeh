@@ -58,19 +58,6 @@ class waterfall {
         lcd.pixels(0, y, pixelRow, count); // update display
     }
 
-    // dump all radio registers
-    private: void dumpRadioRegs(RF& rf) {
-        printf("   ");
-        for (int i = 0; i < 16; ++i)
-            printf("%3x", i);
-        for (int i = 0; i < 0x80; i += 16) {
-            printf("\r\n%02x:", i);
-            for (int j = 0; j < 16; ++j)
-                printf(" %02x", rf.readReg(i+j));
-        }
-        printf("\r\n");
-    }
-
     private: void setFreq(RF& rf, uint32_t freq) {
         rf.writeReg(rf.REG_FRFMSB,   freq >> 16);
         rf.writeReg(rf.REG_FRFMSB+1, freq >> 8);

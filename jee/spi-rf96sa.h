@@ -14,6 +14,7 @@
 template< typename SPI >
 struct RF96sa {
     void init (uint8_t bw=0, bool hf=true); // init radio with HF/LF and given bandwidth config
+    void init(uint8_t id, uint8_t group, int freq); // more std init, uses bwConfig[1]
     void setMode (uint8_t newMode);
     void setFrequency (uint32_t freq);
     uint8_t rssi(); // returns rssi measurement in -dBm
@@ -135,6 +136,11 @@ void RF96sa<SPI>::init (uint8_t bw, bool hf) {
     writeReg(0x03, c.br);    // set bit rate LSB
     writeReg(0x04, c.fdev>>8); // set Fdev MSB
     writeReg(0x05, c.fdev);    // set Fdev LSB
+}
+
+template< typename SPI >
+void RF96sa<SPI>::init(uint8_t id, uint8_t group, int freq) {
+    init(1, freq > 600);
 }
 
 template< typename SPI >
