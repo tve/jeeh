@@ -44,6 +44,8 @@ public:
 struct VTable;
 extern VTable& VTableRam ();
 
+extern void wait_ms (uint32_t ms);
+
 // architecture-specific definitions
 
 #if STM32F1
@@ -84,8 +86,6 @@ template <int N> using PinK = Pin<'K',N>;
 #ifndef ticks
 extern uint32_t volatile ticks;
 #endif
-
-extern void wait_ms (uint32_t ms);
 
 template< uint32_t HZ >
 struct SysTick {

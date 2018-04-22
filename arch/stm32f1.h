@@ -443,3 +443,50 @@ struct Flash {
         MMIO32(cr) = 0x80;
     }
 };
+
+// usb serial console
+
+namespace USB {
+#include "stm32f1-usb.h"
+}
+
+template< typename USBPIN, int USBPOL =0 >
+struct UsbDev {
+    UsbDev () {
+        fullSpeedClock();
+
+        USBPIN::mode(Pinmode::out);
+        USBPIN::write(USBPOL);
+        wait_ms(2);
+        USBPIN::write(!USBPOL);
+
+        USB::usbd_init();
+    }
+
+    static bool writable () {
+        poll();
+        return USB::txFill < sizeof USB::txBuf;
+    }
+
+    static void putc (int c) {
+        while (!writable()) ;
+        USB::txBuf[USB::txFill++] = c;
+    }
+
+    static bool readable () {
+        poll();
+        return USB::rxNext < USB::rxFill;
+    }
+
+    static int getc () {
+        while (!readable()) ;
+        return USB::rxBuf[USB::rxNext++];
+    }
+
+    static void poll () {
+        if (USB::txFill > 0 && USB::ep_write(USB::CDC_TXD_EP, USB::txBuf,
+                                                USB::txFill) == USB::txFill)
+            USB::txFill = 0;
+        USB::evt_poll();
+    }
+};
