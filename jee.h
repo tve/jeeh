@@ -140,7 +140,7 @@ struct NoPin {
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiGpio {
     static void init () {
-        SS::mode(Pinmode::out); SS::write(1);
+        SS::mode(Pinmode::out); disable();
         CK::mode(Pinmode::out); CK::write(CP);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::out);
@@ -152,8 +152,8 @@ struct SpiGpio {
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
             MO::write(v & 0x80);
-            CK::write(!CP);
             v <<= 1;
+            CK::write(!CP);
             v |= MI::read();
             CK::write(CP);
         }
