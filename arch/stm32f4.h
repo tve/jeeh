@@ -1,4 +1,5 @@
 struct Periph {
+    constexpr static uint32_t fsmc = 0x40000000U;
     constexpr static uint32_t gpio = 0x40020000U;
     constexpr static uint32_t rcc  = 0x40023800U;
 };
@@ -31,7 +32,7 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =168000000/1000);
+extern void enableSysTick (uint32_t divider =16000000/1000);
 
 // gpio
 
@@ -69,7 +70,7 @@ struct Port {
         MMIO32(moder) = (MMIO32(moder) & ~(3<<(2*pin))) | ((mval>>3) << 2*pin);
         MMIO32(typer) = (MMIO32(typer) & ~(1<<pin)) | (((mval>>2) & 1) << pin);
         MMIO32(pupdr) = (MMIO32(pupdr) & ~(3<<(2*pin))) | ((mval & 3) << 2*pin);
-        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3<<(2*pin))) | (0b11 << 2*pin);
+        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3<<(2*pin))) | (0b01 << 2*pin);
 
         uint32_t afr = pin & 8 ? afrh : afrl;
         int shift = 4 * (pin & 7);
@@ -144,7 +145,7 @@ public:
         else
             MMIO32(Periph::rcc + 0x40) |= 1 << (16+uidx); // U(S)ART 2..5
 
-        MMIO32(brr) = 729;  // 115200 baud @ 84 MHz
+        MMIO32(brr) = 139;  // 115200 baud @ 16 MHz
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
     }
 
@@ -261,17 +262,16 @@ static void enableClkAt168mhz () {
     MMIO32(rcc + 0x00) = (1<<16); // HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     MMIO32(rcc + 0x08) = 1; // switch to HSE
-    MMIO32(rcc + 0x04) = (7<<24) | (1<<22) | (0<<16) | (336<<6) | (8<<0);
+    MMIO32(rcc + 0x04) = (7<<24) | (1<<22) | (0<<16) | (168<<6) | (4<<0);
     MMIO32(rcc + 0x00) |= (1<<24); // PLLON
     while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
-    MMIO32(rcc + 0x08) = (4<<13) | (5<<10) | (1<<1);
+    MMIO32(rcc + 0x08) = (4<<13) | (5<<10) | (2<<0);
 }
 
 static int fullSpeedClock () {
     constexpr uint32_t hz = 168000000;
-    enableClkAt168mhz();                // using external 8 MHz crystal
-    enableSysTick(hz/1000);             // systick once every 1 ms
-    // TODO USART1 is still running off the (less accurate) 16 MHz HSI clock
-    // MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
+    enableClkAt168mhz();                 // using external 8 MHz crystal
+    enableSysTick(hz/1000);              // systick once every 1 ms
+    MMIO32(0x40011008) = (hz/2)/115200;  // usart1: 115200 baud @ 84 MHz
     return hz;
 }
