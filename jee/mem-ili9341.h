@@ -125,14 +125,17 @@ struct ILI9341 {
         out16(vscroll);
     }
 
-    static void clear () {
-        bounds();
-        pixel(0, 0, 0);
+    static void fill (int x, int y, int w, int h, uint16_t rgb) {
+        bounds(x+w-1, y+h-1);
+        pixel(x, y, rgb);
 
-        for (int i = 1; i < width * height; ++i)
-            //out16(0xF800);
-            //out16(0x07E0);
-            out16(0x001F);
+        int n = w * h;
+        while (--n > 0)
+            out16(rgb);
+    }
+
+    static void clear () {
+        fill(0, 0, width, height, 0);
     }
 
     static uint16_t xEnd, yEnd;

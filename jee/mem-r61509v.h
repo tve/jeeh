@@ -64,11 +64,16 @@ struct R61509V {
         //write(0x404, vscroll);
     }
 
-    static void clear () {
-        bounds();
-        pixel(0, 0, 0);
+    static void fill (int x, int y, int w, int h, uint16_t rgb) {
+        bounds(x+w-1, y+h-1);
+        pixel(x, y, rgb);
 
-        for (int i = 1; i < width * height; ++i)
-            out16(0);
+        int n = w * h;
+        while (--n > 0)
+            out16(rgb);
+    }
+
+    static void clear () {
+        fill(0, 0, width, height, 0);
     }
 };
