@@ -18,15 +18,22 @@ int main () {
     adc.init();
 
     while (true) {
-        printf("1: %d, 2: %d, temp: %d, vref: %d\n",
-                adc.read(ana1), adc.read(ana2), adc.read(16), adc.read(17));
+        // supply voltage can be estimated via the 1.2V bandgap reading
+        int vref = (4095 * 1200) / adc.read(17);
+
+        // a temperature reading of 1720 is roughly equivalent to:
+        //  (1720*3332/4095-1430)/4.3+25 = 17.9 °C
+
+        printf("1: %d, 2: %d, temp: %d, vref: %d mV\n",
+                adc.read(ana1), adc.read(ana2), adc.read(16), vref);
+
         wait_ms(500);
     }
 }
 
 // sample output:
-//  1: 104, 2: 1759, temp: 1690, vref: 1476
-//  1: 104, 2: 1749, temp: 1690, vref: 1475
-//  1: 104, 2: 1746, temp: 1690, vref: 1475
-//  1: 104, 2: 1750, temp: 1690, vref: 1475
-//  1: 105, 2: 1758, temp: 1690, vref: 1475
+//  1: 105, 2: 1626, temp: 1720, vref: 3330 mV
+//  1: 105, 2: 1628, temp: 1719, vref: 3330 mV
+//  1: 105, 2: 1630, temp: 1719, vref: 3330 mV
+//  1: 105, 2: 1632, temp: 1720, vref: 3330 mV
+//  1: 104, 2: 1632, temp: 1720, vref: 3332 mV
