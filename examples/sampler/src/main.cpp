@@ -60,3 +60,7 @@
 #if EXAMPLE_SYSTICK
 #include "../../systick.cpp"
 #endif
+
+#if EXAMPLE_ADC
+#include "../../adc.cpp"
+#endif
