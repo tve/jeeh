@@ -68,10 +68,9 @@ struct ILI9325 {
         SPI::disable();
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         write(0x51, xend);
         write(0x53, yend);
-        write(0x6A, vscroll);
     }
 
     static void fill (int x, int y, int w, int h, uint16_t rgb) {
@@ -88,5 +87,9 @@ struct ILI9325 {
 
     static void clear () {
         fill(0, 0, width, height, 0);
+    }
+
+    static void vscroll (int vscroll =0) {
+        write(0x6A, vscroll);
     }
 };

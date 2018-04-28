@@ -57,11 +57,9 @@ struct R61509V {
             out16(rgb[i]);
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         write(0x211, xend);
         write(0x213, yend);
-        // FIXME scrolling is wrong, due to 432-line mem vs 400-line display?
-        //write(0x404, vscroll);
     }
 
     static void fill (int x, int y, int w, int h, uint16_t rgb) {
@@ -75,5 +73,10 @@ struct R61509V {
 
     static void clear () {
         fill(0, 0, width, height, 0);
+    }
+
+    static void vscroll (int vscroll =0) {
+        // FIXME scrolling is wrong, due to 432-line mem vs 400-line display?
+        //write(0x404, vscroll);
     }
 };

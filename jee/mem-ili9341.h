@@ -117,12 +117,9 @@ struct ILI9341 {
             out16(rgb[i]);
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         xEnd = xend;
         yEnd = yend;
-
-        cmd(0x37);
-        out16(vscroll);
     }
 
     static void fill (int x, int y, int w, int h, uint16_t rgb) {
@@ -136,6 +133,11 @@ struct ILI9341 {
 
     static void clear () {
         fill(0, 0, width, height, 0);
+    }
+
+    static void vscroll (int vscroll =0) {
+        cmd(0x37);
+        out16(vscroll);
     }
 
     static uint16_t xEnd, yEnd;
