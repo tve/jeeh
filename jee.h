@@ -165,7 +165,9 @@ struct SpiGpio {
 
 template< typename SDA, typename SCL, int N =0 >
 class I2cBus {
-    static void sclHi () { scl = 1; while (!scl) ; }
+    static void hold () { for (int i = 0; i < N; ++i) __asm(""); }
+    static void sclLo () { scl = 0; hold(); }
+    static void sclHi () { scl = 1; hold(); while (!scl) ; }
 
 public:
     I2cBus () {
@@ -173,8 +175,8 @@ public:
         scl.mode(Pinmode::out_od); scl = 1;
     }
 
-    static uint8_t start(int addr) {
-        scl = 0;
+    static bool start(int addr) {
+        sda = 1;
         sclHi();
         sda = 0;
         return write(addr);
@@ -187,44 +189,45 @@ public:
     }
 
     static bool write(int data) {
-        scl = 0;
+        sclLo();
         for (int mask = 0x80; mask != 0; mask >>= 1) {
             sda = data & mask;
             sclHi();
-            scl = 0;
+            sclLo();
         }
         sda = 1;
         sclHi();
         bool ack = !sda;
-        scl = 0;
+        sclLo();
         return ack;
     }
 
-    static int read(bool last) {
-        int data = 0;
+    static uint8_t read(bool last) {
+        uint8_t data = 0;
         for (int mask = 0x80; mask != 0; mask >>= 1) {
             sclHi();
             if (sda)
                 data |= mask;
-            scl = 0;
+            sclLo();
         }
         sda = last;
         sclHi();
-        scl = 0;
+        sclLo();
         if (last)
             stop();
+        sda = 1;
         return data;
     }
 
     static SDA sda;
-    static SlowPin<SCL,N> scl;
+    static SCL scl;
 };
 
 template< typename SDA, typename SCL, int N >
 SDA I2cBus<SDA,SCL,N>::sda;
 
 template< typename SDA, typename SCL, int N >
-SlowPin<SCL,N> I2cBus<SDA,SCL,N>::scl;
+SCL I2cBus<SDA,SCL,N>::scl;
 
 // formatted output
 
