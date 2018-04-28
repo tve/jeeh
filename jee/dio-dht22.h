@@ -6,6 +6,7 @@ struct DHT22 {
     static bool init () {
         DAT::mode(Pinmode::out_od);
         DAT::write(1);
+        return true;
     }
 
     static bool read (int16_t& t, int16_t& h) {
