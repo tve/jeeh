@@ -131,7 +131,7 @@ struct UartDev {
     //constexpr static uint32_t cr3 = base + 0x08;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
-    //constexpr static uint32_t icr = base + 0x20;
+    constexpr static uint32_t icr = base + 0x20;
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 

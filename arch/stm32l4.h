@@ -136,6 +136,7 @@ public:
     constexpr static uint32_t cr1 = base + 0x00;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
+    constexpr static uint32_t icr = base + 0x20;
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 
@@ -193,25 +194,26 @@ RX UartDev<TX,RX>::rx;
 // interrupt-enabled uart, sits of top of polled uart
 
 template< typename TX, typename RX, int N =50 >
-class UartBufDev {
-public:
-    UartBufDev () {
+struct UartBufDev : UartDev<TX,RX> {
+    typedef UartDev<TX,RX> base;
+
+    static void init () {
         auto handler = []() {
-            if (uart.readable()) {
-                int c = uart.getc();
+            if (base::readable()) {
+                int c = base::getc();
                 if (recv.free())
                     recv.put(c);
                 // else discard the input
             }
-            if (uart.writable()) {
+            if (base::writable()) {
                 if (xmit.avail() > 0)
-                    uart.putc(xmit.get());
+                    base::putc(xmit.get());
                 else
-                    MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
+                    MMIO32(base::cr1) &= ~(1<<7);  // disable TXEIE
             }
         };
 
-        switch (uart.uidx) {
+        switch (base::uidx) {
             case 0: VTableRam().usart1 = handler; break;
             case 1: VTableRam().usart2 = handler; break;
             case 2: VTableRam().usart3 = handler; break;
@@ -219,10 +221,10 @@ public:
 
         // nvic interrupt numbers are 37, 38, and 39, respectively
         constexpr uint32_t nvic_en1r = 0xE000E104;
-        constexpr int irq = 37 + uart.uidx;
+        constexpr int irq = 37 + base::uidx;
         MMIO32(nvic_en1r) = 1 << (irq-32);  // enable USART interrupt
 
-        MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
+        MMIO32(base::cr1) |= (1<<5);  // enable RXNEIE
     }
 
     static bool writable () {
@@ -233,7 +235,7 @@ public:
         while (!writable())
             ;
         xmit.put(c);
-        MMIO32(uart.cr1) |= (1<<7);  // enable TXEIE
+        MMIO32(base::cr1) |= (1<<7);  // enable TXEIE
     }
 
     static bool readable () {
@@ -246,13 +248,9 @@ public:
         return recv.get();
     }
 
-    static UartDev<TX,RX> uart;
     static RingBuffer<N> recv;
     static RingBuffer<N> xmit;
 };
-
-template< typename TX, typename RX, int N >
-UartDev<TX,RX> UartBufDev<TX,RX,N>::uart;
 
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::recv;
