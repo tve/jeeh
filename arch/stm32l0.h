@@ -144,17 +144,14 @@ struct UartDev {
             MMIO32(Periph::rcc + 0x38) |= 1 << (16+uidx); // USART 2..5
 
         MMIO32(brr) = 18;  // 115200 baud @ 2.1 MHz
-        MMIO32(cr3) = (1<<12); // disable overrun detection
-        MMIO32(icr) = 0x00121b5f; // clear all interrupt flags
         MMIO32(rdr); // clear RX reg
         MMIO32(cr1) = (1<<3) | (1<<2) | (1<<0);  // TE, RE, UE
     }
 
-    static void setSpeed(int baud) {
-        MMIO32(cr1) = MMIO32(cr1) & ~(1<<0); // disable uart
-        MMIO32(brr) = (Hz+baud/2) / baud;
-        MMIO32(cr1) = MMIO32(cr1) | (1<<0); // enable uart
-        MMIO32(icr) = 0x00121b5f; // clear all interrupt flags
+    static void baud(int baud, int hz=2100000) {
+        MMIO32(cr1) &= ~(1<<0); // disable uart
+        MMIO32(brr) = (hz+baud/2) / baud;
+        MMIO32(cr1) |= (1<<0); // enable uart
     }
 
     static bool writable () {
