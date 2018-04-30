@@ -119,6 +119,7 @@ struct Pin {
 
 template< typename TX, typename RX >
 struct UartDev {
+    // TODO does not recognise alternate TX pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
                                 TX::id ==  2 ? 1 :  // PA2, USART2
                                                0;   // else USART1

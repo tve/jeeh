@@ -39,7 +39,7 @@ struct SSD1306 {
             0xAF,  // DISPLAYON
         };
 
-        for (int i = 0; i < sizeof config; ++i)
+        for (int i = 0; i < (int) sizeof config; ++i)
             cmd(config[i]);
     }
 
