@@ -7,7 +7,7 @@
 #define MMIO16(x) (*(volatile uint16_t*) (x))
 
 // forward declaration, needs to be implemented in main.cpp
-void printf(const char* fmt, ...);
+int printf(const char* fmt, ...);
 
 // general-purpose ring buffer
 

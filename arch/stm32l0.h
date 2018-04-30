@@ -20,7 +20,7 @@ struct VTable {
 };
 
 // systick and delays
-
+extern uint32_t Hz; // clock speed
 extern void enableSysTick (uint32_t divider =2097000/1000);
 
 // gpio
@@ -114,8 +114,11 @@ public:
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t cr1 = base + 0x00;
+    constexpr static uint32_t cr2 = base + 0x04;
+    constexpr static uint32_t cr3 = base + 0x08;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
+    constexpr static uint32_t icr = base + 0x20;
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 
@@ -128,8 +131,20 @@ public:
         else
             MMIO32(Periph::rcc + 0x38) |= 1 << (16+uidx); // USART 2..5
 
+        MMIO32(cr1) = 0; // make sure uart is disabled
+        MMIO32(cr2) = 0;
         MMIO32(brr) = 18;  // 115200 baud @ 2.1 MHz
+        MMIO32(cr3) = (1<<12); // disable overrun detection
+        MMIO32(icr) = 0x00121b5f; // clear all interrupt flags
+        MMIO32(rdr); // clear RX reg
         MMIO32(cr1) = (1<<3) | (1<<2) | (1<<0);  // TE, RE, UE
+    }
+
+    static void setSpeed(int baud) {
+        MMIO32(cr1) = MMIO32(cr1) & ~(1<<0); // disable uart
+        MMIO32(brr) = (Hz+baud/2) / baud;
+        MMIO32(cr1) = MMIO32(cr1) | (1<<0); // enable uart
+        MMIO32(icr) = 0x00121b5f; // clear all interrupt flags
     }
 
     static bool writable () {
@@ -143,7 +158,9 @@ public:
     }
 
     static bool readable () {
-        return (MMIO32(isr) & 0x24) != 0;  // RXNE or ORE
+        uint32_t isr = MMIO32(isr);
+        if (isr & 0x2) MMIO32(icr) = 2; // clear framing error
+        return (isr & 0x24) != 0;  // RXNE or ORE
     }
 
     static int getc () {
@@ -230,3 +247,31 @@ RingBuffer<N> UartBufDev<TX,RX,N>::recv;
 
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+
+// system clock
+
+static void enableClkAt32mhz () {  // [1] p.49
+    constexpr uint32_t flash = 0x40022000;
+    constexpr uint32_t rcc_cr    = Periph::rcc+0x00;
+    constexpr uint32_t rcc_cfgr  = Periph::rcc+0x0C;
+
+    // switch to HSI 16 and turn everything else off
+    MMIO32(rcc_cr) |= (1<<0); // turn hsi16 on
+    MMIO32(rcc_cfgr) = 0x01;  // revert to hsi16, no PLL, no prescalers
+    MMIO32(rcc_cr) = 0x01;    // turn off MSI, HSE, and PLL
+    while ((MMIO32(rcc_cr) & (1<<25)) != 0) ; // wait for PPLRDY to clear
+
+    MMIO32(flash + 0x00) = 0x03; // flash acr, one wait state, enable prefetch
+    MMIO32(rcc_cfgr) |= (1<<18) | (1<<22); // set PLL src HSI16, PLL mult 4, PLL div 2
+    MMIO32(rcc_cr) |= 1<<24; // turn PLL on
+    while ((MMIO32(rcc_cr) & (1<<25)) == 0) ; // wait for PPLRDY
+    MMIO32(rcc_cfgr) |= 0x3; // set system clk to PLL
+    Hz = 32000000;
+}
+
+static int fullSpeedClock () {
+    enableClkAt32mhz();
+    enableSysTick(Hz/1000);             // systick once every 1 ms
+    //MMIO32(0x4001380C) = hz/115200;     // usart1: 115200 baud @ 32 MHz
+    return Hz;
+}

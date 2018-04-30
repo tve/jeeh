@@ -36,6 +36,8 @@ VTable& VTableRam () {
 
 // systick and delays
 
+uint32_t Hz;
+
 uint32_t volatile ticks;
 
 void enableSysTick (uint32_t divider) {
