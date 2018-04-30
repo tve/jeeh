@@ -171,7 +171,9 @@ struct UartDev {
     static int getc () {
         while (!readable())
             ;
-        return MMIO32(rdr);
+        int c = MMIO32(rdr);
+        MMIO32(icr) = 0xA; // clear ORE and FE, reading RDR is not enough
+        return c;
     }
 
     static TX tx;
