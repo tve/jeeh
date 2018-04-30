@@ -130,7 +130,7 @@ struct UartDev {
     //constexpr static uint32_t cr3 = base + 0x08;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
-    //constexpr static uint32_t icr = base + 0x20;
+    constexpr static uint32_t icr = base + 0x20;
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 
@@ -171,7 +171,9 @@ struct UartDev {
     static int getc () {
         while (!readable())
             ;
-        return MMIO32(rdr);
+        int c = MMIO32(rdr);
+        MMIO32(icr) = 0xA; // clear ORE and FE, reading RDR is not enough
+        return c;
     }
 
     static TX tx;
@@ -192,18 +194,22 @@ struct UartBufDev : UartDev<TX,RX> {
 
     static void init () {
         auto handler = []() {
+            extern int printf(const char* fmt, ...);
             if (base::readable()) {
                 int c = base::getc();
                 if (recv.free())
                     recv.put(c);
                 // else discard the input
             }
+            //if ((MMIO32(base::isr) & 0xA) != 0) MMIO32(base::isr+4) = 0xA; // clear ORE and FE
             if (base::writable()) {
                 if (xmit.avail() > 0)
                     base::putc(xmit.get());
                 else
                     MMIO32(base::cr1) &= ~(1<<7);  // disable TXEIE
             }
+            //printf("[%x]", MMIO32(base::isr));
+            //MMIO32(base::isr+4) = -1;
         };
 
         switch (base::uidx) {
