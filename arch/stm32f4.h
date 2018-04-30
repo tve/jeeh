@@ -33,7 +33,8 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =16000000/1000);
+constexpr static int defaultHz = 16000000;
+extern void enableSysTick (uint32_t divider =defaultHz/1000);
 
 // gpio
 
@@ -145,8 +146,12 @@ struct UartDev {
         else
             MMIO32(Periph::rcc + 0x40) |= 1 << (16+uidx); // U(S)ART 2..5
 
-        MMIO32(brr) = 139;  // 115200 baud @ 16 MHz
+        baud(115200);
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
+    }
+
+    static void baud (uint32_t baud, uint32_t hz =defaultHz) {
+        MMIO32(brr) = (hz + baud/2) / baud;
     }
 
     static bool writable () {
