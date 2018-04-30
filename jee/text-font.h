@@ -10,6 +10,7 @@ struct Font5x7 {
 
     static void putc (int c) {
         switch (c) {
+            case '\f': x = y = 0; T::clear(); return;
             case '\t': x += tabsize - x % tabsize; return;
             case '\r': x = 0; return;
             case '\n': x = width; break;
@@ -60,7 +61,7 @@ struct TextLcd : LCD {
         // when in col 0: adjust v-scroll so the band is always at the bottom
         if (x == 0) {
             y += 8;
-            LCD::bounds(LCD::width-1, LCD::height-1, y < LCD::height ? y : top);
+            LCD::vscroll(y < LCD::height ? y : top);
         }
     }
 

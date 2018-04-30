@@ -270,7 +270,7 @@ static void enableClkAt72mhz () {  // [1] p.49
     MMIO32(flash + 0x00) = 0x12; // flash acr, two wait states
     MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
-    // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6
+    // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6 [1] pp.100
     MMIO32(rcc + 0x04) = (1<<16) | (7<<18) | (4<<8) | (2<<14) | (1<<1);
     MMIO32(rcc + 0x00) |= (1<<24); // rcc cr, set PLLON
     while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
@@ -366,7 +366,7 @@ struct SpiHw {  // [1] pp.742
             MMIO32(Periph::rcc + 0x1C) |= 1 << (sidx+13);  // SPI 2..3
 
         // SPE, BR=2, MSTR, CPOL (clk/8, i.e. 9 MHz)
-        MMIO32(cr1) = (1<<6) | (2<<3) | (1<<2) | (CP<<1);
+        MMIO32(cr1) = (1<<6) | (2<<3) | (1<<2) | (CP<<1);  // [1] p.742
         (void) MMIO32(sr);  // appears to be needed to avoid hang in some cases
         MMIO32(cr2) |= (1<<2);  // SSOE
     }
@@ -441,5 +441,92 @@ struct Flash {
     static void finish () {
         while (MMIO32(sr) & (1<<0)) ;
         MMIO32(cr) = 0x80;
+    }
+};
+
+// usb serial console
+
+namespace USB {
+#include "stm32f1-usb.h"
+}
+
+template< typename USBPIN, int USBPOL =0 >
+struct UsbDev {
+    UsbDev () {
+        fullSpeedClock();
+
+        USBPIN::mode(Pinmode::out);
+        USBPIN::write(USBPOL);
+        wait_ms(2);
+        USBPIN::write(!USBPOL);
+
+        USB::usbd_init();
+    }
+
+    static bool writable () {
+        poll();
+        return USB::txFill < sizeof USB::txBuf;
+    }
+
+    static void putc (int c) {
+        while (!writable()) ;
+        USB::txBuf[USB::txFill++] = c;
+    }
+
+    static bool readable () {
+        poll();
+        return USB::rxNext < USB::rxFill;
+    }
+
+    static int getc () {
+        while (!readable()) ;
+        return USB::rxBuf[USB::rxNext++];
+    }
+
+    static void poll () {
+        if (USB::txFill > 0 && USB::ep_write(USB::CDC_TXD_EP, USB::txBuf,
+                                                USB::txFill) == USB::txFill)
+            USB::txFill = 0;
+        USB::evt_poll();
+    }
+};
+
+// analog input using ADC1 or ADC2
+
+template< int N >
+struct ADC {
+    constexpr static uint32_t base  = 0x40012000 + 0x400 * N;
+    constexpr static uint32_t sr    = base + 0x00;
+    constexpr static uint32_t cr1   = base + 0x04;
+    constexpr static uint32_t cr2   = base + 0x08;
+    constexpr static uint32_t smpr1 = base + 0x0C;
+    constexpr static uint32_t sqr3  = base + 0x34;
+    constexpr static uint32_t dr    = base + 0x4C;
+
+    static void init () {
+        MMIO32(Periph::rcc + 0x18) |= 1 << (N+8);  // enable ADC 1 or 2
+        MMIO32(cr2) = (1<<23) | (1<<0);  // TSVREFE, ADON [1] pp.239
+        wait_ms(2);  // see [1] p.222
+        MMIO32(cr2) |= (1<<2);  // CAL
+        while (MMIO32(cr2) & (1<<2)) ;  // wait until calibration completed
+        MMIO32(smpr1) = (7<<21) | (7<<18);  // slow temp/vref conv's [1] p.243
+    }
+
+    // read analog, given a pin (which is also set to analog input mode)
+    template< typename pin >
+    static uint16_t read (pin& p) {
+        pin::mode(Pinmode::in_analog);
+        constexpr int off = pin::id < 16 ? 0 :   // A0..A7 => 0..7
+                            pin::id < 32 ? -8 :  // B0..B1 => 8..9
+                                           -22;  // C0..C5 => 10..15
+        return read(pin::id + off);
+    }
+
+    // read direct channel number (also: 16 = temp, 17 = vref)
+    static uint16_t read (uint8_t chan) {
+        MMIO32(sqr3) = chan;
+        MMIO32(cr2) |= (1<<0);  // start conversion
+        while ((MMIO32(sr) & (1<<1)) == 0) ;  // EOC [1] p.236
+        return MMIO32(dr);
     }
 };

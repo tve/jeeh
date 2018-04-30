@@ -129,7 +129,8 @@ int main () {
                 pixelRow[x] = palette[rssi];
             }
 
-            lcd.bounds(lcd.width-1, y, y);  // write one line and set scroll
+            lcd.vscroll(y);                         // set scroll
+            lcd.bounds(lcd.width-1, y);             // write one line
             lcd.pixels(0, y, pixelRow, lcd.width);  // update the display
         }
 

@@ -9,7 +9,7 @@ struct ILI9341 {
     static void init () {
         static uint8_t const config [] = {
             // cmd, count, data bytes ...
-#if 0
+#if 1
             0xEF, 3, 0x03, 0x80, 0x02,               // ??
             0xCF, 3, 0x00, 0xC1, 0x30,               // power control B
             0xED, 4, 0x64, 0x03, 0x12, 0x81,         // power on sequence ctrl
@@ -117,22 +117,27 @@ struct ILI9341 {
             out16(rgb[i]);
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         xEnd = xend;
         yEnd = yend;
+    }
 
-        cmd(0x37);
-        out16(vscroll);
+    static void fill (int x, int y, int w, int h, uint16_t rgb) {
+        bounds(x+w-1, y+h-1);
+        pixel(x, y, rgb);
+
+        int n = w * h;
+        while (--n > 0)
+            out16(rgb);
     }
 
     static void clear () {
-        bounds();
-        pixel(0, 0, 0);
+        fill(0, 0, width, height, 0);
+    }
 
-        for (int i = 1; i < width * height; ++i)
-            //out16(0xF800);
-            //out16(0x07E0);
-            out16(0x001F);
+    static void vscroll (int vscroll =0) {
+        cmd(0x37);
+        out16(vscroll);
     }
 
     static uint16_t xEnd, yEnd;

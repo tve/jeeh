@@ -88,17 +88,25 @@ struct ILI9325 {
             out16(rgb[i]);
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         write(0x51, xend);
         write(0x53, yend);
-        write(0x6A, vscroll);
+    }
+
+    static void fill (int x, int y, int w, int h, uint16_t rgb) {
+        bounds(x+w-1, y+h-1);
+        pixel(x, y, rgb);
+
+        int n = w * h;
+        while (--n > 0)
+            out16(rgb);
     }
 
     static void clear () {
-        bounds();
-        pixel(0, 0, 0);
+        fill(0, 0, width, height, 0);
+    }
 
-        for (int i = 1; i < width * height; ++i)
-            out16(0);
+    static void vscroll (int vscroll =0) {
+        write(0x6A, vscroll);
     }
 };

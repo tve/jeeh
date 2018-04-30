@@ -1,4 +1,5 @@
 struct Periph {
+    constexpr static uint32_t fsmc = 0x40000000U;
     constexpr static uint32_t gpio = 0x40020000U;
     constexpr static uint32_t rcc  = 0x40023800U;
 };
@@ -31,23 +32,9 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =168000000/1000);
+extern void enableSysTick (uint32_t divider =16000000/1000);
 
 // gpio
-
-template<char port>
-struct Port {
-    constexpr static uint32_t base    = Periph::gpio + 0x400 * (port-'A');
-    constexpr static uint32_t moder   = base + 0x00;
-    constexpr static uint32_t typer   = base + 0x04;
-    constexpr static uint32_t ospeedr = base + 0x08;
-    constexpr static uint32_t pupdr   = base + 0x0C;
-    constexpr static uint32_t idr     = base + 0x10;
-    constexpr static uint32_t odr     = base + 0x14;
-    constexpr static uint32_t bsrr    = base + 0x18;
-    constexpr static uint32_t afrl    = base + 0x20;
-    constexpr static uint32_t afrh    = base + 0x24;
-};
 
 enum class Pinmode {
     // mode (2), typer (1), pupdr (2)
@@ -62,6 +49,43 @@ enum class Pinmode {
     alt_out_od       = 0b10100,
 };
 
+template<char port>
+struct Port {
+    constexpr static uint32_t base    = Periph::gpio + 0x400 * (port-'A');
+    constexpr static uint32_t moder   = base + 0x00;
+    constexpr static uint32_t typer   = base + 0x04;
+    constexpr static uint32_t ospeedr = base + 0x08;
+    constexpr static uint32_t pupdr   = base + 0x0C;
+    constexpr static uint32_t idr     = base + 0x10;
+    constexpr static uint32_t odr     = base + 0x14;
+    constexpr static uint32_t bsrr    = base + 0x18;
+    constexpr static uint32_t afrl    = base + 0x20;
+    constexpr static uint32_t afrh    = base + 0x24;
+
+    static void mode (int pin, Pinmode m, int alt =0) {
+        // enable GPIOx clock
+        MMIO32(Periph::rcc + 0x30) |= 1 << (port-'A');
+
+        auto mval = static_cast<int>(m);
+        MMIO32(moder) = (MMIO32(moder) & ~(3<<(2*pin))) | ((mval>>3) << 2*pin);
+        MMIO32(typer) = (MMIO32(typer) & ~(1<<pin)) | (((mval>>2) & 1) << pin);
+        MMIO32(pupdr) = (MMIO32(pupdr) & ~(3<<(2*pin))) | ((mval & 3) << 2*pin);
+        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3<<(2*pin))) | (0b01 << 2*pin);
+
+        uint32_t afr = pin & 8 ? afrh : afrl;
+        int shift = 4 * (pin & 7);
+        MMIO32(afr) = (MMIO32(afr) & ~(0xF << shift)) | (alt << shift);
+    }
+
+    static void modeMap (uint16_t pins, Pinmode m) {
+        for (int i = 0; i < 16; ++i) {
+            if (pins & 1)
+                mode(i, m);
+            pins >>= 1;
+        }
+    }
+};
+
 template<char port,int pin>
 struct Pin {
     typedef Port<port> gpio;
@@ -69,23 +93,7 @@ struct Pin {
     constexpr static int id = 16 * (port-'A') + pin;
 
     static void mode (Pinmode m, int alt =0) {
-        // enable GPIOx clock
-        MMIO32(Periph::rcc + 0x30) |= 1 << (port-'A');
-
-        auto mval = static_cast<int>(m);
-        MMIO32(gpio::moder) = (MMIO32(gpio::moder) & ~(3 << 2*pin))
-                            | ((mval >> 3) << 2*pin);
-        MMIO32(gpio::typer) = (MMIO32(gpio::typer) & ~(1 << pin))
-                            | (((mval >> 2) & 1) << pin);
-        MMIO32(gpio::pupdr) = (MMIO32(gpio::pupdr) & ~(3 << 2*pin))
-                            | ((mval & 3) << 2*pin);
-
-        MMIO32(gpio::ospeedr) = (MMIO32(gpio::ospeedr) & ~(3 << 2*pin))
-                              | (0b11 << 2*pin);
-
-        constexpr uint32_t afr = pin & 8 ? gpio::afrh : gpio::afrl;
-        constexpr int shift = 4 * (pin & 7);
-        MMIO32(afr) = (MMIO32(afr) & ~(0xF << shift)) | (alt << shift);
+        gpio::mode(pin, m, alt);
     }
 
     static int read () {
@@ -137,7 +145,7 @@ public:
         else
             MMIO32(Periph::rcc + 0x40) |= 1 << (16+uidx); // U(S)ART 2..5
 
-        MMIO32(brr) = 729;  // 115200 baud @ 84 MHz
+        MMIO32(brr) = 139;  // 115200 baud @ 16 MHz
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
     }
 
@@ -254,17 +262,16 @@ static void enableClkAt168mhz () {
     MMIO32(rcc + 0x00) = (1<<16); // HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     MMIO32(rcc + 0x08) = 1; // switch to HSE
-    MMIO32(rcc + 0x04) = (7<<24) | (1<<22) | (0<<16) | (336<<6) | (8<<0);
+    MMIO32(rcc + 0x04) = (7<<24) | (1<<22) | (0<<16) | (168<<6) | (4<<0);
     MMIO32(rcc + 0x00) |= (1<<24); // PLLON
     while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
-    MMIO32(rcc + 0x08) = (4<<13) | (5<<10) | (1<<1);
+    MMIO32(rcc + 0x08) = (4<<13) | (5<<10) | (2<<0);
 }
 
 static int fullSpeedClock () {
     constexpr uint32_t hz = 168000000;
-    enableClkAt168mhz();                // using external 8 MHz crystal
-    enableSysTick(hz/1000);             // systick once every 1 ms
-    // TODO USART1 is still running off the (less accurate) 16 MHz HSI clock
-    // MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
+    enableClkAt168mhz();                 // using external 8 MHz crystal
+    enableSysTick(hz/1000);              // systick once every 1 ms
+    MMIO32(0x40011008) = (hz/2)/115200;  // usart1: 115200 baud @ 84 MHz
     return hz;
 }

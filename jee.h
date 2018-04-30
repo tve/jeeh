@@ -47,6 +47,8 @@ public:
 struct VTable;
 extern VTable& VTableRam ();
 
+extern void wait_ms (uint32_t ms);
+
 // architecture-specific definitions
 
 #if STM32F1
@@ -88,8 +90,6 @@ template <int N> using PinK = Pin<'K',N>;
 extern uint32_t volatile ticks;
 #endif
 
-extern void wait_ms (uint32_t ms);
-
 template< uint32_t HZ >
 struct SysTick {
     // FIXME this is ARM-specific, must move elsewhere to support other µCs
@@ -126,12 +126,24 @@ struct SlowPin : public T {
     void operator= (int v) const { write(v); }
 };
 
+// dummy pin, this ignores all calls
+
+struct NoPin {
+    static void mode (Pinmode) {}
+    static int read () { return 0; }
+    static void write (int) {}
+    static void toggle () {}
+
+    operator int () const { return read(); }
+    void operator= (int v) const { write(v); }
+};
+
 // spi, bit-banged on any gpio pins
 
 template< typename MO, typename MI, typename CK, typename SS, int CP =0 >
 struct SpiGpio {
     static void init () {
-        SS::mode(Pinmode::out); SS::write(1);
+        SS::mode(Pinmode::out); disable();
         CK::mode(Pinmode::out); CK::write(CP);
         MI::mode(Pinmode::in_float);
         MO::mode(Pinmode::out);
@@ -143,8 +155,8 @@ struct SpiGpio {
     static uint8_t transfer (uint8_t v) {
         for (int i = 0; i < 8; ++i) {
             MO::write(v & 0x80);
-            CK::write(!CP);
             v <<= 1;
+            CK::write(!CP);
             v |= MI::read();
             CK::write(CP);
         }
@@ -156,7 +168,9 @@ struct SpiGpio {
 
 template< typename SDA, typename SCL, int N =0 >
 class I2cBus {
-    static void sclHi () { scl = 1; while (!scl) ; }
+    static void hold () { for (int i = 0; i < N; ++i) __asm(""); }
+    static void sclLo () { scl = 0; hold(); }
+    static void sclHi () { scl = 1; hold(); while (!scl) ; }
 
 public:
     I2cBus () {
@@ -164,8 +178,8 @@ public:
         scl.mode(Pinmode::out_od); scl = 1;
     }
 
-    static uint8_t start(int addr) {
-        scl = 0;
+    static bool start(int addr) {
+        sda = 1;
         sclHi();
         sda = 0;
         return write(addr);
@@ -178,44 +192,45 @@ public:
     }
 
     static bool write(int data) {
-        scl = 0;
+        sclLo();
         for (int mask = 0x80; mask != 0; mask >>= 1) {
             sda = data & mask;
             sclHi();
-            scl = 0;
+            sclLo();
         }
         sda = 1;
         sclHi();
         bool ack = !sda;
-        scl = 0;
+        sclLo();
         return ack;
     }
 
-    static int read(bool last) {
-        int data = 0;
+    static uint8_t read(bool last) {
+        uint8_t data = 0;
         for (int mask = 0x80; mask != 0; mask >>= 1) {
             sclHi();
             if (sda)
                 data |= mask;
-            scl = 0;
+            sclLo();
         }
         sda = last;
         sclHi();
-        scl = 0;
+        sclLo();
         if (last)
             stop();
+        sda = 1;
         return data;
     }
 
     static SDA sda;
-    static SlowPin<SCL,N> scl;
+    static SCL scl;
 };
 
 template< typename SDA, typename SCL, int N >
 SDA I2cBus<SDA,SCL,N>::sda;
 
 template< typename SDA, typename SCL, int N >
-SlowPin<SCL,N> I2cBus<SDA,SCL,N>::scl;
+SCL I2cBus<SDA,SCL,N>::scl;
 
 // formatted output
 

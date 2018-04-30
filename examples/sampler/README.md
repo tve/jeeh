@@ -9,8 +9,8 @@ with output ending in something like this:
 ```text
 [...]
 ================================== [SUMMARY] ===================================
+Environment adc     	[SUCCESS]
 Environment blink   	[SUCCESS]
-Environment dht22   	[SUCCESS]
 [...]
 Environment spiflash	[SUCCESS]
 Environment systick 	[SUCCESS]
@@ -30,7 +30,6 @@ To upload, adjust the settings in the `[common]` section at the top of
 [common]
 upload_protocol = blackmagic
 upload_port = /dev/cu.usbmodemC2D77DD1
-monitor_port = /dev/cu.usbmodemC2D77DD1
 ```
 
 Then start the build and upload as follows:

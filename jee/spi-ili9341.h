@@ -121,6 +121,7 @@ struct ILI9341 {
         SPI::disable();
     }
 
+    // readPixels does not seem to work...
     static void readPixels(int x, int y, int len, uint16_t *rgb) {
         SPI::enable();
         cmd(0x2A); out16(y); out16(yEnd);
@@ -133,13 +134,19 @@ struct ILI9341 {
         SPI::disable();
     }
 
-    static void bounds (int xend =width-1, int yend =height-1, int vscroll =0) {
+    static void bounds (int xend =width-1, int yend =height-1) {
         xEnd = xend;
         yEnd = yend;
+    }
+
+    static void fill (int x, int y, int w, int h, uint16_t rgb) {
+        bounds(x+w-1, y+h-1);
+        pixel(x, y, rgb); // fills one pixel
 
         SPI::enable();
-        cmd(0x37);
-        out16(vscroll);
+        int n = w * h;
+        while (--n > 0) // loop for w*h - 1 pixels
+            out16(rgb);
         SPI::disable();
     }
 
@@ -152,12 +159,13 @@ struct ILI9341 {
     }
 
     static void clear () {
-        bounds();
-        pixel(0, 0, 0);
+        fill(0, 0, width, height, 0);
+    }
 
+    static void vscroll (int vscroll =0) {
         SPI::enable();
-        for (int i=1; i<width*height; ++i)
-            out16(0);
+        cmd(0x37);
+        out16(vscroll);
         SPI::disable();
     }
 
