@@ -11,27 +11,6 @@ struct ILI9341 {
         DC::mode(Pinmode::out);
         SPI::enable();
 
-#if 0
-        { // read display ID
-            cmd(0x04);
-            SPI::transfer(0);
-            uint32_t st = SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            printf("Disp ID: %08x\r\n", st);
-            SPI::disable();
-            SPI::enable();
-        }
-        { // read manufacturer ID
-            cmd(0xDA);
-            SPI::transfer(0);
-            printf("Disp Manufacturer ID: %x\r\n", SPI::transfer(0));
-            SPI::disable();
-            SPI::enable();
-        }
-#endif
-
         static uint8_t const config [] = {
             // cmd, count, data bytes ...
             0xEF, 3, 0x03, 0x80, 0x02,               // ??
@@ -65,22 +44,9 @@ struct ILI9341 {
             while (--n >= 0)
                 SPI::transfer(*++p);
         }
+
         wait_ms(120);
-
         cmd(0x29);      // DISPON
-#if 0
-        { // read display status
-            cmd(0x09);
-            SPI::transfer(0);
-            uint32_t st = SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            st = (st<<8) | SPI::transfer(0);
-            printf("Disp status: %08x\r\n", st);
-        }
-#endif
-
         SPI::disable();
     }
 

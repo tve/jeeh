@@ -2,8 +2,12 @@
 // see [1] https://jeelabs.org/ref/STM32F1-RM0008.pdf
 
 struct Periph {  // [1] p.49-50
-    constexpr static uint32_t gpio = 0x40010800U;
-    constexpr static uint32_t rcc  = 0x40021000U;
+    constexpr static uint32_t rtc   = 0x40002800;
+    constexpr static uint32_t iwdg  = 0x40003000;
+    constexpr static uint32_t pwr   = 0x40007000;
+    constexpr static uint32_t gpio  = 0x40010800;
+    constexpr static uint32_t rcc   = 0x40021000;
+    constexpr static uint32_t flash = 0x40022000;
 };
 
 // interrupt vector table in ram
@@ -127,8 +131,7 @@ struct Pin {
 // u(s)art
 
 template< typename TX, typename RX >
-class UartDev {  // [1] pp.819
-public:
+struct UartDev {  // [1] pp.819
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9,  USART1
                                 TX::id == 22 ? 0 :  // PB6,  USART1, remapped
                                 TX::id ==  2 ? 1 :  // PA2,  USART2
@@ -192,25 +195,26 @@ RX UartDev<TX,RX>::rx;
 // interrupt-enabled uart, sits of top of polled uart
 
 template< typename TX, typename RX, int NTX =25, int NRX =NTX >
-class UartBufDev {
-public:
+struct UartBufDev : UartDev<TX,RX> {
+    typedef UartDev<TX,RX> base;
+
     static void init () {
         auto handler = []() {
-            if (uart.readable()) {
-                int c = uart.getc();
+            if (base::readable()) {
+                int c = base::getc();
                 if (recv.free())
                     recv.put(c);
                 // else discard the input
             }
-            if (uart.writable()) {
+            if (base::writable()) {
                 if (xmit.avail() > 0)
-                    uart.putc(xmit.get());
+                    base::putc(xmit.get());
                 else
-                    MMIO32(uart.cr1) &= ~(1<<7);  // disable TXEIE
+                    MMIO32(base::cr1) &= ~(1<<7);  // disable TXEIE
             }
         };
 
-        switch (uart.uidx) {
+        switch (base::uidx) {
             case 0: VTableRam().usart1 = handler; break;
             case 1: VTableRam().usart2 = handler; break;
             case 2: VTableRam().usart3 = handler; break;
@@ -220,10 +224,10 @@ public:
 
         // nvic interrupt numbers are 37, 38, 39, 52, and 53, respectively
         constexpr uint32_t nvic_en1r = 0xE000E104;
-        constexpr int irq = (uart.uidx < 3 ? 37 : 49) + uart.uidx;
+        constexpr int irq = (base::uidx < 3 ? 37 : 49) + base::uidx;
         MMIO32(nvic_en1r) = 1 << (irq-32);  // enable USART interrupt
 
-        MMIO32(uart.cr1) |= (1<<5);  // enable RXNEIE
+        MMIO32(base::cr1) |= (1<<5);  // enable RXNEIE
     }
 
     static bool writable () {
@@ -234,7 +238,7 @@ public:
         while (!writable())
             ;
         xmit.put(c);
-        MMIO32(uart.cr1) |= (1<<7);  // enable TXEIE
+        MMIO32(base::cr1) |= (1<<7);  // enable TXEIE
     }
 
     static bool readable () {
@@ -247,13 +251,9 @@ public:
         return recv.get();
     }
 
-    static UartDev<TX,RX> uart;
     static RingBuffer<NRX> recv;
     static RingBuffer<NTX> xmit;
 };
-
-template< typename TX, typename RX, int NTX, int NRX >
-UartDev<TX,RX> UartBufDev<TX,RX,NTX,NRX>::uart;
 
 template< typename TX, typename RX, int NTX, int NRX >
 RingBuffer<NRX> UartBufDev<TX,RX,NTX,NRX>::recv;
@@ -264,10 +264,9 @@ RingBuffer<NTX> UartBufDev<TX,RX,NTX,NRX>::xmit;
 // system clock
 
 static void enableClkAt72mhz () {  // [1] p.49
-    constexpr uint32_t rcc   = 0x40021000;
-    constexpr uint32_t flash = 0x40022000;
+    constexpr uint32_t rcc   = Periph::rcc;
 
-    MMIO32(flash + 0x00) = 0x12; // flash acr, two wait states
+    MMIO32(Periph::flash + 0x00) = 0x12; // flash acr, two wait states
     MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6 [1] pp.100
@@ -288,16 +287,14 @@ static int fullSpeedClock () {
 
 struct RTC {  // [1] pp.486
     constexpr static uint32_t bdcr = Periph::rcc + 0x20;
-    constexpr static uint32_t pwr  = 0x40007000;
-    constexpr static uint32_t rtc  = 0x40002800;
-    constexpr static uint32_t crl  = rtc + 0x04;
-    constexpr static uint32_t prll = rtc + 0x0C;
-    constexpr static uint32_t cnth = rtc + 0x18;
-    constexpr static uint32_t cntl = rtc + 0x1C;
+    constexpr static uint32_t crl  = Periph::rtc + 0x04;
+    constexpr static uint32_t prll = Periph::rtc + 0x0C;
+    constexpr static uint32_t cnth = Periph::rtc + 0x18;
+    constexpr static uint32_t cntl = Periph::rtc + 0x1C;
 
     static void init () {
         MMIO32(Periph::rcc + 0x18) |= (0b11 << 27);  // enable PWREN and BKPEN
-        MMIO32(pwr) |= (1 << 8);          // set DBP
+        MMIO32(Periph::pwr) |= (1 << 8);  // set DBP
         MMIO32(bdcr) |= (1 << 16);        // reset backup domain
         MMIO32(bdcr) &= ~(1 << 16);       // release backup domain
         MMIO32(bdcr) |= (1 << 0);         // LESON backup domain
@@ -384,11 +381,10 @@ struct SpiHw {  // [1] pp.742
 // independent watchdog
 
 struct Iwdg {  // [1] pp.495
-    constexpr static uint32_t iwdg = 0x40003000;
-    constexpr static uint32_t kr  = iwdg + 0x00;
-    constexpr static uint32_t pr  = iwdg + 0x04;
-    constexpr static uint32_t rlr = iwdg + 0x08;
-    constexpr static uint32_t sr  = iwdg + 0x0C;
+    constexpr static uint32_t kr  = Periph::iwdg + 0x00;
+    constexpr static uint32_t pr  = Periph::iwdg + 0x04;
+    constexpr static uint32_t rlr = Periph::iwdg + 0x08;
+    constexpr static uint32_t sr  = Periph::iwdg + 0x0C;
 
     Iwdg (int rate =7) {
         while (sr & (1<<0)) ;  // wait until !PVU
@@ -405,11 +401,10 @@ struct Iwdg {  // [1] pp.495
 // flash memory writing and erasing
 
 struct Flash {
-    constexpr static uint32_t base = 0x40022000;
-    constexpr static uint32_t keyr = base + 0x04;
-    constexpr static uint32_t sr   = base + 0x0C;
-    constexpr static uint32_t cr   = base + 0x10;
-    constexpr static uint32_t ar   = base + 0x14;
+    constexpr static uint32_t keyr = Periph::flash + 0x04;
+    constexpr static uint32_t sr   = Periph::flash + 0x0C;
+    constexpr static uint32_t cr   = Periph::flash + 0x10;
+    constexpr static uint32_t ar   = Periph::flash + 0x14;
 
     static void write16 (void* addr, uint16_t val) {
         if (*(uint16_t*) addr != 0xFFFF)
