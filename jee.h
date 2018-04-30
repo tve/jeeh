@@ -50,21 +50,18 @@ extern void wait_ms (uint32_t ms);
 
 #if STM32F1
 #include "arch/stm32f1.h"
-#endif
-#if STM32F4
+#elif STM32F4
 #include "arch/stm32f4.h"
-#endif
-#if STM32L0
+#elif STM32L0
 #include "arch/stm32l0.h"
-#endif
-#if STM32L4
+#elif STM32L4
 #include "arch/stm32l4.h"
-#endif
-#if ARDUINO_ARCH_AVR
+#elif ARDUINO_ARCH_AVR
 #include "arch/avr328.h"
-#endif
-#if ARDUINO_ARCH_ESP32
+#elif ARDUINO_ARCH_ESP32
 #include "arch/esp32.h"
+#else
+#error no architecture defined
 #endif
 
 // shorthand: PinA<1> expands to Pin<'A',1>, etc
