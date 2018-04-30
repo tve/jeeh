@@ -77,10 +77,10 @@ struct Port {
         MMIO32(afr) = (MMIO32(afr) & ~(0xF << shift)) | (alt << shift);
     }
 
-    static void modeMap (uint16_t pins, Pinmode m) {
+    static void modeMap (uint16_t pins, Pinmode m, int alt =0) {
         for (int i = 0; i < 16; ++i) {
             if (pins & 1)
-                mode(i, m);
+                mode(i, m, alt);
             pins >>= 1;
         }
     }
