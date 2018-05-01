@@ -4,6 +4,7 @@
 struct Periph {  // [1] p.49-50
     constexpr static uint32_t rtc   = 0x40002800;
     constexpr static uint32_t iwdg  = 0x40003000;
+    constexpr static uint32_t usb   = 0x40005C00;
     constexpr static uint32_t pwr   = 0x40007000;
     constexpr static uint32_t gpio  = 0x40010800;
     constexpr static uint32_t rcc   = 0x40021000;
@@ -400,6 +401,13 @@ struct Iwdg {  // [1] pp.495
 
     static void reset () {
         MMIO32(kr) = 0xAAAA;
+    }
+
+    static void reload (int n) {
+        while (sr & (1<<1)) ;  // wait until !RVU
+        MMIO32(kr) = 0x5555;   // unlock PR
+        MMIO32(rlr) = n;
+        reset();
     }
 };
 
