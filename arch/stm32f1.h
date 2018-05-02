@@ -299,7 +299,7 @@ struct RTC {  // [1] pp.486
     constexpr static uint32_t cntl = Periph::rtc + 0x1C;
 
     static void init () {
-        MMIO32(Periph::rcc + 0x18) |= (0b11 << 27);  // enable PWREN and BKPEN
+        MMIO32(Periph::rcc + 0x1C) |= (0b11 << 27);  // enable PWREN and BKPEN
         MMIO32(Periph::pwr) |= (1 << 8);  // set DBP
         MMIO32(bdcr) |= (1 << 16);        // reset backup domain
         MMIO32(bdcr) &= ~(1 << 16);       // release backup domain

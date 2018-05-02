@@ -2,6 +2,8 @@
 //
 // Some cards may not work, this does not use slow SPI access during init.
 
+#include <string.h>
+
 template< typename SPI >
 struct SdCard {
     constexpr static int TIMEOUT = 50000;  // fairly arbitrary limit
@@ -213,4 +215,3 @@ struct FileMap {
     uint16_t map [N];
     T& fat;
 };
-
