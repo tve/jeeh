@@ -299,25 +299,34 @@ struct RTC {  // [1] pp.486
     constexpr static uint32_t cnth = Periph::rtc + 0x18;
     constexpr static uint32_t cntl = Periph::rtc + 0x1C;
 
-    static void init () {
-        MMIO32(Periph::rcc + 0x1C) |= (0b11 << 27);  // enable PWREN and BKPEN
-        MMIO32(Periph::pwr) |= (1 << 8);  // set DBP
-        MMIO32(bdcr) |= (1 << 16);        // reset backup domain
-        MMIO32(bdcr) &= ~(1 << 16);       // release backup domain
-        MMIO32(bdcr) |= (1 << 0);         // LESON backup domain
+    RTC () {
+        MMIO32(Periph::rcc + 0x1C) |= (0b11<<27);  // enable PWREN and BKPEN
+        MMIO32(Periph::pwr) |= (1<<8);  // set DBP [1] p.481
+    }
+
+    // TODO never needed?
+#if 0
+    void reset () {
+        MMIO32(bdcr) |= (1<<16);        // reset backup domain
+        MMIO32(bdcr) &= ~(1<<16);       // release backup domain
+    }
+#endif
+
+    void init () {
+        MMIO32(bdcr) |= (1<<0);         // LSEON backup domain
         wait();
-        MMIO32(bdcr) |= (1 << 8);         // RTSEL = LSE
-        MMIO32(bdcr) |= (1 << 15);        // RTCEN
-        MMIO32(crl) &= ~(1 << 3) ;        // clear RSF
-        while (MMIO32(crl) & (1 << 3)) ;  // wait for RSF
+        MMIO32(bdcr) |= (1<<8);         // RTSEL = LSE
+        MMIO32(bdcr) |= (1<<15);        // RTCEN
+        MMIO32(crl) &= ~(1<<3) ;        // clear RSF
+        while (MMIO32(crl) & (1<<3)) ;  // wait for RSF
         wait();
-        MMIO32(crl) |= (1 << 4);          // set CNF
-        MMIO32(prll) = 32767;             // set PRLL for 32 kHz crystal
-        MMIO32(crl) &= ~(1 << 4);         // clear CNF
+        MMIO32(crl) |= (1<<4);          // set CNF
+        MMIO32(prll) = 32767;           // set PRLL for 32 kHz crystal
+        MMIO32(crl) &= ~(1<<4);         // clear CNF
         wait();
     }
 
-    static void wait () {
+    void wait () {
         while ((MMIO32(bdcr) & (1<<1)) == 0) ;
     }
 
@@ -326,17 +335,17 @@ struct RTC {  // [1] pp.486
             uint16_t lo = MMIO32(cntl);
             uint16_t hi = MMIO32(cnth);
             if (lo == MMIO32(cntl))
-                return lo | (hi << 16);
+                return lo | (hi<<16);
             // if low word changed, try again
         }
     }
 
     void operator= (int v) {
         wait();
-        MMIO32(crl) |= (1 << 4);      // set CNF
+        MMIO32(crl) |= (1<<4);        // set CNF
         MMIO32(cntl) = (uint16_t) v;  // set lower 16 bits
         MMIO32(cnth) = v >> 16;       // set upper 16 bits
-        MMIO32(crl) &= ~(1 << 4);     // clear CNF
+        MMIO32(crl) &= ~(1<<4);       // clear CNF
     }
 
     // access to the backup registers
@@ -344,6 +353,7 @@ struct RTC {  // [1] pp.486
     uint16_t getData (int reg) {
         return MMIO16(Periph::bkp + 4 * (reg+1));  // regs 0..9
     }
+
     void setData (int reg, uint16_t val) {
         MMIO16(Periph::bkp + 4 * (reg+1)) = val;  // regs 0..9
     }
