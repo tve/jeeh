@@ -411,15 +411,15 @@ struct Iwdg {  // [1] pp.495
         MMIO32(kr) = 0xCCCC;   // start watchdog
     }
 
-    static void reset () {
-        MMIO32(kr) = 0xAAAA;
+    static void kick () {
+        MMIO32(kr) = 0xAAAA;  // reset the watchdog timout
     }
 
     static void reload (int n) {
         while (sr & (1<<1)) ;  // wait until !RVU
         MMIO32(kr) = 0x5555;   // unlock PR
         MMIO32(rlr) = n;
-        reset();
+        kick();
     }
 };
 
