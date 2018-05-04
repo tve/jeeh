@@ -304,14 +304,6 @@ struct RTC {  // [1] pp.486
         MMIO32(Periph::pwr) |= (1<<8);  // set DBP [1] p.481
     }
 
-    // TODO never needed?
-#if 0
-    void reset () {
-        MMIO32(bdcr) |= (1<<16);        // reset backup domain
-        MMIO32(bdcr) &= ~(1<<16);       // release backup domain
-    }
-#endif
-
     void init () {
         MMIO32(bdcr) |= (1<<0);         // LSEON backup domain
         wait();
