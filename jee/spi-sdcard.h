@@ -125,7 +125,7 @@ struct FatFS {
         if (cn < 2 || cn >= clim)
             return false;
         // is the FAT entry in our buffer?
-        return (clim < 4096 ? cn/2*3 : cn*2) < sizeof fat;
+        return (clim < 4096 ? cn/2*3 : cn*2) < (int) sizeof fat;
 
     }
 

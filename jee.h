@@ -100,7 +100,7 @@ struct SysTick {
         return t * 1000 + ((v * 100) / (HZ / 10000));
     }
 
-    static void wait_us (int n) {
+    static void wait_us (uint32_t n) {
         uint32_t t = micros();
         while ((uint32_t) (micros() - t) < n) ;
     }
@@ -162,9 +162,21 @@ struct SpiGpio {
 
 template< typename SDA, typename SCL, int N =0 >
 class I2cBus {
-    static void hold () { for (int i = 0; i < N; ++i) __asm(""); }
-    static void sclLo () { scl = 0; hold(); }
-    static void sclHi () { scl = 1; hold(); while (!scl) ; }
+    static void hold () {
+        for (int i = 0; i < N; ++i)
+            __asm("");
+    }
+    static void sclLo () {
+        scl = 0;
+        hold();
+    }
+    static void sclHi () {
+        scl = 1;
+        hold();
+        for (int i = 0; i < 10000; ++i)
+            if (scl)
+                break;
+    }
 
 public:
     I2cBus () {

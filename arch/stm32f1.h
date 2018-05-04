@@ -5,6 +5,7 @@ struct Periph {  // [1] p.49-50
     constexpr static uint32_t rtc   = 0x40002800;
     constexpr static uint32_t iwdg  = 0x40003000;
     constexpr static uint32_t usb   = 0x40005C00;
+    constexpr static uint32_t bkp   = 0x40006C00;
     constexpr static uint32_t pwr   = 0x40007000;
     constexpr static uint32_t gpio  = 0x40010800;
     constexpr static uint32_t rcc   = 0x40021000;
@@ -336,6 +337,15 @@ struct RTC {  // [1] pp.486
         MMIO32(cntl) = (uint16_t) v;  // set lower 16 bits
         MMIO32(cnth) = v >> 16;       // set upper 16 bits
         MMIO32(crl) &= ~(1 << 4);     // clear CNF
+    }
+
+    // access to the backup registers
+
+    uint16_t getData (int reg) {
+        return MMIO16(Periph::bkp + 4 * (reg+1));  // regs 0..9
+    }
+    void setData (int reg, uint16_t val) {
+        MMIO16(Periph::bkp + 4 * (reg+1)) = val;  // regs 0..9
     }
 };
 
