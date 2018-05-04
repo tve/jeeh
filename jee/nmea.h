@@ -24,12 +24,13 @@ struct NMEA {
     int32_t stemp;
 
     // GPS variables
-    uint16_t time, msecs; // time as in 1945 == 19:45
+    uint16_t time, msecs; // time split into HHMM and SS.SSS
     uint16_t knots, course; // knots*100, degrees*100
     uint32_t date; // date as in 123117 for december 31st 2017
     uint16_t hdop; // HDOP*100
     uint16_t sats; // number of satellites used in fix
-    int32_t lat, lon, alt;
+    int32_t lat, lon; // minutes*1E3 (*5/3 converts to degrees*1E6)
+    int32_t alt; // decimeters
     bool fix;
 
     // string equality
