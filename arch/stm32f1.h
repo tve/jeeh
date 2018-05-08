@@ -431,8 +431,8 @@ struct Flash {
     constexpr static uint32_t cr   = Periph::flash + 0x10;
     constexpr static uint32_t ar   = Periph::flash + 0x14;
 
-    static void write16 (void* addr, uint16_t val) {
-        if (*(uint16_t*) addr != 0xFFFF)
+    static void write16 (void const* addr, uint16_t val) {
+        if (*(uint16_t const*) addr != 0xFFFF)
             return;
         unlock();
         MMIO32(cr) = 0x01;
@@ -440,12 +440,12 @@ struct Flash {
         finish();
     }
 
-    static void write32 (void* addr, uint32_t val) {
+    static void write32 (void const* addr, uint32_t val) {
         write16(addr, val);
-        write16((uint16_t*) addr + 1, val >> 16);
+        write16((uint16_t const*) addr + 1, val >> 16);
     }
 
-    static void erasePage (void* addr) {
+    static void erasePage (void const* addr) {
         unlock();
         MMIO32(cr) = 0x02;
         MMIO32(ar) = (uint32_t) addr | 0x08000000;
