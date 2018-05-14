@@ -7,6 +7,7 @@ struct Periph {  // [1] p.49-50
     constexpr static uint32_t usb   = 0x40005C00;
     constexpr static uint32_t bkp   = 0x40006C00;
     constexpr static uint32_t pwr   = 0x40007000;
+    constexpr static uint32_t afio  = 0x40010000;
     constexpr static uint32_t gpio  = 0x40010800;
     constexpr static uint32_t rcc   = 0x40021000;
     constexpr static uint32_t flash = 0x40022000;
