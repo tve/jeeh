@@ -122,11 +122,12 @@ struct UartDev {
     // TODO does not recognise alternate TX pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
                                 TX::id ==  2 ? 1 :  // PA2, USART2
+                                TX::id == 19 ? 4 :  // PB3, USART5
                                                0;   // else USART1
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t cr1 = base + 0x00;
-    //constexpr static uint32_t cr2 = base + 0x04;
+    constexpr static uint32_t cr2 = base + 0x04;
     //constexpr static uint32_t cr3 = base + 0x08;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
@@ -135,14 +136,15 @@ struct UartDev {
     constexpr static uint32_t tdr = base + 0x28;
 
     UartDev () {
-        tx.mode(Pinmode::alt_out, 4);
-        rx.mode(Pinmode::alt_out, 4);
+        tx.mode(Pinmode::alt_out, uidx < 4 ? 4 : 6);
+        rx.mode(Pinmode::alt_out, uidx < 4 ? 4 : 6);
 
         if (uidx == 0)
             MMIO32(Periph::rcc + 0x34) |= 1 << 14; // enable USART1 clock
         else
             MMIO32(Periph::rcc + 0x38) |= 1 << (16+uidx); // USART 2..5
 
+        //if (uidx==4) MMIO32(cr2) |= 1<<15; // swap tx/rx
         MMIO32(brr) = 18;  // 115200 baud @ 2.1 MHz
         MMIO32(rdr); // clear RX reg
         MMIO32(cr1) = (1<<3) | (1<<2) | (1<<0);  // TE, RE, UE
@@ -215,11 +217,14 @@ struct UartBufDev : UartDev<TX,RX> {
         switch (base::uidx) {
             case 0: VTableRam().usart1 = handler; break;
             case 1: VTableRam().usart2 = handler; break;
+            case 2: VTableRam().lpuart1_aes_rng = handler; break; // lpuart1
+            case 3: VTableRam().usart4_5 = handler; break;
+            case 4: VTableRam().usart4_5 = handler; break; // WARNING: usart4&5 share a vector!
         }
 
-        // nvic interrupt numbers are 27 and 28, respectively
+        // nvic interrupt numbers are 27, 28, 29, 14, and 14 respectively
         constexpr uint32_t nvic_en0r = 0xE000E100;
-        constexpr int irq = 27 + base::uidx;
+        constexpr int irq = base::uidx < 4 ? 27 + base::uidx : 14;
         MMIO32(nvic_en0r) = 1 << irq;  // enable USART interrupt
 
         MMIO32(base::cr1) |= (1<<5);  // enable RXNEIE

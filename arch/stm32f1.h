@@ -1,6 +1,8 @@
 // Hardware access for STM32F103 family microcontrollers
 // see [1] https://jeelabs.org/ref/STM32F1-RM0008.pdf
 
+int printf(const char* fmt, ...); // forward decl to allow .h files to print for debug
+
 struct Periph {  // [1] p.49-50
     constexpr static uint32_t rtc   = 0x40002800;
     constexpr static uint32_t iwdg  = 0x40003000;
@@ -160,6 +162,13 @@ struct UartDev {  // [1] pp.819
 
         MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
+    }
+
+    static void baud(int baud, int hz=8000000) {
+        //MMIO32(cr1) &= ~(1<<13); // disable uart
+        MMIO32(brr) = (hz+baud/2) / baud;
+        printf("baud: %d\r\n", (hz+baud/2) / baud);
+        //MMIO32(cr1) |= (1<<13); // enable uart
     }
 
     static bool writable () {

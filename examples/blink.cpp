@@ -2,15 +2,17 @@
 
 #include <jee.h>
 
-PinC<13> led;
+PinA<15> led;
 
 int main () {
     led.mode(Pinmode::out);
+    enableSysTick();
 
     while (true) {
         led = !led;
+        wait_ms(500);
 
-        for (int i = 0; i < 1000000; ++i)
-            __asm(""); // avoid getting optimised away
+        //for (int i = 0; i < 1000000; ++i)
+        //    __asm(""); // avoid getting optimised away
     }
 }
