@@ -1,6 +1,6 @@
 /*
     This is a very very basic command parser. Just enough to recognise a few
-    different commands, and pass up to 5 numeric arguments to them.
+    different commands, and pass up to 10 numeric arguments to them.
 
     The parser is given input characters as they come in, the return value is
     either 0 if more input is needed, or the first character of the command.
@@ -12,7 +12,7 @@
         command
         number whitespace command
         number whitespace number whitespace command
-        (etc... up to 5 numbers)
+        (etc... up to 10 numbers)
     Whitespace is anything with an ASCII value of 0x20 or less, incl newlines.
 
     Numbers are normally in base-10, or in base-16 when preceded by a "$".
@@ -30,10 +30,12 @@
         command     <- input, this command will receive the 4 args
 
     Commands are immediate (no <return> needed), and there's no line editing.
+
+    The '#' character will clear the argument stack.
 */
 
 struct Command {
-    int args [5];
+    int args [10];
     int8_t argc = 0;
     char state = 0;
 
@@ -48,6 +50,10 @@ struct Command {
 
         switch (state) {
             case 0:  // any
+                if (c == '#') {
+                    argc = 0;
+                    return 0;
+                }
                 if (c == '$') {
                     args[argc++] = 0;
                     state = 1;

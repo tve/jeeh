@@ -11,6 +11,7 @@ struct Periph {  // [1] p.49-50
     constexpr static uint32_t gpio  = 0x40010800;
     constexpr static uint32_t rcc   = 0x40021000;
     constexpr static uint32_t flash = 0x40022000;
+    constexpr static uint32_t crc   = 0x40023000;
 };
 
 // interrupt vector table in ram
@@ -143,7 +144,7 @@ struct UartDev {  // [1] pp.819
                                 TX::id == 26 ? 2 :  // PB10, USART3
                                 TX::id == 42 ? 2 :  // PC10, USART3, remapped
                                 TX::id == 56 ? 2 :  // PD8,  USART3, remapped
-                                TX::id == 42 ? 3 :  // PC10, UART4
+                             // TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
                                                0;   // else  USART1
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :  // [1] p.50-51
@@ -153,7 +154,7 @@ struct UartDev {  // [1] pp.819
     constexpr static uint32_t brr = base + 0x08;
     constexpr static uint32_t cr1 = base + 0x0C;
 
-    UartDev () {
+    static void init () {
         tx.mode(Pinmode::alt_out);
         rx.mode(Pinmode::in_pullup);
 
@@ -207,6 +208,8 @@ struct UartBufDev : UartDev<TX,RX> {
     typedef UartDev<TX,RX> base;
 
     static void init () {
+        UartDev<TX,RX>::init();
+
         auto handler = []() {
             if (base::readable()) {
                 int c = base::getc();
@@ -271,21 +274,29 @@ RingBuffer<NTX> UartBufDev<TX,RX,NTX,NRX>::xmit;
 
 // system clock
 
-static void enableClkAt72mhz () {  // [1] p.49
-    constexpr uint32_t rcc   = Periph::rcc;
+static void enableClkAt8MHz () {  // [1] p.49
+    constexpr uint32_t rcc = Periph::rcc;
+
+    MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
+    while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
+    MMIO32(rcc + 0x04) = (1<<0);  // hse, no pll [1] pp.100
+}
+
+static void enableClkAt72MHz () {  // [1] p.49
+    constexpr uint32_t rcc = Periph::rcc;
 
     MMIO32(Periph::flash + 0x00) = 0x12; // flash acr, two wait states
     MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6 [1] pp.100
-    MMIO32(rcc + 0x04) = (1<<16) | (7<<18) | (4<<8) | (2<<14) | (1<<1);
+    MMIO32(rcc + 0x04) = (7<<18) | (1<<16) | (2<<14) | (4<<8) | (2<<0);
     MMIO32(rcc + 0x00) |= (1<<24); // rcc cr, set PLLON
     while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
 }
 
 static int fullSpeedClock () {
     constexpr uint32_t hz = 72000000;
-    enableClkAt72mhz();                 // using external 8 MHz crystal
+    enableClkAt72MHz();                 // using external 8 MHz crystal
     enableSysTick(hz/1000);             // systick once every 1 ms
     MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
     return hz;
@@ -521,6 +532,7 @@ struct ADC {
     constexpr static uint32_t cr1   = base + 0x04;
     constexpr static uint32_t cr2   = base + 0x08;
     constexpr static uint32_t smpr1 = base + 0x0C;
+    constexpr static uint32_t smpr2 = base + 0x10;
     constexpr static uint32_t sqr3  = base + 0x34;
     constexpr static uint32_t dr    = base + 0x4C;
 
@@ -549,5 +561,17 @@ struct ADC {
         MMIO32(cr2) |= (1<<0);  // start conversion
         while ((MMIO32(sr) & (1<<1)) == 0) ;  // EOC [1] p.236
         return MMIO32(dr);
+    }
+};
+
+// crc calculation
+
+struct CRC32 {
+    static uint32_t calculate (uint32_t const* ptr, int num) {
+        MMIO32(Periph::rcc + 0x14) |= 1<<6; // enable CRC unit
+        MMIO32(Periph::crc + 0x08) = 1;  // reset [1] p.64
+        while (--num >= 0)
+            MMIO32(Periph::crc + 0x00) = *ptr++;
+        return MMIO32(Periph::crc + 0x00);  // calculated crc32
     }
 };
