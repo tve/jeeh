@@ -87,19 +87,6 @@ struct ILI9341 {
         SPI::disable();
     }
 
-    // readPixels does not seem to work...
-    static void readPixels(int x, int y, int len, uint16_t *rgb) {
-        SPI::enable();
-        cmd(0x2A); out16(y); out16(yEnd);
-        cmd(0x2B); out16(x); out16(xEnd);
-        cmd(0x2E); SPI::transfer(0);
-        for (int i = 0; i < len; ++i) {
-            uint16_t b = SPI::transfer(0);
-            rgb[i] = (b<<8) | (uint16_t)SPI::transfer(0);
-        }
-        SPI::disable();
-    }
-
     static void bounds (int xend =width-1, int yend =height-1) {
         xEnd = xend;
         yEnd = yend;

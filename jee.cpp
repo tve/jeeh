@@ -47,7 +47,8 @@ void enableSysTick (uint32_t divider) {
 
 void wait_ms (uint32_t ms) {
     uint32_t start = ticks;
-    while ((uint32_t) (ticks - start) < ms) ;
+    while ((uint32_t) (ticks - start) < ms)
+        __asm("wfi");  // reduce power consumption
 }
 
 #endif // __arm__

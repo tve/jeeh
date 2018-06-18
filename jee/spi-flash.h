@@ -20,10 +20,10 @@ class SpiFlash {
         SPI::disable();
         cmd(arg);
     }
-    static void w24b (int page) {
-        SPI::transfer(page >> 8);
-        SPI::transfer(page);
-        SPI::transfer(0);
+    static void w24b (int offset) {
+        SPI::transfer(offset >> 16);
+        SPI::transfer(offset >> 8);
+        SPI::transfer(offset);
     }
 
 public:
@@ -50,22 +50,30 @@ public:
 
     static void erase (int page) {
         wcmd(0x20);
-        w24b(page);
+        w24b(page<<8);
         wait();
     }
 
     static void read256 (int page, void* buf) {
+        read(page<<8, buf, 256);
+    }
+
+    static void read (int offset, void* buf, int cnt) {
         cmd(0x03);
-        w24b(page);
-        for (int i = 0; i < 256; ++i)
+        w24b(offset);
+        for (int i = 0; i < cnt; ++i)
             ((uint8_t*) buf)[i] = SPI::transfer(0);
         SPI::disable();
     }
 
     static void write256 (int page, const void* buf) {
+        write(page<<8, buf, 256);
+    }
+
+    static void write (int offset, const void* buf, int cnt) {
         wcmd(0x02);
-        w24b(page);
-        for (int i = 0; i < 256; ++i)
+        w24b(offset);
+        for (int i = 0; i < cnt; ++i)
             SPI::transfer(((uint8_t*) buf)[i]);
         wait();
     }

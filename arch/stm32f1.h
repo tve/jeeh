@@ -1,15 +1,17 @@
 // Hardware access for STM32F103 family microcontrollers
 // see [1] https://jeelabs.org/ref/STM32F1-RM0008.pdf
 
-int printf(const char* fmt, ...); // forward decl to allow .h files to print for debug
-
 struct Periph {  // [1] p.49-50
     constexpr static uint32_t rtc   = 0x40002800;
     constexpr static uint32_t iwdg  = 0x40003000;
+    constexpr static uint32_t usb   = 0x40005C00;
+    constexpr static uint32_t bkp   = 0x40006C00;
     constexpr static uint32_t pwr   = 0x40007000;
+    constexpr static uint32_t afio  = 0x40010000;
     constexpr static uint32_t gpio  = 0x40010800;
     constexpr static uint32_t rcc   = 0x40021000;
     constexpr static uint32_t flash = 0x40022000;
+    constexpr static uint32_t crc   = 0x40023000;
 };
 
 // interrupt vector table in ram
@@ -36,7 +38,8 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =8000000/1000);
+constexpr static int defaultHz = 8000000;
+extern void enableSysTick (uint32_t divider =defaultHz/1000);
 
 // gpio
 
@@ -141,7 +144,7 @@ struct UartDev {  // [1] pp.819
                                 TX::id == 26 ? 2 :  // PB10, USART3
                                 TX::id == 42 ? 2 :  // PC10, USART3, remapped
                                 TX::id == 56 ? 2 :  // PD8,  USART3, remapped
-                                TX::id == 42 ? 3 :  // PC10, UART4
+                             // TX::id == 42 ? 3 :  // PC10, UART4
                                 TX::id == 44 ? 4 :  // PC12, UART5
                                                0;   // else  USART1
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :  // [1] p.50-51
@@ -151,7 +154,7 @@ struct UartDev {  // [1] pp.819
     constexpr static uint32_t brr = base + 0x08;
     constexpr static uint32_t cr1 = base + 0x0C;
 
-    UartDev () {
+    static void init () {
         tx.mode(Pinmode::alt_out);
         rx.mode(Pinmode::in_pullup);
 
@@ -160,15 +163,12 @@ struct UartDev {  // [1] pp.819
         else
             MMIO32(Periph::rcc + 0x1C) |= 1 << (16+uidx); // U(S)ART 2..5
 
-        MMIO32(brr) = 70;  // 115200 baud @ 8 MHz
+        baud(115200);
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
     }
 
-    static void baud(int baud, int hz=8000000) {
-        //MMIO32(cr1) &= ~(1<<13); // disable uart
-        MMIO32(brr) = (hz+baud/2) / baud;
-        printf("baud: %d\r\n", (hz+baud/2) / baud);
-        //MMIO32(cr1) |= (1<<13); // enable uart
+    static void baud (uint32_t baud, uint32_t hz =defaultHz) {
+        MMIO32(brr) = (hz + baud/2) / baud;
     }
 
     static bool writable () {
@@ -208,6 +208,8 @@ struct UartBufDev : UartDev<TX,RX> {
     typedef UartDev<TX,RX> base;
 
     static void init () {
+        UartDev<TX,RX>::init();
+
         auto handler = []() {
             if (base::readable()) {
                 int c = base::getc();
@@ -272,21 +274,29 @@ RingBuffer<NTX> UartBufDev<TX,RX,NTX,NRX>::xmit;
 
 // system clock
 
-static void enableClkAt72mhz () {  // [1] p.49
-    constexpr uint32_t rcc   = Periph::rcc;
+static void enableClkAt8MHz () {  // [1] p.49
+    constexpr uint32_t rcc = Periph::rcc;
+
+    MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
+    while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
+    MMIO32(rcc + 0x04) = (1<<0);  // hse, no pll [1] pp.100
+}
+
+static void enableClkAt72MHz () {  // [1] p.49
+    constexpr uint32_t rcc = Periph::rcc;
 
     MMIO32(Periph::flash + 0x00) = 0x12; // flash acr, two wait states
     MMIO32(rcc + 0x00) |= (1<<16); // rcc cr, set HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     // 8 MHz xtal src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6 [1] pp.100
-    MMIO32(rcc + 0x04) = (1<<16) | (7<<18) | (4<<8) | (2<<14) | (1<<1);
+    MMIO32(rcc + 0x04) = (7<<18) | (1<<16) | (2<<14) | (4<<8) | (2<<0);
     MMIO32(rcc + 0x00) |= (1<<24); // rcc cr, set PLLON
     while ((MMIO32(rcc + 0x00) & (1<<25)) == 0) ; // wait for PLLRDY
 }
 
 static int fullSpeedClock () {
     constexpr uint32_t hz = 72000000;
-    enableClkAt72mhz();                 // using external 8 MHz crystal
+    enableClkAt72MHz();                 // using external 8 MHz crystal
     enableSysTick(hz/1000);             // systick once every 1 ms
     MMIO32(0x40013808) = hz/115200;     // usart1: 115200 baud @ 72 MHz
     return hz;
@@ -301,25 +311,26 @@ struct RTC {  // [1] pp.486
     constexpr static uint32_t cnth = Periph::rtc + 0x18;
     constexpr static uint32_t cntl = Periph::rtc + 0x1C;
 
-    static void init () {
-        MMIO32(Periph::rcc + 0x18) |= (0b11 << 27);  // enable PWREN and BKPEN
-        MMIO32(Periph::pwr) |= (1 << 8);  // set DBP
-        MMIO32(bdcr) |= (1 << 16);        // reset backup domain
-        MMIO32(bdcr) &= ~(1 << 16);       // release backup domain
-        MMIO32(bdcr) |= (1 << 0);         // LESON backup domain
+    RTC () {
+        MMIO32(Periph::rcc + 0x1C) |= (0b11<<27);  // enable PWREN and BKPEN
+        MMIO32(Periph::pwr) |= (1<<8);  // set DBP [1] p.481
+    }
+
+    void init () {
+        MMIO32(bdcr) |= (1<<0);         // LSEON backup domain
         wait();
-        MMIO32(bdcr) |= (1 << 8);         // RTSEL = LSE
-        MMIO32(bdcr) |= (1 << 15);        // RTCEN
-        MMIO32(crl) &= ~(1 << 3) ;        // clear RSF
-        while (MMIO32(crl) & (1 << 3)) ;  // wait for RSF
+        MMIO32(bdcr) |= (1<<8);         // RTSEL = LSE
+        MMIO32(bdcr) |= (1<<15);        // RTCEN
+        MMIO32(crl) &= ~(1<<3) ;        // clear RSF
+        while (MMIO32(crl) & (1<<3)) ;  // wait for RSF
         wait();
-        MMIO32(crl) |= (1 << 4);          // set CNF
-        MMIO32(prll) = 32767;             // set PRLL for 32 kHz crystal
-        MMIO32(crl) &= ~(1 << 4);         // clear CNF
+        MMIO32(crl) |= (1<<4);          // set CNF
+        MMIO32(prll) = 32767;           // set PRLL for 32 kHz crystal
+        MMIO32(crl) &= ~(1<<4);         // clear CNF
         wait();
     }
 
-    static void wait () {
+    void wait () {
         while ((MMIO32(bdcr) & (1<<1)) == 0) ;
     }
 
@@ -328,17 +339,27 @@ struct RTC {  // [1] pp.486
             uint16_t lo = MMIO32(cntl);
             uint16_t hi = MMIO32(cnth);
             if (lo == MMIO32(cntl))
-                return lo | (hi << 16);
+                return lo | (hi<<16);
             // if low word changed, try again
         }
     }
 
     void operator= (int v) {
         wait();
-        MMIO32(crl) |= (1 << 4);      // set CNF
+        MMIO32(crl) |= (1<<4);        // set CNF
         MMIO32(cntl) = (uint16_t) v;  // set lower 16 bits
         MMIO32(cnth) = v >> 16;       // set upper 16 bits
-        MMIO32(crl) &= ~(1 << 4);     // clear CNF
+        MMIO32(crl) &= ~(1<<4);       // clear CNF
+    }
+
+    // access to the backup registers
+
+    uint16_t getData (int reg) {
+        return MMIO16(Periph::bkp + 4 * (reg+1));  // regs 0..9
+    }
+
+    void setData (int reg, uint16_t val) {
+        MMIO16(Periph::bkp + 4 * (reg+1)) = val;  // regs 0..9
     }
 };
 
@@ -402,8 +423,15 @@ struct Iwdg {  // [1] pp.495
         MMIO32(kr) = 0xCCCC;   // start watchdog
     }
 
-    static void reset () {
-        MMIO32(kr) = 0xAAAA;
+    static void kick () {
+        MMIO32(kr) = 0xAAAA;  // reset the watchdog timout
+    }
+
+    static void reload (int n) {
+        while (sr & (1<<1)) ;  // wait until !RVU
+        MMIO32(kr) = 0x5555;   // unlock PR
+        MMIO32(rlr) = n;
+        kick();
     }
 };
 
@@ -415,8 +443,8 @@ struct Flash {
     constexpr static uint32_t cr   = Periph::flash + 0x10;
     constexpr static uint32_t ar   = Periph::flash + 0x14;
 
-    static void write16 (void* addr, uint16_t val) {
-        if (*(uint16_t*) addr != 0xFFFF)
+    static void write16 (void const* addr, uint16_t val) {
+        if (*(uint16_t const*) addr != 0xFFFF)
             return;
         unlock();
         MMIO32(cr) = 0x01;
@@ -424,12 +452,12 @@ struct Flash {
         finish();
     }
 
-    static void write32 (void* addr, uint32_t val) {
+    static void write32 (void const* addr, uint32_t val) {
         write16(addr, val);
-        write16((uint16_t*) addr + 1, val >> 16);
+        write16((uint16_t const*) addr + 1, val >> 16);
     }
 
-    static void erasePage (void* addr) {
+    static void erasePage (void const* addr) {
         unlock();
         MMIO32(cr) = 0x02;
         MMIO32(ar) = (uint32_t) addr | 0x08000000;
@@ -504,6 +532,7 @@ struct ADC {
     constexpr static uint32_t cr1   = base + 0x04;
     constexpr static uint32_t cr2   = base + 0x08;
     constexpr static uint32_t smpr1 = base + 0x0C;
+    constexpr static uint32_t smpr2 = base + 0x10;
     constexpr static uint32_t sqr3  = base + 0x34;
     constexpr static uint32_t dr    = base + 0x4C;
 
@@ -532,5 +561,17 @@ struct ADC {
         MMIO32(cr2) |= (1<<0);  // start conversion
         while ((MMIO32(sr) & (1<<1)) == 0) ;  // EOC [1] p.236
         return MMIO32(dr);
+    }
+};
+
+// crc calculation
+
+struct CRC32 {
+    static uint32_t calculate (uint32_t const* ptr, int num) {
+        MMIO32(Periph::rcc + 0x14) |= 1<<6; // enable CRC unit
+        MMIO32(Periph::crc + 0x08) = 1;  // reset [1] p.64
+        while (--num >= 0)
+            MMIO32(Periph::crc + 0x00) = *ptr++;
+        return MMIO32(Periph::crc + 0x00);  // calculated crc32
     }
 };

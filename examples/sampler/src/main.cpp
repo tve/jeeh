@@ -1,6 +1,10 @@
 // Sample project, used to compile and run the standalone examples in JeeH.
 // The source is selected via "build_flags = -D <name>" in platformio.ini
 
+#if EXAMPLE_ADC
+#include "../../adc.cpp"
+#endif
+
 #if EXAMPLE_BLINK
 #include "../../blink.cpp"
 #endif
@@ -59,8 +63,4 @@
 
 #if EXAMPLE_SYSTICK
 #include "../../systick.cpp"
-#endif
-
-#if EXAMPLE_ADC
-#include "../../adc.cpp"
 #endif

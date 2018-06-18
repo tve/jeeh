@@ -1,7 +1,8 @@
 struct Periph {
-    constexpr static uint32_t fsmc = 0x40000000U;
-    constexpr static uint32_t gpio = 0x40020000U;
-    constexpr static uint32_t rcc  = 0x40023800U;
+    constexpr static uint32_t fsmc  = 0x40000000;
+    constexpr static uint32_t gpio  = 0x40020000;
+    constexpr static uint32_t rcc   = 0x40023800;
+    constexpr static uint32_t flash = 0x40023C00;
 };
 
 // interrupt vector table in ram
@@ -32,7 +33,8 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =16000000/1000);
+constexpr static int defaultHz = 16000000;
+extern void enableSysTick (uint32_t divider =defaultHz/1000);
 
 // gpio
 
@@ -144,8 +146,12 @@ struct UartDev {
         else
             MMIO32(Periph::rcc + 0x40) |= 1 << (16+uidx); // U(S)ART 2..5
 
-        MMIO32(brr) = 139;  // 115200 baud @ 16 MHz
+        baud(115200);
         MMIO32(cr1) = (1<<13) | (1<<3) | (1<<2);  // UE, TE, RE
+    }
+
+    static void baud (uint32_t baud, uint32_t hz =defaultHz) {
+        MMIO32(brr) = (hz + baud/2) / baud;
     }
 
     static bool writable () {
@@ -251,10 +257,9 @@ RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
 // FIXME - appears to be a bit erratic on F407VE eBay board (h/w or s/w issue?)
 
 static void enableClkAt168mhz () {
-    constexpr uint32_t rcc   = 0x40023800;
-    constexpr uint32_t flash = 0x40023C00;
+    constexpr uint32_t rcc   = Periph::rcc;
 
-    MMIO32(flash + 0x00) = 0x103; // flash acr, 3 wait states
+    MMIO32(Periph::flash + 0x00) = 0x103; // flash acr, 3 wait states
     MMIO32(rcc + 0x00) = (1<<16); // HSEON
     while ((MMIO32(rcc + 0x00) & (1<<17)) == 0) ; // wait for HSERDY
     MMIO32(rcc + 0x08) = 1; // switch to HSE

@@ -17,7 +17,7 @@ struct DHT22 {
         bool ok = wait(0) & wait(1) & wait(0);  // expect an ack pulse
 
         uint8_t buf [5];
-        for (int i = 0; i < sizeof buf; ++i)
+        for (int i = 0; i < (int) sizeof buf; ++i)
             for (int j = 0; j < 8; ++j) {
                 buf[i] <<= 1;
                 ok &= wait(1);

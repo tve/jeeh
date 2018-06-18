@@ -24,7 +24,8 @@ struct VTable {
 
 // systick and delays
 
-extern void enableSysTick (uint32_t divider =2097000/1000);
+constexpr static int defaultHz = 2097000;
+extern void enableSysTick (uint32_t divider =defaultHz/1000);
 
 // gpio
 
@@ -127,7 +128,7 @@ struct UartDev {
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
                                                  0x40004000 + 0x400 * uidx;
     constexpr static uint32_t cr1 = base + 0x00;
-    constexpr static uint32_t cr2 = base + 0x04;
+    //constexpr static uint32_t cr2 = base + 0x04;
     //constexpr static uint32_t cr3 = base + 0x08;
     constexpr static uint32_t brr = base + 0x0C;
     constexpr static uint32_t isr = base + 0x1C;
@@ -150,10 +151,10 @@ struct UartDev {
         MMIO32(cr1) = (1<<3) | (1<<2) | (1<<0);  // TE, RE, UE
     }
 
-    static void baud(int baud, int hz=2100000) {
-        MMIO32(cr1) &= ~(1<<0); // disable uart
-        MMIO32(brr) = (hz+baud/2) / baud;
-        MMIO32(cr1) |= (1<<0); // enable uart
+    static void baud (uint32_t baud, uint32_t hz =defaultHz) {
+        MMIO32(cr1) &= ~(1<<0);              // disable
+        MMIO32(brr) = (hz + baud/2) / baud;  // change while disabled
+        MMIO32(cr1) |= 1<<0;                 // enable
     }
 
     static bool writable () {
@@ -196,22 +197,18 @@ struct UartBufDev : UartDev<TX,RX> {
 
     static void init () {
         auto handler = []() {
-            extern int printf(const char* fmt, ...);
             if (base::readable()) {
                 int c = base::getc();
                 if (recv.free())
                     recv.put(c);
                 // else discard the input
             }
-            //if ((MMIO32(base::isr) & 0xA) != 0) MMIO32(base::isr+4) = 0xA; // clear ORE and FE
             if (base::writable()) {
                 if (xmit.avail() > 0)
                     base::putc(xmit.get());
                 else
                     MMIO32(base::cr1) &= ~(1<<7);  // disable TXEIE
             }
-            //printf("[%x]", MMIO32(base::isr));
-            //MMIO32(base::isr+4) = -1;
         };
 
         switch (base::uidx) {
