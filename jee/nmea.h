@@ -13,8 +13,6 @@ static struct { char *name; char *fmt; }
     };
 static int nmea_fix = 0;
 
-int printf(const char* fmt, ...);
-
 struct NMEA {
     uint8_t state = 0; // 0=looking for $, 1=accum format, 2=parsing data
     uint8_t pos = 0; // position in format

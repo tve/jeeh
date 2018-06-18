@@ -261,6 +261,52 @@ RingBuffer<N> UartBufDev<TX,RX,N>::recv;
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
 
+// analog input using ADC1
+
+template< int N > // ADC unit, L0 only has one ADC, N must always be 1
+struct ADC {
+    constexpr static uint32_t base  = 0x40012000 + 0x400 * N;
+    constexpr static uint32_t isr   = base + 0x00;
+    constexpr static uint32_t cr    = base + 0x08;
+    //constexpr static uint32_t cfgr1 = base + 0x0C;
+    //constexpr static uint32_t cfgr2 = base + 0x10;
+    //constexpr static uint32_t smpr  = base + 0x14;
+    constexpr static uint32_t chsel = base + 0x28;
+    constexpr static uint32_t dr    = base + 0x40;
+    constexpr static uint32_t rcc_apb2enr = Periph::rcc + 0x34;
+
+    static void init () {
+        if (N != 1) return;
+        MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
+        // calibration
+        MMIO32(cr) = (1<<31); // set ADCAL -- start calibration
+        while (MMIO32(cr) & (1<<31)) ;  // wait until calibration completed
+        MMIO32(cr) = (1<<0); // set ADEN -- enable ADC
+        //printf("cr=%x\r\n", MMIO32(cr));
+    }
+
+    // read analog, given a pin (which is also set to analog input mode)
+    template< typename pin >
+    static uint16_t read (pin& p) {
+        pin::mode(Pinmode::in_analog);
+        constexpr int off = pin::id < 16 ? 0 :   // A0..A7 => 0..7
+                            pin::id < 32 ? -8 :  // B0..B1 => 8..9
+                                           -22;  // C0..C5 => 10..15
+        return read(pin::id + off);
+    }
+
+    // read direct channel number (also: 16 = temp, 17 = vref)
+    static uint16_t read (uint8_t chan) {
+        if (N != 1) return 0;
+        MMIO32(chsel) = 1<<chan;
+        MMIO32(cr) |= (1<<2);  // set ADSTART start conversion
+        //printf("chan=%d sel=%x cr=%x\r\n", chan, MMIO32(chsel), MMIO32(cr));
+        //printf("cr=%x isr=%x\r\n", MMIO32(cr), MMIO32(isr));
+        while ((MMIO32(isr) & (1<<2)) == 0) ;  // EOC
+        return MMIO32(dr);
+    }
+};
+
 // system clock
 
 static void enableClkAt32mhz () {  // [1] p.49

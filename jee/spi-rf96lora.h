@@ -63,7 +63,7 @@ LoRaConfig lorawan_bw250sf7   = {0x82, 0x74, 0x04, 250}; // 11000bps, 20B in   2
 
 template< typename SPI >
 struct RF96lora {
-    void init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t freq);
+    bool init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t freq);
     void frequency (uint32_t freq);
     void modemConfig (LoRaConfig &conf);
     void txPower (uint8_t level);
@@ -73,6 +73,8 @@ struct RF96lora {
     int getAck(void* ptr, int len);
     void addInfo(uint8_t *ptr);
     void sleep (); // put the radio to sleep to save power
+    void dumpRegs();
+    int16_t noiseFloor(); // return the current RSSI as noise floor reading
 
     uint8_t myId;
 
@@ -114,6 +116,7 @@ struct RF96lora {
         REG_RXBYTES       = 0x13,
         REG_PKTSNR        = 0x19,
         REG_PKTRSSI       = 0x1A,
+        REG_RSSIVALUE     = 0x1B,
         REG_MODEMCONF1    = 0x1D,
         REG_MODEMCONF2    = 0x1E,
         REG_PAYLENGTH     = 0x22,
@@ -142,6 +145,7 @@ struct RF96lora {
     };
 
     void setMode (uint8_t newMode);
+    bool waitMode (uint8_t newMode);
     void configure (const uint8_t* p);
     void setFreq (uint32_t hz);
     void adjustFreq ();
@@ -156,8 +160,23 @@ struct RF96lora {
 
 template< typename SPI >
 void RF96lora<SPI>::setMode (uint8_t newMode) {
+    newMode &= 7;
     mode = newMode;
     writeReg(REG_OPMODE, (readReg(REG_OPMODE) & ~0x7) | newMode);
+}
+
+template< typename SPI >
+bool RF96lora<SPI>::waitMode (uint8_t newMode) {
+    newMode &= 7;
+    mode = newMode;
+    newMode |= readReg(REG_OPMODE) & ~0x7;
+    writeReg(REG_OPMODE, newMode);
+    for (int i=0; i<100; i++) {
+        if (readReg(REG_OPMODE) == newMode) return true;
+        writeReg(REG_OPMODE, newMode);
+        wait_ms(10);
+    }
+    return false;
 }
 
 // setFreq is an internal function, use setFrequency instead.
@@ -176,17 +195,15 @@ void RF96lora<SPI>::setFreq (uint32_t hz) {
         writeReg(REG_OPMODE, (readReg(REG_OPMODE) | (1<<3))); // LF reg access
     }
 
-    // Frequency steps are in units of (32,000,000 >> 19) = 61.03515625 Hz
-    // use multiples of 64 to avoid multi-precision arithmetic, i.e. 3906.25 Hz
-    // due to this, the lower 6 bits of the calculated factor will always be 0
-    // this is still 4 ppm, i.e. well below the radio's 32 MHz crystal accuracy
-    // 868.0 MHz = 0xD90000, 868.3 MHz = 0xD91300, 915.0 MHz = 0xE4C000
+    // should be in standby to change freq
     uint8_t oldMode = mode;
     setMode(MODE_STANDBY);
-    uint32_t frf = (hz << 2) / (32000000L >> 11);
-    writeReg(REG_FRFMSB, frf >> 10);
-    writeReg(REG_FRFMSB+1, frf >> 2);
-    writeReg(REG_FRFMSB+2, frf << 6);
+
+    // Frequency steps are in units of (32,000,000 >> 19) = 61.03515625 Hz
+    uint64_t frf = ((uint64_t)hz << 19) / (uint64_t)32000000;
+    writeReg(REG_FRFMSB, frf>>16);
+    writeReg(REG_FRFMSB+1, frf>>8);
+    writeReg(REG_FRFMSB+2, frf);
     setMode(oldMode);
 }
 
@@ -208,6 +225,30 @@ void RF96lora<SPI>::modemConfig (LoRaConfig &conf) {
 }
 
 template< typename SPI >
+int16_t RF96lora<SPI>::noiseFloor() {
+    uint8_t oldMode = mode;
+    setMode(MODE_RXCONT);
+    wait_ms(3);
+    uint8_t rssi = readReg(REG_RSSIVALUE);
+    setMode(oldMode);
+    if (nomFreq > 600000000) return -157 + (int16_t)rssi;
+    else return -164 + (int16_t)rssi;
+}
+
+template< typename SPI >
+void RF96lora<SPI>::dumpRegs () {
+    printf("   ");
+    for (int i=0; i<16; i++) printf(" %02x", i);
+
+    for (int i=0; i<0x71; i++) {
+        if (i>=0x40 && i<0x60) continue;
+        if (i%16==0) printf("\r\n%02x:", i);
+        printf(" %02x", readReg(i));
+    }
+    printf("\r\n");
+}
+
+template< typename SPI >
 void RF96lora<SPI>::configure (const uint8_t* p) {
     while (true) {
         uint8_t cmd = p[0];
@@ -216,7 +257,7 @@ void RF96lora<SPI>::configure (const uint8_t* p) {
         writeReg(cmd, p[1]);
         p += 2;
     }
-    mode = MODE_SLEEP;
+    mode = readReg(REG_OPMODE)&7;
 }
 
 // configRegs contains register-address, register-value pairs for initialization.
@@ -225,8 +266,7 @@ void RF96lora<SPI>::configure (const uint8_t* p) {
 // reduce the number of false sync word matches due to noise. These settings are compatible with the
 // Go driver in https://github.com/tve/devices/tree/master/sx1231
 static const uint8_t RF96LoRaConfig [] = {
-    0x01, 0x88, // OpMode = LoRA+LF+sleep
-    0x01, 0x88, // repeat
+    0x01, 0x89, // OpMode = LoRA+LF+standby
     0x09, 0xFF, // 17dBm output power
     0x0B, 0x32, // Over-current protection @150mA
     0x0C, 0x23, // max LNA gain
@@ -252,10 +292,11 @@ static const uint8_t RF96LoRaConfig [] = {
 };
 
 template< typename SPI >
-void RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t freq) {
+bool RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t freq) {
     myId = id;
 
     SPI::init();
+    dumpRegs();
     do
         writeReg(REG_DIOMAPPING1, 0xAA);
     while (readReg(REG_DIOMAPPING1) != 0xAA);
@@ -264,17 +305,37 @@ void RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t f
     while (readReg(REG_DIOMAPPING1) != 0x55);
     writeReg(REG_DIOMAPPING1, 0); // back to power-on default
 
-    // get the chip out of any mode it may be stuck in
-    setMode(MODE_SLEEP);
-    wait_ms(10);
-    setMode(MODE_STANDBY);
-    wait_ms(10);
+    // put the chip into standby mode
+    printf("sx1276 initial mode: %02x\r\n", readReg(REG_OPMODE));
+    if (!waitMode(MODE_SLEEP)) {
+        printf("sx1276 cannot sleep, mode: %02x\r\n", readReg(REG_OPMODE));
+        return false;
+    }
+    writeReg(REG_OPMODE, 0x88); // switch to LoRa
+    if (!waitMode(MODE_SLEEP)) {
+        printf("sx1276 cannot sleep in LoRa, mode: %02x\r\n", readReg(REG_OPMODE));
+        return false;
+    }
+    if (!waitMode(MODE_STANDBY)) {
+        printf("sx1276 cannot standby, mode: %02x\r\n", readReg(REG_OPMODE));
+        return false;
+    }
 
     configure(RF96LoRaConfig);
     frequency(freq);
     modemConfig(conf);
 
     writeReg(REG_SYNC, sync);
+
+    //dumpRegs();
+
+    // make sure we can turn on the frequency synthesis (i.e. chip is not stuck)
+    if (!waitMode(MODE_FSTX)) {
+        printf("RF96lora: can't turn on PLL\r\n");
+        return false;
+    }
+    setMode(MODE_STANDBY);
+    return true;
 }
 
 // txPower sets the transmit power to the requested level in dB. The driver assumes that the
@@ -326,15 +387,16 @@ void RF96lora<SPI>::savePktInfo() {
 
     lna = RF96lnaMap[ (readReg(REG_LNAVALUE) >> 5) & 0x7 ];
 
-
     int32_t f1 = (int32_t)readReg(REG_FEI) << 28 >> 12; // sign-extend
-    f1 |= (int32_t)readReg(REG_FEI) << 8;
-    f1 |= (int32_t)readReg(REG_FEI);
-    fei = f1 * (bw/100) / 9537; // 9537=32Mhz*500/2^24/100
+    f1 |= (int32_t)readReg(REG_FEI+1) << 8;
+    f1 |= (int32_t)readReg(REG_FEI+2);
+    //printf("FEI raw=%x bw=%d\r\n", f1, bw);
+    fei = f1 * int32_t(bw/100) / 9537; // 9537=32Mhz*500/2^24/100
 }
 
 template< typename SPI >
 int RF96lora<SPI>::savePkt(void *ptr, int len) {
+    savePktInfo();
     writeReg(REG_FIFOPTR, readReg(REG_FIFORXCUR)); // set fifo ptr to start of pkt
     uint8_t count = readReg(REG_RXBYTES);
     int l = count;
@@ -347,7 +409,6 @@ int RF96lora<SPI>::savePkt(void *ptr, int len) {
         if (len-- > 0) *buf++ = v;
     }
     SPI::disable();
-    savePktInfo();
     return l;
 }
 
@@ -387,10 +448,13 @@ int RF96lora<SPI>::getAck(void* ptr, int len) {
     if ((irqFlags & IRQ_RXDONE) != 0) {
         // got ack!
         int l = savePkt(ptr, len);
-        adjustFreq();
+        adjustFreq(); // adjust based on what we measured, not what GW says...
         uint8_t *buf = (uint8_t*)ptr;
-        if (l >= 4 && (buf[0] & 0xA0) == 0x80 && (buf[2] & 0x80) != 0) {
-            adjustPow(buf[l-2]);
+        if ((buf[0] & 0xE0) == 0xC0) {
+            // it's an ACK from GW
+            if (l >= 3 && (buf[2] & 0x80) != 0) {
+                adjustPow(buf[l-2]);
+            }
         }
         return l;
     }
@@ -433,6 +497,10 @@ void RF96lora<SPI>::send (uint8_t header, const void* ptr, int len) {
     SPI::disable();
 
     setMode(MODE_TRANSMIT);
+    uint8_t mode = readReg(REG_OPMODE)&0x7;
+    //printf("sx1276 mode: %02x\r\n", readReg(REG_OPMODE));
+    if (mode != MODE_FSTX && mode != MODE_TRANSMIT)
+      printf("sx1276 mode: %02x (expected FXTX or TX)\r\n", mode);
 #if 0
     while ((readReg(REG_IRQFLAGS) & IRQ_TXDONE) == 0)
         Yield();

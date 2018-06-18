@@ -178,7 +178,7 @@ class GFXcanvas1 : public GFX {
     uint8_t *getBuffer(void) { return buffer; }
     void drawPixel(int16_t x, int16_t y, uint16_t color) {
         if((x < 0) || (y < 0) || (x >= w) || (y >= h)) {
-            ::printf("pix OOB: <%d,%d>\r\n", x, y);
+            //::printf("pix OOB: <%d,%d>\r\n", x, y);
             return;
         }
 
