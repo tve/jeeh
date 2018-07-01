@@ -1,5 +1,8 @@
 // see [1] https://jeelabs.org/ref/STM32L0x2-RM0376.pdf
 
+// uncomment to use printf in this file for debugging...
+//int printf(const char* fmt, ...);
+
 struct Periph {
     constexpr static uint32_t rcc   = 0x40021000;
     constexpr static uint32_t flash = 0x40022000;
@@ -266,20 +269,31 @@ struct ADC {
     constexpr static uint32_t isr   = base + 0x00;
     constexpr static uint32_t cr    = base + 0x08;
     //constexpr static uint32_t cfgr1 = base + 0x0C;
-    //constexpr static uint32_t cfgr2 = base + 0x10;
+    constexpr static uint32_t cfgr2 = base + 0x10;
     //constexpr static uint32_t smpr  = base + 0x14;
     constexpr static uint32_t chsel = base + 0x28;
     constexpr static uint32_t dr    = base + 0x40;
+    constexpr static uint32_t ccr   = base + 0x308;
+    constexpr static uint32_t rcc_cr = Periph::rcc + 0x00;
     constexpr static uint32_t rcc_apb2enr = Periph::rcc + 0x34;
 
     static void init () {
         if (N != 1) return;
-        MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
+        // clock source
+        MMIO32(cr) = 0; // disable ADC
+        while (MMIO32(cr) & (1<<0)) ; // wait for disable to take effect (important!)
+        if (MMIO32(rcc_cr) & (1<<2)) { // check HSI16 rdy flag
+            // HSI16 running: use it as ADC clock
+            MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
+        } else {
+            // HSI16 not running, use APB2 clock div2 (to avoid non-50% duty cycle issues)
+            MMIO32(cfgr2) = 1<<30; // switch ADC to APB2 clock
+            MMIO32(ccr) |= 1<<25; // set low-freq mode (ADC clock freq < 3.5Mhz)
+        }
         // calibration
         MMIO32(cr) = (1<<31); // set ADCAL -- start calibration
         while (MMIO32(cr) & (1<<31)) ;  // wait until calibration completed
         MMIO32(cr) = (1<<0); // set ADEN -- enable ADC
-        //printf("cr=%x\r\n", MMIO32(cr));
     }
 
     // read analog, given a pin (which is also set to analog input mode)
