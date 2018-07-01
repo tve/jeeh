@@ -279,14 +279,13 @@ struct ADC {
 
     static void init () {
         if (N != 1) return;
+        MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
         // clock source
         MMIO32(cr) = 0; // disable ADC
         while (MMIO32(cr) & (1<<0)) ; // wait for disable to take effect (important!)
-        if (MMIO32(rcc_cr) & (1<<2)) { // check HSI16 rdy flag
-            // HSI16 running: use it as ADC clock
-            MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
-        } else {
+        if ((MMIO32(rcc_cr) & (1<<2)) == 0) { // check HSI16 rdy flag
             // HSI16 not running, use APB2 clock div2 (to avoid non-50% duty cycle issues)
+            MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
             MMIO32(cfgr2) = 1<<30; // switch ADC to APB2 clock
             MMIO32(ccr) |= 1<<25; // set low-freq mode (ADC clock freq < 3.5Mhz)
         }
