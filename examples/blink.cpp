@@ -2,12 +2,14 @@
 
 #include <jee.h>
 
-PinA<15> led;
+//PinA<15> led; // jnz1???
+PinA<8> led; // jnz4
 
 int main () {
     led.mode(Pinmode::out);
-    led = 0;
-    enableSysTick();
+    led = 1;
+    enableSysTick(2100000/1000);
+    //fullSpeedClock();
 
     while (true) {
         led = !led;
