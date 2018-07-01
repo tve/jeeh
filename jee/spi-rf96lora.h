@@ -71,6 +71,7 @@ struct RF96lora {
     int receive (void* ptr, int len);
     void send (uint8_t header, const void* ptr, int len);
     int getAck(void* ptr, int len);
+    int rxAck(void* ptr, int len);
     void addInfo(uint8_t *ptr);
     void sleep (); // put the radio to sleep to save power
     void dumpRegs();
@@ -428,6 +429,23 @@ int RF96lora<SPI>::receive (void* ptr, int len) {
     return -1;
 }
 
+// rxAck assumes that a packet is readu in the FIFO, reads it and processes the FEI and SNR info it
+// carries in the first two bytes to adjust TX power and frequency. It copies the packet to the
+// provided buffer and returns its length.
+template< typename SPI >
+int RF96lora<SPI>::rxAck(void* ptr, int len) {
+    int l = savePkt(ptr, len);
+    uint8_t *buf = (uint8_t*)ptr; // get a pointer we can dereference
+    if ((buf[0] & 0xE0) == 0xC0 && l > 2) {
+        // it's an ACK from GW
+        adjustFreq(); // adjust based on what we measured, not what GW says...
+        if ((buf[2] & 0x80) != 0) {
+            adjustPow(buf[l-2]);
+        }
+    }
+    return l;
+}
+
 // getAck briefly turns on the receiver to get an ACK to a just-transmitted packet. It returns the
 // number of bytes received, or -1 if more waiting is needed, or 0 if the ack wait timed out.
 // If an ack is receivced and it carries FEI and SNR info then adjustPowFreq is called.
@@ -447,16 +465,7 @@ int RF96lora<SPI>::getAck(void* ptr, int len) {
 
     if ((irqFlags & IRQ_RXDONE) != 0) {
         // got ack!
-        int l = savePkt(ptr, len);
-        adjustFreq(); // adjust based on what we measured, not what GW says...
-        uint8_t *buf = (uint8_t*)ptr;
-        if ((buf[0] & 0xE0) == 0xC0) {
-            // it's an ACK from GW
-            if (l >= 3 && (buf[2] & 0x80) != 0) {
-                adjustPow(buf[l-2]);
-            }
-        }
-        return l;
+        return rxAck(ptr, len);
     }
 
     if ((irqFlags & IRQ_RXTIMEOUT) != 0) {

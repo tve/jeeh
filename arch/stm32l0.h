@@ -304,6 +304,106 @@ struct ADC {
     }
 };
 
+// EEPROM
+
+struct EEPROM {
+    constexpr static uint32_t data  = 0x08080000;
+    constexpr static uint32_t base  = 0x40022000;
+    constexpr static uint32_t acr   = base + 0x00;
+    constexpr static uint32_t pecr  = base + 0x04;
+    constexpr static uint32_t pkeyr = base + 0x0C;
+    constexpr static uint32_t sr    = base + 0x18;
+
+    // wait busy-waits until the last write completes
+    void wait() { while(MMIO32(sr) & 1) ; }
+
+    void unlock() { MMIO32(pkeyr) = 0x89ABCDEF; MMIO32(pkeyr) = 0x02030405; }
+    void lock() { wait(); MMIO32(pecr) = 7; }
+
+    uint8_t  read8 (uint32_t offset) { return MMIO8 (data+offset); }
+    uint16_t read16(uint16_t offset) { return MMIO16(data+offset); }
+    uint32_t read32(uint32_t offset) { return MMIO32(data+offset); }
+
+    void write8 (uint32_t offset, uint8_t  value) { unlock(); MMIO8 (data+offset) = value; lock(); }
+    void write16(uint32_t offset, uint16_t value) { unlock(); MMIO16(data+offset) = value; lock(); }
+    void write32(uint32_t offset, uint32_t value) { unlock(); MMIO32(data+offset) = value; lock(); }
+};
+
+// TIMER - NOT TESTED!!!
+
+// Timers 2, 3, 6, 7
+template< int N > // Timer number, handles 2, 3, 6, 7 (not 21, 22)
+struct TIMER {
+    constexpr static uint32_t base  = 0x40000000 + ((N-2)*0x400);
+    constexpr static uint32_t cr1   = base + 0x00;
+    constexpr static uint32_t cr2   = base + 0x04;
+    constexpr static uint32_t dier  = base + 0x0C;
+    constexpr static uint32_t psc   = base + 0x28;
+    constexpr static uint32_t arr   = base + 0x2C;
+    constexpr static uint32_t rcc_apb1enr = Periph::rcc + 0x38;
+
+    static void enable() { MMIO32(rcc_apb1enr) |= (1<<(N-2)); }
+    static void disable() { MMIO32(rcc_apb1enr) &= ~(1<<(N-2)); }
+
+    // init timer as free-running with specified period (in system clock cycles)
+    static void init(uint32_t period) {
+        enable();
+        MMIO16(psc) = uint16_t(period >> 16); // upper 16 bits are used to set prescaler
+        MMIO16(arr) = period; // period is auto-reload value
+        //MMIO16(dier) |= 1<<8; // set UDE (update DMA enable)
+        MMIO16(cr2) = 0x2 << 4; // master mode is 'update'
+        MMIO16(cr1) |= 1; // enable counter
+    }
+};
+
+// PWM
+
+template< typename TIM > // PWM needs to be based on a timer
+struct PWM {
+    constexpr static uint32_t tim2_base = 0x4000000; // APB1
+    constexpr static uint32_t tim3_base = 0x4000400; // APB1
+    constexpr static uint32_t tim21_base = 0x40010800; // APB2
+    constexpr static uint32_t tim22_base = 0x40011400; // APB2
+
+    static void init() {
+    }
+};
+
+#if 0
+\ Pulse Width Modulation
+\ needs timer-stm32l0.fs
+
+\ The following pins are supported for PWM setup on STM32L05x:
+\   TIM2:   PA0  PA1  PA2  PA3
+\ Pins sharing a timer will run at the same repetition rate.
+\ Repetition rates which are a divisor of 1600 will be exact.
+
+: p2tim ( pin -- n ) drop 2 ;  \ convert pin to timer (1..4)
+
+: p2cmp ( pin -- n ) $3 and ;  \ convert pin to output comp-reg# - 1 (0..3)
+
+\ : t dup p2tim . p2cmp . ." : " ;
+\ : u                             \ expected output:
+\   cr PA0 t PA1 t PA2  t PA3  t  \  2 0 : 2 1 : 2 2 : 2 3 :
+\ ;
+\ u
+
+: pwm-init ( hz pin -- )  \ set up PWM for pin, using specified repetition rate
+  >r  OMODE-AF-PP r@ io-mode!
+  1600 swap / 1- 16 lshift 10000 or  r@ p2tim timer-init
+  $78 r@ p2cmp 1 and 8 * lshift ( $0078 or $7800 )
+  r@ p2tim timer-base $18 + r@ p2cmp 2 and 2* + bis!
+  r@ p2cmp 4 * bit r> p2tim timer-base $20 + bis! ;
+
+: pwm-deinit ( pin -- )  \ disable PWM, but leave timer running
+  dup p2cmp 4 * bit swap p2tim timer-base $20 + bic! ;
+
+: pwm ( u pin -- )  \ set pwm rate, 0 = full off, 10000 = full on
+  10000 rot - swap  \ reverse to sense of the PWM count value
+  dup p2cmp cells swap p2tim timer-base + $34 + !  \ save to CCR1..4
+;
+#endif
+
 // system clock
 
 static void enableClkAt32mhz () {  // [1] p.49

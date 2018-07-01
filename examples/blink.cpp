@@ -6,6 +6,7 @@ PinA<15> led;
 
 int main () {
     led.mode(Pinmode::out);
+    led = 0;
     enableSysTick();
 
     while (true) {

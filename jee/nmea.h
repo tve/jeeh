@@ -5,7 +5,7 @@
 // Ex: $GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,5.84,160412,,,A*77
 //static char nmea_gprmc[]="$GPRMC,dddtdd.ddm,A,eeae.eeee,l,eeeae.eeee,o,djdk,djdc,eeeeey,,,?*??";
 
-static struct { char *name; char *fmt; }
+static struct { const char *name; const char *fmt; }
     nmea_stanzas[] = {
         { "GPRMC", "dddtdd.ddm,A,eeae.eeee,l,eeeae.eeee,o,djdk,djdc,eeeeey,,,?" },
         { "GPGGA", "??????????,?????????,?,??????????,?,?,s,d.dh,efA,M,x" },
@@ -32,7 +32,7 @@ struct NMEA {
     bool fix;
 
     // string equality
-    bool streq(char s1[], char s2[]) {
+    bool streq(const char s1[], const char s2[]) {
         while (true) {
             if (!*s1) return !*s2;
             if (!*s2) return false;
