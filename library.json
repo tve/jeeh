@@ -9,5 +9,8 @@
     },
     "frameworks": [ "arduino", "cmsis", "libopencm3", "mbed", "stm32cube" ],
     "platforms": [ "atmelavr", "espressif32", "ststm32" ],
-    "libArchive": false
+    "libArchive": false,
+    "build": {
+        "srcFilter": [ "-<gfx/fontconvert/*>", "+<*.cpp>", "+<gfx/*.cpp>" ]
+    }
 }

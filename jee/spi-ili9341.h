@@ -94,12 +94,20 @@ struct ILI9341 {
 
     static void fill (int x, int y, int w, int h, uint16_t rgb) {
         bounds(x+w-1, y+h-1);
-        pixel(x, y, rgb);
+        pixel(x, y, rgb); // fills one pixel
 
         SPI::enable();
         int n = w * h;
-        while (--n > 0)
+        while (--n > 0) // loop for w*h - 1 pixels
             out16(rgb);
+        SPI::disable();
+    }
+
+    // freeze top scanlines at the top of the display and bot at the bottom.
+    // (freezing prevents scrolling not updating)
+    static void freeze (int top, int bot) {
+        SPI::enable();
+        cmd(0x33); out16(top), out16(height-top), out16(bot);
         SPI::disable();
     }
 

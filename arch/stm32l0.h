@@ -30,7 +30,7 @@ extern void enableSysTick (uint32_t divider =defaultHz/1000);
 // gpio
 
 enum class Pinmode {
-    // mode (2), typer (1), pupdr (2)
+    // speed(2), mode (2), typer (1), pupdr (2)
     in_analog        = 0b11000,
     in_float         = 0b00000,
     in_pulldown      = 0b00010,
@@ -40,6 +40,12 @@ enum class Pinmode {
     out_od           = 0b01100,
     alt_out          = 0b10000,
     alt_out_od       = 0b10100,
+
+    // slower slew rates, the extra 2 bits are the inverse of the speedreg
+    out_10mhz        = 0b0101000,
+    out_2mhz         = 0b1001000,
+    out_400khz       = 0b1101000,
+    alt_out_2mhz     = 0b1010000,
 };
 
 template<char port>
@@ -62,12 +68,12 @@ struct Port {
 
         auto mval = static_cast<int>(m);
         MMIO32(moder) = (MMIO32(moder) & ~(3 << 2*pin))
-                      | ((mval >> 3) << 2*pin);
+                      | (((mval >> 3) & 3) << 2*pin);
         MMIO32(typer) = (MMIO32(typer) & ~(1 << pin))
                       | (((mval >> 2) & 1) << pin);
         MMIO32(pupdr) = (MMIO32(pupdr) & ~(3 << 2*pin))
                       | ((mval & 3) << 2*pin);
-        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3 << 2*pin)) | (0b11 << 2*pin);
+        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3 << 2*pin)) | (((~mval>>5)&3) << 2*pin);
 
         uint32_t afr = pin & 8 ? afrh : afrl;
         int shift = 4 * (pin & 7);
@@ -123,6 +129,7 @@ struct UartDev {
     // TODO does not recognise alternate TX pins
     constexpr static int uidx = TX::id ==  9 ? 0 :  // PA9, USART1
                                 TX::id ==  2 ? 1 :  // PA2, USART2
+                                TX::id == 19 ? 4 :  // PB3, USART5
                                                0;   // else USART1
     constexpr static uint32_t base = uidx == 0 ? 0x40013800 :
                                                  0x40004000 + 0x400 * uidx;
@@ -135,9 +142,11 @@ struct UartDev {
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 
-    UartDev () {
-        tx.mode(Pinmode::alt_out, 4);
-        rx.mode(Pinmode::alt_out, 4);
+    UartDev () { }
+
+    static void init() {
+        tx.mode(Pinmode::alt_out_2mhz, uidx < 4 ? 4 : 6);
+        rx.mode(Pinmode::alt_out, uidx < 4 ? 4 : 6);
 
         if (uidx == 0)
             MMIO32(Periph::rcc + 0x34) |= 1 << 14; // enable USART1 clock
@@ -145,7 +154,8 @@ struct UartDev {
             MMIO32(Periph::rcc + 0x38) |= 1 << (16+uidx); // USART 2..5
 
         MMIO32(brr) = defaultHz / 115200;  // 115200 baud @ 2.1 MHz
-        MMIO32(cr1) = 1<<3 | 1<<2 | 1<<0;  // TE, RE, UE
+        MMIO32(rdr); // clear RX reg
+        MMIO32(cr1) = (1<<3) | (1<<2) | (1<<0);  // TE, RE, UE
     }
 
     static void baud (uint32_t baud, uint32_t hz =defaultHz) {
@@ -166,6 +176,10 @@ struct UartDev {
 
     static bool readable () {
         return (MMIO32(isr) & 0x24) != 0;  // RXNE or ORE
+    }
+
+    static bool errored() {
+        return (MMIO32(isr) & 0x0f) != 0; // PE or FE or NF or ORE
     }
 
     static int getc () {
@@ -193,6 +207,7 @@ struct UartBufDev : UartDev<TX,RX> {
     typedef UartDev<TX,RX> base;
 
     static void init () {
+        base::init();
         auto handler = []() {
             if (base::readable()) {
                 int c = base::getc();
@@ -211,11 +226,14 @@ struct UartBufDev : UartDev<TX,RX> {
         switch (base::uidx) {
             case 0: VTableRam().usart1 = handler; break;
             case 1: VTableRam().usart2 = handler; break;
+            case 2: VTableRam().lpuart1_aes_rng = handler; break; // lpuart1
+            case 3: VTableRam().usart4_5 = handler; break;
+            case 4: VTableRam().usart4_5 = handler; break; // WARNING: usart4&5 share a vector!
         }
 
-        // nvic interrupt numbers are 27 and 28, respectively
+        // nvic interrupt numbers are 27, 28, 29, 14, and 14 respectively
         constexpr uint32_t nvic_en0r = 0xE000E100;
-        constexpr int irq = 27 + base::uidx;
+        constexpr int irq = base::uidx < 4 ? 27 + base::uidx : 14;
         MMIO32(nvic_en0r) = 1 << irq;  // enable USART interrupt
 
         MMIO32(base::cr1) |= (1<<5);  // enable RXNEIE
@@ -251,6 +269,162 @@ RingBuffer<N> UartBufDev<TX,RX,N>::recv;
 
 template< typename TX, typename RX, int N >
 RingBuffer<N> UartBufDev<TX,RX,N>::xmit;
+
+// analog input using ADC1
+
+template< int N > // ADC unit, L0 only has one ADC, N must always be 1
+struct ADC {
+    constexpr static uint32_t base  = 0x40012000 + 0x400 * N;
+    constexpr static uint32_t isr   = base + 0x00;
+    constexpr static uint32_t cr    = base + 0x08;
+    //constexpr static uint32_t cfgr1 = base + 0x0C;
+    constexpr static uint32_t cfgr2 = base + 0x10;
+    //constexpr static uint32_t smpr  = base + 0x14;
+    constexpr static uint32_t chsel = base + 0x28;
+    constexpr static uint32_t dr    = base + 0x40;
+    constexpr static uint32_t ccr   = base + 0x308;
+    constexpr static uint32_t rcc_cr = Periph::rcc + 0x00;
+    constexpr static uint32_t rcc_apb2enr = Periph::rcc + 0x34;
+
+    static void init () {
+        if (N != 1) return;
+        MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
+        // clock source
+        MMIO32(cr) = 0; // disable ADC
+        while (MMIO32(cr) & (1<<0)) ; // wait for disable to take effect (important!)
+        if ((MMIO32(rcc_cr) & (1<<2)) == 0) { // check HSI16 rdy flag
+            // HSI16 not running, use APB2 clock div2 (to avoid non-50% duty cycle issues)
+            MMIO32(rcc_apb2enr) |= 1 << 9;  // enable ADC in APB2ENR
+            MMIO32(cfgr2) = 1<<30; // switch ADC to APB2 clock
+            MMIO32(ccr) |= 1<<25; // set low-freq mode (ADC clock freq < 3.5Mhz)
+        }
+        // calibration
+        MMIO32(cr) = (1<<31); // set ADCAL -- start calibration
+        while (MMIO32(cr) & (1<<31)) ;  // wait until calibration completed
+        MMIO32(cr) = (1<<0); // set ADEN -- enable ADC
+    }
+
+    // read analog, given a pin (which is also set to analog input mode)
+    template< typename pin >
+    static uint16_t read (pin& p) {
+        pin::mode(Pinmode::in_analog);
+        constexpr int off = pin::id < 16 ? 0 :   // A0..A7 => 0..7
+                            pin::id < 32 ? -8 :  // B0..B1 => 8..9
+                                           -22;  // C0..C5 => 10..15
+        return read(pin::id + off);
+    }
+
+    // read direct channel number (also: 16 = temp, 17 = vref)
+    static uint16_t read (uint8_t chan) {
+        if (N != 1) return 0;
+        MMIO32(chsel) = 1<<chan;
+        MMIO32(cr) |= (1<<2);  // set ADSTART start conversion
+        //printf("chan=%d sel=%x cr=%x\r\n", chan, MMIO32(chsel), MMIO32(cr));
+        //printf("cr=%x isr=%x\r\n", MMIO32(cr), MMIO32(isr));
+        while ((MMIO32(isr) & (1<<2)) == 0) ;  // EOC
+        return MMIO32(dr);
+    }
+};
+
+// EEPROM
+
+struct EEPROM {
+    constexpr static uint32_t data  = 0x08080000;
+    constexpr static uint32_t base  = 0x40022000;
+    constexpr static uint32_t acr   = base + 0x00;
+    constexpr static uint32_t pecr  = base + 0x04;
+    constexpr static uint32_t pkeyr = base + 0x0C;
+    constexpr static uint32_t sr    = base + 0x18;
+
+    // wait busy-waits until the last write completes
+    static void wait() { while(MMIO32(sr) & 1) ; }
+
+    static void unlock() { MMIO32(pkeyr) = 0x89ABCDEF; MMIO32(pkeyr) = 0x02030405; }
+    static void lock() { wait(); MMIO32(pecr) = 7; }
+
+    static uint8_t  read8 (uint32_t offset) { return MMIO8 (data+offset); }
+    static uint16_t read16(uint16_t offset) { return MMIO16(data+offset); }
+    static uint32_t read32(uint32_t offset) { return MMIO32(data+offset); }
+
+    static void write8 (uint32_t offset, uint8_t  value) { unlock(); MMIO8 (data+offset) = value; lock(); }
+    static void write16(uint32_t offset, uint16_t value) { unlock(); MMIO16(data+offset) = value; lock(); }
+    static void write32(uint32_t offset, uint32_t value) { unlock(); MMIO32(data+offset) = value; lock(); }
+};
+
+// TIMER - NOT TESTED!!!
+
+// Timers 2, 3, 6, 7
+template< int N > // Timer number, handles 2, 3, 6, 7 (not 21, 22)
+struct TIMER {
+    constexpr static uint32_t base  = 0x40000000 + ((N-2)*0x400);
+    constexpr static uint32_t cr1   = base + 0x00;
+    constexpr static uint32_t cr2   = base + 0x04;
+    constexpr static uint32_t dier  = base + 0x0C;
+    constexpr static uint32_t psc   = base + 0x28;
+    constexpr static uint32_t arr   = base + 0x2C;
+    constexpr static uint32_t rcc_apb1enr = Periph::rcc + 0x38;
+
+    static void enable() { MMIO32(rcc_apb1enr) |= (1<<(N-2)); }
+    static void disable() { MMIO32(rcc_apb1enr) &= ~(1<<(N-2)); }
+
+    // init timer as free-running with specified period (in system clock cycles)
+    static void init(uint32_t period) {
+        enable();
+        MMIO16(psc) = uint16_t(period >> 16); // upper 16 bits are used to set prescaler
+        MMIO16(arr) = period; // period is auto-reload value
+        //MMIO16(dier) |= 1<<8; // set UDE (update DMA enable)
+        MMIO16(cr2) = 0x2 << 4; // master mode is 'update'
+        MMIO16(cr1) |= 1; // enable counter
+    }
+};
+
+// PWM
+
+template< typename TIM > // PWM needs to be based on a timer
+struct PWM {
+    constexpr static uint32_t tim2_base = 0x4000000; // APB1
+    constexpr static uint32_t tim3_base = 0x4000400; // APB1
+    constexpr static uint32_t tim21_base = 0x40010800; // APB2
+    constexpr static uint32_t tim22_base = 0x40011400; // APB2
+
+    static void init() {
+    }
+};
+
+#if 0
+\ Pulse Width Modulation
+\ needs timer-stm32l0.fs
+
+\ The following pins are supported for PWM setup on STM32L05x:
+\   TIM2:   PA0  PA1  PA2  PA3
+\ Pins sharing a timer will run at the same repetition rate.
+\ Repetition rates which are a divisor of 1600 will be exact.
+
+: p2tim ( pin -- n ) drop 2 ;  \ convert pin to timer (1..4)
+
+: p2cmp ( pin -- n ) $3 and ;  \ convert pin to output comp-reg# - 1 (0..3)
+
+\ : t dup p2tim . p2cmp . ." : " ;
+\ : u                             \ expected output:
+\   cr PA0 t PA1 t PA2  t PA3  t  \  2 0 : 2 1 : 2 2 : 2 3 :
+\ ;
+\ u
+
+: pwm-init ( hz pin -- )  \ set up PWM for pin, using specified repetition rate
+  >r  OMODE-AF-PP r@ io-mode!
+  1600 swap / 1- 16 lshift 10000 or  r@ p2tim timer-init
+  $78 r@ p2cmp 1 and 8 * lshift ( $0078 or $7800 )
+  r@ p2tim timer-base $18 + r@ p2cmp 2 and 2* + bis!
+  r@ p2cmp 4 * bit r> p2tim timer-base $20 + bis! ;
+
+: pwm-deinit ( pin -- )  \ disable PWM, but leave timer running
+  dup p2cmp 4 * bit swap p2tim timer-base $20 + bic! ;
+
+: pwm ( u pin -- )  \ set pwm rate, 0 = full off, 10000 = full on
+  10000 rot - swap  \ reverse to sense of the PWM count value
+  dup p2cmp cells swap p2tim timer-base + $34 + !  \ save to CCR1..4
+;
+#endif
 
 // system clock
 

@@ -19,7 +19,7 @@ struct Font5x7 {
             x = 0;
             y += 8;
             if (y >= height)
-                y = 0;
+                y = T::top;
             // fill the new line with spaces
             for (int i = 0; i < width-5; i += S)
                 T::copyBand(i, y, font5x7, 5);
@@ -61,11 +61,12 @@ struct TextLcd : LCD {
         // when in col 0: adjust v-scroll so the band is always at the bottom
         if (x == 0) {
             y += 8;
-            LCD::vscroll(y < LCD::height ? y : 0);
+            LCD::vscroll(y < LCD::height ? y : top);
         }
     }
 
     static uint16_t fg, bg;
+    static uint16_t top; // y coord of top line
 };
 
 template< typename LCD >
@@ -73,3 +74,6 @@ uint16_t TextLcd<LCD>::fg = 0xFFFF;
 
 template< typename LCD >
 uint16_t TextLcd<LCD>::bg;
+
+template< typename LCD >
+uint16_t TextLcd<LCD>::top = 0;
