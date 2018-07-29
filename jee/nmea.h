@@ -13,6 +13,16 @@ static struct { const char *name; const char *fmt; }
     };
 static int nmea_fix = 0;
 
+typedef struct {
+    uint16_t time, msecs; // time split into HHMM and SS.SSS
+    uint16_t knots, course; // knots*100, degrees*100
+    uint32_t date; // date as in 123117 for december 31st 2017
+    uint16_t hdop; // HDOP*100
+    uint16_t sats; // number of satellites used in fix
+    int32_t lat, lon; // minutes*1E3 (*5/3 converts to degrees*1E6)
+    int32_t alt; // decimeters
+} NMEAfix;
+
 struct NMEA {
     uint8_t state = 0; // 0=looking for $, 1=accum format, 2=parsing data
     uint8_t pos = 0; // position in format
@@ -22,14 +32,8 @@ struct NMEA {
     int32_t stemp;
 
     // GPS variables
-    uint16_t time, msecs; // time split into HHMM and SS.SSS
-    uint16_t knots, course; // knots*100, degrees*100
-    uint32_t date; // date as in 123117 for december 31st 2017
-    uint16_t hdop; // HDOP*100
-    uint16_t sats; // number of satellites used in fix
-    int32_t lat, lon; // minutes*1E3 (*5/3 converts to degrees*1E6)
-    int32_t alt; // decimeters
-    bool fix;
+    NMEAfix fix;
+    bool valid;
 
     // string equality
     bool streq(const char s1[], const char s2[]) {
@@ -56,6 +60,7 @@ struct NMEA {
             for (int i=0; i<2; i++) {
                 if (streq(nmea_stanzas[i].name, fmt)) {
                     stanza = i;
+                    if (stanza == nmea_fix) valid = 0;
                     state++;
                     pos = 0; utemp = 0; stemp = 0;
                     return false;
@@ -65,7 +70,7 @@ struct NMEA {
             return false;
         case 2: {
             if (c == '*') {
-                if (stanza == nmea_fix) { fix = 1; return true; }
+                if (stanza == nmea_fix) { valid = 1; return true; }
                 state = 0; return false;
             }
             char mode = nmea_stanzas[stanza].fmt[pos++];
@@ -80,27 +85,27 @@ struct NMEA {
             // a=angular measure
             else if (mode == 'a') stemp = stemp*6 + d;
             // t=Time - hhmm
-            else if (mode == 't') { time = utemp*10 + d; utemp = 0; }
+            else if (mode == 't') { fix.time = utemp*10 + d; utemp = 0; }
             // m=Millisecs
-            else if (mode == 'm') { msecs = utemp*10 + d; utemp = 0; }
+            else if (mode == 'm') { fix.msecs = utemp*10 + d; utemp = 0; }
             // l=Latitude - in minutes*1000
-            else if (mode == 'l') { if (c == 'N') lat = stemp; else lat = -stemp; stemp = 0; }
+            else if (mode == 'l') { if (c == 'N') fix.lat = stemp; else fix.lat = -stemp; stemp = 0; }
             // o=Longitude - in minutes*1000
-            else if (mode == 'o') { if (c == 'E') lon = stemp; else lon = -stemp; stemp = 0; }
+            else if (mode == 'o') { if (c == 'E') fix.lon = stemp; else fix.lon = -stemp; stemp = 0; }
             // j/k=Speed - in knots*100
             else if (mode == 'j') { if (c != '.') { utemp = utemp*10 + d; pos--; } }
-            else if (mode == 'k') { knots = utemp*10 + d; utemp = 0; }
+            else if (mode == 'k') { fix.knots = utemp*10 + d; utemp = 0; }
             // c=Course (Track) - in degrees*100
-            else if (mode == 'c') { course = utemp*10 + d; utemp = 0; }
+            else if (mode == 'c') { fix.course = utemp*10 + d; utemp = 0; }
             // y=Date - ddmmyy
-            else if (mode == 'y') { date = stemp*10 + d ; }
+            else if (mode == 'y') { fix.date = stemp*10 + d ; }
             // s=Satellites
-            else if (mode == 's') { sats = d; }
+            else if (mode == 's') { fix.sats = d; }
             // h=HDOP
-            else if (mode == 'h') { hdop = utemp*10 + d; }
+            else if (mode == 'h') { fix.hdop = utemp*10 + d; }
             // A=Altitude in decimeters
             else if (mode == 'f') { if (c != '.') { stemp = stemp*10 + d; pos--; } }
-            else if (mode == 'A') { alt = stemp*10 + d; }
+            else if (mode == 'A') { fix.alt = stemp*10 + d; }
             // x=any field contents
             else if (mode == 'x') { if (c != nmea_stanzas[stanza].fmt[pos]) pos--; else pos++;}
             else state = 0;
