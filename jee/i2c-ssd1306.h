@@ -5,6 +5,7 @@ template< typename I2C, int addr =0x3C >
 struct SSD1306 {
     constexpr static int width = 128;
     constexpr static int height = 64;
+    constexpr static int top = 0;
 
     static void init () {
         static uint8_t config [] = {

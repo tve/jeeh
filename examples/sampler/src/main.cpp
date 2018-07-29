@@ -13,6 +13,10 @@
 #include "../../dht22.cpp"
 #endif
 
+#if EXAMPLE_EEPROM
+#include "../../eeprom.cpp"
+#endif
+
 #if EXAMPLE_FLASH
 #include "../../flash.cpp"
 #endif
@@ -35,6 +39,10 @@
 
 #if EXAMPLE_LOGO
 #include "../../logo.cpp"
+#endif
+
+#if EXAMPLE_MCP9808
+#include "../../mcp9808.cpp"
 #endif
 
 #if EXAMPLE_NOKIA

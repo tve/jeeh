@@ -10,17 +10,27 @@ int printf(const char* fmt, ...) {
     return 0;
 }
 
-SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinA<4> > spi;  // default SPI1 pins
-SpiFlash< decltype(spi) > mem;  // default SPI1 pins
+SpiGpio< PinA<7>, PinA<6>, PinA<5>, PinC<14> > spi;  // default SPI1 pins
+SpiFlash< decltype(spi) > mem;
+
+#define tracker 1
+#if tracker
+PinA<4> rfEn;
+PinC<15> dispEn;
+#endif
 
 int main () {
+#if tracker
+    rfEn.mode(Pinmode::out); rfEn = 1;
+    dispEn.mode(Pinmode::out); dispEn = 1;
+#endif
     spi.init();
     mem.init();
 
-    printf("id %06x, %dK\n", mem.devId(), mem.size());
+    printf("ID %06x, %dK\r\n", mem.devId(), mem.size());
 
     mem.erase(0);
-    printf("page 0 erased\n");
+    printf("page 0 erased\r\n");
 
     uint8_t buf [256];
     for (int i = 0; i < 10; ++i) {
@@ -28,23 +38,23 @@ int main () {
             buf[j] = i + j;
         mem.write256(i, buf);
     }
-    printf("10 pages written\n");
+    printf("10 pages written\r\n");
 
     for (int i = 0; i < 10; ++i) {
         printf("page %d:", i);
         mem.read256(i, buf);
         for (int j = 0; j < 15; ++j)
             printf(" %d", buf[j]);
-        printf("\n");
+        printf("\r\n");
     }
 
     mem.wipe();
-    printf("wiped\n");
+    printf("wiped\r\n");
 
     mem.read256(0, buf);
-    printf("buf[0] = %d\n", buf[0]);
+    printf("buf[0] = %d\r\n", buf[0]);
 
-    printf("done\n");
+    printf("done\r\n");
 }
 
 // sample output:

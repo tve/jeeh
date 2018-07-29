@@ -38,6 +38,7 @@ public:
         return r;
     }
 
+    // size returns the flash memory size in KB
     static int size () {
         // works for WinBond W25Qxx, e.g. W25Q64 => 0xC84017 => 8192 KB
         return 1 << ((devId() & 0xFF) - 10);
@@ -48,9 +49,10 @@ public:
         wait();
     }
 
-    static void erase (int page) {
+    // erase a 4K sector, the parameter is the start address of the sector
+    static void erase (int addr) {
         wcmd(0x20);
-        w24b(page<<8);
+        w24b(addr);
         wait();
     }
 

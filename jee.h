@@ -180,7 +180,9 @@ class I2cBus {
     }
 
 public:
-    I2cBus () {
+    I2cBus () {}
+
+    static void init() {
         sda.mode(Pinmode::out_od); sda = 1;
         scl.mode(Pinmode::out_od); scl = 1;
     }

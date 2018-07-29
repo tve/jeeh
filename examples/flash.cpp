@@ -9,8 +9,6 @@ int printf(const char* fmt, ...) {
     return 0;
 }
 
-Flash mem;
-
 int main () {
     // use a flash page well above the current code, i.e. @ 64K
     uint32_t* testAddr = (uint32_t*) 0x00010000;
