@@ -33,7 +33,7 @@ extern void enableSysTick (uint32_t divider =defaultHz/1000);
 // gpio
 
 enum class Pinmode {
-    // mode (2), typer (1), pupdr (2)
+    // speed(2), mode (2), typer (1), pupdr (2)
     in_analog        = 0b11000,
     in_float         = 0b00000,
     in_pulldown      = 0b00010,
@@ -43,6 +43,12 @@ enum class Pinmode {
     out_od           = 0b01100,
     alt_out          = 0b10000,
     alt_out_od       = 0b10100,
+
+    // slower slew rates, the extra 2 bits are the inverse of the speedreg
+    out_10mhz        = 0b0101000,
+    out_2mhz         = 0b1001000,
+    out_400khz       = 0b1101000,
+    alt_out_2mhz     = 0b1010000,
 };
 
 template<char port>
@@ -65,12 +71,12 @@ struct Port {
 
         auto mval = static_cast<int>(m);
         MMIO32(moder) = (MMIO32(moder) & ~(3 << 2*pin))
-                      | ((mval >> 3) << 2*pin);
+                      | (((mval >> 3) & 3) << 2*pin);
         MMIO32(typer) = (MMIO32(typer) & ~(1 << pin))
                       | (((mval >> 2) & 1) << pin);
         MMIO32(pupdr) = (MMIO32(pupdr) & ~(3 << 2*pin))
                       | ((mval & 3) << 2*pin);
-        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3 << 2*pin)) | (0b11 << 2*pin);
+        MMIO32(ospeedr) = (MMIO32(ospeedr) & ~(3 << 2*pin)) | (((~mval>>5)&3) << 2*pin);
 
         uint32_t afr = pin & 8 ? afrh : afrl;
         int shift = 4 * (pin & 7);
@@ -139,8 +145,10 @@ struct UartDev {
     constexpr static uint32_t rdr = base + 0x24;
     constexpr static uint32_t tdr = base + 0x28;
 
-    UartDev () {
-        tx.mode(Pinmode::alt_out, uidx < 4 ? 4 : 6);
+    UartDev () { }
+
+    static void init() {
+        tx.mode(Pinmode::alt_out_2mhz, uidx < 4 ? 4 : 6);
         rx.mode(Pinmode::alt_out, uidx < 4 ? 4 : 6);
 
         if (uidx == 0)
@@ -174,6 +182,10 @@ struct UartDev {
         return (MMIO32(isr) & 0x24) != 0;  // RXNE or ORE
     }
 
+    static bool errored() {
+        return (MMIO32(isr) & 0x0f) != 0; // PE or FE or NF or ORE
+    }
+
     static int getc () {
         while (!readable())
             ;
@@ -199,6 +211,7 @@ struct UartBufDev : UartDev<TX,RX> {
     typedef UartDev<TX,RX> base;
 
     static void init () {
+      base::init();
         auto handler = []() {
             if (base::readable()) {
                 int c = base::getc();
@@ -328,18 +341,18 @@ struct EEPROM {
     constexpr static uint32_t sr    = base + 0x18;
 
     // wait busy-waits until the last write completes
-    void wait() { while(MMIO32(sr) & 1) ; }
+    static void wait() { while(MMIO32(sr) & 1) ; }
 
-    void unlock() { MMIO32(pkeyr) = 0x89ABCDEF; MMIO32(pkeyr) = 0x02030405; }
-    void lock() { wait(); MMIO32(pecr) = 7; }
+    static void unlock() { MMIO32(pkeyr) = 0x89ABCDEF; MMIO32(pkeyr) = 0x02030405; }
+    static void lock() { wait(); MMIO32(pecr) = 7; }
 
-    uint8_t  read8 (uint32_t offset) { return MMIO8 (data+offset); }
-    uint16_t read16(uint16_t offset) { return MMIO16(data+offset); }
-    uint32_t read32(uint32_t offset) { return MMIO32(data+offset); }
+    static uint8_t  read8 (uint32_t offset) { return MMIO8 (data+offset); }
+    static uint16_t read16(uint16_t offset) { return MMIO16(data+offset); }
+    static uint32_t read32(uint32_t offset) { return MMIO32(data+offset); }
 
-    void write8 (uint32_t offset, uint8_t  value) { unlock(); MMIO8 (data+offset) = value; lock(); }
-    void write16(uint32_t offset, uint16_t value) { unlock(); MMIO16(data+offset) = value; lock(); }
-    void write32(uint32_t offset, uint32_t value) { unlock(); MMIO32(data+offset) = value; lock(); }
+    static void write8 (uint32_t offset, uint8_t  value) { unlock(); MMIO8 (data+offset) = value; lock(); }
+    static void write16(uint32_t offset, uint16_t value) { unlock(); MMIO16(data+offset) = value; lock(); }
+    static void write32(uint32_t offset, uint32_t value) { unlock(); MMIO32(data+offset) = value; lock(); }
 };
 
 // TIMER - NOT TESTED!!!
