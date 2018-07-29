@@ -36,6 +36,14 @@
 
 // Ack packets either consist of just the header byte or header plus info.
 
+// Notes about RSSI and SNR:
+// - SNR is not simply "packetRSSI - noiseRSSI", somehow LNA figures into it. At close proximity
+//   the RSSI can be -80dB, noise -110dB yet SNR reported is in the 6-8dB range. So it says
+//   something about what the radio used to "decode" the packet but does not provide information
+//   about how much link budget is left/available.
+// - SNR can be negative, that's what spread spectrum allows. SF7->-7.5dB, SF8->-10dB, SF12->-20dB
+// - packet RSSI may be lower than noise RSSI, again, that's spread spectrum...
+
 #ifndef Yield
 #define Yield()
 #endif
@@ -48,25 +56,34 @@ typedef struct { uint8_t conf1; uint8_t conf2; uint8_t conf3; uint16_t bw; } LoR
 //
 // Configurations from radiohead library, the first one is fast for short range, the
 // second intermediate for medium range, and the last two slow for long range.
-LoRaConfig lora_bw500cr45sf7  = {0x92, 0x74, 0x04, 500}; // 31250bps, 20B in   14ms"};
-LoRaConfig lora_bw125cr45sf7  = {0x72, 0x74, 0x04, 125}; //  7813bps, 20B in   57ms"};
-LoRaConfig lora_bw125cr48sf12 = {0x78, 0xc4, 0x04, 125}; //   183bps, 20B in 1712ms"};
-LoRaConfig lora_bw31cr48sf9   = {0x48, 0x94, 0x04,  31}; //   275bps, 20B in  987ms"};
+LoRaConfig lora_bw500cr45sf7  = {0x92, 0x74, 0x04, 500}; // 31250bps, 20B in   14ms
+LoRaConfig lora_bw125cr45sf7  = {0x72, 0x74, 0x04, 125}; //  7813bps, 20B in   57ms
+LoRaConfig lora_bw125cr48sf12 = {0x78, 0xc4, 0x04, 125}; //   183bps, 20B in 1712ms
+LoRaConfig lora_bw31cr48sf9   = {0x48, 0x94, 0x04,  31}; //   275bps, 20B in  987ms
 // Configurations from LoRaWAN standard.
-LoRaConfig lorawan_bw125sf12  = {0x72, 0xc4, 0x0C, 125}; //   250bps, 20B in 1319ms, -137dBm"};
-LoRaConfig lorawan_bw125sf11  = {0x72, 0xb4, 0x0C, 125}; //   440bps, 20B in  660ms, -136dBm"};
-LoRaConfig lorawan_bw125sf10  = {0x72, 0xa4, 0x04, 125}; //   980bps, 20B in  370ms, -134dBm"};
-LoRaConfig lorawan_bw125sf9   = {0x72, 0x94, 0x04, 125}; //  1760bps, 20B in  185ms, -131dBm"};
-LoRaConfig lorawan_bw125sf8   = {0x72, 0x84, 0x04, 125}; //  3125bps, 20B in  103ms, -128dBm"};
-LoRaConfig lorawan_bw125sf7   = {0x72, 0x74, 0x04, 125}; //  5470bps, 20B in   57ms, -125dBm"};
-LoRaConfig lorawan_bw250sf7   = {0x82, 0x74, 0x04, 250}; // 11000bps, 20B in   28ms, -122dBm"};
+LoRaConfig lorawan_bw125sf12  = {0x72, 0xc4, 0x0C, 125}; //   250bps, 20B in 1319ms, -137dBm
+LoRaConfig lorawan_bw125sf11  = {0x72, 0xb4, 0x0C, 125}; //   440bps, 20B in  660ms, -136dBm
+LoRaConfig lorawan_bw125sf10  = {0x72, 0xa4, 0x04, 125}; //   980bps, 20B in  370ms, -134dBm
+LoRaConfig lorawan_bw125sf9   = {0x72, 0x94, 0x04, 125}; //  1760bps, 20B in  185ms, -131dBm
+LoRaConfig lorawan_bw125sf8   = {0x72, 0x84, 0x04, 125}; //  3125bps, 20B in  103ms, -128dBm
+LoRaConfig lorawan_bw125sf7   = {0x72, 0x74, 0x04, 125}; //  5470bps, 20B in   57ms, -125dBm
+LoRaConfig lorawan_bw250sf7   = {0x82, 0x74, 0x04, 250}; // 11000bps, 20B in   28ms, -122dBm
+// Additional configurations all using CR47. The reason for CR47 is that CR45/CR46 can detect
+// 1/2 bit errors, which doesn't improve link budget, just catches more errors. CR47 can correct
+// single bit errors (1 bit wrong in a nibble)., whcih means it increases link budget. CR48 is
+// like CR47 but can detect 2 bit errors, which again doesn't add to link budget.
+LoRaConfig lora_bw125cr47sf7  = {0x76, 0x74, 0x04, 125}; //  4464bps, 20B in   71ms
+LoRaConfig lora_bw125cr47sf8  = {0x76, 0x84, 0x04, 125}; //  2232bps, 20B in  128ms
+LoRaConfig lora_bw125cr47sf9  = {0x76, 0x94, 0x04, 125}; //  1116bps, 20B in  226ms
+LoRaConfig lora_bw125cr47sf10 = {0x76, 0xa4, 0x04, 125}; //   558bps, 20B in  453ms
+
 
 template< typename SPI >
 struct RF96lora {
     bool init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t freq);
     void frequency (uint32_t freq);
     void modemConfig (LoRaConfig &conf);
-    void txPower (uint8_t level);
+    void txPower (int8_t level);
 
     int receive (void* ptr, int len);
     void send (uint8_t header, const void* ptr, int len);
@@ -76,6 +93,8 @@ struct RF96lora {
     void sleep (); // put the radio to sleep to save power
     void dumpRegs();
     int16_t noiseFloor(); // return the current RSSI as noise floor reading
+    int16_t linkMargin(int16_t packetRssi, int16_t noiseFloor); // return link margin left in dB
+    int16_t linkMargin(int8_t snr); // return link margin in dB
 
     uint8_t myId;
 
@@ -84,10 +103,13 @@ struct RF96lora {
     uint32_t actFreq; // actual frequency programmed into device
     int32_t  fei;     // FEI of last packet received
     uint32_t bw;      // bandwidth of current config
+    uint8_t  sf;      // spreading factor of current config
+    int8_t  txpow;   // current tx power level in dBm
 
     // variables reporting info about the last packet received
     int16_t rssi;   // RSSI in dBm of last packet received
-    int8_t  snr;    // SNR in dBm of last packet received
+    int8_t  snr;    // SNR in dB of last packet received
+    int8_t  margin; // signal margin in dB of last packet received, based on SNR
     uint8_t lna;    // LNA attenuation in dB
 
     uint8_t readReg (uint8_t addr) {
@@ -115,6 +137,7 @@ struct RF96lora {
         REG_FIFORXCUR     = 0x10,
         REG_IRQFLAGS      = 0x12,
         REG_RXBYTES       = 0x13,
+        REG_MODEMSTAT     = 0x18,
         REG_PKTSNR        = 0x19,
         REG_PKTRSSI       = 0x1A,
         REG_RSSIVALUE     = 0x1B,
@@ -124,6 +147,7 @@ struct RF96lora {
         REG_MODEMCONF3    = 0x26,
         REG_PPMCORR       = 0x27,
         REG_FEI           = 0x28,
+        REG_RSSIWIDE      = 0x2C,
         REG_SYNC          = 0x39,
         REG_DIOMAPPING1   = 0x40,
         REG_PADAC         = 0x4D,
@@ -222,6 +246,7 @@ void RF96lora<SPI>::modemConfig (LoRaConfig &conf) {
     writeReg(REG_MODEMCONF2, (conf.conf2 & 0xf0) | 0x04); // Force TxSingle, CRC enable
     writeReg(REG_MODEMCONF3, conf.conf3 | 0x04); // Force LNA AGC
     bw = (uint32_t)conf.bw * 1000;
+    sf = conf.conf2>>4;
     setMode(oldMode);
 }
 
@@ -229,11 +254,27 @@ template< typename SPI >
 int16_t RF96lora<SPI>::noiseFloor() {
     uint8_t oldMode = mode;
     setMode(MODE_RXCONT);
-    wait_ms(3);
+    wait_ms(3); // a bit of a guess, really depends on data rate?
     uint8_t rssi = readReg(REG_RSSIVALUE);
     setMode(oldMode);
     if (nomFreq > 600000000) return -157 + (int16_t)rssi;
     else return -164 + (int16_t)rssi;
+}
+
+static int8_t snr_margin[] = { 5, 7, 10, 12, 15, 17, 20 }; // dB below noise floor SF6..SF12
+
+// linkMargin returns the dB of margin available given the rssi of a packet and the noise floor.
+// According to datasheet table 13: range of spreading factors.
+template< typename SPI >
+int16_t RF96lora<SPI>::linkMargin(int16_t packetRssi, int16_t noiseFloor) {
+    return packetRssi - (noiseFloor - (int16_t)snr_margin[sf-6]);
+}
+
+// linkMargin returns the dB of margin available given the snr of a packet.
+// According to datasheet table 13: range of spreading factors.
+template< typename SPI >
+int16_t RF96lora<SPI>::linkMargin(int8_t snr) {
+    return snr + (int16_t)snr_margin[sf-6];
 }
 
 template< typename SPI >
@@ -270,12 +311,12 @@ static const uint8_t RF96LoRaConfig [] = {
     0x01, 0x89, // OpMode = LoRA+LF+standby
     0x09, 0xFF, // 17dBm output power
     0x0B, 0x32, // Over-current protection @150mA
-    0x0C, 0x23, // max LNA gain
+    0x0C, 0xC3, // max LNA gain
     0x0D, 0x00, // FIFO ptr = 0
     0x0E, 0x00, // FIFO TX base = 0
     0x0F, 0x00, // FIFO RX base = 0
     0x10, 0x00, // FIFO RX current = 0
-    0x11, 0x12, // mask valid header and FHSS change interrupts
+    0x11, 0x02, // mask FHSS change interrupt
     0x1f, 0x40, // rx-single timeout (0x40=64 symbol times)
     0x20, 0x00, // preamble of 8
     0x21, 0x08, //
@@ -297,7 +338,6 @@ bool RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t f
     myId = id;
 
     SPI::init();
-    dumpRegs();
     do
         writeReg(REG_DIOMAPPING1, 0xAA);
     while (readReg(REG_DIOMAPPING1) != 0xAA);
@@ -325,10 +365,11 @@ bool RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t f
     configure(RF96LoRaConfig);
     frequency(freq);
     modemConfig(conf);
+    txpow = 17;
 
     writeReg(REG_SYNC, sync);
 
-    //dumpRegs();
+    dumpRegs();
 
     // make sure we can turn on the frequency synthesis (i.e. chip is not stuck)
     if (!waitMode(MODE_FSTX)) {
@@ -340,9 +381,11 @@ bool RF96lora<SPI>::init (uint8_t id, uint8_t sync, LoRaConfig &conf, uint32_t f
 }
 
 // txPower sets the transmit power to the requested level in dB. The driver assumes that the
-// PA_BOOST pin is used in the radio module and allows adjustment from 2dBm to 20dBm.
+// PA_BOOST pin is used in the radio module and allows adjustment from 2dBm to 20dBm. The radio can
+// go down to -4dBm(check?) but only when using the other output pin, which most modules don't seem
+// to connect.
 template< typename SPI >
-void RF96lora<SPI>::txPower (uint8_t level) {
+void RF96lora<SPI>::txPower (int8_t level) {
     if (level < 2) level = 2;
     if (level > 20) level = 20;
     setMode(MODE_STANDBY);
@@ -353,6 +396,7 @@ void RF96lora<SPI>::txPower (uint8_t level) {
         writeReg(REG_PACONFIG, 0xf0+level-2);
         writeReg(REG_PADAC, 0x84); // turn 20dBm mode off
     }
+    txpow = level;
 }
 
 template< typename SPI >
@@ -373,21 +417,37 @@ void RF96lora<SPI>::adjustFreq () {
 }
 
 template< typename SPI >
-void RF96lora<SPI>::adjustPow (uint8_t snr) {
+void RF96lora<SPI>::adjustPow (uint8_t margin) {
+    int8_t txpow0 = txpow;
+    if (margin > 14 && txpow > 2) {
+        txPower(txpow - (margin-10+2)/4);
+    } else if (margin > 10 && txpow > 2) {
+        txPower(txpow-1);
+    } else if (margin < 10 && txpow < 20) {
+        txPower(txpow + 10-margin);
+    }
+    //if (txpow0 != txpow) printf("<TX {%d} %d->%ddB>", margin, txpow0, txpow);
 }
 
 static uint8_t RF96lnaMap[] = { 0, 0, 6, 12, 24, 36, 48, 48 };
 
 template< typename SPI >
 void RF96lora<SPI>::savePktInfo() {
+    // handle rssi, snr
+    // Note bug in datasheet for RSSI calc, see official driver and
+    // http://semtech.force.com/lora/lc_answers_questions?id=9064400000090EpAAI
+    // https://github.com/Lora-net/LoRaMac-node/blob/master/src/radio/sx1276/sx1276.c#L1559
     snr = (int8_t)readReg(REG_PKTSNR)/4;
     rssi = nomFreq > 600000000 ? -157 : -164;
-    int8_t rawRssi = readReg(REG_PKTRSSI);
-    if (snr >= 0) rssi += rawRssi + rawRssi/15;
-    else rssi += rawRssi + snr;
+    uint8_t rawRssi = readReg(REG_PKTRSSI);
+    rssi += rawRssi + (rawRssi>>4);
+    if (snr < 0) rssi += snr;
+    margin = linkMargin(snr);
 
-    lna = RF96lnaMap[ (readReg(REG_LNAVALUE) >> 5) & 0x7 ];
+    // handle LNA
+    if (lna == 255) lna = 0; // we missed it, and 0 is the most likely value, sigh...
 
+    // handle FEI
     int32_t f1 = (int32_t)readReg(REG_FEI) << 28 >> 12; // sign-extend
     f1 |= (int32_t)readReg(REG_FEI+1) << 8;
     f1 |= (int32_t)readReg(REG_FEI+2);
@@ -410,6 +470,8 @@ int RF96lora<SPI>::savePkt(void *ptr, int len) {
         if (len-- > 0) *buf++ = v;
     }
     SPI::disable();
+    writeReg(REG_IRQFLAGS, 0xff); // reset flags
+
     return l;
 }
 
@@ -420,16 +482,20 @@ int RF96lora<SPI>::savePkt(void *ptr, int len) {
 // valid when a packet has been received but may change with the next call to receive().
 template< typename SPI >
 int RF96lora<SPI>::receive (void* ptr, int len) {
-    if ((readReg(REG_IRQFLAGS) & IRQ_RXDONE) != 0) {
-        return savePkt(ptr, len);
-    }
-    if (readReg(REG_OPMODE) & 0x7 != MODE_RXCONT) {
+    int ret = -1;
+    uint8_t irqfl = readReg(REG_IRQFLAGS);
+    if ((irqfl & IRQ_RXDONE) != 0) {
+        ret = savePkt(ptr, len);
+        setMode(MODE_RXCONT);
+    } else if ((irqfl & (IRQ_VALIDHDR|IRQ_RXDONE)) == IRQ_VALIDHDR && lna == 255) {
+        lna = RF96lnaMap[ (readReg(REG_LNAVALUE) >> 5) & 0x7 ];
+    } else if ((readReg(REG_OPMODE) & 0x7) != MODE_RXCONT) {
         setMode(MODE_RXCONT);
     }
-    return -1;
+    return ret;
 }
 
-// rxAck assumes that a packet is readu in the FIFO, reads it and processes the FEI and SNR info it
+// rxAck assumes that a packet is ready in the FIFO, reads it and processes the FEI and SNR info it
 // carries in the first two bytes to adjust TX power and frequency. It copies the packet to the
 // provided buffer and returns its length.
 template< typename SPI >
@@ -439,9 +505,11 @@ int RF96lora<SPI>::rxAck(void* ptr, int len) {
     if ((buf[0] & 0xE0) == 0xC0 && l > 2) {
         // it's an ACK from GW
         adjustFreq(); // adjust based on what we measured, not what GW says...
-        if ((buf[2] & 0x80) != 0) {
+#if ADJPOW
+        if ((buf[1] & 0x80) != 0) {
             adjustPow(buf[l-2]);
         }
+#endif
     }
     return l;
 }
@@ -452,14 +520,29 @@ int RF96lora<SPI>::rxAck(void* ptr, int len) {
 template< typename SPI >
 int RF96lora<SPI>::getAck(void* ptr, int len) {
     uint8_t mode = readReg(REG_OPMODE) & 0x7;
-    if (mode == MODE_RXSINGLE || mode == MODE_FSTX || mode == MODE_TRANSMIT) return -1; // need to wait...
+    if (mode == MODE_FSTX || mode == MODE_TRANSMIT) return -1; // need to wait...
 
     uint8_t irqFlags = readReg(REG_IRQFLAGS);
     //printf("{%d,%02x}", mode, irqFlags);
+
+    // Capture LNA. We're using AGC but the chip does set REG_LNAVALUE to the currently chosen gain.
+    // The catch is that this varies in real-time and at the end of the reception the LNA always
+    // goes back to max gain, so by the time IRQ_RXDONE comes around the real LNA gain setting is
+    // lost. The best we can do is to capture
+    if (mode == MODE_RXSINGLE) {
+        if ((irqFlags & (IRQ_VALIDHDR|IRQ_RXDONE)) == IRQ_VALIDHDR && lna == 255) {
+            lna = RF96lnaMap[ (readReg(REG_LNAVALUE) >> 5) & 0x7 ];
+            //printf("<LNA%d>", lna);
+        }
+        return -1; // need to wait...
+    }
+
     if ((irqFlags & IRQ_TXDONE) != 0) {
         // just finished TX, need to switch to RX_SINGLE
         writeReg(REG_IRQFLAGS, 0xff); // clear all flags
         setMode(MODE_RXSINGLE);
+        lna = 255; // set to invalid value
+
         return -1;
     }
 
@@ -470,6 +553,9 @@ int RF96lora<SPI>::getAck(void* ptr, int len) {
 
     if ((irqFlags & IRQ_RXTIMEOUT) != 0) {
         // ack wait timed out :-(
+#if ADJPOW
+        if (txpow < 20) txPower(txpow+1);
+#endif
         return 0;
     }
 
@@ -479,14 +565,14 @@ int RF96lora<SPI>::getAck(void* ptr, int len) {
     return -1;
 }
 
-// Add 2 bytes of info at ptr[0] and ptr[1] to the outgoing packet to signal RSSI and FEI to the
-// other party.
+// Add 2 bytes of info at ptr[0] and ptr[1] to the outgoing packet to signal margin and FEI to the
+// other party. Note that bit 7 in packet type byte needs to be set too!
 template< typename SPI >
 void RF96lora<SPI>::addInfo(uint8_t *ptr) {
-    uint8_t r = snr<<1;
-    if (snr > 63) r = 63<<1;
-    if (snr < -64) r = -64<<1;
-    ptr[0] = r;
+    int8_t m = margin;
+    if (m > 63) m = 63;
+    if (m < 0) m = 0;
+    ptr[0] = m;
     ptr[1] = (fei+64) >> 7;
 }
 
@@ -506,11 +592,11 @@ void RF96lora<SPI>::send (uint8_t header, const void* ptr, int len) {
     SPI::disable();
 
     setMode(MODE_TRANSMIT);
+#if 0
     uint8_t mode = readReg(REG_OPMODE)&0x7;
     //printf("sx1276 mode: %02x\r\n", readReg(REG_OPMODE));
     if (mode != MODE_FSTX && mode != MODE_TRANSMIT)
-      printf("sx1276 mode: %02x (expected FXTX or TX)\r\n", mode);
-#if 0
+      printf("sx1276 mode: %d (expected FSTX or TX) [was %d]\r\n", mode, mode0);
     while ((readReg(REG_IRQFLAGS) & IRQ_TXDONE) == 0)
         Yield();
 
