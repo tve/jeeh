@@ -285,6 +285,9 @@ struct ADC {
     constexpr static uint32_t ccr   = base + 0x308;
     constexpr static uint32_t rcc_cr = Periph::rcc + 0x00;
     constexpr static uint32_t rcc_apb2enr = Periph::rcc + 0x34;
+    constexpr static uint32_t vrefint_cal = 0x1ff80078; // ADC Vref @3V
+    constexpr static uint32_t temp30_cal = 0x1ff8007A; // ADC @30C
+    constexpr static uint32_t temp130_cal = 0x1ff8007E; // ADC @130C
 
     static void init () {
         if (N != 1) return;
@@ -324,6 +327,29 @@ struct ADC {
         while ((MMIO32(isr) & (1<<2)) == 0) ;  // EOC
         return MMIO32(dr);
     }
+
+    // read current Vcc in millivolts
+    static uint16_t readVcc() {
+        if (N != 1) return 0;
+        MMIO32(ccr) |= 1<<22; // set VREF_EN bit
+        uint32_t adc = read(17); // perform ADC of channel 17
+        MMIO32(ccr) &= ~(1<<22); // clear VREF_EN bit
+        uint32_t cal = MMIO16(vrefint_cal);
+        return 3000 * cal / adc;
+  }
+
+    // read current temperature in centigrade
+    static int16_t readTemp() {
+        if (N != 1) return 0;
+        MMIO32(ccr) |= 1<<23; // set TSEN bit
+        int32_t adc = read(18); // perform ADC of channel 18
+        MMIO32(ccr) &= ~(1<<23); // clear TSEN bit
+        int32_t vcc = readVcc();
+        int32_t cal30 = MMIO16(temp30_cal);
+        int32_t cal130 = MMIO16(temp130_cal);
+        int32_t temp = adc * vcc / 3000 - cal30;
+        return (int16_t)(temp * 100 / (cal130-cal30) + 30);
+  }
 };
 
 // EEPROM
