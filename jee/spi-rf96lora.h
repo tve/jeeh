@@ -418,7 +418,7 @@ void RF96lora<SPI>::adjustFreq () {
 
 template< typename SPI >
 void RF96lora<SPI>::adjustPow (uint8_t margin) {
-    int8_t txpow0 = txpow;
+    //int8_t txpow0 = txpow;
     if (margin > 14 && txpow > 2) {
         txPower(txpow - (margin-10+2)/4);
     } else if (margin > 10 && txpow > 2) {
