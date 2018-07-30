@@ -246,3 +246,21 @@ SCL I2cBus<SDA,SCL,N>::scl;
 extern void putInt (void (*emit)(int), int val, int base =10, int width =0, char fill =' ');
 extern void veprintf(void (*emit)(int), const char* fmt, va_list ap);
 extern int printf(const char* fmt, ...);  // to be defined in app
+
+template< typename T >
+void detectI2c (T bus) {
+    for (int i = 0; i < 128; i += 16) {
+        printf("%02x:", i);
+        for (int j = 0; j < 16; ++j) {
+            int addr = i + j;
+            if (0x08 <= addr && addr <= 0x77) {
+                bool ack = bus.start(addr<<1);
+                bus.stop();
+                printf(ack ? " %02x" : " --", addr);
+            } else
+                printf("   ");
+        }
+        printf("\r\n");
+    }
+}
+
