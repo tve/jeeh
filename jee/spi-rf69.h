@@ -14,7 +14,7 @@
 
 template< typename SPI >
 struct RF69 {
-    void init (uint8_t id, uint8_t group, int freq);
+    bool init (uint8_t id, uint8_t group, int freq);
     void encrypt (const char* key);
     void txPower (uint8_t level);
 
@@ -155,24 +155,29 @@ static const uint8_t configRegs [] = {
 };
 
 template< typename SPI >
-void RF69<SPI>::init (uint8_t id, uint8_t group, int freq) {
+bool RF69<SPI>::init (uint8_t id, uint8_t group, int freq) {
     myId = id;
 
     // b7 = group b7^b5^b3^b1, b6 = group b6^b4^b2^b0
     parity = group ^ (group << 4);
     parity = (parity ^ (parity << 2)) & 0xC0;
 
+    int i = 0;
     do
         writeReg(REG_SYNCVALUE1, 0xAA);
-    while (readReg(REG_SYNCVALUE1) != 0xAA);
+    while (readReg(REG_SYNCVALUE1) != 0xAA && i++ < 10);
+    if (i == 10) return false;
+    i = 0;
     do
         writeReg(REG_SYNCVALUE1, 0x55);
-    while (readReg(REG_SYNCVALUE1) != 0x55);
+    while (readReg(REG_SYNCVALUE1) != 0x55 && i++ < 10);
+    if (i == 10) return false;
 
     configure(configRegs);
     setFrequency(freq);
 
     writeReg(REG_SYNCVALUE2, group);
+    return true;
 }
 
 template< typename SPI >
