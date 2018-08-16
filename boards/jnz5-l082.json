@@ -3,10 +3,12 @@
   "url": "https://github.com/tve/",
   "vendor": "TvE",
   "build": {
-    "cpu": "cortex-m0",
-    "extra_flags": "-DSTM32L0 -DSTM32L082xx",
+    "core": "stm32",
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DSTM32L0 -DSTM32L082xx -DJNZ5",
     "f_cpu": "32000000L",
-    "mcu": "stm32l082kzt6"
+    "mcu": "stm32l082kz",
+    "variant": "Generic-L082CZ"
   },
   "debug": {
     "debug_tool": "blackmagic",
@@ -16,7 +18,8 @@
   },
   "frameworks": [
     "mbed",
-    "stm32cube"
+    "stm32cube",
+    "arduino"
   ],
   "upload": {
     "maximum_ram_size": 20480,

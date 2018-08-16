@@ -10,6 +10,7 @@
     "frameworks": [ "arduino", "cmsis", "libopencm3", "mbed", "stm32cube" ],
     "platforms": [ "atmelavr", "espressif32", "ststm32" ],
     "libArchive": false,
+    "export": { "exclude": "*", "include": [ "jee*", "jee/*", "gfx/gfx*" ] },
     "build": {
         "srcFilter": [ "-<gfx/fontconvert/*>", "+<*.cpp>", "+<gfx/*.cpp>" ]
     }

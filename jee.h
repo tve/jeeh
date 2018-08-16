@@ -1,4 +1,6 @@
 #pragma once
+#undef JEEH
+#define JEEH 100
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -46,6 +48,16 @@ struct VTable;
 extern VTable& VTableRam ();
 
 extern void wait_ms (uint32_t ms);
+
+// abstract SPI interface
+
+struct Spi {
+    // init configures the SPI interface. (Maybe this should not be in the interface?)
+    virtual void init () = 0;
+    virtual void enable () = 0; // activate the select line
+    virtual void disable () = 0; // deactivate the select line
+    virtual uint8_t transfer (uint8_t v) = 0; // write and read one byte
+};
 
 // architecture-specific definitions
 

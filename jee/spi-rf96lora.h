@@ -8,9 +8,10 @@
 // The driver assumes that the antenna is connected to PA_BOOST, which is the case for the
 // HopeRF rfm95 thru rfm98 modules, as well as the Dorji DRF1276 modules.
 
-// Packet header byte like old JeeLabs format:
-// http://jeelabs.org/2011/06/10/rf12-broadcasts-and-acks/index.html
-// bit 7 ctrl: 0=data 1=special
+// The send function places a header as first payload byte into the packet. This header is used to
+// address the destination and to control acknowledgments. It assumes a star network where all
+// packets go to/from a central gateway.
+// bit 7 ctrl: 0=data 1=ack/special
 // bit 6 dest: 0=to-GW 1=from-GW
 // bit 5 ack : 0=no-ack 1=ack-req
 // bit 4 unused
@@ -20,13 +21,13 @@
 // c=1, a=0 : ack
 // c=1, a=1 : unused
 
-// Packet type byte (2nd byte):
+// By convention, the byte after the header contains a packet type indentification byte as follows:
 // bit 7 info: 0=no info, 1=last 2 bytes have rssi & fei
 // bit 6 unused
 // bit 0-5: 32 packet types
 
 // Info trailer (present if packet type bit 7 is set):
-// pkt[len-2]: min(rssi_dBm + 164, 127), top bit always 0 (unused)
+// pkt[len-2]: 7-bit signed packet RX margin in dB, top bit always 0 (unused)
 // pkt[len-1]: (fei_Hz + 64) / 128
 
 // Packet type:
@@ -43,6 +44,8 @@
 //   about how much link budget is left/available.
 // - SNR can be negative, that's what spread spectrum allows. SF7->-7.5dB, SF8->-10dB, SF12->-20dB
 // - packet RSSI may be lower than noise RSSI, again, that's spread spectrum...
+// - RX margin is calculated using the difference between SNR and the minimum SNR required to
+//   demodulate a packet according to the datasheet.
 
 #ifndef Yield
 #define Yield()
@@ -88,7 +91,7 @@ struct RF96lora {
     int receive (void* ptr, int len);
     void send (uint8_t header, const void* ptr, int len);
     int getAck(void* ptr, int len);
-    int rxAck(void* ptr, int len);
+    int readAck(void* ptr, int len);
     void addInfo(uint8_t *ptr);
     void sleep (); // put the radio to sleep to save power
     void dumpRegs();
@@ -104,7 +107,7 @@ struct RF96lora {
     int32_t  fei;     // FEI of last packet received
     uint32_t bw;      // bandwidth of current config
     uint8_t  sf;      // spreading factor of current config
-    int8_t  txpow;   // current tx power level in dBm
+    int8_t   txpow;   // current tx power level in dBm
 
     // variables reporting info about the last packet received
     int16_t rssi;   // RSSI in dBm of last packet received
@@ -416,6 +419,9 @@ void RF96lora<SPI>::adjustFreq () {
     writeReg(REG_PPMCORR, ppmError);
 }
 
+// adjustPow changes the TX power based on the signal margin reported by the remote node in order to
+// ensure that there is 10dB of margin. It adjusts the power downwards by approx 25% of what is
+// theoretically needed to hit 10dB and it adjusts the power upwards by the full amt needed.
 template< typename SPI >
 void RF96lora<SPI>::adjustPow (uint8_t margin) {
     //int8_t txpow0 = txpow;
@@ -431,6 +437,8 @@ void RF96lora<SPI>::adjustPow (uint8_t margin) {
 
 static uint8_t RF96lnaMap[] = { 0, 0, 6, 12, 24, 36, 48, 48 };
 
+// savePktInfo is an internal function to save the metadata for a received packet, such as RSSI,
+// SNR, etc.
 template< typename SPI >
 void RF96lora<SPI>::savePktInfo() {
     // handle rssi, snr
@@ -455,6 +463,7 @@ void RF96lora<SPI>::savePktInfo() {
     fei = f1 * int32_t(bw/100) / 9537; // 9537=32Mhz*500/2^24/100
 }
 
+// savePkt is an internal function to save a received packet, incl. the metadata.
 template< typename SPI >
 int RF96lora<SPI>::savePkt(void *ptr, int len) {
     savePktInfo();
@@ -477,8 +486,7 @@ int RF96lora<SPI>::savePkt(void *ptr, int len) {
 
 // receive initializes the radio for RX if it's not in RX mode, else it checks whether a
 // packet is in the FIFO and pulls it out if it is. The returned value is -1 if there is no
-// packet, else the length of the packet, which includes the destination address, source address,
-// and payload bytes, but excludes the length byte itself. The fei, rssi, and lna values are also
+// packet, else the length of the packet. The fei, rssi, and lna values are also
 // valid when a packet has been received but may change with the next call to receive().
 template< typename SPI >
 int RF96lora<SPI>::receive (void* ptr, int len) {
@@ -495,11 +503,11 @@ int RF96lora<SPI>::receive (void* ptr, int len) {
     return ret;
 }
 
-// rxAck assumes that a packet is ready in the FIFO, reads it and processes the FEI and SNR info it
-// carries in the first two bytes to adjust TX power and frequency. It copies the packet to the
-// provided buffer and returns its length.
+// readAck assumes that a packet is ready in the FIFO, reads it and processes the FEI and SNR
+// info it carries in the first two bytes to adjust TX power and frequency. It copies the packet
+// to the provided buffer and returns its length.
 template< typename SPI >
-int RF96lora<SPI>::rxAck(void* ptr, int len) {
+int RF96lora<SPI>::readAck(void* ptr, int len) {
     int l = savePkt(ptr, len);
     uint8_t *buf = (uint8_t*)ptr; // get a pointer we can dereference
     if ((buf[0] & 0xE0) == 0xC0 && l > 2) {
@@ -548,7 +556,7 @@ int RF96lora<SPI>::getAck(void* ptr, int len) {
 
     if ((irqFlags & IRQ_RXDONE) != 0) {
         // got ack!
-        return rxAck(ptr, len);
+        return readAck(ptr, len);
     }
 
     if ((irqFlags & IRQ_RXTIMEOUT) != 0) {
