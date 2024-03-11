@@ -11,10 +11,10 @@ sources = ['../include']
 
 def VERSION(block):
     v = subprocess.getoutput('git describe --tags --always')
-    return 'constexpr auto VERSION = "%s";' % v
+    return f'constexpr auto VERSION = "{v}";'
 
 def VERSION_strip(block):
-    return f'constexpr auto VERSION = "<stripped>";'
+    return 'constexpr auto VERSION = "<stripped>";'
 
 #-------------------------------------------------------------- Parse SVD file
 
@@ -36,6 +36,7 @@ def parseSvd():
     parsed = xml.dom.minidom.parse(svdFile)
 
     svdName = byName(parsed.getElementsByTagName('device')[0], 'description')
+    print('[codegen]', svdName)
 
     irqs, ioregs, rccs, enables = {}, [], [], {}
     irqLimit = 0
@@ -61,7 +62,7 @@ def parseSvd():
         registers = p.getElementsByTagName('register')
         for x in registers:
             rn = byName(x, 'name')
-            if u == "RCC" and re.match(r'A[HP]B\d?L?ENR', rn):
+            if u == 'RCC' and re.match(r'A[HP]B\d?L?ENR', rn):
                 b = int(byName(x, 'addressOffset'), 0)
                 rccs.append((rn, b))
                 for f in x.getElementsByTagName('field'):
@@ -69,7 +70,7 @@ def parseSvd():
                         continue
                     nn = byName(f, 'name')
                     if nn.endswith('EN'):
-                        nn = "EN_" + nn[:-2]
+                        nn = 'EN_' + nn[:-2]
                         if nn == 'EN_DMA':
                             nn += '1' # fix for F302 and L053
                         bb = int(byName(f, 'bitOffset'))
@@ -89,15 +90,15 @@ def parseSvd():
                           f'#define {svdName[:7]} 1',
                           f'#define SVDNAME "{svdName}"']
     svdInfo['ioregs'] = sorted(ioregs, key=lambda s: natsort(s[28:]))
-    svdInfo['irqs'] = ["%-22s = %3s," % (t, irqs[t]) \
+    svdInfo['irqs'] = ['%-22s = %3s,' % (t, irqs[t]) \
                             for t in sorted(irqs, key=natsort)] + \
-                      [f"limit = {irqLimit}"]
-    svdInfo['rccs'] = ["%-8s = 0x%X," % t for t in sorted(rccs)]
-    svdInfo['enables'] = ["%-16s = %2d + 8 * %s," % (t, *enables[t]) \
+                      [f'limit = {irqLimit}']
+    svdInfo['rccs'] = ['%-8s = 0x%X,' % t for t in sorted(rccs)]
+    svdInfo['enables'] = ['%-16s = %2d + 8 * %s,' % (t, *enables[t]) \
                             for t in sorted(enables)]
 
 def SVD(block, name):
-    if 'defines' not in svdInfo:
+    if name not in svdInfo:
         parseSvd()
     return svdInfo[name]
 
