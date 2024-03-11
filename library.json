@@ -1,0 +1,6 @@
+{
+    "headers": "jee.h",
+    "build": {
+        "extraScript": "make/pio-extra.py"
+    }
+}
