@@ -4,6 +4,7 @@
 # If there is a function called "XYZ_strip", it will be used for stripping.
 
 import os, re, subprocess, sys, xml.dom.minidom
+from string import Template
 
 sources = ['../include']
 
@@ -15,6 +16,37 @@ def VERSION(block):
 
 def VERSION_strip(block):
     return 'constexpr auto VERSION = "<stripped>";'
+
+#------------------------------------ inject board settings
+
+def BOARD(block, name):
+    tag = 'board_' + name
+    if tag not in projOpts:
+        print('not found:', tag)
+        return []
+    info = projOpts[tag].split()
+    if name == 'leds':
+        r = [f'#define LED  "{info[0]}"']
+        if len(info) > 1:
+            for i, v in enumerate(info):
+                r.append(f'#define LED{i+1} "{v}"')
+        return r
+    if name == 'uart':
+        f = {}
+        for x in info:
+            k, v = x.split('=')
+            f[k] = v
+        # N=USART2 P=A2:7,A3 F=150 D=1 L=CH O=0 T=3 R=1 C=27,26
+        t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
+                     '$D-1,$R-$O,$T-$O,$C').substitute(f)
+        # def: UART_PINS  "A2:7,A3"
+        # def: UART_NAME  USART2
+        # def: UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,2-1,1-1,1-0,3-0,27,26
+        return ['#define UART_PINS  "%s"' % f['P'],
+                '#define UART_NAME  %s' % f['N'],
+                '#define UART_FREQ  %s' % f['F'],
+                '#define UART_CONF  ' + t]
+    return info
 
 #-------------------------------------------------------------- Parse SVD file
 
@@ -68,10 +100,10 @@ def parseSvd():
                 for f in x.getElementsByTagName('field'):
                     if type(f) is str:
                         continue
-                    nn = byName(f, 'name')
+                    nn = byName(f, 'name').upper();
                     if nn.endswith('EN'):
-                        nn = 'EN_' + nn[:-2]
-                        if nn == 'EN_DMA':
+                        nn = nn[:-2]
+                        if nn == 'DMA':
                             nn += '1' # fix for F302 and L053
                         bb = int(byName(f, 'bitOffset'))
                         enables[nn] = (bb, rn)
@@ -94,7 +126,7 @@ def parseSvd():
                             for t in sorted(irqs, key=natsort)] + \
                       [f'limit = {irqLimit}']
     svdInfo['rccs'] = ['%-8s = 0x%X,' % t for t in sorted(rccs)]
-    svdInfo['enables'] = ['%-16s = %2d + 8 * %s,' % (t, *enables[t]) \
+    svdInfo['enables'] = ['%-13s = %2d + 8 * %s,' % (t, *enables[t]) \
                             for t in sorted(enables)]
 
 def SVD(block, name):

@@ -6,7 +6,7 @@
 import argparse, os, subprocess, sys, tokenize
 from io import StringIO
 
-sys.path.insert(0, '.')
+#sys.path.insert(0, '.')
 import cgdefs # found in current directory first, else next to this script
 
 # return a list of tokens to help parse simple text lines
@@ -100,8 +100,8 @@ def processFile(fpath):
             for s in result:
                 fd.write(s+'\n')
 
-# generate the list of files to process, expanding and reordering as needed
-def listFiles(args):
+# generate the list of headers to process, expanding and reordering as needed
+def listHeaders(args):
     dirs = {}
     for a in args:
         if os.path.isdir(a):
@@ -124,15 +124,21 @@ def listFiles(args):
             yield a
         else:
             for f in dirs[a]:
-                if os.path.splitext(f)[1] in ['.h','.cpp']:
+                if os.path.splitext(f)[1] == '.h':
                     yield os.path.join(a, f)
 
 # process specified files and options (expanding any directories)
-def processAll(d='', s=False, t=False, v=False, srcs=[]):
+def processAll(d='', e='', o={}, p='', s=False, t=False, v=False, srcs=[]):
     cgdefs.svdFile = d
+    cgdefs.projEnv = e
+    cgdefs.projOpts = o
+    cgdefs.projSrcs = p
     cgdefs.stripGen = s
     cgdefs.testFlag = t
     cgdefs.verbose = v
+
+    if p:
+        srcs.insert(0, p)
 
     if srcs:
         for s in cgdefs.sources:
@@ -141,7 +147,7 @@ def processAll(d='', s=False, t=False, v=False, srcs=[]):
     else:
         srcs = cgdefs.sources
 
-    files = list(listFiles(srcs)) # convert iterator to list
+    files = list(listHeaders(srcs)) # convert iterator to list
     if not t and hasattr(cgdefs, 'onStart'):
         cgdefs.onStart(files)
 
@@ -160,6 +166,12 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('-d', metavar='FILE', default='',
                     help='System View Description file')
+    ap.add_argument('-e', metavar='NAME', default='',
+                    help='project options entry')
+    ap.add_argument('-f', metavar='FILE', default='',
+                    help='project options file')
+    ap.add_argument('-p', metavar='DIR', default='',
+                    help='project source directory')
     ap.add_argument('-s', action='store_true',
                     help='strip generated code')
     ap.add_argument('-t', action='store_true',
@@ -168,6 +180,13 @@ if __name__ == '__main__':
                     help='verbose output')
     ap.add_argument('srcs', nargs='*',
                     help='source files and directories')
-    args = ap.parse_args()
+    args = vars(ap.parse_args())
 
-    processAll(**vars(args))
+    if args['e'] and args['f']:
+        import configparser
+        config = configparser.ConfigParser()
+        config.read_file(open(args['f']))
+        args['o'] = dict(config['env:'+args['e']].items())
+    del args['f']
+
+    processAll(**args)

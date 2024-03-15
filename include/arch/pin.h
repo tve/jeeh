@@ -6,6 +6,8 @@ struct Pin {
 
     constexpr int port () const { return id/16-1; }
     constexpr int pin () const { return id%16; }
+
+    __attribute__((always_inline))
     constexpr auto reg (int off) const { return GPIOA[0x400*port()+off]; }
 
     auto read () const { return reg(IDR)(pin()); }
@@ -18,7 +20,16 @@ struct Pin {
     }
 
     // shorthand
-    void toggle () const { write(~reg(ODR)(pin())); }
+    __attribute__((always_inline))
+    void toggle () const {
+        if constexpr (GPIOA.CAN_BIT_BAND)
+            write(~reg(ODR)(pin()));
+        else {
+            auto mask = 1 << pin();
+            reg(BSRR) = ((mask<<16) | mask) ^ (reg(IDR) & mask);
+        }
+    }
+
     operator int () const { return read(); }
     int operator= (int v) const { write(v); return v; }
 
@@ -94,8 +105,8 @@ struct Pin {
 
     int mode (int m) const {
 #if STM32F1
-        RCC(EN_IOPA+port(), 1) = 1;
-        RCC(EN_AFIO, 1) = 1;
+        RCC(ena::IOPA+port(), 1) = 1;
+        RCC(ena::AFIO, 1) = 1;
         // messy code to keep the mode encoding the same as other families
         auto cr = 0, mm = m&3, t = (m>>2)&1, ss = (m>>3)&3, pp = (m>>5)&3;
         switch (mm) {
@@ -118,12 +129,7 @@ struct Pin {
 #else
         enum { TYPER=0x04, OSPEEDR=0x08, PUPDR=0x0C, AFRL=0x20, AFRH=0x24 };
 
-#if STM32F3
-        auto EN_GPIOA = 17 + 8 * 0x14; // IOPENR
-#elif STM32L0
-        auto EN_GPIOA = 8 * 0x2C; // IOPENR
-#endif
-        RCC(EN_GPIOA + port(), 1) = 1;
+        RCC(ena::GPIOA + port(), 1) = 1;
 
         auto p = pin();
         reg(AFRL)   (4*p,4) = m >> 8;

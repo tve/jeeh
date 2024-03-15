@@ -26,7 +26,7 @@ namespace jeeh {
 
 #if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
 
-void itmWrite (void const* ptr, uint32_t len) {
+void itmWrite (void const* ptr, size_t len) {
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
 
