@@ -16,29 +16,30 @@ def swoDecoder(sock):
         for msg in rpcRecv(sock).split(b'\x1A'):
             if msg:
                 try:
-                    data = bytes.fromhex(msg.split()[3].decode())
-                    #print('GOT:',len(data))
+                    _, tag, _, val = msg.split()
+                    data = bytes.fromhex(val.decode())
+                    #print('GOT:', tag, len(data), repr(data[:30]), repr(data[:10]))
                 except:
                     print('OOPS:',len(msg), msg)
                     raise
-                    data = b''
-                for c in data:
-                    if remain > 0:
-                        if chr(c) == "\n":
-                            yield output
-                            if output == "OK":
-                                break
-                            if output == "FAIL":
-                                raise SystemExit(1)
-                            output = ""
+                if tag == b'target_trace':
+                    for c in data:
+                        if remain > 0:
+                            if chr(c) == "\n":
+                                yield output
+                                if output == "OK":
+                                    break
+                                if output == "FAIL":
+                                    raise SystemExit(1)
+                                output = ""
+                            else:
+                                output += chr(c)
+                            remain -= 1
                         else:
-                            output += chr(c)
-                        remain -= 1
-                    else:
-                        remain = c & 0x3
-                        remain += remain // 3
-                        #payload_src = (c & 0x4) >> 2
-                        #itm_port = (c & 0xf8) >> 3
+                            remain = c & 0x3
+                            remain += remain // 3
+                            #payload_src = (c & 0x4) >> 2
+                            #itm_port = (c & 0xf8) >> 3
 
 def uploader(source, **kwds):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
