@@ -19,7 +19,7 @@ namespace jeeh {
 //CG1 version
 constexpr auto VERSION = "<stripped>";
 
-#include "jee-sys.h"
+#include "arch/sys.h"
 
 #if STM32
 #include "arch/ioreg.h"

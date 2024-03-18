@@ -3,8 +3,6 @@
 [[noreturn]]
 void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
 
-int debugf (char const* fmt ...);
-
 struct Message {
     int8_t    mDst =0;
     int8_t    mTag =0;
