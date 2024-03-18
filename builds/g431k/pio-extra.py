@@ -3,32 +3,42 @@ Import("env")
 
 import socket
 
-def rpcSend(sock, cmd):
-    sock.sendall((cmd + "\x1A").encode())
-    reply = sock.recv(4096)
-    assert reply[-1:] == b'\x1A', reply
-    return reply[:-1]
+def rpcRecv(sock):
+    data = b''
+    while data[-1:] != b'\x1A':
+        data += sock.recv(1024)
+        #print("LEN:", len(data),repr(data[:10]),repr(data[-10:]))
+    return data
 
 def swoDecoder(sock):
     output, remain = "", 0
     while output != "OK":
-        msg = sock.recv(4096).decode()
-        if msg.startswith("type target_trace data "):
-            for c in bytes.fromhex(msg[23:-3]):
-                if remain > 0:
-                    if chr(c) == "\n":
-                        yield output
-                        if output in ["OK", "FAIL"]:
-                            break
-                        output = ""
+        for msg in rpcRecv(sock).split(b'\x1A'):
+            if msg:
+                try:
+                    data = bytes.fromhex(msg.split()[3].decode())
+                    #print('GOT:',len(data))
+                except:
+                    print('OOPS:',len(msg), msg)
+                    raise
+                    data = b''
+                for c in data:
+                    if remain > 0:
+                        if chr(c) == "\n":
+                            yield output
+                            if output == "OK":
+                                break
+                            if output == "FAIL":
+                                raise SystemExit(1)
+                            output = ""
+                        else:
+                            output += chr(c)
+                        remain -= 1
                     else:
-                        output += chr(c)
-                    remain -= 1
-                else:
-                    remain = (c & 0x3) >> 0
-                    remain += remain // 3
-                    #payload_src = (c & 0x4) >> 2
-                    #itm_port = (c & 0xf8) >> 3
+                        remain = c & 0x3
+                        remain += remain // 3
+                        #payload_src = (c & 0x4) >> 2
+                        #itm_port = (c & 0xf8) >> 3
 
 def uploader(source, **kwds):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -38,8 +48,9 @@ def uploader(source, **kwds):
         except ConnectionRefusedError:
             print(f"pio-extra: could not connect to openocd, port {port}")
             raise
+
         # source[0] is .bin, source[1] is .elf
-        rpcSend(s, f"program {source[1]}; tcl_trace on; reset run")
+        s.sendall(f"program {source[1]}; reset; tcl_trace on\x1A".encode())
 
         for line in swoDecoder(s):
             print(line)
