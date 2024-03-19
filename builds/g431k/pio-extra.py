@@ -42,9 +42,14 @@ def uploader(source, **kwds):
             raise
 
         # source[0] is .bin, source[1] is .elf
-        t.sendall(f"program {source[1]}\x1A".encode())
-        b = t.recv(10)
-        assert b == b'\x1A', b
+        if env["LDSCRIPT_PATH"][0] == "/":
+            print("pio-extra: program to FLASH")
+            t.sendall(f"program {source[1]}\x1A".encode())
+        else: # load script does not point to an absolute path
+            print("pio-extra: load to RAM")
+            t.sendall(f"reset halt; load_image {source[1]}\x1A".encode())
+        b = t.recv(200)
+        assert b[-1:] == b'\x1A', b
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -55,7 +60,7 @@ def uploader(source, **kwds):
                 raise
 
             # source[0] is .bin, source[1] is .elf
-            t.sendall(f"resume\x1A".encode())
+            t.sendall("resume\x1A".encode())
             b = t.recv(10)
             assert b == b'\x1A', b
 

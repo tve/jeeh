@@ -9,17 +9,20 @@ namespace jeeh {
     }
 } // namespace jeeh
 
-    int main () {
-        Pin led (LED);
-        led.mode("P");
+int main () {
+    extern uint32_t g_pfnVectors [];
+    *(uint32_t**) 0xE000'ED08 = g_pfnVectors; // fix SCB->VTOR if it's in RAM
 
-        assert(led == 0);
-        led = 1;
-        assert(led == 1);
+    Pin led (LED);
+    led.mode("P");
 
-        //for (auto i = 0; i < 100'000; ++i) asm ("");
+    assert(led == 0);
+    led = 1;
+    assert(led == 1);
 
-        itmWrite("Hello\n", 6);
+    //for (auto i = 0; i < 100'000; ++i) asm ("");
+
+    itmWrite("Hello\n", 6);
 
 #if 1
 #define W(s) itmWrite(s "\n", sizeof s)
@@ -99,5 +102,5 @@ namespace jeeh {
   W("|+                                                                  +|");
   W("+--------------------------------------------------------------------+");
 
-        itmWrite("OK\n", 3);
-    }
+    itmWrite("OK\n", 3);
+}
