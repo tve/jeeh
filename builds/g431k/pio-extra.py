@@ -10,8 +10,8 @@ def swoDecoder(sock):
         data = sock.recv(8192)
         if not data:
             break
-        #if data[:2] == b'\x00\x00':
-        #    print('pio-extra: GOT', len(data), data[:5],data[-5:])
+        if data[:2] == b'\x00\x00':
+            print('pio-extra: GOT', len(data), data[:5],data[-5:])
         if data[-2:] == b'\x00\x00':
             continue
         for c in data:
