@@ -20,7 +20,7 @@
 namespace jeeh {
 
 //CG1 version
-constexpr auto VERSION = "v6.0a1-13-g04f0960";
+constexpr auto VERSION = "v6.0a1-13-g8ae83b1";
 
 #include "arch/sys.h"
 
