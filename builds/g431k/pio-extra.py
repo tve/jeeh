@@ -4,7 +4,7 @@ Import("env")
 import socket
 
 def swoDecoder(sock):
-    sock.settimeout(3)
+    sock.settimeout(2)
     output, remain = "", 0
     while output != "OK":
         data = sock.recv(8192)
