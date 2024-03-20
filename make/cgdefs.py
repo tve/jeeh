@@ -31,6 +31,8 @@ def BOARD(block, name):
             for i, v in enumerate(info):
                 r.append(f'#define LED{i+1} "{v}"')
         return r
+    if name == 'serio':
+        return ['#define SERIO_PINS "%s"' % info[0]]
     if name == 'uart':
         f = {}
         for x in info:

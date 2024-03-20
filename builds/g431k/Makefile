@@ -6,9 +6,9 @@ O = ~/.platformio/packages/tool-openocd
 all: clean
 	git ls-files ../.. | grep  -v $X | \
 		entr -c time pio run -t check -s
-upload:
+check:
 	git ls-files ../.. | grep  -v $X | \
-		entr -c time pio run -t check -s -e $E
+		entr -c time pio run -t clean -t check -s -e $E
 openocd:
 	$O/bin/openocd
 clean:
