@@ -81,22 +81,24 @@ def uploader(source, **kwds):
             b = t.recv(10)
             assert b == b'\x1A', b
 
+            lines = []
             for line in swoDecoder(s):
                 if line == "TEST":
                     isTest = True
-                if isTest:
-                    print(line, flush=True)
-                else:
-                    print(line, file=sys.stderr)
+                lines.append(line)
                 if line in ["OK", "FAIL", "TIMEOUT"]:
                     break
 
-            t.sendall("shutdown\x1A".encode())
+            t.sendall("sleep 100; shutdown\x1A".encode())
             b = t.recv(10)
             assert b == b'\x1A', b
 
     p.terminate()
 
+    if isTest and line == "OK":
+        del lines[:-1]
+    for l in lines:
+        print(l, file=sys.stderr)
     if not isTest or line in ["FAIL", "TIMEOUT"]:
         raise SystemExit(1)
 
