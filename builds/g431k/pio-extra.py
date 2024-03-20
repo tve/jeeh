@@ -1,7 +1,7 @@
 Import("env")
 #print(env.Dump())
 
-import socket, subprocess, sys
+import os, socket, subprocess, sys
 
 def connectTo(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,18 +65,16 @@ def uploader(source, **kwds):
     isTest = False
 
     with connectTo(6666) as t:
-        # source[0] is .bin, source[1] is .elf
         if env["LDSCRIPT_PATH"][0] == "/":
             print(f"{env['PIOENV']}: save to FLASH", file=sys.stderr)
-            t.sendall(f"program {source[1]}\x1A".encode())
+            t.sendall(f"program {source[0]}\x1A".encode())
         else: # load script does not point to an absolute path
             print(f"{env['PIOENV']}: load to RAM", file=sys.stderr)
-            t.sendall(f"reset halt; load_image {source[1]}\x1A".encode())
+            t.sendall(f"reset halt; load_image {source[0]}\x1A".encode())
         b = t.recv(200)
         assert b[-1:] == b'\x1A', b
 
         with connectTo(6464) as s:
-            # source[0] is .bin, source[1] is .elf
             t.sendall("resume\x1A".encode())
             b = t.recv(10)
             assert b == b'\x1A', b
@@ -100,6 +98,7 @@ def uploader(source, **kwds):
     for l in lines:
         print(l, file=sys.stderr)
     if not isTest or line in ["FAIL", "TIMEOUT"]:
+        os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
-env.AddCustomTarget("upload", "$PROGPATH", uploader)
+env.AddCustomTarget("check", "$PROGPATH", uploader, always_build=False)

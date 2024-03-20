@@ -3,11 +3,15 @@ E = t01-itm
 X = -e /examples/
 O = ~/.platformio/packages/tool-openocd
 
-all:
+all: clean
 	git ls-files ../.. | grep  -v $X | \
-		entr -c time pio run -t upload -s
+		entr -c time pio run -t check -s
 upload:
 	git ls-files ../.. | grep  -v $X | \
-		entr -c time pio run -t upload -s -e $E
+		entr -c time pio run -t check -s -e $E
 openocd:
 	$O/bin/openocd
+clean:
+	rm -rf .pio
+strip:
+	cd ../../make; ./codegen.py -s
