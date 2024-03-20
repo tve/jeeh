@@ -22,7 +22,7 @@ int main () {
 
     //for (auto i = 0; i < 100'000; ++i) asm ("");
 
-    itmWrite("Hello\n", 6);
+    itmWrite("TEST\n", 5);
 
 #if 1
 #define W(s) itmWrite(s "\n", sizeof s)
