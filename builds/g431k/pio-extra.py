@@ -50,7 +50,7 @@ def swoDecoder(sock):
                 #payload_src = (c & 0x4) >> 2
                 #itm_port = (c & 0xf8) >> 3
 
-def uploader(source, **kwds):
+def uploadAndCheck(source, **kwds):
     # TODO yuck: launch openocd for EACH run because of null-bytes issue :(
     p = subprocess.Popen(env['PROJECT_PACKAGES_DIR'] +
                          "/tool-openocd/bin/openocd",
@@ -71,7 +71,7 @@ def uploader(source, **kwds):
         else: # load script does not point to an absolute path
             print(f"{env['PIOENV']}: load to RAM", file=sys.stderr)
             t.sendall(f"reset halt; load_image {source[0]}\x1A".encode())
-        b = t.recv(200)
+        b = t.recv(1024)
         assert b[-1:] == b'\x1A', b
 
         with connectTo(6464) as s:
@@ -101,4 +101,4 @@ def uploader(source, **kwds):
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
-env.AddCustomTarget("check", "$PROGPATH", uploader, always_build=False)
+env.AddCustomTarget("check", "$PROGPATH", uploadAndCheck, always_build=False)

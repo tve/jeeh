@@ -3,6 +3,8 @@
 [[noreturn]]
 void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
 
+void logf (char const* fmt ...);
+
 struct Message {
     int8_t    mDst =0;
     int8_t    mTag =0;
@@ -72,53 +74,3 @@ namespace sys {
     int currId ();
 
 } // namespace sys
-
-struct Task : Message, Chain {
-    enum { BASE = 64, MAX_TASKS = 50, MARKER = -128 };
-
-    int8_t id;
-    uint8_t owner;
-    Message timer { -1, 'T' };
-
-    Task () : Message { MARKER } {
-        for (auto i = 0; i < MAX_TASKS; ++i)
-            if (tasks[i] == nullptr) {
-                tasks[i] = this;
-                id = BASE + i;
-                return;
-            }
-        fail(); // too many tasks
-    }
-
-    virtual ~Task () {
-        tasks[id-BASE] = nullptr;
-    }
-
-    static Task& byId (int i) {
-        assert(BASE <= i && i < BASE + MAX_TASKS);
-        assert(tasks[i-BASE] != nullptr);
-        return *tasks[i-BASE];
-    }
-
-    void init () {
-        owner = sys::currId();
-        Message m { id, 'I' };
-        sys::send(m);
-    }
-
-    void send (Message& m) {
-        auto prev = active;
-        active = id;
-        auto ms = process(m);
-        if (ms > 0) {
-            timer.mLen = ms;
-            sys::send(timer);
-        }
-        active = prev;
-    }
-
-    virtual int process (Message&) =0;
-
-    inline static int8_t active;
-    inline static Task* tasks [MAX_TASKS];
-};
