@@ -65,6 +65,9 @@ protected:
 };
 
 namespace sys {
+    void svc (int* r, int x =0, int y =0, int z =0);
+
+    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
 
     void send (Message& msg);
     Message& recv ();

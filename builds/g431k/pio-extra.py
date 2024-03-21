@@ -55,7 +55,6 @@ def uploadAndCheck(source, **kwds):
     p = subprocess.Popen(env['PROJECT_PACKAGES_DIR'] +
                          "/tool-openocd/bin/openocd",
                          stderr=subprocess.PIPE)
-
     while True:
         s = p.stderr.readline()
         #print(s.decode(), end='')
@@ -71,8 +70,8 @@ def uploadAndCheck(source, **kwds):
         else: # load script does not point to an absolute path
             print(f"{env['PIOENV']}: load to RAM", file=sys.stderr)
             t.sendall(f"reset halt; load_image {source[0]}\x1A".encode())
-        b = t.recv(1024)
-        assert b[-1:] == b'\x1A', b
+        while t.recv(1024)[-1:] != b'\x1A':
+            pass # consume packets until the final ^Z
 
         with connectTo(6464) as s:
             t.sendall("resume\x1A".encode())
