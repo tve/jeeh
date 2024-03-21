@@ -23,57 +23,18 @@ struct Chain {
     bool isEmpty () const { return cHead == nullptr; }
     Message* first () const { return cHead; }
 
-    bool insert (Message& msg) {
-        assert(!msg.inUse());
-        msg.mLnk = cHead;
-        cHead = &msg;
-        return msg.mLnk == nullptr;
-    }
-
-    bool append (Message& msg) {
-        assert(!msg.inUse());
-        auto pp = &cHead;
-        while (*pp != nullptr)
-            pp = &(*pp)->mLnk;
-        msg.mLnk = nullptr;
-        *pp = &msg;
-        return pp != &cHead;
-    }
-
-    bool remove (Message& msg) {
-        assert(msg.inUse());
-        for (auto pp = &cHead; *pp != nullptr; pp = &(*pp)->mLnk)
-            if (*pp == &msg) {
-                *pp = msg.mLnk;
-                msg.mLnk = &msg;
-                return true;
-            }
-        return false;
-    }
-
-    Message* pull () {
-        auto mp = cHead;
-        if (mp != nullptr) {
-            cHead = mp->mLnk;
-            mp->mLnk = mp;
-        }
-        return mp;
-    }
+    bool insert (Message& msg);
+    bool append (Message& msg);
+    bool remove (Message& msg);
+    Message* pull ();
 
 protected:
     Message* cHead =nullptr;
 };
 
 namespace sys {
-    void svc (int* r, int x =0, int y =0, int z =0);
+    int svc (int f, int x =0, int y =0, int z =0);
 
     uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
-
-    void send (Message& msg);
-    Message& recv ();
-    void call (Message& msg);
-    void wait (uint16_t ms);
-
-    int currId ();
 
 } // namespace sys

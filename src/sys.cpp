@@ -26,6 +26,43 @@ void jeeh::logf (char const* fmt ...) {
     }
 }
 
+bool Chain::insert (Message& msg) {
+    assert(!msg.inUse());
+    msg.mLnk = cHead;
+    cHead = &msg;
+    return msg.mLnk == nullptr;
+}
+
+bool Chain::append (Message& msg) {
+    assert(!msg.inUse());
+    auto pp = &cHead;
+    while (*pp != nullptr)
+        pp = &(*pp)->mLnk;
+    msg.mLnk = nullptr;
+    *pp = &msg;
+    return pp != &cHead;
+}
+
+bool Chain::remove (Message& msg) {
+    assert(msg.inUse());
+    for (auto pp = &cHead; *pp != nullptr; pp = &(*pp)->mLnk)
+        if (*pp == &msg) {
+            *pp = msg.mLnk;
+            msg.mLnk = &msg;
+            return true;
+        }
+    return false;
+}
+
+Message* Chain::pull () {
+    auto mp = cHead;
+    if (mp != nullptr) {
+        cHead = mp->mLnk;
+        mp->mLnk = mp;
+    }
+    return mp;
+}
+
 uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     auto f = +[](uint32_t bytes, uint8_t* ptr, uint32_t align) {
         if (bytes > 0) {
@@ -40,20 +77,11 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
         }
         return ptr;
     };
-    svc((int*) &f, b, (int) p, a);
-    return (uint8_t*) f;
+    return (uint8_t*) svc((int) f, b, (int) p, a);
 }
-
-void sys::send (Message&) {}
-void sys::wait (uint16_t ms) {
-    for (auto i = 0; i < 4000 * ms; ++i)
-        asm ("");  // prevents getting optimised away
-}
-
-int sys::currId () { return 0; }
 
 [[gnu::naked, gnu::noinline]]
-void sys::svc (int*, int, int, int) {
+int sys::svc (int, int, int, int) {
     asm ("svc 0; bx lr");
 }
 
@@ -76,18 +104,16 @@ void SVC_Handler () {
         " mrseq  r0,msp      \n"
         " mrsne  r0,psp      \n"
 #endif
+        " push   {r0, lr}    \n"
 
         " ldr    r3,[r0]     \n"
         " ldr    r2,[r0,#12] \n"
         " ldr    r1,[r0,#8]  \n"
         " ldr    r0,[r0,#4]  \n"
-
-        " push   {r3, lr}    \n"
-        " ldr    r3,[r3]     \n"
         " blx    r3          \n"
-        " pop    {r3, lr}    \n"
 
-        " str    r0,[r3]     \n"
+        " pop    {r1, lr}    \n"
+        " str    r0,[r1]     \n"
         " bx     lr          \n"
     );
 }

@@ -1,6 +1,5 @@
 #include <jee.h>
 using namespace jeeh;
-#include "defs.h"
 #include "test.h"
 
 int main () {
