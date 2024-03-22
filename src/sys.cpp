@@ -189,11 +189,6 @@ void sys::call (Message& msg) {
     (void) recv();
 }
 
-void sys::wait (uint16_t ms) {
-    Message m { '@', 'T', ms };
-    call(m);
-}
-
 //----------------------------------------------------------------------- pool
 
 uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {

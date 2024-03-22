@@ -7,7 +7,7 @@ void logf (char const* fmt ...);
 void hardFaultHandler (uint32_t* sp);
 
 struct Message {
-    int8_t    mDst =0;
+    uint8_t   mDst =0;
     int8_t    mTag =0;
     uint16_t  mLen =0;
     uint8_t*  mPtr =nullptr;

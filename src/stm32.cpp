@@ -55,12 +55,12 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
 
 //--------------------------------------------------------------------- Ticker
 
+inline namespace {
+
 struct Ticker : Device, Chain {
 
-    Ticker () : Device ('@') {}
-
-    void init () {
-        rate = 250; // TODO
+    Ticker () : Device ('@') {
+        rate = 1; // TODO
         ticks += rate;
         auto ticksPerMs = SystemCoreClock / 1000;
 #if STM32G4
@@ -75,9 +75,6 @@ struct Ticker : Device, Chain {
     }
 
     void start (Message& msg) override {
-        if (rate == 0)
-            init();
-
         assert(msg.mLen <= 60'000);
         auto t = millis();
 
@@ -100,6 +97,10 @@ struct Ticker : Device, Chain {
         return expired();
     }
 
+    bool expired () const {
+        return !isEmpty() && (uint16_t) (cHead->mLen - millis() - 1) > 60'000;
+    }
+
     static uint32_t millis () {
         // the result has millisecond resolution, even when rate > 1
         while (true) {
@@ -109,19 +110,21 @@ struct Ticker : Device, Chain {
         } // ticked just now, spin one more time
     }
 
-    bool expired () const {
-        return !isEmpty() && (uint16_t) (cHead->mLen - millis() - 1) > 60'000;
-    }
-
     inline static volatile uint32_t ticks;
     inline static uint8_t rate;
 };
 
-Ticker ticker;
+} // namespace inline
 
 extern "C"
 void SysTick_Handler () {
     Device::byId('@').irqTrigger(0);
+}
+
+void sys::wait (uint16_t ms) {
+    static Ticker ticker;
+    Message m { ticker.dId, 'T', ms };
+    call(m);
 }
 
 #endif // STM32
