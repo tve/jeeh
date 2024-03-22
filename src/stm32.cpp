@@ -24,11 +24,15 @@ namespace jeeh {
 #include "stm32l4.h"
 #endif // STM32??
 
+} // namespace jeeh
+
+using namespace jeeh;
+
 //------------------------------------------------------------------------ ITM
 
 #if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
 
-void itmWrite (void const* ptr, size_t len) {
+void jeeh::itmWrite (void const* ptr, size_t len) {
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
 
@@ -53,21 +57,28 @@ void itmWrite (void const* ptr, size_t len) {
 
 struct Ticker : Device, Chain {
 
-    Ticker () : Device ('@') {
+    Ticker () : Device ('@') {}
+
+    void init () {
         rate = 1; // TODO
         ticks += rate;
         auto ticksPerMs = SystemCoreClock / 1000;
-#if STM32G4 && F_CPU > 150'000'000
+#if STM32G4
         if (SystemCoreClock > 150'000'000)
             ticksPerMs /= 2; // HPRE is set to 2, since max AHB freq is 150 MHz
 #endif
         STK[0x4] = (rate*ticksPerMs)/8-1; // reload value
         STK[0x8] = 0;                     // current
         STK[0x0] = 0b011;                 // control, clk/8 mode
+
+        //SCB.byte(0x23) = 0xFF; // lowest IRQ priority
+SCB.byte(0x23) = 0xDF; // lowest IRQ priority
     }
 
     void start (Message& msg) override {
-logf("20");
+        if (rate == 0)
+            init();
+
         assert(msg.mLen <= 60'000);
         auto t = millis();
 
@@ -78,18 +89,14 @@ logf("20");
         msg.mLen += t; // make absolute, truncated to 16 bits
         msg.mLnk = *pp;
         *pp = &msg;
-logf("21");
     }
 
     void finish () override {
-logf("22");
         while (expired())
             reply(pull());
-logf("23");
     }
 
     bool interrupt (int) override {
-logf("30");
         ticks += rate;
         return expired();
     }
@@ -113,12 +120,11 @@ logf("30");
 
 Ticker ticker;
 
-} // namespace jeeh
-
 extern "C"
 void SysTick_Handler () {
-    jeeh::logf("tick!");
-    jeeh::Device::byId('@').irqTrigger(0);
+    Device::byId('@').irqTrigger(0);
 }
+
+void initTicker () { static Ticker ticker; }
 
 #endif // STM32

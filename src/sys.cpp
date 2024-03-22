@@ -117,8 +117,7 @@ void Device::process () {
 }
 
 void Device::reply (Message* mp) {
-    logf("reply %p", mp); // TODO
-    if (mp) logf("  #%d", mp->mDst);
+    (void) mp; // TODO
 }
 
 //----------------------------------------------------------------------- Task
@@ -156,13 +155,10 @@ void sys::send (Message& m) {
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
         msg.mDst = current;
-logf("id %d %p current %d",id,&Device::byId(id),current);
         if (Device::BASE <= id && id <= Device::LAST)
             Device::byId(id).start(msg);
-        else {
-logf("append %p", &msg);
+        else
             Task::byId(id).append(msg);
-        }
     };
     svc((int) f, (int) &m);
 }
@@ -174,8 +170,12 @@ Message& sys::recv () {
             auto mp = currTask().pull();
             if (mp != nullptr)
                 return mp;
+#if 0
             SCB[0x10](4) = 1; // SEVONPEND, to wake when irqs are disabled
             asm ("wfe");      // make sure "real" IRQs will resume after this
+#else
+            asm ("wfi");
+#endif
         }
     };
     return *(Message*) svc((int) f);
@@ -253,7 +253,6 @@ void SVC_Handler () {
 //------------------------------------------------------------------ HardFault
 
 extern "C" [[gnu::naked]]
-[[gnu::naked]]
 void HardFault_Handler () {
     asm volatile (
 #if STM32L0

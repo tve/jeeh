@@ -5,6 +5,9 @@ using namespace jeeh;
 int main () {
     Tester t;
 
+//extern void initTicker ();
+//initTicker();
+
     itmWrite("10\n", 3);
     sys::wait(10);
     itmWrite("11\n", 3);
