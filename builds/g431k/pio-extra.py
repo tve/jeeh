@@ -1,7 +1,6 @@
-Import("env")
-#print(env.Dump())
-
 import os, socket, subprocess, sys
+Import("env")
+#print(env.Dump(), file=sys.stderr)
 
 def connectTo(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -78,25 +77,26 @@ def uploadAndCheck(source, **kwds):
             b = t.recv(10)
             assert b == b'\x1A', b
 
-            lines = []
-            for line in swoDecoder(s):
-                if line == "TEST":
-                    isTest = True
-                lines.append(line)
-                if line in ["OK", "FAIL", "TIMEOUT"]:
-                    break
-                #print(line, file=sys.stderr)
+            out = env.subst("${PROJECT_DIR}/log/${PIOENV}.txt")
+            with open(out, "w") as f:
+                lines = []
+                for line in swoDecoder(s):
+                    print(line, file=f)
+                    if line == "TEST":
+                        isTest = True
+                    lines.append(line)
+                    if line in ["OK", "FAIL", "TIMEOUT"]:
+                        break
 
-            t.sendall("sleep 100; shutdown\x1A".encode())
+            t.sendall("shutdown\x1A".encode())
             b = t.recv(10)
             assert b == b'\x1A', b
 
     p.terminate()
 
-    if isTest and line == "OK":
-        del lines[:-1]
-    for l in lines:
-        print(l, file=sys.stderr)
+    if not isTest or line != "OK":
+        for l in lines:
+            print(l, file=sys.stderr)
     if not isTest or line in ["FAIL", "TIMEOUT"]:
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)

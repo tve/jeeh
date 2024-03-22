@@ -2,9 +2,10 @@
 
 [[noreturn]]
 void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
+[[noreturn]]
+void hardFaultHandler (uint32_t* sp);
 
 void logf (char const* fmt ...);
-void hardFaultHandler (uint32_t* sp);
 
 inline void (*hardFaulter) (uint32_t*) = nullptr;
 
