@@ -108,7 +108,7 @@ Task::Task () : Message {} {
 
 void Task::submit (Message& msg) {
     assert(irqState() == 0); // must be in either SVC or PendSV
-    process(msg);
+    process(msg); // TODO return value >0 must start the task's timer
 }
 
 Task& Task::byId (uint8_t id) {
@@ -147,8 +147,8 @@ inline namespace {
         SCB[0x04](28) = 1;     // ICSR PENDSVSET
     }
 
-    void processTriggers () {
-        assert(irqState() == 0); // must be in either SVC or PendSV
+    uint32_t processTriggers () {
+        assert(irqState() == 0); // must be in PendSV
         auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
         while (p != 0) {
             auto i = __builtin_ctz(p); // gcc can count trailing zeros
@@ -156,6 +156,8 @@ inline namespace {
             devices[i]->finish();
             p &= ~(1<<i);
         }
+        // TODO to switch contexts, return a ptr to {&oldsp,newsp} struct
+        return 0;
     }
 
 } // inline namespace
@@ -200,7 +202,7 @@ void Device::reply (Message* mp) {
     if (mp != nullptr) {
         auto id = mp->mDst;
         mp->mDst = dId; // restore original destination, i.e. this driver
-        Task::byId(id).append(*mp);
+        Task::byId(id).submit(*mp);
     }
 }
 
@@ -289,7 +291,12 @@ void HardFault_Handler () {
 extern "C" [[gnu::naked]]
 void PendSV_Handler () {
     asm (
-#if 0
+        " push     {r0,lr}       \n"
+        " blx      %0            \n"
+        " cmp      r0,#0         \n"
+        " beq      1f            \n"
+        " ldmia    r0,{r1,r2}    \n"
+
         " mrs      r0,psp        \n"
 #if FPU_USED
         " tst      lr,#0x10      \n"
@@ -297,25 +304,21 @@ void PendSV_Handler () {
         " vstmdbeq r0!,{s16-s31} \n"
 #endif
         " stmdb    r0!,{r4-r11}  \n"
-        " mov      r4,lr         \n"
-        " blx      %0            \n"
-        " mov      lr,r4         \n"
-        " ldmia    r0!,{r4-r11}  \n"
+
+        " str      r0,[r1]       \n"
+
+        " ldmia    r2!,{r4-r11}  \n"
 #if FPU_USED
         " tst      lr,#0x10      \n"
         " it       eq            \n"
-        " vldmiaeq r0!,{s16-s31} \n"
+        " vldmiaeq r2!,{s16-s31} \n"
 #endif
-        " msr      psp,r0        \n"
+        " msr      psp,r2        \n"
         " bx       lr            \n"
-    :: "r" (switcher)
-#else
-        " push     {r0, lr}      \n"
-        " blx      %0            \n"
-        " pop      {r1, pc}      \n"
-    :: "r" (processTriggers)
-#endif
-    );
+
+        "1:                      \n"
+        " pop      {r0,pc}       \n"
+    :: "r" (processTriggers));
 }
 
 //------------------------------------------------------------------------ SVC
@@ -344,7 +347,7 @@ void SVC_Handler () {
         " mrseq r0,msp      \n"
         " mrsne r0,psp      \n"
 #endif
-        " push  {r0, lr}    \n"
+        " push  {r0,lr}     \n"
 
         " ldr   r3,[r0]     \n"
         " ldr   r2,[r0,#12] \n"
@@ -352,7 +355,7 @@ void SVC_Handler () {
         " ldr   r0,[r0,#4]  \n"
         " blx   r3          \n"
 
-        " pop   {r1, lr}    \n"
+        " pop   {r1,lr}     \n"
         " str   r0,[r1]     \n"
         " bx    lr          \n"
     );
