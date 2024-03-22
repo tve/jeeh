@@ -264,14 +264,14 @@ void HardFault_Handler () {
         " mrs   r0,psp \n"
         "2:            \n"
         " bx    %0     \n"
-    :: "r" (hardFaultHandler)
+    :: "r" (hardFaulter)
 #else
         " tst   lr,#4  \n"
         " ite   eq     \n"
         " mrseq r0,msp \n"
         " mrsne r0,psp \n"
-        " b     %0     \n"
-    :: "i" (hardFaultHandler)
+        " bx    %0     \n"
+    :: "r" (hardFaulter)
 #endif
     );
 }

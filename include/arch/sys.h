@@ -6,6 +6,8 @@ void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
 void logf (char const* fmt ...);
 void hardFaultHandler (uint32_t* sp);
 
+inline void (*hardFaulter) (uint32_t*) = nullptr;
+
 struct Message {
     uint8_t   mDst =0;
     int8_t    mTag =0;

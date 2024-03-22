@@ -72,7 +72,7 @@ struct Tester {
         extern uint32_t g_pfnVectors [];
         *(uint32_t**) 0xE000'ED08 = g_pfnVectors; // fix SCB->VTOR if in RAM
 
-        //for (auto i = 0; i < 100'000; ++i) asm ("");
+        hardFaulter = hardFaultHandler;
 
         itmWrite("TEST\n", 5);
     }
