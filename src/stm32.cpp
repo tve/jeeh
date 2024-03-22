@@ -24,6 +24,8 @@ namespace jeeh {
 #include "stm32l4.h"
 #endif // STM32??
 
+//------------------------------------------------------------------------ ITM
+
 #if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
 
 void itmWrite (void const* ptr, size_t len) {
@@ -47,6 +49,76 @@ void itmWrite (void const* ptr, size_t len) {
 
 #endif // !STM32L0
 
+//--------------------------------------------------------------------- Ticker
+
+struct Ticker : Device, Chain {
+
+    Ticker () : Device ('@') {
+        rate = 1; // TODO
+        ticks += rate;
+        auto ticksPerMs = SystemCoreClock / 1000;
+#if STM32G4 && F_CPU > 150'000'000
+        if (SystemCoreClock > 150'000'000)
+            ticksPerMs /= 2; // HPRE is set to 2, since max AHB freq is 150 MHz
+#endif
+        STK[0x4] = (rate*ticksPerMs)/8-1; // reload value
+        STK[0x8] = 0;                     // current
+        STK[0x0] = 0b011;                 // control, clk/8 mode
+    }
+
+    void start (Message& msg) override {
+logf("20");
+        assert(msg.mLen <= 60'000);
+        auto t = millis();
+
+        auto pp = &cHead; // insert in proper position
+        while (*pp != nullptr && msg.mLen >= (uint16_t) ((*pp)->mLen - t))
+            pp = &(*pp)->mLnk;
+
+        msg.mLen += t; // make absolute, truncated to 16 bits
+        msg.mLnk = *pp;
+        *pp = &msg;
+logf("21");
+    }
+
+    void finish () override {
+logf("22");
+        while (expired())
+            reply(pull());
+logf("23");
+    }
+
+    bool interrupt (int) override {
+logf("30");
+        ticks += rate;
+        return expired();
+    }
+
+    static uint32_t millis () {
+        // the result has millisecond resolution, even when rate > 1
+        while (true) {
+            uint32_t t = ticks, n = STK[0x08];
+            if (t == ticks)
+                return t - (n*8)/(SystemCoreClock/1000);
+        } // ticked just now, spin one more time
+    }
+
+    bool expired () const {
+        return !isEmpty() && (uint16_t) (cHead->mLen - millis() - 1) > 60'000;
+    }
+
+    inline static volatile uint32_t ticks;
+    inline static uint8_t rate;
+};
+
+Ticker ticker;
+
 } // namespace jeeh
+
+extern "C"
+void SysTick_Handler () {
+    jeeh::logf("tick!");
+    jeeh::Device::byId('@').irqTrigger(0);
+}
 
 #endif // STM32

@@ -3,6 +3,8 @@ using namespace jeeh;
 #include <cstdarg>
 #include <cstdio>
 
+//----------------------------------------------------------------------- logf
+
 void jeeh::logf (char const* fmt ...) {
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
@@ -25,6 +27,8 @@ void jeeh::logf (char const* fmt ...) {
         itmWrite(buf, n);
     }
 }
+
+//---------------------------------------------------------------------- Chain
 
 bool Chain::insert (Message& msg) {
     assert(!msg.inUse());
@@ -63,6 +67,132 @@ Message* Chain::pull () {
     return mp;
 }
 
+//--------------------------------------------------------------------- Device
+
+uint32_t Device::pending;
+Device* Device::devices [LAST-BASE+1];
+uint8_t Device::interrupts [(uint8_t) Irq::limit];
+
+Device::Device (uint8_t id) : did (id) {
+    auto x = asIndex(id);
+    assert(devices[x] == nullptr);
+    devices[x] = this;
+}
+
+void Device::irqInstall (uint8_t num, uint8_t prio) {
+    // TODO
+    //SCB.byte(0x1F) = 0xDF; // SVC
+    //SCB.byte(0x22) = 0xFF; // PendSV
+    //SCB.byte(0x23) = 0xFF; // SysTick
+
+    assert(num < (uint8_t) Irq::limit);
+    interrupts[num] = did;
+    NVIC.byte(0x300+num) = prio;
+    NVIC[0x00 + 4*(num/32)] = 1 << num % 32;
+}
+
+void Device::irqTrigger (uint8_t num) {
+    if (interrupt(num)) {
+        __atomic_or_fetch(&pending, 1 << did, __ATOMIC_RELAXED);
+#if 0 // TODO
+        if (Thread::current != &Thread::dummy)
+            triggerPendSV();
+#endif
+    }
+}
+
+Device& Device::byId (uint8_t id) {
+    assert(BASE <= id && id <= LAST);
+    assert(devices[id-BASE] != nullptr);
+    return *devices[id-BASE];
+}
+
+void Device::process () {
+    auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
+    while (p != 0) {
+        auto i = __builtin_ctz(p); // gcc can count trailing zeros
+        byId(i).finish();
+        p &= ~(1<<i);
+    }
+}
+
+void Device::reply (Message* mp) {
+    logf("reply %p", mp); // TODO
+    if (mp) logf("  #%d", mp->mDst);
+}
+
+//----------------------------------------------------------------------- Task
+
+Task* tasks [Task::LIMIT];
+uint8_t current;
+Task mainTask;
+
+Task& currTask () {
+    auto tp = tasks[current];
+    assert(tp != nullptr);
+    return *tp;
+}
+
+Task::Task () : Message {} {
+    for (auto i = 0; i < Task::LIMIT; ++i)
+        if (tasks[i] == nullptr) {
+            tid = i;
+            tasks[i] = this;
+            return;
+        }
+    fail(); // too many tasks
+}
+
+Task& Task::byId (uint8_t id) {
+    assert(id < Task::LIMIT);
+    assert(tasks[id] != nullptr);
+    return *tasks[id];
+}
+
+//------------------------------------------------------------------ send/recv
+
+void sys::send (Message& m) {
+    assert(&Task::byId(0) == &mainTask);
+    auto f = +[](Message& msg) {
+        auto id = msg.mDst;
+        msg.mDst = current;
+logf("id %d %p current %d",id,&Device::byId(id),current);
+        if (Device::BASE <= id && id <= Device::LAST)
+            Device::byId(id).start(msg);
+        else {
+logf("append %p", &msg);
+            Task::byId(id).append(msg);
+        }
+    };
+    svc((int) f, (int) &m);
+}
+
+Message& sys::recv () {
+    auto f = +[]() {
+        while (true) {
+            Device::process(); // in case PendSV is not getting called
+            auto mp = currTask().pull();
+            if (mp != nullptr)
+                return mp;
+            SCB[0x10](4) = 1; // SEVONPEND, to wake when irqs are disabled
+            asm ("wfe");      // make sure "real" IRQs will resume after this
+        }
+    };
+    return *(Message*) svc((int) f);
+}
+
+void sys::call (Message& msg) {
+    send(msg);
+    (void) recv();
+}
+
+void sys::wait (uint16_t ms) {
+    Message m { '@', 'T', ms };
+    call(m);
+}
+
+//----------------------------------------------------------------------- pool
+
 uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     auto f = +[](uint32_t bytes, uint8_t* ptr, uint32_t align) {
         if (bytes > 0) {
@@ -80,6 +210,8 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     return (uint8_t*) svc((int) f, b, (int) p, a);
 }
 
+//------------------------------------------------------------------------ SVC
+
 [[gnu::naked, gnu::noinline]]
 int sys::svc (int, int, int, int) {
     asm ("svc 0; bx lr");
@@ -89,31 +221,60 @@ extern "C" [[gnu::naked]]
 void SVC_Handler () {
     asm (
 #if STM32L0
-        " mov    r0,lr       \n"
-        " mov    r1,#4       \n"
-        " tst    r0,r1       \n"
-        " bne    1f          \n"
-        " mrs    r0,msp      \n"
-        " b      2f          \n"
-        "1:                  \n"
-        " mrs    r0,psp      \n"
-        "2:                  \n"
+        " mov   r0,lr       \n"
+        " mov   r1,#4       \n"
+        " tst   r0,r1       \n"
+        " bne   1f          \n"
+        " mrs   r0,msp      \n"
+        " b     2f          \n"
+        "1:                 \n"
+        " mrs   r0,psp      \n"
+        "2:                 \n"
 #else
-        " tst    lr,#4       \n"
-        " ite    eq          \n"
-        " mrseq  r0,msp      \n"
-        " mrsne  r0,psp      \n"
+        " tst   lr,#4       \n"
+        " ite   eq          \n"
+        " mrseq r0,msp      \n"
+        " mrsne r0,psp      \n"
 #endif
-        " push   {r0, lr}    \n"
+        " push  {r0, lr}    \n"
 
-        " ldr    r3,[r0]     \n"
-        " ldr    r2,[r0,#12] \n"
-        " ldr    r1,[r0,#8]  \n"
-        " ldr    r0,[r0,#4]  \n"
-        " blx    r3          \n"
+        " ldr   r3,[r0]     \n"
+        " ldr   r2,[r0,#12] \n"
+        " ldr   r1,[r0,#8]  \n"
+        " ldr   r0,[r0,#4]  \n"
+        " blx   r3          \n"
 
-        " pop    {r1, lr}    \n"
-        " str    r0,[r1]     \n"
-        " bx     lr          \n"
+        " pop   {r1, lr}    \n"
+        " str   r0,[r1]     \n"
+        " bx    lr          \n"
+    );
+}
+
+//------------------------------------------------------------------ HardFault
+
+extern "C" [[gnu::naked]]
+[[gnu::naked]]
+void HardFault_Handler () {
+    asm volatile (
+#if STM32L0
+        " mov   r0,lr  \n"
+        " mov   r1,#4  \n"
+        " tst   r0,r1  \n"
+        " bne   1f     \n"
+        " mrs   r0,msp \n"
+        " b     2f     \n"
+        "1:            \n"
+        " mrs   r0,psp \n"
+        "2:            \n"
+        " bx    %0     \n"
+    :: "r" (hardFaultHandler)
+#else
+        " tst   lr,#4  \n"
+        " ite   eq     \n"
+        " mrseq r0,msp \n"
+        " mrsne r0,psp \n"
+        " b     %0     \n"
+    :: "i" (hardFaultHandler)
+#endif
     );
 }
