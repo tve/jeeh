@@ -73,6 +73,11 @@ struct Task : Message, Chain {
     Task ();
     // TODO ~Task ();
 
+    virtual void submit (Message& msg) {
+        logf("aa");
+        append(msg); // TODO ...
+    }
+
     static Task& byId (uint8_t id);
 };
 

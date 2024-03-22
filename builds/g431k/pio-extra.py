@@ -64,10 +64,10 @@ def uploadAndCheck(source, **kwds):
 
     with connectTo(6666) as t:
         if env["LDSCRIPT_PATH"][0] == "/":
-            print(f"{env['PIOENV']}: save to FLASH", file=sys.stderr)
+            print(f"save to FLASH: {env['PIOENV']}", file=sys.stderr)
             t.sendall(f"program {source[0]}\x1A".encode())
         else: # load script does not point to an absolute path
-            print(f"{env['PIOENV']}: load to RAM", file=sys.stderr)
+            print(f"load to RAM: {env['PIOENV']}", file=sys.stderr)
             t.sendall(f"reset halt; load_image {source[0]}\x1A".encode())
         while t.recv(1024)[-1:] != b'\x1A':
             pass # consume packets until the final ^Z

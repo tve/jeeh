@@ -162,7 +162,7 @@ void sys::send (Message& m) {
         if (Device::BASE <= id && id <= Device::LAST)
             Device::byId(id).start(msg);
         else
-            Task::byId(id).append(msg);
+            Task::byId(id).submit(msg);
     };
     svc((int) f, (int) &m);
 }
