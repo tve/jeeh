@@ -85,6 +85,7 @@ def uploadAndCheck(source, **kwds):
                 lines.append(line)
                 if line in ["OK", "FAIL", "TIMEOUT"]:
                     break
+                #print(line, file=sys.stderr)
 
             t.sendall("sleep 100; shutdown\x1A".encode())
             b = t.recv(10)

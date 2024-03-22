@@ -58,26 +58,45 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
 inline namespace {
 
 struct Ticker : Device, Chain {
+    volatile uint32_t ticks;
+    uint16_t rate;
 
-    Ticker () : Device ('@') {
-        rate = 1; // TODO
-        ticks += rate;
-        auto ticksPerMs = SystemCoreClock / 1000;
-#if STM32G4
-        if (SystemCoreClock > 150'000'000)
-            ticksPerMs /= 2; // HPRE is set to 2, since max AHB freq is 150 MHz
-#endif
-        STK[0x4] = (rate*ticksPerMs)/8-1; // reload value
-        STK[0x8] = 0;                     // current
-        STK[0x0] = 0b011;                 // control, clk/8 mode
-
+    Ticker () : Device ('@'), ticks (0), rate (0) {
         SCB.byte(0x23) = 0xFF; // lowest IRQ priority
     }
 
-    void start (Message& msg) override {
-        assert(msg.mLen <= 60'000);
-        auto t = millis();
+    void init () {
+        auto ticksPerMs = SystemCoreClock / 1000;
+#if STM32G4
+        if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
+            ticksPerMs /= 2; // HPRE is set to 2 (AHB freq must be <= 150 MHz)
+#endif
 
+        uint16_t next = cHead->mLen - ticks - 1;
+        rate = next < 100 ? next+1 : 100;
+//logf("r %d", rate);
+
+        STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
+        STK[0x0] = 0b011;                       // enable, clk/8 mode
+    }
+
+    void start (Message& msg) override {
+        auto ms = msg.mLen;
+        assert(ms <= 60'000);
+
+        if (!isEmpty()) {
+            auto next = (uint16_t) (cHead->mLen - ticks - 1);
+            if (ms > next)
+                ms = next;
+        }
+
+        if (ms < rate) {
+//logf("s %d %d", ms, rate);
+            STK[0x0] = 0;     // stop the clock
+            ticks = millis(); // update actual tick count
+        }
+
+        auto t = millis();
         auto pp = &cHead; // insert in proper position
         while (*pp != nullptr && msg.mLen >= (uint16_t) ((*pp)->mLen - t))
             pp = &(*pp)->mLnk;
@@ -85,23 +104,34 @@ struct Ticker : Device, Chain {
         msg.mLen += t; // make absolute, truncated to 16 bits
         msg.mLnk = *pp;
         *pp = &msg;
+
+        if (STK[0x0] == 0)
+            init();
     }
 
     void finish () override {
         while (expired())
             reply(pull());
+        if (isEmpty()) {
+//logf("e %d @ %d", rate, ticks);
+            STK[0x0] = 0; // disable
+        } else
+            init();
     }
 
     bool interrupt (int) override {
         ticks += rate;
-        return expired();
+        assert(cHead != nullptr);
+        uint16_t next = cHead->mLen - ticks - 1;
+//logf("n %d r %d @ %d", next, rate, ticks);
+        return next < rate || next > 60'000;
     }
 
     bool expired () const {
         return !isEmpty() && (uint16_t) (cHead->mLen - millis() - 1) > 60'000;
     }
 
-    static uint32_t millis () {
+    uint32_t millis () const {
         // the result has millisecond resolution, even when rate > 1
         while (true) {
             uint32_t t = ticks, n = STK[0x08];
@@ -109,9 +139,6 @@ struct Ticker : Device, Chain {
                 return t - (n*8)/(SystemCoreClock/1000);
         } // ticked just now, spin one more time
     }
-
-    inline static volatile uint32_t ticks;
-    inline static uint8_t rate;
 };
 
 } // namespace inline
