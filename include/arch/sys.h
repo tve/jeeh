@@ -36,6 +36,19 @@ protected:
     Message* cHead =nullptr;
 };
 
+struct Task : Message, Chain {
+    enum { LIMIT = 20 };
+
+    uint8_t tId;
+
+    Task ();
+    // TODO ~Task ();
+
+    virtual void submit (Message& msg);
+
+    static Task& byId (uint8_t id);
+};
+
 struct Device {
     enum { BASE = '@', LAST = 'Z' };
 
@@ -43,11 +56,6 @@ struct Device {
 
     Device (uint8_t id);
     // TODO ~Device ();
-
-    static constexpr auto asIndex (uint8_t id) {
-        assert(BASE <= id && id <= LAST);
-        return id - BASE;
-    }
 
     virtual void start (Message&) =0;
     virtual void finish () =0;
@@ -61,21 +69,6 @@ protected:
 
     void irqInstall (uint8_t num, uint8_t prio =0x80);
     void reply (Message* mp);
-};
-
-struct Task : Message, Chain {
-    enum { LIMIT = 20 };
-
-    uint8_t tid;
-
-    Task ();
-    // TODO ~Task ();
-
-    virtual void submit (Message& msg) {
-        append(msg); // TODO ...
-    }
-
-    static Task& byId (uint8_t id);
 };
 
 namespace sys {

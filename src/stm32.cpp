@@ -61,7 +61,7 @@ struct Ticker : Device, Chain {
     volatile uint32_t ticks;
     uint16_t rate;
 
-    Ticker () : Device ('@'), ticks (0), rate (0) {
+    Ticker () : Device (Device::BASE), ticks (0), rate (0) {
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
@@ -145,7 +145,7 @@ struct Ticker : Device, Chain {
 
 extern "C"
 void SysTick_Handler () {
-    Device::byId('@').irqTrigger(0);
+    Device::byId(Device::BASE).irqTrigger(0);
 }
 
 void sys::wait (uint16_t ms) {

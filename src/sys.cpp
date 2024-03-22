@@ -67,14 +67,53 @@ Message* Chain::pull () {
     return mp;
 }
 
+//----------------------------------------------------------------------- Task
+
+inline namespace {
+
+    Task* tasks [Task::LIMIT];
+    uint8_t current;
+    Task dummyTask; // this self-installs as task #0 TODO yuck ...
+
+    Task& currTask () {
+        auto tp = tasks[current];
+        assert(tp != nullptr);
+        return *tp;
+    }
+
+} // inline namespace
+
+Task::Task () : Message {} {
+    for (auto i = 0; i < Task::LIMIT; ++i)
+        if (tasks[i] == nullptr) {
+            tId = i;
+            tasks[i] = this;
+            return;
+        }
+    fail(); // too many tasks
+}
+
+void Task::submit (Message& msg) {
+    append(msg); // TODO ...
+}
+
+Task& Task::byId (uint8_t id) {
+    assert(id < Task::LIMIT);
+    assert(tasks[id] != nullptr);
+    return *tasks[id];
+}
+
 //--------------------------------------------------------------------- Device
-// TODO there are several ARM/STM32-specific details in here
 
 inline namespace {
 
     uint32_t pending;
     Device* devices [Device::LAST-Device::BASE+1];
     uint8_t interrupts [(uint8_t) Irq::limit];
+
+    void triggerPendSV () {
+        SCB[0x04](28) = 1;     // ICSR PENDSVSET
+    }
 
     int irqState () {
         switch (SCB[0x4] & 0x1FF) {
@@ -98,16 +137,17 @@ inline namespace {
 } // inline namespace
 
 Device::Device (uint8_t id) : dId (id) {
-    auto x = asIndex(id);
+    assert(BASE <= id && id <= LAST);
+    auto x = id - BASE;
     assert(devices[x] == nullptr);
     devices[x] = this;
 }
 
 void Device::irqInstall (uint8_t num, uint8_t prio) {
-    // TODO
-    //SCB.byte(0x1F) = 0xDF; // irq #11: SVC
-    //SCB.byte(0x22) = 0xFF; // irq #14: PendSV
-    //SCB.byte(0x23) = 0xFF; // irq #15: SysTick - now in Ticker::init
+    // adjust priorities before they might interfere with "real" IRQs
+    SCB.byte(0x1F) = 0xDF; // irq #11: SVC
+    SCB.byte(0x22) = 0xFF; // irq #14: PendSV
+//  SCB.byte(0x23) = 0xFF; // irq #15: SysTick - now in Ticker::init
 
     assert(num < (uint8_t) Irq::limit);
     interrupts[num] = dId;
@@ -119,10 +159,7 @@ void Device::irqTrigger (uint8_t num) {
     assert(irqState() > 0); // must be in a "real" interrupt
     if (interrupt(num)) {
         __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
-#if 0 // TODO
-        if (Thread::current != &Thread::dummy)
-            triggerPendSV();
-#endif
+        triggerPendSV(); // will call "finish" when back in thread mode
     }
 }
 
@@ -141,38 +178,6 @@ void Device::reply (Message* mp) {
     Task::byId(id).append(*mp);
 }
 
-//----------------------------------------------------------------------- Task
-
-inline namespace {
-
-    Task* tasks [Task::LIMIT];
-    uint8_t current;
-    Task mainTask;
-
-    Task& currTask () {
-        auto tp = tasks[current];
-        assert(tp != nullptr);
-        return *tp;
-    }
-
-} // inline namespace
-
-Task::Task () : Message {} {
-    for (auto i = 0; i < Task::LIMIT; ++i)
-        if (tasks[i] == nullptr) {
-            tid = i;
-            tasks[i] = this;
-            return;
-        }
-    fail(); // too many tasks
-}
-
-Task& Task::byId (uint8_t id) {
-    assert(id < Task::LIMIT);
-    assert(tasks[id] != nullptr);
-    return *tasks[id];
-}
-
 //------------------------------------------------------------------ send/recv
 
 void sys::send (Message& m) {
@@ -189,14 +194,17 @@ void sys::send (Message& m) {
 
 Message& sys::recv () {
     auto f = +[]() {
-        processTriggers(); // in case PendSV is not getting called
-        return currTask().pull();
+        auto& ct = currTask();
+        if (ct.isEmpty()) {
+            SCB[0x10](4) = 1; // SEVONPEND to wake even when irqs are disabled
+            asm ("wfe");      // make sure "real" IRQs will resume after this
+        }
+        return ct.pull();
     };
     while (true) {
         auto mp = (Message*) svc((int) f);
         if (mp != nullptr)
             return *mp;
-        asm ("wfe");      // make sure "real" IRQs will resume after this
     }
 }
 
@@ -222,6 +230,68 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
         return ptr;
     };
     return (uint8_t*) svc((int) f, b, (int) p, a);
+}
+
+//------------------------------------------------------------------ HardFault
+
+extern "C" [[gnu::naked]]
+void HardFault_Handler () {
+    asm volatile (
+#if STM32L0
+        " mov   r0,lr  \n"
+        " mov   r1,#4  \n"
+        " tst   r0,r1  \n"
+        " bne   1f     \n"
+        " mrs   r0,msp \n"
+        " b     2f     \n"
+        "1:            \n"
+        " mrs   r0,psp \n"
+        "2:            \n"
+        " bx    %0     \n"
+    :: "r" (hardFaulter)
+#else
+        " tst   lr,#4  \n"
+        " ite   eq     \n"
+        " mrseq r0,msp \n"
+        " mrsne r0,psp \n"
+        " bx    %0     \n"
+    :: "r" (hardFaulter)
+#endif
+    );
+}
+
+//--------------------------------------------------------------------- PendSV
+
+extern "C" [[gnu::naked]]
+void PendSV_Handler () {
+    asm (
+#if 0
+        " mrs      r0,psp        \n"
+#if FPU_USED
+        " tst      lr,#0x10      \n"
+        " it       eq            \n"
+        " vstmdbeq r0!,{s16-s31} \n"
+#endif
+        " stmdb    r0!,{r4-r11}  \n"
+        " mov      r4,lr         \n"
+        " blx      %0            \n"
+        " mov      lr,r4         \n"
+        " ldmia    r0!,{r4-r11}  \n"
+#if FPU_USED
+        " tst      lr,#0x10      \n"
+        " it       eq            \n"
+        " vldmiaeq r0!,{s16-s31} \n"
+#endif
+        " msr      psp,r0        \n"
+        " bx       lr            \n"
+    :: "r" (switcher)
+#else
+        " push     {r0, lr}      \n"
+        " blx      %0            \n"
+        " pop      {r1, pc}      \n"
+    :: "r" (processTriggers)
+#endif
+    );
 }
 
 //------------------------------------------------------------------------ SVC
@@ -261,33 +331,5 @@ void SVC_Handler () {
         " pop   {r1, lr}    \n"
         " str   r0,[r1]     \n"
         " bx    lr          \n"
-    );
-}
-
-//------------------------------------------------------------------ HardFault
-
-extern "C" [[gnu::naked]]
-void HardFault_Handler () {
-    asm volatile (
-#if STM32L0
-        " mov   r0,lr  \n"
-        " mov   r1,#4  \n"
-        " tst   r0,r1  \n"
-        " bne   1f     \n"
-        " mrs   r0,msp \n"
-        " b     2f     \n"
-        "1:            \n"
-        " mrs   r0,psp \n"
-        "2:            \n"
-        " bx    %0     \n"
-    :: "r" (hardFaulter)
-#else
-        " tst   lr,#4  \n"
-        " ite   eq     \n"
-        " mrseq r0,msp \n"
-        " mrsne r0,psp \n"
-        " bx    %0     \n"
-    :: "r" (hardFaulter)
-#endif
     );
 }
