@@ -60,7 +60,7 @@ struct Ticker : Device, Chain {
     Ticker () : Device ('@') {}
 
     void init () {
-        rate = 1; // TODO
+        rate = 250; // TODO
         ticks += rate;
         auto ticksPerMs = SystemCoreClock / 1000;
 #if STM32G4
@@ -71,8 +71,7 @@ struct Ticker : Device, Chain {
         STK[0x8] = 0;                     // current
         STK[0x0] = 0b011;                 // control, clk/8 mode
 
-        //SCB.byte(0x23) = 0xFF; // lowest IRQ priority
-SCB.byte(0x23) = 0xDF; // lowest IRQ priority
+        SCB.byte(0x23) = 0xFF; // lowest IRQ priority
     }
 
     void start (Message& msg) override {
@@ -124,7 +123,5 @@ extern "C"
 void SysTick_Handler () {
     Device::byId('@').irqTrigger(0);
 }
-
-void initTicker () { static Ticker ticker; }
 
 #endif // STM32

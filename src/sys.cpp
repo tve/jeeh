@@ -73,7 +73,7 @@ uint32_t Device::pending;
 Device* Device::devices [LAST-BASE+1];
 uint8_t Device::interrupts [(uint8_t) Irq::limit];
 
-Device::Device (uint8_t id) : did (id) {
+Device::Device (uint8_t id) : dId (id) {
     auto x = asIndex(id);
     assert(devices[x] == nullptr);
     devices[x] = this;
@@ -83,17 +83,17 @@ void Device::irqInstall (uint8_t num, uint8_t prio) {
     // TODO
     //SCB.byte(0x1F) = 0xDF; // SVC
     //SCB.byte(0x22) = 0xFF; // PendSV
-    //SCB.byte(0x23) = 0xFF; // SysTick
+    //SCB.byte(0x23) = 0xFF; // SysTick - now in Ticker::init
 
     assert(num < (uint8_t) Irq::limit);
-    interrupts[num] = did;
+    interrupts[num] = dId;
     NVIC.byte(0x300+num) = prio;
     NVIC[0x00 + 4*(num/32)] = 1 << num % 32;
 }
 
 void Device::irqTrigger (uint8_t num) {
     if (interrupt(num)) {
-        __atomic_or_fetch(&pending, 1 << did, __ATOMIC_RELAXED);
+        __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
 #if 0 // TODO
         if (Thread::current != &Thread::dummy)
             triggerPendSV();
@@ -111,13 +111,17 @@ void Device::process () {
     auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
     while (p != 0) {
         auto i = __builtin_ctz(p); // gcc can count trailing zeros
-        byId(i).finish();
+        byId(i+BASE).finish();
         p &= ~(1<<i);
     }
 }
 
 void Device::reply (Message* mp) {
-    (void) mp; // TODO
+    if (mp == nullptr)
+        return;
+    auto id = mp->mDst;
+    mp->mDst = dId; // restore original destination, i.e. this driver
+    Task::byId(id).append(*mp);
 }
 
 //----------------------------------------------------------------------- Task
@@ -165,20 +169,19 @@ void sys::send (Message& m) {
 
 Message& sys::recv () {
     auto f = +[]() {
-        while (true) {
-            Device::process(); // in case PendSV is not getting called
-            auto mp = currTask().pull();
-            if (mp != nullptr)
-                return mp;
-#if 0
+        Device::process(); // in case PendSV is not getting called
+        auto mp = currTask().pull();
+        if (mp == nullptr) {
             SCB[0x10](4) = 1; // SEVONPEND, to wake when irqs are disabled
             asm ("wfe");      // make sure "real" IRQs will resume after this
-#else
-            asm ("wfi");
-#endif
         }
+        return mp;
     };
-    return *(Message*) svc((int) f);
+    while (true) {
+        auto mp = (Message*) svc((int) f);
+        if (mp != nullptr)
+            return *mp;
+    }
 }
 
 void sys::call (Message& msg) {

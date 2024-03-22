@@ -36,7 +36,7 @@ protected:
 struct Device {
     enum { BASE = '@', LAST = 'Z' };
 
-    uint8_t did;
+    uint8_t dId;
 
     Device (uint8_t id);
     // TODO ~Device ();
