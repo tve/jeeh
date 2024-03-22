@@ -62,7 +62,7 @@ struct Ticker : Device, Chain {
     uint16_t rate;
 
     Ticker () : Device ('@'), ticks (0), rate (0) {
-        SCB.byte(0x23) = 0xFF; // lowest IRQ priority
+        SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
     void init () {

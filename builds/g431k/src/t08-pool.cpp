@@ -5,7 +5,7 @@ using namespace jeeh;
 int main () {
     Tester t;
 
-    auto p = sys::pool(1);
-    auto q = sys::pool(1);
+    [[maybe_unused]] auto p = sys::pool(1);
+    [[maybe_unused]] auto q = sys::pool(1);
     assert(q == p + 8);
 }

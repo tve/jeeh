@@ -68,10 +68,34 @@ Message* Chain::pull () {
 }
 
 //--------------------------------------------------------------------- Device
+// TODO there are several ARM/STM32-specific details in here
 
-uint32_t Device::pending;
-Device* Device::devices [LAST-BASE+1];
-uint8_t Device::interrupts [(uint8_t) Irq::limit];
+inline namespace {
+
+    uint32_t pending;
+    Device* devices [Device::LAST-Device::BASE+1];
+    uint8_t interrupts [(uint8_t) Irq::limit];
+
+    int irqState () {
+        switch (SCB[0x4] & 0x1FF) {
+            case 0:           return -1; // thread mode, not in any exception
+            case 11: case 14: return 0;  // currently in SVC or PendSV
+            default:          return 1;  // in some other interrupt
+        }
+    }
+
+    void processTriggers () {
+        assert(irqState() == 0); // must be in either SVC or PendSV
+        auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
+        while (p != 0) {
+            auto i = __builtin_ctz(p); // gcc can count trailing zeros
+            assert(devices[i] != nullptr);
+            devices[i]->finish();
+            p &= ~(1<<i);
+        }
+    }
+
+} // inline namespace
 
 Device::Device (uint8_t id) : dId (id) {
     auto x = asIndex(id);
@@ -81,9 +105,9 @@ Device::Device (uint8_t id) : dId (id) {
 
 void Device::irqInstall (uint8_t num, uint8_t prio) {
     // TODO
-    //SCB.byte(0x1F) = 0xDF; // SVC
-    //SCB.byte(0x22) = 0xFF; // PendSV
-    //SCB.byte(0x23) = 0xFF; // SysTick - now in Ticker::init
+    //SCB.byte(0x1F) = 0xDF; // irq #11: SVC
+    //SCB.byte(0x22) = 0xFF; // irq #14: PendSV
+    //SCB.byte(0x23) = 0xFF; // irq #15: SysTick - now in Ticker::init
 
     assert(num < (uint8_t) Irq::limit);
     interrupts[num] = dId;
@@ -92,6 +116,7 @@ void Device::irqInstall (uint8_t num, uint8_t prio) {
 }
 
 void Device::irqTrigger (uint8_t num) {
+    assert(irqState() > 0); // must be in a "real" interrupt
     if (interrupt(num)) {
         __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
 #if 0 // TODO
@@ -107,16 +132,8 @@ Device& Device::byId (uint8_t id) {
     return *devices[id-BASE];
 }
 
-void Device::process () {
-    auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
-    while (p != 0) {
-        auto i = __builtin_ctz(p); // gcc can count trailing zeros
-        byId(i+BASE).finish();
-        p &= ~(1<<i);
-    }
-}
-
 void Device::reply (Message* mp) {
+    assert(irqState() == 0); // must be in either SVC or PendSV
     if (mp == nullptr)
         return;
     auto id = mp->mDst;
@@ -126,15 +143,19 @@ void Device::reply (Message* mp) {
 
 //----------------------------------------------------------------------- Task
 
-Task* tasks [Task::LIMIT];
-uint8_t current;
-Task mainTask;
+inline namespace {
 
-Task& currTask () {
-    auto tp = tasks[current];
-    assert(tp != nullptr);
-    return *tp;
-}
+    Task* tasks [Task::LIMIT];
+    uint8_t current;
+    Task mainTask;
+
+    Task& currTask () {
+        auto tp = tasks[current];
+        assert(tp != nullptr);
+        return *tp;
+    }
+
+} // inline namespace
 
 Task::Task () : Message {} {
     for (auto i = 0; i < Task::LIMIT; ++i)
@@ -155,32 +176,27 @@ Task& Task::byId (uint8_t id) {
 //------------------------------------------------------------------ send/recv
 
 void sys::send (Message& m) {
-    assert(&Task::byId(0) == &mainTask);
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
         msg.mDst = current;
-        if (Device::BASE <= id && id <= Device::LAST)
-            Device::byId(id).start(msg);
-        else
+        if (id < Task::LIMIT)
             Task::byId(id).submit(msg);
+        else
+            Device::byId(id).start(msg);
     };
     svc((int) f, (int) &m);
 }
 
 Message& sys::recv () {
     auto f = +[]() {
-        Device::process(); // in case PendSV is not getting called
-        auto mp = currTask().pull();
-        if (mp == nullptr) {
-            SCB[0x10](4) = 1; // SEVONPEND, to wake when irqs are disabled
-            asm ("wfe");      // make sure "real" IRQs will resume after this
-        }
-        return mp;
+        processTriggers(); // in case PendSV is not getting called
+        return currTask().pull();
     };
     while (true) {
         auto mp = (Message*) svc((int) f);
         if (mp != nullptr)
             return *mp;
+        asm ("wfe");      // make sure "real" IRQs will resume after this
     }
 }
 

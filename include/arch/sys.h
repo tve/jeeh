@@ -51,18 +51,16 @@ struct Device {
 
     virtual void start (Message&) =0;
     virtual void finish () =0;
+
+    void irqTrigger (uint8_t num);
+
+    static Device& byId (uint8_t id);
+
+protected:
     virtual bool interrupt (int) =0;
 
     void irqInstall (uint8_t num, uint8_t prio =0x80);
-    void irqTrigger (uint8_t num);
     void reply (Message* mp);
-
-    static Device& byId (uint8_t id);
-    static void process ();
-
-    static uint32_t pending;
-    static Device* devices [];
-    static uint8_t interrupts [];
 };
 
 struct Task : Message, Chain {
@@ -74,7 +72,6 @@ struct Task : Message, Chain {
     // TODO ~Task ();
 
     virtual void submit (Message& msg) {
-        logf("aa");
         append(msg); // TODO ...
     }
 
