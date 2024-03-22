@@ -3,6 +3,18 @@ using namespace jeeh;
 #include <cstdarg>
 #include <cstdio>
 
+inline namespace {
+
+    int irqState () {
+        switch (SCB[0x4] & 0x1FF) {
+            case 0:           return -1; // thread mode, not in any exception
+            case 11: case 14: return 0;  // currently in SVC or PendSV
+            default:          return 1;  // in some other interrupt
+        }
+    }
+
+} // inline namespace
+
 //----------------------------------------------------------------------- logf
 
 void jeeh::logf (char const* fmt ...) {
@@ -73,7 +85,6 @@ inline namespace {
 
     Task* tasks [Task::LIMIT];
     uint8_t current;
-    Task dummyTask; // this self-installs as task #0 TODO yuck ...
 
     Task& currTask () {
         auto tp = tasks[current];
@@ -84,7 +95,9 @@ inline namespace {
 } // inline namespace
 
 Task::Task () : Message {} {
-    for (auto i = 0; i < Task::LIMIT; ++i)
+    static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
+
+    for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
             tId = i;
             tasks[i] = this;
@@ -94,7 +107,8 @@ Task::Task () : Message {} {
 }
 
 void Task::submit (Message& msg) {
-    append(msg); // TODO ...
+    assert(irqState() == 0); // must be in either SVC or PendSV
+    process(msg);
 }
 
 Task& Task::byId (uint8_t id) {
@@ -102,6 +116,24 @@ Task& Task::byId (uint8_t id) {
     assert(tasks[id] != nullptr);
     return *tasks[id];
 }
+
+//--------------------------------------------------------------------- Thread
+
+struct Thread : Task {
+    Thread () {
+    }
+
+    int process (Message& msg) override {
+        append(msg); // TODO ...
+        return 0; // TODO
+    }
+};
+
+inline namespace {
+
+    Thread mainThread; // this self-installs as task #0 TODO yuck ...
+
+} // inline namespace
 
 //--------------------------------------------------------------------- Device
 
@@ -113,14 +145,6 @@ inline namespace {
 
     void triggerPendSV () {
         SCB[0x04](28) = 1;     // ICSR PENDSVSET
-    }
-
-    int irqState () {
-        switch (SCB[0x4] & 0x1FF) {
-            case 0:           return -1; // thread mode, not in any exception
-            case 11: case 14: return 0;  // currently in SVC or PendSV
-            default:          return 1;  // in some other interrupt
-        }
     }
 
     void processTriggers () {
@@ -137,6 +161,8 @@ inline namespace {
 } // inline namespace
 
 Device::Device (uint8_t id) : dId (id) {
+    static_assert(LAST < BASE + 32); // bitmap must fit in uint32_t
+
     assert(BASE <= id && id <= LAST);
     auto x = id - BASE;
     assert(devices[x] == nullptr);
@@ -159,7 +185,7 @@ void Device::irqTrigger (uint8_t num) {
     assert(irqState() > 0); // must be in a "real" interrupt
     if (interrupt(num)) {
         __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
-        triggerPendSV(); // will call "finish" when back in thread mode
+        triggerPendSV(); // will call "finish" once back in thread mode
     }
 }
 
@@ -171,11 +197,11 @@ Device& Device::byId (uint8_t id) {
 
 void Device::reply (Message* mp) {
     assert(irqState() == 0); // must be in either SVC or PendSV
-    if (mp == nullptr)
-        return;
-    auto id = mp->mDst;
-    mp->mDst = dId; // restore original destination, i.e. this driver
-    Task::byId(id).append(*mp);
+    if (mp != nullptr) {
+        auto id = mp->mDst;
+        mp->mDst = dId; // restore original destination, i.e. this driver
+        Task::byId(id).append(*mp);
+    }
 }
 
 //------------------------------------------------------------------ send/recv
@@ -201,11 +227,9 @@ Message& sys::recv () {
         }
         return ct.pull();
     };
-    while (true) {
-        auto mp = (Message*) svc((int) f);
-        if (mp != nullptr)
+    while (true)
+        if (auto mp = (Message*) svc((int) f); mp != nullptr)
             return *mp;
-    }
 }
 
 void sys::call (Message& msg) {

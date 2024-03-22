@@ -40,11 +40,13 @@ struct Task : Message, Chain {
     enum { LIMIT = 20 };
 
     uint8_t tId;
+    Message timer {};
 
     Task ();
     // TODO ~Task ();
 
-    virtual void submit (Message& msg);
+    void submit (Message& msg);
+    virtual int process (Message& msg) =0;
 
     static Task& byId (uint8_t id);
 };

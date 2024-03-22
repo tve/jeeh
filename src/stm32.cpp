@@ -133,11 +133,9 @@ struct Ticker : Device, Chain {
 
     uint32_t millis () const {
         // the result has millisecond resolution, even when rate > 1
-        while (true) {
-            uint32_t t = ticks, n = STK[0x08];
-            if (t == ticks)
+        while (true) // spinloop, in case ticks changes midway
+            if (uint32_t t = ticks, n = STK[0x08]; t == ticks)
                 return t - (n*8)/(SystemCoreClock/1000);
-        } // ticked just now, spin one more time
     }
 };
 
