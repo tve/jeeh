@@ -107,8 +107,12 @@ Task::Task () : Message {} {
 }
 
 void Task::submit (Message& msg) {
-    assert(irqState() == 0); // must be in either SVC or PendSV
+    //assert(irqState() < 0);  // thread: must be in thread mode
+    //assert(irqState() == 0); // task: must be in SVC or PendSV
+    auto t = current;
+    current = tId;
     process(msg); // TODO return value >0 must start the task's timer
+    current = t;
 }
 
 Task& Task::byId (uint8_t id) {
@@ -212,12 +216,13 @@ void sys::send (Message& m) {
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
         msg.mDst = current;
-        if (id < Task::LIMIT)
-            Task::byId(id).submit(msg);
-        else
+        if (id >= Task::LIMIT)
             Device::byId(id).start(msg);
+        return id;
     };
-    svc((int) f, (int) &m);
+    auto id = svc((int) f, (int) &m);
+    if (id < Task::LIMIT)
+        Task::byId(id).submit(m);
 }
 
 Message& sys::recv () {
