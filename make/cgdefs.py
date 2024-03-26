@@ -38,7 +38,7 @@ def BOARD(block, name):
         for x in info:
             k, v = x.split('=')
             f[k] = v
-        # N=USART2 P=A2:7,A3 F=150 D=1 L=CH O=0 T=3 R=1 C=27,26
+        # N=USART2 V=2 P=A2:7,A3 F=150 D=1 L=CH O=0 T=3 R=1 C=27,26
         t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
                      '$D-1,$R-$O,$T-$O,$C').substitute(f)
         # def: UART_PINS  "A2:7,A3"
@@ -47,6 +47,7 @@ def BOARD(block, name):
         return ['#define UART_PINS  "%s"' % f['P'],
                 '#define UART_NAME  %s' % f['N'],
                 '#define UART_FREQ  %s' % f['F'],
+                '#define UART_VERS  %s' % f['V'],
                 '#define UART_CONF  ' + t]
     return info
 

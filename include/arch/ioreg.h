@@ -37,8 +37,8 @@ struct IoReg {
 
         __attribute__((always_inline))
         constexpr auto bitBandAddr () const {
-            return (volatile uint32_t*) (A&0xF000'0000) + 0x0200'0000 +
-                                                    ((A+o)<<5) + (b<<2);
+            return (volatile uint32_t*) ((A&0xF000'0000) + 0x0200'0000 +
+                                                    ((A+o)<<5) + (b<<2));
         }
     };
 
