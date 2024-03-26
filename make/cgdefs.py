@@ -110,15 +110,14 @@ def parseSvd():
                         bb = int(byName(f, 'bitOffset'))
                         enables[nn] = (bb, rn)
 
-    if False:
-        hasScb, hasStk = False, False
-        for x in ioregs:
-            hasScb = hasScb or x.endswith(' SCB;')
-            hasStk = hasStk or x.endswith(' STK;')
-        if not hasScb:
-            ioregs.append("constexpr IoReg<0xE000'ED00> SCB;")
-        if not hasStk:
-            ioregs.append("constexpr IoReg<0xE000'E010> STK;")
+    hasScb, hasStk = False, False
+    for x in ioregs:
+        hasScb = hasScb or x.endswith(' SCB;')
+        hasStk = hasStk or x.endswith(' STK;')
+    if not hasScb:
+        ioregs.append("constexpr IoReg<0xE000'ED00> SCB;")
+    if not hasStk:
+        ioregs.append("constexpr IoReg<0xE000'E010> STK;")
 
     svdInfo['defines'] = [f'#define STM32   1',
                           f'#define {svdName[:7]} 1',
