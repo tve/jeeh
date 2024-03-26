@@ -3,6 +3,8 @@
 [[noreturn]]
 void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
 [[noreturn]]
+void failAt (void const*, char const* =__builtin_FILE(), int =__builtin_LINE());
+[[noreturn]]
 void hardFaultHandler (uint32_t* sp);
 
 void logf (char const* fmt ...);
@@ -22,6 +24,7 @@ struct Message {
     Message (const Message&) =delete;
     void operator= (const Message&) =delete;
 };
+static_assert(sizeof (Message) == 16);
 
 struct Chain {
     bool isEmpty () const { return cHead == nullptr; }
@@ -35,20 +38,39 @@ struct Chain {
 protected:
     Message* cHead =nullptr;
 };
+static_assert(sizeof (Chain) == 4);
 
 struct Task : Message, Chain {
-    enum { LIMIT = 20 };
+    enum { LIMIT = 30 };
 
-    uint8_t tId;
+    uint8_t tId, owner;
     Message timer {};
 
     Task ();
     // TODO ~Task ();
 
+    bool isThread () const { return tId == owner; }
+
     void submit (Message& msg);
     virtual int process (Message& msg) =0;
 
     static Task& byId (uint8_t id);
+};
+static_assert(sizeof (Task) == 44); // incl 2x Message, Chain, and vtable-ptr
+
+struct Fixer {
+    Fixer ();
+    ~Fixer ();
+
+    bool saved;
+};
+
+struct Lock {
+    bool acquire (bool blocking =true);
+    void release ();
+
+    bool locked =false;
+    Chain waiting;
 };
 
 struct Device {
@@ -72,14 +94,18 @@ protected:
     void irqInstall (uint8_t num, uint8_t prio =0x80);
     void reply (Message* mp);
 };
+static_assert(sizeof (Device) == 8);
 
 namespace sys {
     int svc (int f, int x =0, int y =0, int z =0);
 
     uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
+
     void send (Message& msg);
     Message& recv ();
     void call (Message& msg);
     void wait (uint16_t ms);
+
+    Message& fork (uint32_t*, uint16_t, int (*)(Message&), uintptr_t =0);
 
 } // namespace sys

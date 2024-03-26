@@ -11,7 +11,11 @@
 #ifdef NASSERT
 #define assert(x) ((void) 0) // don't evaluate x (i.e. prevent side-effects)
 #else
-#define assert(x) do if (!(x)) jeeh::fail(); while (false) // see jee-sys.h
+//#define assert(x) do if (!(x)) jeeh::fail(); while (false)
+// see https://interrupt.memfault.com/blog/asserts-in-embedded-systems
+#define assert(x) do if (!(x)) \
+            failAt(__builtin_return_address(0)); \
+        while (false) // see jee-sys.h
 #endif
 
 namespace jeeh {

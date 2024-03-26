@@ -34,6 +34,11 @@ namespace jeeh {
         while (true) {}
     }
 
+    void failAt (void const* a, char const* f, int n) {
+        logf("failed caller: %p\n", a);
+        fail(f, n);
+    }
+
     void hardFaultHandler (uint32_t* sp) {
         enum { CFSR=0x28, HFSR=0x2C, MMAR=0x34, BFAR=0x38 };
 

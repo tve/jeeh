@@ -1,6 +1,7 @@
 E = t01-itm
 X = -e /examples/ -e /log/
 O = ~/.platformio/packages/tool-openocd
+A = arm-none-eabi-addr2line -Cfe .pio/build/$E/firmware.elf
 
 all: clean
 	git ls-files ../.. | grep  -v $X | entr -c time make all-run
@@ -11,6 +12,10 @@ check:
 	git ls-files ../.. | grep  -v $X | entr -c time make check-run E=$E
 check-run:
 	@ date; pio run -t clean -t check -s -e $E
+
+assert:
+	pio run -e $E -s
+	@ read -p "enter address: " addr; $A $$addr
 
 openocd:
 	$O/bin/openocd

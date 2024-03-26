@@ -15,7 +15,7 @@ inline namespace {
 
 } // inline namespace
 
-//----------------------------------------------------------------------- logf
+//------------------------------------------------------------------------ logf
 
 void jeeh::logf (char const* fmt ...) {
     constexpr IoReg<0xE000'0000> ITM;
@@ -40,7 +40,7 @@ void jeeh::logf (char const* fmt ...) {
     }
 }
 
-//---------------------------------------------------------------------- Chain
+//----------------------------------------------------------------------- Chain
 
 bool Chain::insert (Message& msg) {
     assert(!msg.inUse());
@@ -79,26 +79,31 @@ Message* Chain::pull () {
     return mp;
 }
 
-//----------------------------------------------------------------------- Task
+//------------------------------------------------------------------------ Task
 
 inline namespace {
 
     Task* tasks [Task::LIMIT];
     uint8_t current;
+    uint8_t nextToRun;
+    bool fixed;
+
+    void triggerPendSV () {
+        SCB[0x04](28) = 1; // ICSR PENDSVSET
+    }
 
     Task& currTask () {
-        auto tp = tasks[current];
-        assert(tp != nullptr);
-        return *tp;
+        return Task::byId(current);
     }
 
 } // inline namespace
 
-Task::Task () : Message {} {
+Task::Task () : Message {}, owner (current) {
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
 
     for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
+            assert(i == 0 || i != current); // task zero is also main thread
             tId = i;
             tasks[i] = this;
             return;
@@ -107,8 +112,8 @@ Task::Task () : Message {} {
 }
 
 void Task::submit (Message& msg) {
-    //assert(irqState() < 0);  // thread: must be in thread mode
-    //assert(irqState() == 0); // task: must be in SVC or PendSV
+    //assert(!isThread() || irqState() < 0);  // thread: must be in thread mode
+    //assert(isThread() || irqState() == 0); // task: must be in SVC or PendSV
     auto t = current;
     current = tId;
     process(msg); // TODO return value >0 must start the task's timer
@@ -121,15 +126,65 @@ Task& Task::byId (uint8_t id) {
     return *tasks[id];
 }
 
-//--------------------------------------------------------------------- Thread
+//----------------------------------------------------------------------- Fixer
+
+Fixer::Fixer () : saved (fixed) {
+    fixed = true;
+}
+
+Fixer::~Fixer () {
+    fixed = saved;
+    if (nextToRun != current)
+        triggerPendSV();
+}
+
+//------------------------------------------------------------------------ Lock
+
+bool Lock::acquire (bool blocking) {
+    auto r = true;
+
+    Fixer fixer;
+    if (!locked)
+        locked = true;
+    else if (blocking) {
+        Message m { current, 'L' };
+        waiting.append(m);
+        [[maybe_unused]] auto& t = sys::recv(); assert(&t == &m);
+        assert(locked);
+    } else
+        r = false;
+
+    return r;
+}
+
+void Lock::release () {
+    Fixer fixer;
+    assert(locked);
+    auto mp = waiting.pull();
+    if (mp != nullptr)
+        sys::send(*mp);
+    else
+        locked = false;
+}
+
+//---------------------------------------------------------------------- Thread
 
 struct Thread : Task {
+    uint32_t sp;
+
     Thread () {
+        owner = tId;
     }
 
     int process (Message& msg) override {
         append(msg); // TODO ...
         return 0; // TODO
+    }
+
+    static Thread& byId (uint8_t id) {
+        auto& tp = Task::byId(id);
+        assert(tp.tId == tp.owner);
+        return (Thread&) tp;
     }
 };
 
@@ -137,9 +192,13 @@ inline namespace {
 
     Thread mainThread; // this self-installs as task #0 TODO yuck ...
 
+    Thread& currThread () {
+        return Thread::byId(current);
+    }
+
 } // inline namespace
 
-//--------------------------------------------------------------------- Device
+//---------------------------------------------------------------------- Device
 
 inline namespace {
 
@@ -147,11 +206,7 @@ inline namespace {
     Device* devices [Device::LAST-Device::BASE+1];
     uint8_t interrupts [(uint8_t) Irq::limit];
 
-    void triggerPendSV () {
-        SCB[0x04](28) = 1;     // ICSR PENDSVSET
-    }
-
-    uint32_t processTriggers () {
+    void* processTriggers () {
         assert(irqState() == 0); // must be in PendSV
         auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
         while (p != 0) {
@@ -160,8 +215,15 @@ inline namespace {
             devices[i]->finish();
             p &= ~(1<<i);
         }
-        // TODO to switch contexts, return a ptr to {&oldsp,newsp} struct
-        return 0;
+        if (nextToRun == current)
+            return nullptr; // no context switch
+
+        // switch contexts: return ptr to {&oldsp,newsp}, see PendSV_Handler
+        static struct { uint32_t *oldSp, newSp; } temp;
+        temp.oldSp = &currThread().sp;
+        current = nextToRun;
+        temp.newSp = currThread().sp;
+        return &temp;
     }
 
 } // inline namespace
@@ -210,7 +272,7 @@ void Device::reply (Message* mp) {
     }
 }
 
-//------------------------------------------------------------------ send/recv
+//------------------------------------------------------------------- send/recv
 
 void sys::send (Message& m) {
     auto f = +[](Message& msg) {
@@ -244,7 +306,7 @@ void sys::call (Message& msg) {
     (void) recv();
 }
 
-//----------------------------------------------------------------------- pool
+//------------------------------------------------------------------------ pool
 
 uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     auto f = +[](uint32_t bytes, uint8_t* ptr, uint32_t align) {
@@ -263,7 +325,7 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     return (uint8_t*) svc((int) f, b, (int) p, a);
 }
 
-//------------------------------------------------------------------ HardFault
+//------------------------------------------------------------------- HardFault
 
 extern "C" [[gnu::naked]]
 void HardFault_Handler () {
@@ -278,20 +340,17 @@ void HardFault_Handler () {
         "1:            \n"
         " mrs   r0,psp \n"
         "2:            \n"
-        " bx    %0     \n"
-    :: "r" (hardFaulter)
 #else
         " tst   lr,#4  \n"
         " ite   eq     \n"
         " mrseq r0,msp \n"
         " mrsne r0,psp \n"
-        " bx    %0     \n"
-    :: "r" (hardFaulter)
 #endif
-    );
+        " bx    %0     \n"
+    :: "r" (hardFaulter));
 }
 
-//--------------------------------------------------------------------- PendSV
+//---------------------------------------------------------------------- PendSV
 
 extern "C" [[gnu::naked]]
 void PendSV_Handler () {
@@ -326,7 +385,7 @@ void PendSV_Handler () {
     :: "r" (processTriggers));
 }
 
-//------------------------------------------------------------------------ SVC
+//------------------------------------------------------------------------- SVC
 
 [[gnu::naked, gnu::noinline]]
 int sys::svc (int, int, int, int) {
