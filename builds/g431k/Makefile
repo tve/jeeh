@@ -1,4 +1,4 @@
-E = t01-itm
+E = t00
 X = -e /examples/ -e /log/
 O = ~/.platformio/packages/tool-openocd
 A = arm-none-eabi-addr2line -Cfe .pio/build/$E/firmware.elf

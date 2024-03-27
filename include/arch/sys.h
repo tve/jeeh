@@ -1,9 +1,9 @@
 // Header file for the the central system types and functions.
 
 [[noreturn]]
-void fail (char const* f =__builtin_FILE(), int l =__builtin_LINE());
-[[noreturn]]
-void failAt (void const*, char const* =__builtin_FILE(), int =__builtin_LINE());
+void fail (void const* addr =__builtin_return_address(0),
+           char const* file =__builtin_FILE(),
+           int line =__builtin_LINE());
 [[noreturn]]
 void hardFaultHandler (uint32_t* sp);
 

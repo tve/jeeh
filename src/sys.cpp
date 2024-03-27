@@ -79,31 +79,57 @@ Message* Chain::pull () {
     return mp;
 }
 
+//---------------------------------------------------------------------- Thread
+
+static Task* tasks [Task::LIMIT];
+static uint8_t current;
+static uint8_t nextToRun;
+static bool fixed;
+
+static void triggerPendSV () {
+    SCB[0x04](28) = 1; // ICSR PENDSVSET
+}
+
+struct Thread final : Task {
+    enum { RUN=0x00, WAIT=0x01, DEAD=0x02 };
+
+    uint32_t* sp =nullptr;   // saved stack pointer when not running
+    Message* block =nullptr; // block until this specific msg is received
+    uint8_t task;            // current task, else this thread itself
+
+    Thread () {
+        task = owner = tId;
+    }
+
+    int process (Message& msg) override {
+        if (&msg == block)
+            insert(msg);
+        else
+            append(msg);
+        return 0; // TODO
+    }
+
+    static Thread& byId (uint8_t id) {
+        auto& tk = Task::byId(id);
+        assert(tk.isThread());
+        return (Thread&) tk;
+    }
+};
+
+static Thread mainThread; // this self-installs as task #0 TODO yuck ...
+
+static Thread& context () {
+    return Thread::byId(current);
+}
+
 //------------------------------------------------------------------------ Task
-
-inline namespace {
-
-    Task* tasks [Task::LIMIT];
-    uint8_t current;
-    uint8_t nextToRun;
-    bool fixed;
-
-    void triggerPendSV () {
-        SCB[0x04](28) = 1; // ICSR PENDSVSET
-    }
-
-    Task& currTask () {
-        return Task::byId(current);
-    }
-
-} // inline namespace
 
 Task::Task () : Message {}, owner (current) {
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
 
     for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
-            assert(i == 0 || i != current); // task zero is also main thread
+            assert(i == 0 || i != owner); // task zero is also main thread
             tId = i;
             tasks[i] = this;
             return;
@@ -114,10 +140,11 @@ Task::Task () : Message {}, owner (current) {
 void Task::submit (Message& msg) {
     //assert(!isThread() || irqState() < 0);  // thread: must be in thread mode
     //assert(isThread() || irqState() == 0); // task: must be in SVC or PendSV
-    auto t = current;
-    current = tId;
+    auto& th = context();
+    auto tIdPriv = th.task;
+    th.task = tId;
     process(msg); // TODO return value >0 must start the task's timer
-    current = t;
+    th.task = tIdPriv;
 }
 
 Task& Task::byId (uint8_t id) {
@@ -167,37 +194,6 @@ void Lock::release () {
         locked = false;
 }
 
-//---------------------------------------------------------------------- Thread
-
-struct Thread : Task {
-    uint32_t sp;
-
-    Thread () {
-        owner = tId;
-    }
-
-    int process (Message& msg) override {
-        append(msg); // TODO ...
-        return 0; // TODO
-    }
-
-    static Thread& byId (uint8_t id) {
-        auto& tp = Task::byId(id);
-        assert(tp.tId == tp.owner);
-        return (Thread&) tp;
-    }
-};
-
-inline namespace {
-
-    Thread mainThread; // this self-installs as task #0 TODO yuck ...
-
-    Thread& currThread () {
-        return Thread::byId(current);
-    }
-
-} // inline namespace
-
 //---------------------------------------------------------------------- Device
 
 inline namespace {
@@ -219,10 +215,10 @@ inline namespace {
             return nullptr; // no context switch
 
         // switch contexts: return ptr to {&oldsp,newsp}, see PendSV_Handler
-        static struct { uint32_t *oldSp, newSp; } temp;
-        temp.oldSp = &currThread().sp;
+        static struct { uint32_t **oldSp, *newSp; } temp;
+        temp.oldSp = &context().sp;
         current = nextToRun;
-        temp.newSp = currThread().sp;
+        temp.newSp = context().sp;
         return &temp;
     }
 
@@ -277,7 +273,7 @@ void Device::reply (Message* mp) {
 void sys::send (Message& m) {
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
-        msg.mDst = current;
+        msg.mDst = context().task;
         if (id >= Task::LIMIT)
             Device::byId(id).start(msg);
         return id;
@@ -289,12 +285,12 @@ void sys::send (Message& m) {
 
 Message& sys::recv () {
     auto f = +[]() {
-        auto& ct = currTask();
-        if (ct.isEmpty()) {
+        auto& th = context();
+        if (th.isEmpty()) {
             SCB[0x10](4) = 1; // SEVONPEND to wake even when irqs are disabled
             asm ("wfe");      // make sure "real" IRQs will resume after this
         }
-        return ct.pull();
+        return th.pull();
     };
     while (true)
         if (auto mp = (Message*) svc((int) f); mp != nullptr)
@@ -302,8 +298,10 @@ Message& sys::recv () {
 }
 
 void sys::call (Message& msg) {
+    context().block = &msg;
     send(msg);
     (void) recv();
+    context().block = nullptr;
 }
 
 //------------------------------------------------------------------------ pool
@@ -330,7 +328,7 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
 extern "C" [[gnu::naked]]
 void HardFault_Handler () {
     asm volatile (
-#if STM32L0
+#if STM32G0 | STM32L0
         " mov   r0,lr  \n"
         " mov   r1,#4  \n"
         " tst   r0,r1  \n"
@@ -359,23 +357,31 @@ void PendSV_Handler () {
         " blx      %0            \n"
         " cmp      r0,#0         \n"
         " beq      1f            \n"
-        " ldmia    r0,{r1,r2}    \n"
+        " ldmia    r0!,{r1,r2}    \n"
 
         " mrs      r0,psp        \n"
+#if STM32G0 | STM32L0
+        // TODO ...
+#else
 #if FPU_USED
         " tst      lr,#0x10      \n"
         " it       eq            \n"
         " vstmdbeq r0!,{s16-s31} \n"
 #endif
         " stmdb    r0!,{r4-r11}  \n"
+#endif
 
         " str      r0,[r1]       \n"
 
+#if STM32G0 | STM32L0
+        // TODO ...
+#else
         " ldmia    r2!,{r4-r11}  \n"
 #if FPU_USED
         " tst      lr,#0x10      \n"
         " it       eq            \n"
         " vldmiaeq r2!,{s16-s31} \n"
+#endif
 #endif
         " msr      psp,r2        \n"
         " bx       lr            \n"
@@ -395,7 +401,7 @@ int sys::svc (int, int, int, int) {
 extern "C" [[gnu::naked]]
 void SVC_Handler () {
     asm (
-#if STM32L0
+#if STM32G0 | STM32L0
         " mov   r0,lr       \n"
         " mov   r1,#4       \n"
         " tst   r0,r1       \n"
@@ -419,8 +425,8 @@ void SVC_Handler () {
         " ldr   r0,[r0,#4]  \n"
         " blx   r3          \n"
 
-        " pop   {r1,lr}     \n"
+        " pop   {r1,r2}     \n"
         " str   r0,[r1]     \n"
-        " bx    lr          \n"
+        " bx    r2          \n"
     );
 }

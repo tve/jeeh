@@ -1,5 +1,5 @@
 namespace jeeh {
-    void fail (char const* f, int n) {
+    void fail (void const* a, char const* f, int n) {
         constexpr auto N = 30;
         char buf [N+20];
         if (strlen(f) > N)
@@ -26,17 +26,14 @@ namespace jeeh {
         *p++ = '\n';
         itmWrite(buf, p - buf);
 
+        logf("failed caller: %p\n", a);
+
 #if MUST_FAIL
         itmWrite("OK\n", 3);
 #else
         itmWrite("FAIL\n", 5);
 #endif
         while (true) {}
-    }
-
-    void failAt (void const* a, char const* f, int n) {
-        logf("failed caller: %p\n", a);
-        fail(f, n);
     }
 
     void hardFaultHandler (uint32_t* sp) {

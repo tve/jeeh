@@ -1,12 +1,8 @@
 #include <jee.h>
 using namespace jeeh;
 
-void jeeh::fail (char const*, int) {
+void jeeh::fail (void const*, char const*, int) {
     while (true) {}
-}
-
-void jeeh::failAt (void const*, char const* f, int n) {
-    fail(f, n);
 }
 
 int main () {
