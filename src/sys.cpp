@@ -81,10 +81,10 @@ Message* Chain::pull () {
 
 //---------------------------------------------------------------------- Thread
 
-static Task* tasks [Task::LIMIT];
-static uint8_t current;
-static uint8_t nextToRun;
-static bool fixed;
+static Task* tasks [Task::LIMIT]; // all tasks and threads
+static uint8_t current;           // currently running thread id
+static uint8_t nextToRun;         // thread id of next thread to run
+static bool fixed;                // cannot switch threads when set
 
 static void triggerPendSV () {
     SCB[0x04](28) = 1; // ICSR PENDSVSET
@@ -95,24 +95,65 @@ struct Thread final : Task {
 
     uint32_t* sp =nullptr;   // saved stack pointer when not running
     Message* block =nullptr; // block until this specific msg is received
+    uint8_t state =RUN;      // current state of this thread
     uint8_t task;            // current task, else this thread itself
 
     Thread () {
         task = owner = tId;
     }
 
-    int process (Message& msg) override {
-        if (&msg == block)
+    void submit (Message& msg) override {
+        assert(irqState() == 0); // must be in SVC or PendSV
+
+        if (block == &msg) {
             insert(msg);
-        else
+            block = nullptr;
+        } else
             append(msg);
+
+        if (state == WAIT)
+            reschedule(RUN);
+    }
+
+    int process (Message& msg) override {
+fail();
+        (void) msg;
         return 0; // TODO
     }
 
+    static Thread* entry (uint8_t id) {
+        auto p = tasks[id];
+        return p != nullptr && p->isThread() ? (Thread*) p : nullptr;
+    }
+
     static Thread& byId (uint8_t id) {
-        auto& tk = Task::byId(id);
-        assert(tk.isThread());
-        return (Thread&) tk;
+        auto p = entry(id);
+        assert(p != nullptr);
+        return *p;
+    }
+
+    void reschedule (int newState) {
+        state = newState;
+        if (tId > nextToRun)
+            nextToRun = tId;
+        while (true) {
+            auto th = entry(nextToRun);
+            if (th != nullptr && th->state == RUN) {
+                //if (onIdle.fun != nullptr && SCB[0x10](1))
+                //    onIdle.fun(1, onIdle.arg); // just woke up
+                SCB[0x10](1) = 0; // ~SLEEPONEXIT
+                if (nextToRun != current)
+                    triggerPendSV();
+                break;
+            }
+            if (nextToRun == 0) {
+                //if (onIdle.fun != nullptr)
+                //    onIdle.fun(0, onIdle.arg); // about to go to sleep
+                SCB[0x10](1) = 1; // SLEEPONEXIT
+                break;
+            }
+            --nextToRun;
+        }
     }
 };
 
@@ -124,7 +165,7 @@ static Thread& context () {
 
 //------------------------------------------------------------------------ Task
 
-Task::Task () : Message {}, owner (current) {
+Task::Task () : Message { MARKER, '?' }, owner (current) {
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
 
     for (auto i = 0; i < LIMIT; ++i)
@@ -138,13 +179,17 @@ Task::Task () : Message {}, owner (current) {
 }
 
 void Task::submit (Message& msg) {
-    //assert(!isThread() || irqState() < 0);  // thread: must be in thread mode
-    //assert(isThread() || irqState() == 0); // task: must be in SVC or PendSV
-    auto& th = context();
-    auto tIdPriv = th.task;
-    th.task = tId;
-    process(msg); // TODO return value >0 must start the task's timer
-    th.task = tIdPriv;
+    assert(irqState() == 0); // must be in SVC or PendSV
+
+    auto& th = Thread::byId(owner);
+    if (th.block == &msg) {
+        insert(msg);
+        th.block = this;
+    } else
+        append(msg);
+
+    if (!inUse())
+        th.submit(*this);
 }
 
 Task& Task::byId (uint8_t id) {
@@ -274,34 +319,49 @@ void sys::send (Message& m) {
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
         msg.mDst = context().task;
-        if (id >= Task::LIMIT)
+        if (id < Task::LIMIT)
+            Task::byId(id).submit(msg);
+        else
             Device::byId(id).start(msg);
         return id;
     };
     auto id = svc((int) f, (int) &m);
-    if (id < Task::LIMIT)
-        Task::byId(id).submit(m);
+    (void) id;
+    //if (id < Task::LIMIT)
+    //    Task::byId(id).submit(m);
 }
 
 Message& sys::recv () {
     auto f = +[]() {
         auto& th = context();
-        if (th.isEmpty()) {
-            SCB[0x10](4) = 1; // SEVONPEND to wake even when irqs are disabled
-            asm ("wfe");      // make sure "real" IRQs will resume after this
+        if (th.block != nullptr || th.isEmpty()) {
+            th.reschedule(th.WAIT);
+            return (Message*) nullptr;
         }
         return th.pull();
     };
     while (true)
-        if (auto mp = (Message*) svc((int) f); mp != nullptr)
-            return *mp;
+        if (auto mp = (Message*) svc((int) f); mp!= nullptr) {
+            if (mp->mDst != Task::MARKER)
+                return *mp;
+
+            auto& th = context();
+            auto& tk = *(Task*) mp;
+
+            auto tIdPriv = th.task;
+            th.task = tk.tId;
+            while (!tk.isEmpty())
+                tk.process(*tk.pull()); // TODO return val >0 must start timer
+            th.task = tIdPriv;
+        }
 }
 
 void sys::call (Message& msg) {
-    context().block = &msg;
+    auto& th = context();
+    th.block = &msg;
     send(msg);
     (void) recv();
-    context().block = nullptr;
+    th.block = nullptr;
 }
 
 //------------------------------------------------------------------------ pool

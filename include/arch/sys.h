@@ -41,17 +41,17 @@ protected:
 static_assert(sizeof (Chain) == 4);
 
 struct Task : Message, Chain {
-    enum { LIMIT = 30 };
+    enum { LIMIT = 30, MARKER = 255 };
 
-    uint8_t tId, owner;
-    Message timer {};
+    uint8_t tId, owner;      // id of this task and of its owning thread
+    Message timer {};        // per-task timer
 
     Task ();
     // TODO ~Task ();
 
     bool isThread () const { return tId == owner; }
 
-    void submit (Message& msg);
+    virtual void submit (Message& msg);
     virtual int process (Message& msg) =0;
 
     static Task& byId (uint8_t id);
