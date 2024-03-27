@@ -116,9 +116,14 @@ struct Thread final : Task {
     }
 
     int process (Message& msg) override {
-fail();
-        (void) msg;
-        return 0; // TODO
+        auto& tk = (Task&) msg;
+
+        auto saved = task;
+        task = tk.tId;
+        while (!tk.isEmpty())
+            tk.process(*tk.pull()); // TODO return val >0 must start timer
+        task = saved;
+        return 0;
     }
 
     static Thread* entry (uint8_t id) {
@@ -344,15 +349,7 @@ Message& sys::recv () {
         if (auto mp = (Message*) svc((int) f); mp!= nullptr) {
             if (mp->mDst != Task::MARKER)
                 return *mp;
-
-            auto& th = context();
-            auto& tk = *(Task*) mp;
-
-            auto tIdPriv = th.task;
-            th.task = tk.tId;
-            while (!tk.isEmpty())
-                tk.process(*tk.pull()); // TODO return val >0 must start timer
-            th.task = tIdPriv;
+            context().process(*mp); // this msg is in fact a task header
         }
 }
 
@@ -360,7 +357,7 @@ void sys::call (Message& msg) {
     auto& th = context();
     th.block = &msg;
     send(msg);
-    (void) recv();
+    [[maybe_unused]] auto& r = recv(); assert(&r == &msg);
     th.block = nullptr;
 }
 
