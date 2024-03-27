@@ -8,5 +8,6 @@
 #define UART_PINS  "A2:7,A3"
 #define UART_NAME  USART2
 #define UART_FREQ  16
+#define UART_VERS  2
 #define UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,1-1,1-0,3-0,27,26
 //CG]
