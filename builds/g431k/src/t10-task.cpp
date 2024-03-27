@@ -20,6 +20,8 @@ int main () {
     sys::call(m);
     assert(m.mLen == 222);
 
+    sys::wait(10);
+
     assert(!m.inUse());
     sys::call(m);
     assert(m.mLen == 444);

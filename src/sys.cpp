@@ -116,12 +116,18 @@ struct Thread final : Task {
     }
 
     int process (Message& msg) override {
+        assert(msg.mDst == MARKER);
         auto& tk = (Task&) msg;
+        assert(&tk == &Task::byId(tk.tId)); // make sure this really is a task
 
         auto saved = task;
         task = tk.tId;
+        //auto saved2 = block;
+        //block = nullptr;
+assert(block == nullptr);
         while (!tk.isEmpty())
             tk.process(*tk.pull()); // TODO return val >0 must start timer
+        //block = saved2;
         task = saved;
         return 0;
     }
@@ -321,6 +327,7 @@ void Device::reply (Message* mp) {
 //------------------------------------------------------------------- send/recv
 
 void sys::send (Message& m) {
+    assert(irqState() < 0); // must be in thread mode
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
         msg.mDst = context().task;
@@ -337,6 +344,7 @@ void sys::send (Message& m) {
 }
 
 Message& sys::recv () {
+    assert(irqState() < 0); // must be in thread mode
     auto f = +[]() {
         auto& th = context();
         if (th.block != nullptr || th.isEmpty()) {
@@ -364,6 +372,7 @@ void sys::call (Message& msg) {
 //------------------------------------------------------------------------ pool
 
 uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
+    assert(irqState() < 0); // must be in thread mode
     auto f = +[](uint32_t bytes, uint8_t* ptr, uint32_t align) {
         if (bytes > 0) {
             if (align > 8)
