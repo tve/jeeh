@@ -12,12 +12,12 @@ void logf (char const* fmt ...);
 inline void (*hardFaulter) (uint32_t*) = nullptr;
 
 struct Message {
-    uint8_t   mDst =0;
-    int8_t    mTag =0;
-    uint16_t  mLen =0;
-    uint8_t*  mPtr =nullptr;
-    uintptr_t mArg =0;
-    Message*  mLnk =this;
+    uint8_t  mDst =0;
+    int8_t   mTag =0;
+    uint16_t mLen =0;
+    uint8_t* mPtr =nullptr;
+    intptr_t mArg =0;
+    Message* mLnk =this;
 
     bool inUse () const { return mLnk != this; }
 
@@ -106,6 +106,17 @@ namespace sys {
     void call (Message& msg);
     void wait (uint16_t ms);
 
-    Message& fork (uint32_t*, uint16_t, int (*)(Message&), uintptr_t =0);
+    void init (uint32_t* ptr, uint32_t len);
+    Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
+    void quit (intptr_t =0);
+
+    template< uint32_t N > // see Sys::fork comment
+    void init (uint32_t (&stack)[N]) { init (stack, N); }
+
+    // when handed an array as stack, this variant will auto-derive its size
+    template< uint32_t N >
+    inline static Message& fork (uint32_t (&s)[N], int (*f)(Message&), intptr_t a =0) {
+        return fork(s, N, f, a);
+    }
 
 } // namespace sys

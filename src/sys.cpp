@@ -98,6 +98,8 @@ struct Thread final : Task {
     uint8_t state =RUN;      // current state of this thread
     uint8_t task;            // current task, else this thread itself
 
+    static void* operator new(size_t, void* p) { return p; }
+
     Thread () {
         task = owner = tId;
     }
@@ -112,7 +114,7 @@ struct Thread final : Task {
             append(msg);
 
         if (state == WAIT)
-            reschedule(RUN);
+            reschedule();
     }
 
     int process (Message& msg) override {
@@ -143,7 +145,8 @@ assert(block == nullptr);
         return *p;
     }
 
-    void reschedule (int newState) {
+    void reschedule (int newState =RUN) {
+        assert(irqState() == 0); // must be in SVC or PendSV
         state = newState;
         if (tId > nextToRun)
             nextToRun = tId;
@@ -387,6 +390,82 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
         return ptr;
     };
     return (uint8_t*) svc((int) f, b, (int) p, a);
+}
+
+//------------------------------------------------------------------------ pool
+
+void sys::init (uint32_t* ptr, uint32_t len) {
+    memset(ptr, 0xDD, len * sizeof *ptr);
+
+    // stay in protected thread mode, switch to separate stacks
+    asm volatile (
+        " mov r3,sp      \n"
+        " msr psp,r3     \n"
+        " mov r3,#2      \n"
+        " msr control,r3 \n"
+        " isb            \n"
+        " msr msp,%0     \n"
+    :: "r" ((uintptr_t) (ptr + len)) : "r3");
+
+#if 0 // see Device::irqInstall
+    // PendSV is used to switch stacks with the lowest interrupt priority
+    // (SHPR3, PRI_14) it always runs last, i.e. as only active exception
+    SCB.byte(0x22) = 0xFF;
+
+    // SVC is used to protect kernel-specific non-preemptible actions
+    // (SHPR2, PRI_11) needs to be above PendSV to be callable from it
+    // another use is for IRQs which want to be postponed during SVCs
+    SCB.byte(0x1F) = 0xDF;
+#endif
+
+#if 0
+    // TODO can't always switch to unprivileged mode at this point:
+    //  - polled console I/O will fail due to access to UART regs
+    //  - blinking an LED will need access to GPIO registers
+    //  - use of the DWT cycle counter requires privileged mode
+    //  - solution: support running some threads as privileged
+    asm volatile (
+        " mov r1,#3      \n"
+        " msr control,r1 \n"
+    ::: "r1");
+#endif
+}
+
+//------------------------------------------------------------------- fork/quit
+
+Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
+    memset(p, 0xDD, n * sizeof *p);
+    auto tp = new (p) Thread;
+    tp->mDst = current;
+    tp->mLen = n;
+    tp->mArg = a;
+
+    auto sp = p + n - 16;
+    sp[8] = (uint32_t) tp;          // r0
+    sp[13] = (uint32_t) sys::quit;  // lr
+    sp[14] = (uint32_t) h;          // pc
+    sp[15] = 0x0100'0000;           // psr
+    tp->sp = sp;
+
+    auto f = +[](Thread* tp) {
+        tp->reschedule();
+    };
+    svc((int) f, (int) tp);
+    return *tp;
+}
+
+void sys::quit (intptr_t r) {
+    auto f = +[](intptr_t ret) {
+        auto& th = context();
+        // can't Sys::send(th) as this would nest an SVC inside this SVC
+        auto& parent = Thread::byId(th.mDst);
+        th.mDst = th.tId;
+        th.mTag = 'Q';
+        th.mArg = ret;
+        parent.submit(th);
+        th.reschedule(th.DEAD);
+    };
+    svc((int) f, r);
 }
 
 //------------------------------------------------------------------- HardFault
