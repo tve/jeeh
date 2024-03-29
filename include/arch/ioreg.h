@@ -3,7 +3,7 @@
 template< uint32_t A >
 struct IoReg {
     static constexpr auto ADDR = A;
-#if STM32F1 | STM32F3 | STM32F4 | STM32L4
+#if STM32F1 | STM32F3 | STM32F4 | STM32G4 | STM32L4
     static constexpr auto CAN_BIT_BAND = (A>>20) == 0x200 || (A>>20) == 0x400;
 #else
     static constexpr auto CAN_BIT_BAND = false;
