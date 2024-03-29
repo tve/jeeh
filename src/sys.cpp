@@ -394,7 +394,7 @@ uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
     return (uint8_t*) svc((int) f, b, (int) p, a);
 }
 
-//------------------------------------------------------------------------ pool
+//------------------------------------------------------------------------ init
 
 void sys::init (uint32_t* ptr, uint32_t len) {
     memset(ptr, 0xDD, len * sizeof *ptr);

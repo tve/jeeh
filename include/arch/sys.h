@@ -99,19 +99,19 @@ static_assert(sizeof (Device) == 8);
 namespace sys {
     int svc (int f, int x =0, int y =0, int z =0);
 
-    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
-
     void send (Message& msg);
     Message& recv ();
     void call (Message& msg);
     void wait (uint16_t ms);
+
+    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
 
     void init (uint32_t* ptr, uint32_t len);
     Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
     void quit (intptr_t ret =0);
 
     template< uint32_t N > // see Sys::fork comment
-    void init (uint32_t (&stack)[N]) { init (stack, N); }
+    void init (uint32_t (&stack)[N]) { init(stack, N); }
 
     // when handed an array as stack, this variant will auto-derive its size
     template< uint32_t N >

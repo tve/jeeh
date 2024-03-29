@@ -5,7 +5,7 @@ using namespace jeeh;
 struct Doubler : Task {
     int process (Message& msg) override {
 logf("10 %p %d %d", &msg, msg.mDst, msg.mLen);
-        sys::wait(5); // nested blocking call
+        //sys::wait(5); // nested blocking call
 logf("11");
         msg.mLen *= 2;
         sys::send(msg);
