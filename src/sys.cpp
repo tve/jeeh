@@ -5,6 +5,7 @@ using namespace jeeh;
 
 inline namespace {
 
+    [[maybe_unused]]
     int irqState () {
         switch (SCB[0x4] & 0x1FF) {
             case 0:           return -1; // thread mode, not in any exception

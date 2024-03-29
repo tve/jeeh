@@ -74,7 +74,6 @@ struct Ticker : Device, Chain {
 
         uint16_t next = cHead->mLen - ticks - 1;
         rate = next < 100 ? next+1 : 100;
-//logf("r %d", rate);
 
         STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
         STK[0x0] = 0b011;                       // enable, clk/8 mode
@@ -91,8 +90,7 @@ struct Ticker : Device, Chain {
         }
 
         if (ms < rate) {
-//logf("s %d %d", ms, rate);
-            STK[0x0] = 0;     // stop the clock
+            //STK[0x0] = 0;     // stop the clock
             ticks = millis(); // update actual tick count
         }
 
@@ -113,7 +111,6 @@ struct Ticker : Device, Chain {
         while (expired())
             reply(pull());
         if (isEmpty()) {
-//logf("e %d @ %d", rate, ticks);
             STK[0x0] = 0; // disable
         } else
             init();
@@ -123,7 +120,6 @@ struct Ticker : Device, Chain {
         ticks += rate;
         assert(cHead != nullptr);
         uint16_t next = cHead->mLen - ticks - 1;
-//logf("n %d r %d @ %d", next, rate, ticks);
         return next < rate || next > 60'000;
     }
 
