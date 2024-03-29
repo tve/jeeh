@@ -108,7 +108,7 @@ namespace sys {
 
     void init (uint32_t* ptr, uint32_t len);
     Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
-    void quit (intptr_t =0);
+    void quit (intptr_t ret =0);
 
     template< uint32_t N > // see Sys::fork comment
     void init (uint32_t (&stack)[N]) { init (stack, N); }

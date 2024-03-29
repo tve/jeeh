@@ -440,12 +440,11 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
     tp->mLen = n;
     tp->mArg = a;
 
-    auto sp = p + n - 16;
-    sp[8] = (uint32_t) tp;          // r0
-    sp[13] = (uint32_t) sys::quit;  // lr
-    sp[14] = (uint32_t) h;          // pc
-    sp[15] = 0x0100'0000;           // psr
-    tp->sp = sp;
+    tp->sp = p + n - 16;
+    tp->sp[8] = (uint32_t) tp;          // r0
+    tp->sp[13] = (uint32_t) sys::quit;  // lr
+    tp->sp[14] = (uint32_t) h;          // pc
+    tp->sp[15] = 0x0100'0000;           // psr
 
     auto f = +[](Thread* tp) {
         tp->reschedule();
@@ -454,18 +453,17 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
     return *tp;
 }
 
-void sys::quit (intptr_t r) {
-    auto f = +[](intptr_t ret) {
-        auto& th = context();
-        // can't Sys::send(th) as this would nest an SVC inside this SVC
-        auto& parent = Thread::byId(th.mDst);
-        th.mDst = th.tId;
-        th.mTag = 'Q';
-        th.mArg = ret;
-        parent.submit(th);
+void sys::quit (intptr_t ret) {
+    auto& th = context();
+    th.mTag = 'Q';
+    th.mArg = ret;
+    send(th);
+    th.~Thread();
+
+    auto f = +[](Thread& th) {
         th.reschedule(th.DEAD);
     };
-    svc((int) f, r);
+    svc((int) f, (int) &th);
 }
 
 //------------------------------------------------------------------- HardFault

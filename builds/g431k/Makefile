@@ -1,7 +1,7 @@
 E = t00
 X = -e /examples/ -e /log/
-O = ~/.platformio/packages/tool-openocd
-A = arm-none-eabi-addr2line -Cfe .pio/build/$E/firmware.elf
+O = ~/.platformio/packages/tool-openocd/bin
+G = ~/.platformio/packages/toolchain-gccarmnoneeabi/bin
 
 all: clean
 	git ls-files ../.. | grep  -v $X | entr -c time make all-run
@@ -15,11 +15,15 @@ check-run:
 
 assert:
 	pio run -e $E -s
-	@ read -p "enter address: " addr; $A $$addr
+	@ read -p "enter address: " addr; \
+	  $G/arm-none-eabi-addr2line  -Cfe .pio/build/$E/firmware.elf $$addr
+
+sizes:
+	pio run -s && $G/arm-none-eabi-size -G .pio/build/*/firmware.elf
 
 openocd:
-	$O/bin/openocd
+	$O/openocd
 clean:
 	rm -rf .pio
 strip:
-	cd ../../make; ./codegen.py -s
+	cd ../../make && ./codegen.py -s
