@@ -19,7 +19,7 @@ assert:
 	  $G/arm-none-eabi-addr2line  -Cfe .pio/build/$E/firmware.elf $$addr
 
 sizes:
-	pio run -s && $G/arm-none-eabi-size -G .pio/build/*/firmware.elf
+	pio run -s && $G/arm-none-eabi-size .pio/build/*/firmware.elf
 
 openocd:
 	$O/openocd

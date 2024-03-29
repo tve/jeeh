@@ -7,7 +7,7 @@ struct Pin {
     constexpr int port () const { return id/16-1; }
     constexpr int pin () const { return id%16; }
 
-    __attribute__((always_inline))
+    [[gnu::always_inline]]
     constexpr auto reg (int off) const { return GPIOA[0x400*port()+off]; }
 
     auto read () const { return reg(IDR)(pin()); }
@@ -20,7 +20,7 @@ struct Pin {
     }
 
     // shorthand
-    __attribute__((always_inline))
+    [[gnu::always_inline]]
     void toggle () const {
         if constexpr (GPIOA.CAN_BIT_BAND)
             write(~reg(ODR)(pin()));

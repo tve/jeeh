@@ -98,7 +98,8 @@ struct Thread final : Task {
     uint8_t state =RUN;      // current state of this thread
     uint8_t task;            // current task, else this thread itself
 
-    static void* operator new(size_t, void* p) { return p; }
+    // see https://en.cppreference.com/w/cpp/memory/new/operator_new
+    static void* operator new (size_t, void* p) { return p; }
 
     Thread () {
         task = owner = tId;
