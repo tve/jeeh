@@ -120,3 +120,36 @@ namespace sys {
     }
 
 } // namespace sys
+
+namespace cache {
+#if STM32F7 || STM32H7
+    constexpr auto align = 32;
+
+    void enable (); // enables both I and D caches
+    void disable ();
+
+    // instruction cache
+    void invalCode (void* ptr, uint32_t len);
+
+    // data cache
+    void clean (void const* ptr, uint32_t len); // call before DMA TX
+    void inval (void const* ptr, uint32_t len); // call before DMA RX
+    void flush (void const* ptr, uint32_t len); // clean + inval
+#else
+    constexpr auto align = 4;
+
+    inline static void enable () {}
+    inline static void disable () {}
+    inline static void invalCode (void const*, uint32_t) {}
+    inline static void clean (void const*, uint32_t) {}
+    inline static void inval (void const*, uint32_t) {}
+    inline static void flush (void const*, uint32_t) {}
+#endif
+
+    template<typename T>
+    void clean (T const& obj) { clean(&obj, sizeof obj); }
+    template<typename T>
+    void inval (T const& obj) { inval(&obj, sizeof obj); }
+    template<typename T>
+    void flush (T const& obj) { flush(&obj, sizeof obj); }
+} // namespace cache

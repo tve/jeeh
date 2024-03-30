@@ -289,9 +289,9 @@ Device::Device (uint8_t id) : dId (id) {
     static_assert(LAST < BASE + 32); // bitmap must fit in uint32_t
 
     assert(BASE <= id && id <= LAST);
-    auto x = id - BASE;
-    assert(devices[x] == nullptr);
-    devices[x] = this;
+    auto o = id - BASE;
+    assert(devices[o] == nullptr);
+    devices[o] = this;
 }
 
 void Device::irqInstall (uint8_t num, uint8_t prio) {
@@ -301,7 +301,7 @@ void Device::irqInstall (uint8_t num, uint8_t prio) {
 //  SCB.byte(0x23) = 0xFF; // irq #15: SysTick - now in Ticker::init
 
     assert(num < (uint8_t) Irq::limit);
-    interrupts[num] = dId;
+    interrupts[num] = dId-BASE;
     NVIC.byte(0x300+num) = prio;
     NVIC[0x00 + 4*(num/32)] = 1 << num % 32;
 }
@@ -575,3 +575,22 @@ void SVC_Handler () {
         " bx    r2          \n"
     );
 }
+
+//------------------------------------------------------------------------- IRQ
+
+// override all the interrupt handlers to dispatch through a single function
+extern "C" {
+
+void irqDispatch () {
+    uint8_t irq = SCB[0x4] - 16; // ICSR
+    assert(irq < (uint8_t) Irq::limit);
+    auto o = interrupts[irq];
+    assert(devices[o] != nullptr);
+    devices[o]->irqTrigger(irq);
+}
+
+// to re-generate "stm32-irqs.h", see the "gen-irqs.sh" script
+#define IRQ(f)      [[gnu::alias ("irqDispatch")]] void f ();
+#include "arch/all-irqs.h"
+
+} // extern "C"
