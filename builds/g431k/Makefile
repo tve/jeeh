@@ -17,10 +17,10 @@ assert:
 	pio run -e $E -s
 	@ read -p "enter address: " addr; \
 	  $G/arm-none-eabi-addr2line  -Cfe .pio/build/$E/firmware.elf $$addr
-
+pull: strip
+	git pull
 sizes:
 	pio run -s && $G/arm-none-eabi-size .pio/build/*/firmware.elf
-
 openocd:
 	$O/openocd
 clean:
