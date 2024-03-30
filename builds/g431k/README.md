@@ -92,5 +92,9 @@ In order of increasing complexity:
   which sets up `SysTick` interrupts and implements a message-based timer chain.
 - **`t10-task`** - Create a very simple `Doubler` task, and use JeeH's
   message-based `sys::call()` mechanism to pass information into it and back.
+- **`t11-block`** - Use a blocking `sys::wait()` call inside a task. This needs
+  to be special-cased to suspend and resume the task's owner thread.
+- **`t12-thread`** - Fork a second thread and let them each block in an
+  alternating manner to exercise context switching, then wait on thread exit.
 
 _Work in progress ..._
