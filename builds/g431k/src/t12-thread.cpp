@@ -6,6 +6,8 @@ int myThread (Message&) {
     logf("20");
     sys::wait(10);
     logf("21");
+    sys::wait(20);
+    logf("22");
 
     return 12345;
 }
@@ -26,6 +28,8 @@ int main () {
     logf("12");
     sys::wait(10);
     logf("13");
+    sys::wait(20);
+    logf("14");
 
     auto& r = sys::recv();
     assert(&r == &my);

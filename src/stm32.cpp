@@ -72,8 +72,8 @@ struct Ticker : Device, Chain {
             ticksPerMs /= 2; // HPRE is set to 2 (AHB freq must be <= 150 MHz)
 #endif
 
-        uint16_t next = cHead->mLen - ticks - 1;
-        rate = next < 100 ? next+1 : 100;
+        uint16_t next = cHead->mLen - ticks;
+        rate = next < 100 ? next : 100;
 
         STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
         STK[0x0] = 0b011;                       // enable, clk/8 mode
@@ -84,17 +84,17 @@ struct Ticker : Device, Chain {
         assert(ms <= 60'000);
 
         if (!isEmpty()) {
-            auto next = (uint16_t) (cHead->mLen - ticks - 1);
+            auto next = (uint16_t) (cHead->mLen - ticks);
             if (ms > next)
                 ms = next;
         }
 
         if (ms < rate) {
-            //STK[0x0] = 0;     // stop the clock
             ticks = millis(); // update actual tick count
+            STK[0x0] = 0;     // stop the clock
         }
 
-        auto t = millis();
+        auto t = ticks;
         auto pp = &cHead; // insert in proper position
         while (*pp != nullptr && msg.mLen >= (uint16_t) ((*pp)->mLen - t))
             pp = &(*pp)->mLnk;
@@ -103,28 +103,27 @@ struct Ticker : Device, Chain {
         msg.mLnk = *pp;
         *pp = &msg;
 
-        if (STK[0x0] == 0)
-            init();
+        finish();
     }
 
     void finish () override {
         while (expired())
             reply(pull());
-        if (isEmpty()) {
+        if (isEmpty())
             STK[0x0] = 0; // disable
-        } else
+        else
             init();
     }
 
     bool interrupt (int) override {
         ticks += rate;
         assert(cHead != nullptr);
-        uint16_t next = cHead->mLen - ticks - 1;
+        uint16_t next = cHead->mLen - ticks;
         return next < rate || next > 60'000;
     }
 
     bool expired () const {
-        return !isEmpty() && (uint16_t) (cHead->mLen - millis() - 1) > 60'000;
+        return !isEmpty() && (uint16_t) (cHead->mLen - ticks - 1) > 60'000;
     }
 
     uint32_t millis () const {
