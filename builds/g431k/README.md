@@ -96,5 +96,9 @@ In order of increasing complexity:
   to be special-cased to suspend and resume the task's owner thread.
 - **`t12-thread`** - Fork a second thread and let them each block in an
   alternating manner to exercise context switching, then wait on thread exit.
+- **`t13-uart`** - Test the DMA-based UART driver by sending out text over the
+  loopback-jumper and reporting what is being received.
+- **`t14-exti`** - Test the EXTI driver, i.e. blocking until a pin-change
+  interrupt comes back after toggling an output jumpered to an input.
 
 _Work in progress ..._

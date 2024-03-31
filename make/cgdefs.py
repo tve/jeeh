@@ -25,6 +25,9 @@ def BOARD(block, name):
         print('not found:', tag)
         return []
     info = projOpts[tag].split()
+    if name == 'exti':
+        return [f'#define EXT_IN  "{info[0]}"',
+                f'#define EXT_OUT "{info[1]}"']
     if name == 'leds':
         r = [f'#define LED  "{info[0]}"']
         if len(info) > 1:
