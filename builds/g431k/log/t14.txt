@@ -1,2 +1,8 @@
 TEST
-TIMEOUT
+in 1
+in 0
+in 1
+in 0
+in 1
+in 0
+OK

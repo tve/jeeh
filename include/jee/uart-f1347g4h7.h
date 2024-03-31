@@ -2,8 +2,6 @@ namespace jeeh {
 
 struct Uart : Device {
     struct Config {
-        char const* pins;
-        uint32_t baud;
         uint32_t uart;
         uint16_t uena;
         uint8_t mhz;
@@ -18,14 +16,15 @@ struct Uart : Device {
 
     Uart () : Device ('U') {}
 
-    void init (Config const& config) {
+    void init (char const* pins, uint32_t baud, Config const& config) {
+        Pin::config(pins);
+
         static_assert(RXBYTES % cache::align == 0);
         static_assert(TXBYTES % cache::align == 0);
         rxBuf = sys::pool(RXBYTES+TXBYTES, nullptr, cache::align);
         txBuf = rxBuf + RXBYTES;
 
         dev = config;
-        Pin::config(dev.pins);
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
         RCC(dev.uena, 1) = 1;          // uart on
 
@@ -61,7 +60,7 @@ struct Uart : Device {
         dmaTX(CCR) = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
 #endif
 
-        baud(dev.baud);
+        baudRate(baud);
         devReg(CR3) = 0b1100'0000; // DMAT DMAR
 #if STM32F1 | STM32F4
         devReg(CR1) = 0b0010'0000'0001'1100 ; // UE IDLEIE TE RE
@@ -79,7 +78,7 @@ struct Uart : Device {
         RCC(ena::DMA1+dev.dma, 1) = 0; // dma off
     }
 
-    void baud (uint32_t bd) const {
+    void baudRate (uint32_t bd) const {
         auto n = SystemCoreClock;
         while (n > dev.mhz * 1'000'000)
             n /= 2;

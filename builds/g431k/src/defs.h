@@ -13,5 +13,5 @@
 #define UART_NAME  USART2
 #define UART_FREQ  85
 #define UART_VERS  2
-#define UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,1-1,1-0,3-0,27,26
+#define UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,1-1,1-0,3-0,26,27
 //CG]

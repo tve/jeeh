@@ -9,12 +9,19 @@ Uart uart;
 int myThread (Message&) {
     logf("20");
     Message m { uart.dId, 'R' };
-    sys::send(m);
-    logf("21");
-    while (true) {
+    do {
+        sys::send(m);
+        logf("21");
         sys::recv();
         logf("22 %p #%d = '%.*s'", m.mPtr, m.mLen, m.mLen, m.mPtr);
-    }
+    } while (m.mPtr[m.mLen-1] != '!');
+    logf("23");
+    return 0;
+}
+
+void uartWrite (void const* ptr, size_t len) {
+    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
+    sys::call(m);
 }
 
 int main () {
@@ -24,25 +31,24 @@ int main () {
     sys::init(stack);
 
     logf("10");
-    uart.init(Uart::Config{ UART_PINS, 115200, UART_NAME.ADDR,
-                ena::UART_NAME, UART_FREQ, Irq::UART_NAME, UART_CONF });
+    uart.init(UART_PINS, 115200, { UART_NAME.ADDR, ena::UART_NAME,
+                                   UART_FREQ, Irq::UART_NAME, UART_CONF });
 
+#if 1
     logf("30");
-    Message m { uart.dId, 'W', 6, (uint8_t*) "Hello!" };
-    sys::call(m);
+    uartWrite("Hello\n", 6);
     logf("31");
+    uartWrite(" Hiya\n", 6);
+    logf("32");
+    fail();
+#endif
 
-fail();
     uint32_t myStack [200];
     [[maybe_unused]] auto& my = sys::fork(myStack, myThread);
 
-    logf("11");
-    sys::wait(5);
-    logf("12");
-    sys::wait(10);
-    logf("13");
-    sys::wait(20);
-    logf("14");
+#define W(s) uartWrite(s "\n", sizeof s)
+#include "pattern.h"
+    uartWrite("!", 1); // final text quits myThread
 
     auto& r = sys::recv();
     assert(&r == &my);

@@ -16,12 +16,14 @@ int exti (Message&) {
 
     while (true) {
         sys::call(msg); // configure and block until pin changes
+        logf("in %d", +in);
         led.toggle();
     }
 }
 
 int main () {
     Tester t;
+    led.mode("P");
 
     uint32_t stack [300];
     sys::init(stack);
@@ -32,12 +34,10 @@ int main () {
     uint32_t extiStack [150];
     sys::fork(extiStack, exti);
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 3; ++i) {
         out = 1;
         sys::wait(100);
         out = 0;
         sys::wait(100);
     }
-
-    fail();
 }

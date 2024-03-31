@@ -2,6 +2,4 @@ TEST
 10
 30
 31
-failed at src/t13-uart.cpp:35
-failed caller: 0x20000507
-FAIL
+TIMEOUT
