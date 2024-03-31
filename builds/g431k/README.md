@@ -3,6 +3,46 @@
 > Note: some of these tests expect a jumper between D0 and D1 (GPIO PA9 and
 > PA10).
 
+### Summary of tests
+
+Somewhat in order of increasing complexity:
+
+- **`t00-itm`** - This is a minimal build to verify the test mechanism, by
+  simply reporting the lines `TEST` and `OK`. It redefines `jeeh::fail()` to
+  reduce the code footprint.
+- **`t01-tester`** - This verifies that some boilerplate code used in these
+  tests is functional. It does nothing more than instantiate the `Tester` object
+  defined in `src/test.h`.
+- **`t02-dump`** - A quick check that many lines of test output can be sent
+  back-to-back, and that all of it comes out and gets captured.
+- **`t03-led`** - Test the use of GPIO pins and JeeH's `Pin` class. This turns
+  the on-board LED on and then exits.
+- **`t04-jumper`** - Verify that the jumper between `PA9` and `PA10` is present.
+  This can then be used to test EXTI interrupts and a UART in loopback mode.
+- **`t05-serio`** - Implement a crude polled UART and send some text through its
+  FIFO's to verify that an entire (short) message can pass through correctly.
+- **`t06-logf`** - Test the `logf()` function in JeeH, which is like printf, but
+  sends it output over ITM/SWO (and drops it when no debugger is present).
+- **`t07-fault`** - Generate a fault exception (a "usage fault" in this case) to
+  verify that it is caught and reported by the `hardFaultHandler` set up by the
+  `Tester` object.
+- **`t08-pool`** - Try out the memory allocator via the `sys::pool()` system
+  call interface (which makes it thread-safe).
+- **`t09-wait`** - Perform a brief delay through the `sys::wait()` system call,
+  which sets up `SysTick` interrupts and implements a message-based timer chain.
+- **`t10-task`** - Create a very simple `Doubler` task, and use JeeH's
+  message-based `sys::call()` mechanism to pass information into it and back.
+- **`t11-block`** - Use a blocking `sys::wait()` call inside a task. This needs
+  to be special-cased to suspend and resume the task's owner thread.
+- **`t12-thread`** - Fork a second thread and let them each block in an
+  alternating manner to exercise context switching, then wait on thread exit.
+- **`t13-uart`** - Test the DMA-based UART driver by sending out text over the
+  loopback-jumper and reporting what is being received.
+- **`t14-exti`** - Test the EXTI driver, i.e. blocking until a pin-change
+  interrupt comes back after toggling an output jumpered to an input.
+- **`t15-cycles`** - Access the CPU cycle counter present in all ARM Cortex
+  families except M0 and M0+.
+
 ### RAM-based uploads
 
 To improve test throughput, the builds are RAM-based. Uploads to RAM are just a
@@ -62,43 +102,5 @@ than one CPU type, the generated files will differ, based on whichever build
 came last.  There is a "strip" option in the code generator, where it removes
 all the lines that can be reproduced again later on. This can be done with `make
 strip`.
-
-### Summary of tests so far
-
-In order of increasing complexity:
-
-- **`t00-itm`** - This is a minimal build to verify the test mechanism, by
-  simply reporting the lines `TEST` and `OK`. It redefines `jeeh::fail()` to
-  reduce the code footprint.
-- **`t01-tester`** - This verifies that some boilerplate code used in these
-  tests is functional. It does nothing more than instantiate the `Tester` object
-  defined in `src/test.h`.
-- **`t02-dump`** - A quick check that many lines of test output can be sent
-  back-to-back, and that all of it comes out and gets captured.
-- **`t03-led`** - Test the use of GPIO pins and JeeH's `Pin` class. This turns
-  the on-board LED on and then exits.
-- **`t04-jumper`** - Verify that the jumper between `PA9` and `PA10` is present.
-  This can then be used to test EXTI interrupts and a UART in loopback mode.
-- **`t05-serio`** - Implement a crude polled UART and send some text through its
-  FIFO's to verify that an entire (short) message can pass through correctly.
-- **`t06-logf`** - Test the `logf()` function in JeeH, which is like printf, but
-  sends it output over ITM/SWO (and drops it when no debugger is present).
-- **`t07-fault`** - Generate a fault exception (a "usage fault" in this case) to
-  verify that it is caught and reported by the `hardFaultHandler` set up by the
-  `Tester` object.
-- **`t08-pool`** - Try out the memory allocator via the `sys::pool()` system
-  call interface (which makes it thread-safe).
-- **`t09-wait`** - Perform a brief delay through the `sys::wait()` system call,
-  which sets up `SysTick` interrupts and implements a message-based timer chain.
-- **`t10-task`** - Create a very simple `Doubler` task, and use JeeH's
-  message-based `sys::call()` mechanism to pass information into it and back.
-- **`t11-block`** - Use a blocking `sys::wait()` call inside a task. This needs
-  to be special-cased to suspend and resume the task's owner thread.
-- **`t12-thread`** - Fork a second thread and let them each block in an
-  alternating manner to exercise context switching, then wait on thread exit.
-- **`t13-uart`** - Test the DMA-based UART driver by sending out text over the
-  loopback-jumper and reporting what is being received.
-- **`t14-exti`** - Test the EXTI driver, i.e. blocking until a pin-change
-  interrupt comes back after toggling an output jumpered to an input.
 
 _Work in progress ..._

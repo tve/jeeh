@@ -1,0 +1,3 @@
+TEST
+81624 cycles, 5101 us
+OK

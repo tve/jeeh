@@ -1,3 +1,4 @@
+#include "cycles.h"
 #include "exti.h"
 
 #if STM32F1 | STM32F3 | STM32F4 | STM32F7 | STM32G4 | STM32H7
