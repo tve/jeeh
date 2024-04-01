@@ -75,6 +75,7 @@ struct Tester {
         *(uint32_t**) 0xE000'ED08 = g_pfnVectors; // fix SCB->VTOR if in RAM
 
         hardFaulter = hardFaultHandler;
+        fastClock();
 
         itmWrite("TEST\n", 5);
     }

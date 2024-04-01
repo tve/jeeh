@@ -6,6 +6,7 @@ void jeeh::fail (void const*, char const*, int) {
 }
 
 int main () {
+    fastClock();
     itmWrite("TEST\n"
              "OK\n", 8);
 }

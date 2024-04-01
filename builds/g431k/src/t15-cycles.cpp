@@ -7,10 +7,17 @@ int main () {
     Tester t;
 
     cycles::init();
+
     auto c = cycles::count();
-
     sys::wait(5);
-
     c = cycles::count() - c;
-    logf("%d cycles, %d us", c, c / (SystemCoreClock / 1'000'000));
+
+    logf("wait: %d cycles, %d us", c, c / (SystemCoreClock / 1'000'000));
+    sys::wait(2);
+
+    c = cycles::count();
+    itmWrite("by design, this message has exactly 50 characters\n", 50);
+    c = cycles::count() - c;
+
+    logf("itm:  %d cycles, %d us", c, c / (SystemCoreClock / 1'000'000));
 }
