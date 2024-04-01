@@ -8,15 +8,14 @@ Uart uart;
 
 int myThread (Message&) {
     logf("20");
+    auto n = 0;
     Message m { uart.dId, 'R' };
     do {
-        sys::send(m);
-        logf("21");
-        sys::recv();
-        logf("22 %p #%d = '%.*s'", m.mPtr, m.mLen, m.mLen, m.mPtr);
+        sys::call(m);
+        n += m.mLen;
     } while (m.mPtr[m.mLen-1] != '!');
-    logf("23");
-    return 0;
+    logf("22");
+    return n;
 }
 
 void uartWrite (void const* ptr, size_t len) {
@@ -30,18 +29,10 @@ int main () {
     uint32_t stack [300];
     sys::init(stack);
 
-    logf("10");
-    uart.init(UART_PINS, 115200, { UART_NAME.ADDR, ena::UART_NAME,
-                                   UART_FREQ, Irq::UART_NAME, UART_CONF });
-
-#if 1
-    logf("30");
-    uartWrite("Hello\n", 6);
-    logf("31");
-    uartWrite(" Hiya\n", 6);
-    logf("32");
-    fail();
-#endif
+    auto baud = SystemCoreClock / 16; // i.e. 9.375 Mbaud @ 150 MHz
+    logf("10 %d", baud);
+    uart.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
+                                 UART_FREQ, Irq::UART_NAME, UART_CONF });
 
     uint32_t myStack [200];
     [[maybe_unused]] auto& my = sys::fork(myStack, myThread);
@@ -53,5 +44,5 @@ int main () {
     auto& r = sys::recv();
     assert(&r == &my);
     logf("14 %d", r.mArg);
-    assert(r.mArg == 12345);
+    assert(r.mArg == 71*71+1);
 }

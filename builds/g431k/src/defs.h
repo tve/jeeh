@@ -9,9 +9,9 @@
 #define SERIO_PINS "A9:7,A10"
 
 //CG[ board uart
-#define UART_PINS  "A2:7,A3"
-#define UART_NAME  USART2
-#define UART_FREQ  85
+#define UART_PINS  "A9:7,A10"
+#define UART_NAME  USART1
+#define UART_FREQ  150
 #define UART_VERS  2
-#define UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,1-1,1-0,3-0,26,27
+#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,24,25
 //CG]
