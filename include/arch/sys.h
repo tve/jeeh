@@ -11,6 +11,29 @@ void logf (char const* fmt ...);
 
 inline void (*hardFaulter) (uint32_t*) = nullptr;
 
+template <typename T>
+T take (T& x) { T r = x; x = {}; return r; }
+
+template <typename T>
+void swap (T& a, T& b) { T t = a; a = b; b = t; }
+
+template <typename T>
+void duffs (T* dst, T const* src, uint32_t count) {
+    // see https://en.wikipedia.org/wiki/Duff%27s_device
+    auto n = (count + 7) / 8;
+    switch (count % 8) {
+        case 0: do { *dst++ = *src++; [[fallthrough]];
+        case 7:      *dst++ = *src++; [[fallthrough]];
+        case 6:      *dst++ = *src++; [[fallthrough]];
+        case 5:      *dst++ = *src++; [[fallthrough]];
+        case 4:      *dst++ = *src++; [[fallthrough]];
+        case 3:      *dst++ = *src++; [[fallthrough]];
+        case 2:      *dst++ = *src++; [[fallthrough]];
+        case 1:      *dst++ = *src++;
+                } while (--n > 0);
+    }
+}
+
 struct Message {
     uint8_t  mDst =0;
     int8_t   mTag =0;

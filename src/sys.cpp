@@ -187,7 +187,7 @@ Task::Task () : Message { MARKER, '?' }, owner (current) {
     for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
             assert(i == 0 || i != owner); // task zero is also main thread
-            tId = i;
+            mTag = tId = i;
             tasks[i] = this;
             return;
         }

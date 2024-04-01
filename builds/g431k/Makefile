@@ -23,7 +23,11 @@ sizes:
 	pio run -s && $G/arm-none-eabi-size .pio/build/*/firmware.elf
 openocd:
 	$O/openocd
+stub:
+	cd stub && pio run -t upload
 clean:
 	rm -rf .pio
 strip:
 	cd ../../make && ./codegen.py -s
+
+.PHONY: stub
