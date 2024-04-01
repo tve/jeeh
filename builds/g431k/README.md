@@ -25,6 +25,8 @@ Test  | Name   | Description
 `t13` | uart   | Test the DMA-based UART driver by sending out text over the loopback-jumper at maximum speed and counting the bytes being received.
 `t14` | exti   | Test the EXTI driver, i.e. blocking until a pin-change interrupt comes back after toggling an output jumpered to an input.
 `t15` | cycles | Access the CPU cycle counter present in all ARM Cortex families except M0 and M0+.
+`t16` | philo  | An implementation of the "dining philosophers problem", using threads and the `Lock` type to synchronize their resource access.
+`t17` | rtc    | Test the `DateTime` class and the Real-Time Clock (the Nucleo-32's STM32G431KB can only run its RTC off the LSI clock).
 
 ### RAM-based uploads
 

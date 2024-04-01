@@ -144,6 +144,94 @@ namespace sys {
 
 } // namespace sys
 
+class DateTime {
+    constexpr static uint8_t daysInMonth [] = {
+        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+    };
+
+    constexpr static uint8_t conv2d (const char* p) {
+        auto v = 0;
+        if ('0' <= *p && *p <= '9')
+            v = *p - '0';
+        return 10 * v + *++p - '0';
+    };
+
+    constexpr static uint8_t month2d (const char* p) {
+        // Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+        switch (p[0]) {
+            case 'J': return p[1] == 'a' ? 1 : p[2] == 'n' ? 6 : 7;
+            case 'F': return 2;
+            case 'A': return p[2] == 'r' ? 4 : 8;
+            case 'M': return p[2] == 'r' ? 3 : 5;
+            case 'S': return 9;
+            case 'O': return 10;
+            case 'N': return 11;
+            case 'D': return 12;
+        }
+        return 0;
+    }
+
+public:
+    uint8_t yr, mo, dy, hh, mm, ss;
+
+    constexpr DateTime (int y, int m, int d, int h =0, int i =0, int s =0)
+        : yr (y % 100), mo (m), dy (d), hh (h), mm (i), ss (s) {}
+
+    // sample input: d = "Jan  1 2000", t = "12:34:56"
+    constexpr DateTime (char const* d =__DATE__, char const* t =__TIME__)
+        : yr (conv2d(d+9)), mo (month2d(d)), dy (conv2d(d+4)),
+          hh (conv2d(t)), mm (conv2d(t+3)), ss (conv2d(t+6)) {}
+
+    explicit DateTime (uint32_t t) {
+        ss = t % 60;
+        t /= 60;
+        mm = t % 60;
+        t /= 60;
+        hh = t % 24;
+        uint16_t days = t / 24;
+        uint8_t leap;
+        for (yr = 0; ; ++yr) {
+            leap = yr % 4 == 0;
+            if (days < 365 + leap)
+                break;
+            days -= 365 + leap;
+        }
+        for (mo = 1; ; ++mo) {
+            uint8_t daysPerMonth = daysInMonth[mo-1];
+            if (leap && mo == 2)
+                ++daysPerMonth;
+            if (days < daysPerMonth)
+                break;
+            days -= daysPerMonth;
+        }
+        dy = days + 1;
+    }
+
+    constexpr operator uint32_t () const {
+        uint16_t days = dy;
+        for (auto i = 1; i < mo; ++i)
+            days += daysInMonth[i-1];
+        if (mo > 2 && yr % 4 == 0)
+            ++days;
+        days += 365 * yr + (yr + 3) / 4 - 1;
+        return ((days * 24L + hh) * 60 + mm) * 60 + ss;
+    }
+};
+
+namespace rtc {
+    void init (bool lse =true);
+    void deinit ();
+
+    DateTime getDate ();
+    uint32_t getSecs ();
+
+    void set (DateTime const& dt);
+    void set (uint32_t t);
+
+    uint32_t getReg (int reg);
+    void setReg (int reg, uint32_t val);
+} // namespace rtc
+
 namespace cache {
 #if STM32F7 || STM32H7
     constexpr auto align = 32;
