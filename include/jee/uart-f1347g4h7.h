@@ -102,10 +102,8 @@ struct Uart : Device {
                     rxMsgs.append(m);
                 break;
             case 'W':
-                if (!txMsgs.append(m)) {
-                    txFill = 0;
+                if (!txMsgs.append(m))
                     txStart();
-                }
                 break;
             default:
                 m.mTag = -1;
