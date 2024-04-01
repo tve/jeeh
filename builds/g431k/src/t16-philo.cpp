@@ -55,9 +55,10 @@ int main () {
 
     for (auto i = 0; i < N; ++i) {
         auto id = sys::fork(philoStack[i], philo).mTag;
-logf("S %p %d", philoStack[i], id);
         assert(id == i+1);
     }
+
+logf("S");
 
     for (auto i = 0; i < N; ++i)
         sys::recv(); // wait for child thread completion
