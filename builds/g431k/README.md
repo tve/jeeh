@@ -3,7 +3,7 @@
 > Note: some of these tests expect a jumper between D0 and D1 (GPIO PA9 and
 > PA10).
 
-### Summary of tests
+## Summary of tests
 
 In increasing order of complexity, more or less:
 
@@ -30,7 +30,7 @@ Test  | Name   | Description
 `t18` | dog    | Try out the watchdog, report the reset cause, and let the watchdog expire to reset the system.
 `t19` | align  | Show the sizes of several core data types and their alignment requirements.
 
-### RAM-based uploads
+## RAM-based uploads
 
 To improve test throughput, the builds are RAM-based. Uploads to RAM are just a
 bit faster than erasing and rewriting flash memory, which helps when running
@@ -40,7 +40,7 @@ flash.  For this to work, a minimal boot "stub" has to be stored in flash memory
 
     cd stub; pio run -t upload
 
-### Continuous testing
+## Continuous testing
 
 The full set of tests can be launched by typing `make` or `make all`. This will
 launch a continuous test loop, which triggers whenever a source file change is
@@ -58,7 +58,7 @@ All test output is saved in separate files in the `log/` subdirectory. When a
 test passes normally (i.e. when it ends with the "OK" output message), only the
 name of the test is shown. Else, the full test output is also shown on-screen.
 
-### Test output via ITM/SWO
+## Test output via ITM/SWO
 
 Another property of these tests, is that they use the ITM (Instruction Trace
 Macrocell) to generate output through the SWO pin which is connected to the
@@ -68,7 +68,7 @@ to implement an app console, for example.  Although ITM is output-only and
 polled, with an ST-Link V3 it can be very fast (about 10 Mbaud when the µC is
 running at 150 MHz - this was one reason to pick this specific board).
 
-### Code generator
+## Code generator
 
 JeeH includes a code generator (see `make/codegen.py`) to generate a few of its
 own headers on the fly, based on the target CPU (STM32G4 in this case).  This
