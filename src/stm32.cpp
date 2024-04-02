@@ -147,6 +147,7 @@ void sys::wait (uint16_t ms) {
     call(m);
 }
 
+#if !STM32G0 & !STM32L0 & !STM32F1
 namespace jeeh::rtc {
 
 enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,WPR=0x24,BKPR=0x50 };
@@ -231,6 +232,7 @@ void setReg (int reg, uint32_t val) {
 }
 
 } // namespace jeeh::rtc
+#endif // !STM32G0 & !STM32L0 & !STM32F1
 
 namespace jeeh::dog {
 
@@ -245,7 +247,7 @@ int resetCause () {
     enum { CSR=0x74, RMVF=24 };
 #elif STM32H7
     enum { CSR=0xD0, RMVF=16 };
-#elif STM32G4 | STM32L0 | STM32L4
+#elif STM32G4 | STM32G0 | STM32L0 | STM32L4
     enum { CSR=0x94, RMVF=23 };
 #endif
     if (cause == 0) {

@@ -8,8 +8,8 @@
 
 //CG3 svd defines
 #define STM32   1
-#define STM32G4 1
-#define SVDNAME "STM32G431xx"
+#define STM32H7 1
+#define SVDNAME "STM32H743"
 
 #ifdef NASSERT
 #define assert(x) ((void) 0) // don't evaluate x (i.e. prevent side-effects)
@@ -21,7 +21,7 @@
 namespace jeeh {
 
 //CG1 version
-constexpr auto VERSION = "v6.0a2";
+constexpr auto VERSION = "v6.0a2-3-g0ed59fa";
 
 #include "arch/sys.h"
 
