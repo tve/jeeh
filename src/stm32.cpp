@@ -232,4 +232,61 @@ void setReg (int reg, uint32_t val) {
 
 } // namespace jeeh::rtc
 
+namespace jeeh::dog {
+
+enum { KR=0x00, PR=0x04, RLR=0x08, SR=0x0C };
+
+uint32_t cause;
+
+int resetCause () {
+#if STM32F1 | STM32F3
+    enum { CSR=0x24, RMVF=24 };
+#elif STM32F4 | STM32F7
+    enum { CSR=0x74, RMVF=24 };
+#elif STM32H7
+    enum { CSR=0xD0, RMVF=16 };
+#elif STM32G4 | STM32L0 | STM32L4
+    enum { CSR=0x94, RMVF=23 };
+#endif
+    if (cause == 0) {
+        cause = RCC[CSR];
+        RCC[CSR](RMVF) = 1; // clears all reset-cause flags
+    }
+#if STM32H7
+    return cause & (1<<26) ? -1 :     // iwdg
+           cause & (5<<21) ? 2 :      // por/bor
+           cause & (1<<17) ? 1 : 0;   // nrst, or other
+#else
+    return cause & (1<<29) ? -1 :     // iwdg
+           cause & (1<<27) ? 2 :      // por/bor
+           cause & (1<<26) ? 1 : 0;   // nrst, or other
+#endif
+}
+
+#if STM32H7 && !STM32H743xx // only STM32H745xx needs this workaround
+#define IWDG IWDG1
+#endif
+
+void init (int rate) {
+    while (IWDG[SR](0)) {}  // wait until !PVU
+    IWDG[KR] = 0x5555;      // unlock PR
+    IWDG[PR] = rate;        // max timeout, 0 = 400ms, 7 = 26s
+    IWDG[KR] = 0xCCCC;      // start watchdog
+    reload();
+}
+
+void reload (int n) {
+    kick();
+    while (IWDG[SR](0)) {}  // wait until !PVU
+    IWDG[KR] = 0x5555;      // unlock PR
+    IWDG[RLR] = n;
+    kick();
+}
+
+void kick () {
+    IWDG[KR] = 0xAAAA;      // reset the watchdog timout
+}
+
+} // namespace jeeh::dog
+
 #endif // STM32

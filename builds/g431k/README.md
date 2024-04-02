@@ -27,6 +27,7 @@ Test  | Name   | Description
 `t15` | cycles | Access the CPU cycle counter present in all ARM Cortex families except M0 and M0+.
 `t16` | philo  | An implementation of the "dining philosophers problem", using threads and the `Lock` type to synchronize their resource access.
 `t17` | rtc    | Test the `DateTime` class and the Real-Time Clock (the Nucleo-32's STM32G431KB can only run its RTC off the LSI clock).
+`t18` | dog    | Try out the watchdog, report the reset cause, and let the watchdog expire to reset the system.
 
 ### RAM-based uploads
 

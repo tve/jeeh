@@ -1,5 +1,5 @@
 TEST
 wait: 1501619 cycles, 10010 us
 by design, this message has exactly 50 characters
-itm:  10222 cycles, 68 us
+itm:  10228 cycles, 68 us
 OK

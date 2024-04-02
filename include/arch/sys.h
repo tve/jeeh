@@ -232,6 +232,15 @@ namespace rtc {
     void setReg (int reg, uint32_t val);
 } // namespace rtc
 
+namespace dog {
+    int resetCause (); // watchdog: -1, nrst: 1, power: 2, other: 0
+
+    void init (int rate =6);   // max timeout, 0 ≈ 500 ms, 6 ≈ 32 s
+                               //
+    void reload (int n =4095); // 0..4095 x 125 µs (0) .. 8 ms (6)
+    void kick ();
+}
+
 namespace cache {
 #if STM32F7 || STM32H7
     constexpr auto align = 32;
