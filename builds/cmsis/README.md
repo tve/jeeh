@@ -9,13 +9,3 @@ installation and the Nucleo board connection.
 
 The following command builds and uploads the demo: **`pio run -e main -t
 upload`**
-
-There's an alternative method to upload and run code without re-flashing:
-
-1. Upload a "boot stub" to flash memory: **`pio run -e stub -t upload`**
-2. Upload the RAM-based build: **`pio run -e ram -t upload`**
-3. There is no step 3. Repeat step 2 after power-up and for each new build.
-
-This is faster and avoids wearing out flash memory.  It needs the `st-flash` utility to
-upload to RAM.  See <https://github.com/stlink-org/stlink> (e.g. **`brew install
-stlink`** on MacOS).

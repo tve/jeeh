@@ -1,7 +1,7 @@
 #include <stm32g4xx.h>
 
 static void delayLoop (int n) {
-    for (int i = 0; i < n * 3000; ++i)
+    for (int i = 0; i < n * 4000; ++i)
         asm ("");
 }
 
