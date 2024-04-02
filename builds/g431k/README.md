@@ -29,6 +29,7 @@ Test  | Name   | Description
 `t17` | rtc    | Test the `DateTime` class and the Real-Time Clock (the Nucleo-32's STM32G431KB can only run its RTC off the LSI clock).
 `t18` | dog    | Try out the watchdog, report the reset cause, and let the watchdog expire to reset the system.
 `t19` | align  | Show the sizes of several core data types and their alignment requirements.
+`t20` | date   | Exercise the DateTime type and optionally test setting it from the current compile date and time.
 
 ## RAM-based uploads
 
@@ -38,7 +39,7 @@ many tests in quick succession. It also avoids wear and tear of the on-board
 flash.  For this to work, a minimal boot "stub" has to be stored in flash memory
 (just once), as follows:
 
-    cd stub; pio run -t upload
+    make stub
 
 ## Continuous testing
 
