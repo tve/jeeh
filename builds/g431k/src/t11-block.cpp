@@ -18,9 +18,9 @@ int main () {
     Tester t;
 
     Doubler doubler;
-    assert(doubler.tId == 1);
+    assert(doubler.mTag == 1);
 
-    Message m { doubler.tId, 'D', 222 };
+    Message m { doubler.mTag, 'D', 222 };
 logf("20 %p %d %d", &m, m.mDst, m.mLen);
     sys::call(m);
     assert(m.mLen == 444);

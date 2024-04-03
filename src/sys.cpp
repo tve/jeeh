@@ -104,7 +104,7 @@ struct Thread final : Task {
 
     Thread () {
         mDst = current;
-        task = mLen = tId;
+        task = mLen = mTag;
     }
 
     void submit (Message& msg) override {
@@ -123,10 +123,10 @@ struct Thread final : Task {
     int process (Message& msg) override {
         assert(msg.mDst == MARKER);
         auto& tk = (Task&) msg;
-        assert(&tk == &Task::byId(tk.tId)); // make sure this really is a task
+        assert(&tk == &Task::byId(tk.mTag)); // make sure this really is a task
 
         auto saved = task;
-        task = tk.tId;
+        task = tk.mTag;
         //auto saved2 = block;
         //block = nullptr;
 assert(block == nullptr);
@@ -151,8 +151,8 @@ assert(block == nullptr);
     void reschedule (int newState =RUN) {
         assert(irqState() == 0); // must be in SVC or PendSV
         state = newState;
-        if (tId > nextToRun)
-            nextToRun = tId;
+        if (mTag > nextToRun)
+            nextToRun = mTag;
         while (true) {
             auto th = entry(nextToRun);
             if (th != nullptr && th->state == RUN) {
@@ -182,13 +182,13 @@ static Thread& context () {
 
 //------------------------------------------------------------------------ Task
 
-Task::Task () : Message { MARKER, '?', current } {
+Task::Task () : Message { MARKER, 0, current } {
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
 
     for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
             assert(i == 0 || i != mLen); // task zero is also main thread
-            mTag = tId = i;
+            mTag = i;
             tasks[i] = this;
             return;
         }
@@ -341,12 +341,8 @@ void sys::send (Message& m) {
             Task::byId(id).submit(msg);
         else
             Device::byId(id).start(msg);
-        return id;
     };
-    auto id = svc((int) f, (int) &m);
-    (void) id;
-    //if (id < Task::LIMIT)
-    //    Task::byId(id).submit(m);
+    svc((int) f, (int) &m);
 }
 
 Message& sys::recv () {
@@ -458,7 +454,6 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
 
 void sys::quit (intptr_t ret) {
     auto& th = context();
-    th.mTag = 'Q';
     th.mArg = ret;
     send(th);
     th.~Thread();

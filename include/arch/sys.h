@@ -66,7 +66,6 @@ static_assert(sizeof (Chain) == 4);
 struct Task : Message, Chain {
     enum { LIMIT = 30, MARKER = 255 };
 
-    uint8_t tId;      // id of this task
     Message timer {}; // per-task timer
 
     Task ();
@@ -79,7 +78,7 @@ struct Task : Message, Chain {
 
     static Task& byId (uint8_t id);
 };
-static_assert(sizeof (Task) == 44); // incl 2x Message, Chain, and vtable-ptr
+static_assert(sizeof (Task) == 40); // incl 2x Message, Chain, and vtable-ptr
 
 struct Fixer {
     Fixer ();
