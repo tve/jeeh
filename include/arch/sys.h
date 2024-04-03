@@ -36,7 +36,7 @@ void duffs (T* dst, T const* src, uint32_t count) {
 
 struct Message {
     uint8_t  mDst =0;
-    int8_t   mTag =0;
+    uint8_t  mTag =0;
     uint16_t mLen =0;
     uint8_t* mPtr =nullptr;
     intptr_t mArg =0;
@@ -66,13 +66,13 @@ static_assert(sizeof (Chain) == 4);
 struct Task : Message, Chain {
     enum { LIMIT = 30, MARKER = 255 };
 
-    uint8_t tId, owner;      // id of this task and of its owning thread
-    Message timer {};        // per-task timer
+    uint8_t tId;      // id of this task
+    Message timer {}; // per-task timer
 
     Task ();
     // TODO ~Task ();
 
-    bool isThread () const { return tId == owner; }
+    bool isThread () const { return mDst != MARKER; }
 
     virtual void submit (Message& msg);
     virtual int process (Message& msg) =0;

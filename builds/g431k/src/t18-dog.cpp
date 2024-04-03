@@ -11,6 +11,7 @@ int main () {
     logf("cause %d", c);
 
     switch (c) {
+        case 2: // power-up, this happens on first-time use
         case 1: // reset
             dog::init();
             logf("10");

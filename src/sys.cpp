@@ -103,7 +103,8 @@ struct Thread final : Task {
     static void* operator new (size_t, void* p) { return p; }
 
     Thread () {
-        task = owner = tId;
+        mDst = current;
+        task = mLen = tId;
     }
 
     void submit (Message& msg) override {
@@ -181,12 +182,12 @@ static Thread& context () {
 
 //------------------------------------------------------------------------ Task
 
-Task::Task () : Message { MARKER, '?' }, owner (current) {
+Task::Task () : Message { MARKER, '?', current } {
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
 
     for (auto i = 0; i < LIMIT; ++i)
         if (tasks[i] == nullptr) {
-            assert(i == 0 || i != owner); // task zero is also main thread
+            assert(i == 0 || i != mLen); // task zero is also main thread
             mTag = tId = i;
             tasks[i] = this;
             return;
@@ -197,7 +198,7 @@ Task::Task () : Message { MARKER, '?' }, owner (current) {
 void Task::submit (Message& msg) {
     assert(irqState() == 0); // must be in SVC or PendSV
 
-    auto& th = Thread::byId(owner);
+    auto& th = Thread::byId(mLen);
     if (th.block == &msg) {
         insert(msg);
         th.block = this;

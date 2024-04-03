@@ -12,11 +12,11 @@ int main () {
     sys::wait(10);
     c = cycles::count() - c;
 
-    logf("wait: %d cycles, %d us", c, c / (SystemCoreClock / 1'000'000));
+    logf("wait: %d us", c / (SystemCoreClock / 1'000'000));
 
     c = cycles::count();
     itmWrite("by design, this message has exactly 50 characters\n", 50);
     c = cycles::count() - c;
 
-    logf("itm:  %d cycles, %d us", c, c / (SystemCoreClock / 1'000'000));
+    logf("itm:  %d us", c / (SystemCoreClock / 1'000'000));
 }
