@@ -34,24 +34,27 @@ def BOARD(block, name):
             for i, v in enumerate(info):
                 r.append(f'#define LED{i+1} "{v}"')
         return r
-    if name == 'serio':
-        return ['#define SERIO_PINS "%s"' % info[0]]
     if name == 'uart':
-        f = {}
+        f = { 'O': '0' }
         for x in info:
             k, v = x.split('=')
             f[k] = v
-        # N=USART2 V=2 P=A2:7,A3 F=150 D=1 L=CH O=0 T=3 R=1 C=27,26
-        t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
-                     '$D-1,$R-$O,$T-$O,$C').substitute(f)
-        # def: UART_PINS  "A2:7,A3"
+        # N=USART2 P=A2:7,A3 F=150 V=2 D=1 L=CH O=0 T=1 R=2 C=26,27
         # def: UART_NAME  USART2
-        # def: UART_CONF  Irq::DMA1_CH3,Irq::DMA1_CH1,2-1,1-1,1-0,3-0,27,26
-        return ['#define UART_PINS  "%s"' % f['P'],
-                '#define UART_NAME  %s' % f['N'],
-                '#define UART_FREQ  %s' % f['F'],
-                '#define UART_VERS  %s' % f['V'],
-                '#define UART_CONF  ' + t]
+        # def: UART_PINS  "A2:7,A3"
+        # def: UART_FREQ  150
+        # def: UART_VERS  2
+        # def: UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,26,27
+        r = ['#define UART_NAME  %s' % f['N'],
+             '#define UART_PINS  "%s"' % f['P'],
+             '#define UART_FREQ  %s' % f['F']]
+        if 'V' in f:
+            r.append('#define UART_VERS  %s' % f['V'])
+        if 'D' in f:
+            t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
+                         '$D-1,$R-$O,$T-$O,$C').substitute(f)
+            r.append('#define UART_CONF  ' + t)
+        return r
     return info
 
 #-------------------------------------------------------------- Parse SVD file

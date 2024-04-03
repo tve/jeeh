@@ -7,7 +7,7 @@ int main () {
     Tester t;
 
     Pin pins [2];
-    Pin::config(SERIO_PINS, pins, sizeof pins);
+    Pin::config(UART_PINS, pins, sizeof pins);
     pins[0].mode("P");
     pins[1].mode("F");
 

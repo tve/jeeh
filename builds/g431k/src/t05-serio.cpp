@@ -6,20 +6,20 @@ using namespace jeeh;
 enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28 };
 
 void serio () {
-    Pin::config(SERIO_PINS);
-    RCC(ena::USART1, 1) = 1;
-    USART1[BRR] = SystemCoreClock / 115'200;
-    USART1[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<0);  // FIFOEN TE RE UE
+    Pin::config(UART_PINS);
+    RCC(ena::UART_NAME, 1) = 1;
+    UART_NAME[BRR] = SystemCoreClock / 115'200;
+    UART_NAME[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<0);  // FIFOEN TE RE UE
 }
 
 void putch (char c) {
-    while (!USART1[ISR](7)) {} // TXFNF
-    USART1[TDR] = c;
+    while (!UART_NAME[ISR](7)) {} // TXFNF
+    UART_NAME[TDR] = c;
 }
 
 int getch () {
-    while (!USART1[ISR](5)) {} // RXFNE
-    return USART1[RDR];
+    while (!UART_NAME[ISR](5)) {} // RXFNE
+    return UART_NAME[RDR];
 }
 
 int main () {
