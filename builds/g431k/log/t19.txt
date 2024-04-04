@@ -1,22 +1,11 @@
 TEST
-     char  1 % 1 b
-    short  2 % 2 b
-      int  4 % 4 b
-     long  4 % 4 b
-long long  8 % 8 b
-    float  4 % 4 b
-   double  8 % 8 b
-    void*  4 % 4 b
-  Empty{}  1 % 1 b
-  Basic{}  1 % 1 b
-  Array{}  2 % 1 b
-
-  Message 16 % 4 b
-    Chain  4 % 4 b
-     Task 40 % 4 b
-    Fixer  1 % 1 b
-     Lock  8 % 4 b
-   Device  8 % 4 b
- DateTime  6 % 1 b
-      Pin  1 % 1 b
+cause 2
+10
+11
+12
+13
+TEST
+cause -1
+14
+15
 OK
