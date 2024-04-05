@@ -5,16 +5,13 @@
 using namespace jeeh;
 #include "test.h"
 
-constexpr auto N = 5;   // number of philosophers
-constexpr auto M = 10;  // how often they want to eat
+constexpr auto N = 5;  // number of philosophers
+constexpr auto M = 6;  // how often they want to eat
 
 Lock forks [N];
 
 int philo (Message& m) {
-sys::wait(1);
     auto id = m.mTag;
-logf("s %p %d", &m, id);
-return 0;
     assert(1 <= id && id <= N);
 
     auto& forkOnLeft = forks[id-1];
@@ -57,8 +54,6 @@ int main () {
         auto id = sys::fork(philoStack[i], philo).mTag;
         assert(id == i+1);
     }
-
-logf("S");
 
     for (auto i = 0; i < N; ++i)
         sys::recv(); // wait for child thread completion

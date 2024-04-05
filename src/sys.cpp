@@ -440,10 +440,10 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
     tp->mArg = a;
 
     tp->sp = p + n - 16;
-    tp->sp[8] = (uint32_t) tp;          // r0
-    tp->sp[13] = (uint32_t) sys::quit;  // lr
-    tp->sp[14] = (uint32_t) h;          // pc
-    tp->sp[15] = 0x0100'0000;           // psr
+    tp->sp[8] = (uint32_t)(Message*) tp; // r0
+    tp->sp[13] = (uint32_t) sys::quit;   // lr
+    tp->sp[14] = (uint32_t) h;           // pc
+    tp->sp[15] = 0x0100'0000;            // psr
 
     auto f = +[](Thread* tp) {
         tp->reschedule();
