@@ -3,13 +3,21 @@ X = -e /examples/ -e /log/
 O = ~/.platformio/packages/tool-openocd/bin
 G = ~/.platformio/packages/toolchain-gccarmnoneeabi/bin
 
+ifeq ($(shell uname -s),Linux)
+T = time -f '   %e real   %U user   %S sys'
+M = make --no-print-directory
+else
+T = time
+M = make
+endif
+
 all: clean
-	git ls-files ../.. | grep  -v $X | entr -c time make all-run
+	git ls-files ../.. | grep  -v $X | entr -c $T $M all-run
 all-run:
 	@ date; pio run -t check -s
 
 check:
-	git ls-files ../.. | grep  -v $X | entr -c time make check-run E=$E
+	git ls-files ../.. | grep  -v $X | entr -c $T $M check-run E=$E
 check-run:
 	@ date; pio run -t clean -t check -s -e $E
 
