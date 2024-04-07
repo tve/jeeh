@@ -291,4 +291,46 @@ void kick () {
 
 } // namespace jeeh::dog
 
+// cache management code needs the CMSIS headers
+
+#if STM32F7
+#include <stm32f7xx.h>
+#elif STM32H7 && !CORE_CM4
+#include <stm32h7xx.h>
+#endif
+
+namespace jeeh::cache {
+
+#if STM32F7 || (STM32H7 && !CORE_CM4)
+
+void enable () {
+    SCB_EnableICache();
+    SCB_EnableDCache();
+}
+
+void disable () {
+    SCB_DisableICache();
+    SCB_DisableDCache();
+}
+
+void invalCode () {
+    SCB_InvalidateICache();
+}
+
+void clean (void const* ptr, uint32_t len) {
+    SCB_CleanDCache_by_Addr((uint32_t*) ptr, len);
+}
+
+void inval (void const* ptr, uint32_t len) {
+    SCB_InvalidateDCache_by_Addr((void*) ptr, len);
+}
+
+void flush (void const* ptr, uint32_t len) {
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t*) ptr, len);
+}
+
+#endif // STM32F7 | STM32H7
+
+} // namespace jeeh::cache
+
 #endif // STM32

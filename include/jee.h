@@ -30,4 +30,4 @@ constexpr auto VERSION = "<stripped>";
 
 } // namespace jeeh
 
-extern uint32_t SystemCoreClock; // Hz, set in CMSIS startup
+extern "C" uint32_t SystemCoreClock; // Hz, set in CMSIS startup

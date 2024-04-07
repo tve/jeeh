@@ -1,7 +1,6 @@
 **This is a set of small tests for use with the Nucleo-32 G431KB board.**
 
-> Note: some of these tests expect a jumper between D0 and D1 (GPIO PA9 and
-> PA10).
+> Note: some tests expect a jumper between D0 and D1 (GPIO PA9 and PA10).
 
 ## Summary of tests
 
