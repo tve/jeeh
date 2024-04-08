@@ -1,0 +1,103 @@
+TEST
+5 is hungry
+5 starts eating
+5 finishes eating and leaves to think
+4 is hungry
+4 starts eating
+5 is hungry
+1 is hungry
+1 starts eating
+4 finishes eating and leaves to think
+5 swaps forks
+2 is hungry
+3 is hungry
+3 starts eating
+1 finishes eating and leaves to think
+2 swaps forks
+5 starts eating
+4 is hungry
+5 finishes eating and leaves to think
+1 is hungry
+1 starts eating
+3 finishes eating and leaves to think
+4 starts eating
+2 swaps forks
+5 is hungry
+4 finishes eating and leaves to think
+5 swaps forks
+3 is hungry
+3 starts eating
+1 finishes eating and leaves to think
+2 swaps forks
+5 starts eating
+3 finishes eating and leaves to think
+2 starts eating
+2 finishes eating and leaves to think
+1 is hungry
+4 is hungry
+4 swaps forks
+5 finishes eating and leaves to think
+4 starts eating
+1 starts eating
+3 is hungry
+3 swaps forks
+2 is hungry
+4 finishes eating and leaves to think
+3 starts eating
+1 finishes eating and leaves to think
+2 swaps forks
+3 finishes eating and leaves to think
+2 starts eating
+5 is hungry
+5 starts eating
+3 is hungry
+2 finishes eating and leaves to think
+3 starts eating
+4 is hungry
+1 is hungry
+5 finishes eating and leaves to think
+1 starts eating
+3 finishes eating and leaves to think
+4 starts eating
+2 is hungry
+5 is hungry
+1 finishes eating and leaves to think
+2 starts eating
+2 finishes eating and leaves to think
+2 is hungry
+2 starts eating
+2 finishes eating and leaves to think
+2 is hungry
+2 starts eating
+4 finishes eating and leaves to think
+5 starts eating
+3 is hungry
+1 is hungry
+2 finishes eating and leaves to think
+3 starts eating
+4 is hungry
+5 finishes eating and leaves to think
+1 starts eating
+3 finishes eating and leaves to think
+4 starts eating
+1 finishes eating and leaves to think
+2 is hungry
+2 starts eating
+1 is hungry
+1 swaps forks
+4 finishes eating and leaves to think
+3 is hungry
+2 finishes eating and leaves to think
+3 starts eating
+1 starts eating
+5 is hungry
+5 swaps forks
+1 finishes eating and leaves to think
+5 starts eating
+4 is hungry
+3 finishes eating and leaves to think
+4 swaps forks
+5 finishes eating and leaves to think
+4 starts eating
+4 finishes eating and leaves to think
+OK
