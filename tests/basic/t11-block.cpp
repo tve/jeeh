@@ -4,13 +4,12 @@ using namespace jeeh;
 
 struct Doubler : Task {
     int process (Message& msg) override {
-        int x;
-logf("10 %p d%d t%d l%d %p", &msg, msg.mDst, msg.mTag, msg.mLen, &x);
-        //sys::wait(5); // nested blocking call
-logf("11");
+        logf("20");
+        sys::wait(20); // nested blocking call
+        logf("21");
         msg.mLen *= 2;
         sys::send(msg);
-logf("12");
+        logf("22");
         return 0;
     }
 };
@@ -21,17 +20,17 @@ int main () {
     Doubler doubler;
     assert(doubler.mTag == 1);
 
+    logf("10");
     Message m { doubler.mTag, 'D', 222 };
-logf("20 %p %d %d", &m, m.mDst, m.mLen);
     sys::call(m);
-logf("21 %p %d %d", &m, m.mDst, m.mLen);
     assert(m.mLen == 444);
 
     sys::wait(10);
 
-logf("22");
+    logf("11");
     assert(!m.inUse());
     sys::call(m);
     assert(m.mLen == 888);
-logf("23");
+
+    logf("12");
 }

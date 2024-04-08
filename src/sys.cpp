@@ -107,7 +107,7 @@ struct Thread final : Task {
         task = mLen = mTag;
     }
 
-    void submit (Message& msg) override {
+    void wakeUp (Message& msg) {
         assert(irqState() == 0); // must be in SVC or PendSV
 
         if (block == &msg) {
@@ -198,7 +198,12 @@ Task::Task () : Message { MARKER, 0, current } {
 void Task::submit (Message& msg) {
     assert(irqState() == 0); // must be in SVC or PendSV
 
-    auto& th = Thread::byId(mLen);
+    auto& th = Thread::byId(isThread() ? mTag : mLen);
+    if (isThread() || mTag == th.task) {
+        th.wakeUp(msg);
+        return;
+    }
+
     if (th.block == &msg) {
         insert(msg);
         th.block = this;
