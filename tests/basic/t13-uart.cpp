@@ -14,7 +14,7 @@ int myThread (Message&) {
         sys::call(m);
         n += m.mLen;
     } while (m.mPtr[m.mLen-1] != '!');
-    logf("22");
+    logf("21");
     return n;
 }
 
@@ -29,7 +29,7 @@ int main () {
     uint32_t stack [300];
     sys::init(stack);
 
-    auto baud = SystemCoreClock / 16; // i.e. 9.375 Mbaud @ 150 MHz
+    auto baud = SystemCoreClock / 32; // i.e. 4'687'500 baud @ 150 MHz
     logf("10 %d", baud);
     uart.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
                                  UART_FREQ, Irq::UART_NAME, UART_CONF });

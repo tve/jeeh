@@ -1,4 +1,2 @@
 TEST
-failed at dev/tests/basic/t04-jumper.cpp:14
-failed caller: 0x20000507
-FAIL
+OK

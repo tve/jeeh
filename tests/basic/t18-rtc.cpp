@@ -14,12 +14,8 @@ int main () {
 
 #if STM32G431xx
     // there are no OSC32 pins on Nucleo-32's G431KB, must use the 32 kHz LSI
-    RCC(ena::PWR, 1) = 1;
-    PWR[0x00](8) = 1; // DBP
-                      //
-    RCC[0x90](9) = 1;             // RTSEL = LSI
-    RCC[0x90](15) = 1;            // RTCEN
-#else    
+    rtc::init(false);
+#else
     rtc::init();
 #endif
     rtc::set({ 1, 2, 3, 11, 22, 33 });

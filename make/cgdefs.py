@@ -52,7 +52,7 @@ def BOARD(block, name):
             r.append('#define UART_VERS  %s' % f['V'])
         if 'D' in f:
             t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
-                         '$D-1,$R-$O,$T-$O,$C').substitute(f)
+                         '$D-1,$T-$O,$R-$O,$C').substitute(f)
             r.append('#define UART_CONF  ' + t)
         return r
     return info

@@ -166,6 +166,9 @@ void init (bool lse) {
     PWR[0x00](8) = 1; // DBP
 
     if (lse) {
+#if STM32F723xx
+        RCC[BDCR](3,2) = 1;           // LSEDRV (needed on f723d)
+#endif
         RCC[BDCR](0) = 1;             // LSEON backup domain
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
         RCC[BDCR](8,2) = 1;           // RTSEL = LSE

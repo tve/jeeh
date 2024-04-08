@@ -9,5 +9,5 @@
 #define UART_NAME  USART1
 #define UART_PINS  "A9:7,A10"
 #define UART_FREQ  150
-#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,24,25
+#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,25,24
 //CG]

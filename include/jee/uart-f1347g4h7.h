@@ -5,8 +5,8 @@ struct Uart : Device {
         uint32_t uart;
         uint16_t uena;
         uint8_t mhz;
-        Irq idleIrq, rxIrq, txIrq;
-        uint8_t dma :1, rxChan :3, txChan :3, rxReq, txReq; // 0-based
+        Irq idleIrq, txIrq, rxIrq;
+        uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
     };
 
     auto devReg (int off) const { IoReg<0> io; return io[dev.uart+off]; }
@@ -167,9 +167,7 @@ private:
 
     // the actual interrupt handler, with access to the uart object
     bool interrupt (int irq) override {
-#if STM32F4 | STM32F7 | STM32H7
-        static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
-#endif
+        [[maybe_unused]] static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
         if (irq == (int) dev.idleIrq) {
 #if STM32F1 | STM32F4
             (uint32_t) devReg(SR);
