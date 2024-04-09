@@ -77,7 +77,7 @@ struct Tester {
         hardFaulter = hardFaultHandler;
         fastClock();
 
-        itmWrite("TEST\n", 5);
+        itmWrite("\nTEST\n", 6);
     }
 
     ~Tester () {

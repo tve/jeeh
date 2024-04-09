@@ -4,6 +4,8 @@ using namespace jeeh;
 #include "defs.h"
 #include "console.h"
 
+constexpr Pin led (LED);  // defined in platformio.ini
+
 int main () {
     hardFaulter = hardFaultHandler;
     fastClock();
@@ -18,9 +20,7 @@ int main () {
 
     printf("%s: blink @ %u MHz\n", SVDNAME, SystemCoreClock/1'000'000);
 
-    Pin led (LED);  // defined in platformio.ini
     led.mode("P");  // push-pull output
-
     while (true) {
         led.toggle();
         sys::wait(250);

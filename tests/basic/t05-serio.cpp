@@ -3,7 +3,7 @@ using namespace jeeh;
 #include "defs.h"
 #include "test.h"
 
-#if STM32F4
+#if STM32F1 | STM32F4
 enum { ISR=0x00, RDR=0x04, TDR=0x04, BRR=0x08, CR1=0x0C, UE=13 };
 #else
 enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28, UE=0 };
