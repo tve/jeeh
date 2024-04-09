@@ -1,0 +1,27 @@
+make[1]: Entering directory '/home/jcw/code/jeeh-dev/builds/l433r'
+Tue  9 Apr 18:24:37 CEST 2024
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
+rewriting: ../include/jee-stm32.h
+rewriting: ../include/jee.h
+load to RAM: t00
+load to RAM: t01
+load to RAM: t02
+load to RAM: t03
+load to RAM: t04
+load to RAM: t05
+load to RAM: t06
+load to RAM: t07
+load to RAM: t08
+load to RAM: t09
+load to RAM: t10
+load to RAM: t11
+load to RAM: t12
+load to RAM: t13
+load to RAM: t14
+load to RAM: t15
+load to RAM: t16
+load to RAM: t17
+load to RAM: t18
+load to RAM: t19
+load to RAM: t20
+make[1]: Leaving directory '/home/jcw/code/jeeh-dev/builds/l433r'

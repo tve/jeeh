@@ -1,0 +1,65 @@
+make[1]: Entering directory '/home/jcw/code/jeeh-dev/builds/f103r'
+Tue  9 Apr 18:20:18 CEST 2024
+load to RAM: t00
+EST
+OK
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 2.05 seconds ==========================
+load to RAM: t01
+load to RAM: t02
+load to RAM: t03
+load to RAM: t04
+load to RAM: t05
+load to RAM: t06
+load to RAM: t07
+load to RAM: t08
+load to RAM: t09
+load to RAM: t10
+load to RAM: t11
+load to RAM: t12
+load to RAM: t13
+load to RAM: t14
+load to RAM: t15
+load to RAM: t16
+load to RAM: t17
+.pio/build/t18/src/t18-rtc.o: In function `main':
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:19: undefined reference to `jeeh::rtc::init(bool)'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:21: undefined reference to `jeeh::rtc::set(jeeh::DateTime const&)'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:23: undefined reference to `jeeh::rtc::getDate()'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:31: undefined reference to `jeeh::rtc::getDate()'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:33: undefined reference to `jeeh::rtc::set(jeeh::DateTime const&)'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:34: undefined reference to `jeeh::rtc::getDate()'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:37: undefined reference to `jeeh::rtc::setReg(int, unsigned long)'
+/home/jcw/code/jeeh-dev/tests/basic/t18-rtc.cpp:39: undefined reference to `jeeh::rtc::getReg(int)'
+collect2: error: ld returned 1 exit status
+*** [.pio/build/t18/firmware.elf] Error 1
+========================== [FAILED] Took 1.92 seconds ==========================
+load to RAM: t19
+load to RAM: t20
+
+Environment    Status    Duration
+-------------  --------  ------------
+t00            FAILED    00:00:02.048
+t01            SUCCESS   00:00:02.062
+t02            SUCCESS   00:00:02.094
+t03            SUCCESS   00:00:02.117
+t04            SUCCESS   00:00:02.138
+t05            SUCCESS   00:00:02.167
+t06            SUCCESS   00:00:02.115
+t07            SUCCESS   00:00:02.109
+t08            SUCCESS   00:00:02.092
+t09            SUCCESS   00:00:02.115
+t10            SUCCESS   00:00:02.121
+t11            SUCCESS   00:00:02.195
+t12            SUCCESS   00:00:02.170
+t13            SUCCESS   00:00:02.225
+t14            SUCCESS   00:00:02.909
+t15            SUCCESS   00:00:02.161
+t16            SUCCESS   00:00:03.580
+t17            SUCCESS   00:00:02.121
+t18            FAILED    00:00:01.924
+t19            SUCCESS   00:00:02.790
+t20            SUCCESS   00:00:02.089
+==================== 2 failed, 19 succeeded in 00:00:47.341 ====================
+make[1]: *** [../common.mk:20: all-run] Error 1
+make[1]: Leaving directory '/home/jcw/code/jeeh-dev/builds/f103r'
