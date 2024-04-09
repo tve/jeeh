@@ -1,1 +1,1 @@
-include ../common.mk
+include ../etc/common.mk
