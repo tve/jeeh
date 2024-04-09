@@ -5,24 +5,24 @@
 namespace jeeh {
 
 #if STM32F1
-#include "stm32f1.h"
+#include "arch/stm32f1.h"
 #elif STM32F3
-#include "stm32f3.h"
+#include "arch/stm32f3.h"
 #elif STM32F4
-#include "stm32f4.h"
+#include "arch/stm32f4.h"
 #elif STM32F7
-#include "stm32f7.h"
+#include "arch/stm32f7.h"
 #elif STM32G0
-#include "stm32g0.h"
+#include "arch/stm32g0.h"
 #elif STM32G4
-#include "stm32g4.h"
+#include "arch/stm32g4.h"
 #elif STM32H7
-#include "stm32h7.h"
+#include "arch/stm32h7.h"
 #elif STM32L0
-#include "stm32l0.h"
+#include "arch/stm32l0.h"
 #elif STM32L4
-#include "stm32l4.h"
-#endif // STM32??
+#include "arch/stm32l4.h"
+#endif
 
 } // namespace jeeh
 

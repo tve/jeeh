@@ -2,6 +2,7 @@ import os, socket, subprocess, sys
 Import("env")
 #print(env.Dump(), file=sys.stderr)
 
+
 def connectTo(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -77,7 +78,8 @@ def uploadAndCheck(source, **kwds):
             b = t.recv(10)
             assert b == b'\x1A', b
 
-            out = env.subst("${PROJECT_DIR}/log/${PIOENV}.txt")
+            os.makedirs(env["PROJECT_DIR"] + "-out", exist_ok=True)
+            out = env.subst("${PROJECT_DIR}-out/${PIOENV}.txt")
             with open(out, "w") as f:
                 lines = []
                 for line in swoDecoder(s):
