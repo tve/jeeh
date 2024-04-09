@@ -4,7 +4,12 @@ using namespace jeeh;
 #include "defs.h"
 #include "test.h"
 
-Uart uart;
+Uart uart ('U');
+
+void uartWrite (void const* ptr, size_t len) {
+    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
+    sys::call(m);
+}
 
 int myThread (Message&) {
     logf("20");
@@ -16,11 +21,6 @@ int myThread (Message&) {
     } while (m.mPtr[m.mLen-1] != '!');
     logf("21");
     return n;
-}
-
-void uartWrite (void const* ptr, size_t len) {
-    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
-    sys::call(m);
 }
 
 int main () {

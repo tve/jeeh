@@ -14,7 +14,7 @@ struct Uart : Device {
     auto dmaRX (int off) const { return dmaReg(off+CHAN_STEP*dev.rxChan); }
     auto dmaTX (int off) const { return dmaReg(off+CHAN_STEP*dev.txChan); }
 
-    Uart () : Device ('U') {}
+    using Device::Device;
 
     void init (char const* pins, uint32_t baud, Config const& config) {
         Pin::config(pins);
