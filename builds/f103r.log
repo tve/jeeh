@@ -1,6 +1,3 @@
-rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
-rewriting: ../include/jee-stm32.h
-rewriting: ../include/jee.h
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
