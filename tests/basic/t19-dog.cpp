@@ -33,9 +33,9 @@ int main () {
             logf("14");
 #if !STM32F1 // TODO
             dog::reload(40);
-#endif
             sys::wait(3);
             logf("15");
+#endif
             break;
 
         default:

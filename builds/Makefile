@@ -3,9 +3,11 @@ G = grep --line-buffered -v 'Library Manager'
 
 all: $A
 	wc *.log
+	tail -n1 *.log
+	cd ../make && ./codegen.py -s
 
 $A:
 	make -C $@ clean stub
-	make -C $@ all-run 2>&1 | $G | tee $@.log
+	pio run -d $@ -t check -s 2>&1 | $G | tee $@.log
 
 .PHONY: $A

@@ -1,2 +1,2 @@
-EST
+TEST
 OK
