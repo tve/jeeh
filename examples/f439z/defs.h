@@ -1,3 +1,6 @@
+//CG1 board ether
+#define ETHER_PINS "A1:PH11,A2,A7,C1,C4,C5,G11,G13,B13"
+
 //CG2 board exti
 #define EXT_IN  "G14"
 #define EXT_OUT "G9"

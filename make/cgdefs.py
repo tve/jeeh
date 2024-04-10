@@ -25,6 +25,8 @@ def BOARD(block, name):
         print('not found:', tag)
         return []
     info = projOpts[tag].split()
+    if name == 'ether':
+        return [f'#define ETHER_PINS "{info[0]}"']
     if name == 'exti':
         return [f'#define EXT_IN  "{info[0]}"',
                 f'#define EXT_OUT "{info[1]}"']

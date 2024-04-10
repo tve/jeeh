@@ -41,6 +41,37 @@ void jeeh::logf (char const* fmt ...) {
     }
 }
 
+//--------------------------------------------------------------------- dumpHex
+
+void jeeh::dumpHex (void const* p, int n, char const* msg) {
+    if (msg != nullptr)
+        printf("%s: (%db)\n", msg, n);
+    auto q = (uint8_t const*) p;
+    for (int off = 0; off < n; off += 16) {
+        if (off > 0 && memcmp(q + off, q + off-16, 16) == 0) {
+            if (off > 16 && memcmp(q + off, q + off-32, 16) != 0)
+                printf("*\n");
+            continue;
+        }
+        printf(" %03x:", off);
+        for (int i = 0; i < 16; ++i) {
+            if (i % 4 == 0)
+                printf(" ");
+            if (off+i >= n)
+                printf("  ");
+            else
+                printf("%02x", q[off+i]);
+        }
+        for (int i = 0; i < 16; ++i) {
+            if (i % 4 == 0)
+                printf(" ");
+            auto b = q[off+i];
+            printf("%c", off+i >= n ? ' ' : ' ' <= b && b <= '~' ? b : '.');
+        }
+        printf("\n");
+    }
+}
+
 //----------------------------------------------------------------------- Chain
 
 bool Chain::insert (Message& msg) {

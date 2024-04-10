@@ -8,6 +8,7 @@ void fail (void const* addr =__builtin_return_address(0),
 void hardFaultHandler (uint32_t* sp);
 
 void logf (char const* fmt ...);
+void dumpHex (void const* p, int n =16, char const* msg =nullptr);
 
 inline void (*hardFaulter) (uint32_t*) = nullptr;
 
