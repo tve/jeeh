@@ -151,7 +151,7 @@ struct Thread final : Task {
             reschedule();
     }
 
-    int process (Message& msg) override {
+    void process (Message& msg) override {
         assert(msg.mDst == MARKER);
         auto& tk = (Task&) msg;
         assert(&tk == &Task::byId(tk.mTag)); // make sure this really is a task
@@ -165,7 +165,6 @@ assert(block == nullptr);
             tk.process(*tk.pull()); // TODO return val >0 must start timer
         //block = saved2;
         task = saved;
-        return 0;
     }
 
     static Thread* entry (uint8_t id) {

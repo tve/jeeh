@@ -3,14 +3,13 @@ using namespace jeeh;
 #include "test.h"
 
 struct Doubler : Task {
-    int process (Message& msg) override {
+    void process (Message& msg) override {
         logf("20");
         sys::wait(20); // nested blocking call
         logf("21");
         msg.mLen *= 2;
         sys::send(msg);
         logf("22");
-        return 0;
     }
 };
 

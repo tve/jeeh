@@ -3,10 +3,9 @@ using namespace jeeh;
 #include "test.h"
 
 struct Doubler : Task {
-    int process (Message& msg) override {
+    void process (Message& msg) override {
         msg.mLen *= 2;
         sys::send(msg);
-        return 0;
     }
 };
 

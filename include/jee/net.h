@@ -833,11 +833,22 @@ struct Worker : Task {
     DhcpHandler dhcph;
     UdpHandler floodh;
     Message* flooder =nullptr;
+    Message timer { '@', 'T', };
 
     Worker (Interface& intf) : ni (intf), arph (ni), icmph (ni),
                                 dhcph (ni, 68), floodh (ni) {}
 
-    int process (Message& req) override {
+    void process (Message& req) override {
+        auto ms = run(req);
+        if (ms > 0) {
+            assert(!timer.inUse());
+            timer.mLen = ms;
+            sys::send(timer);
+        }
+    }
+
+    int run (Message& req) {
+debugf("1111\n");
         Message mb { ni.drv, 'B', 0, (uint8_t*) &ni.spares };
         sys::send(mb);
         assert(!mb.inUse()); // does not get queued

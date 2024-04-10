@@ -67,19 +67,17 @@ static_assert(sizeof (Chain) == 4);
 struct Task : Message, Chain {
     enum { LIMIT = 30, MARKER = 255 };
 
-    Message timer {}; // per-task timer
-
     Task ();
     // TODO ~Task ();
 
     bool isThread () const { return mDst != MARKER; }
 
     virtual void submit (Message& msg);
-    virtual int process (Message& msg) =0;
+    virtual void process (Message& msg) =0;
 
     static Task& byId (uint8_t id);
 };
-static_assert(sizeof (Task) == 40); // incl 2x Message, Chain, and vtable-ptr
+static_assert(sizeof (Task) == 24); // Message, Chain, and vtable-ptr
 
 struct Fixer {
     Fixer ();
