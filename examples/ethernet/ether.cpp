@@ -62,6 +62,7 @@ int main () {
     Worker net (ni);
     printf("  [net] mac %s eth %d net %d\n", ni.mac.asStr(), ni.drv, net.mTag);
 
+    sys::wait(0); // start Ticker
     { Message m { net.mTag, 'I' }; sys::send(m); } // net.init();
 
 #if 0
@@ -80,7 +81,13 @@ int main () {
 #endif
                "Arp/Cache/Dns/Flood/Listen/Tftp ?\n");
 
-        sys::call(m);
+        sys::send(m);
+        while (true) {
+            auto& r = sys::recv();
+            if (&r == &m)
+                break;
+            printf("recv %p %p\n", &m, &r);
+        }
         assert(m.mLen >= 1);
 
         switch (*m.mPtr) {

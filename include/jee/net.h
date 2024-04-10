@@ -848,12 +848,11 @@ struct Worker : Task {
     }
 
     int run (Message& req) {
-debugf("1111\n");
         Message mb { ni.drv, 'B', 0, (uint8_t*) &ni.spares };
         sys::send(mb);
         assert(!mb.inUse()); // does not get queued
         if (mb.mLen > 1)
-            debugf("used %d spares", mb.mLen);
+            debugf("used %d spares\n", mb.mLen);
 
         if (req.mTag == 'I') {
             dhcph.request();
@@ -868,7 +867,7 @@ debugf("1111\n");
         }
 
         if (req.mLen != 60)
-            debugf("req %d,%c,%d,%08x,%d",
+            debugf("req %d,%c,%d,%08x,%d\n",
                     req.mDst, req.mTag, req.mLen, req.mPtr, req.inUse());
 
         if (flooder != nullptr && &req == (Message*) flooder->mPtr) {
