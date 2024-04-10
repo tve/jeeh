@@ -14,6 +14,7 @@ constexpr Pin led (LED);  // defined in platformio.ini
 int main () {
     hardFaulter = hardFaultHandler;
     fastClock();
+    cycles::init();
 
     uint32_t stack [300];
     sys::init(stack); // enable multi-threading
@@ -22,6 +23,8 @@ int main () {
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     consoleWriter = uartWriter<'U'>;
+
+    printf("%s: ether @ %u MHz\n", SVDNAME, SystemCoreClock/1'000'000);
 
     const auto MHZ = SystemCoreClock/1'000'000;
 
@@ -32,10 +35,8 @@ int main () {
     lock.release();
     t = cycles::count() - t;
 
-    printf(" [main] micros %u cycles %u lock %d ns msp %08x\n",
-            t/MHZ, cycles::count(), (1000*t)/MHZ, stack);
-
-    printf("%s: ether @ %u MHz\n", SVDNAME, SystemCoreClock/1'000'000);
+    printf(" [main] cycles %u lock %d ns msp %08x\n",
+            cycles::count(), (1000*t)/MHZ, stack);
 
     // f439n144 and f7508dk pins, all using alt mode 11:
     //      A1: refclk, A2: mdio, A7: crsdiv, C1: mdc, C4: rxd0,
@@ -61,8 +62,7 @@ int main () {
     Worker net (ni);
     printf("  [net] mac %s eth %d net %d\n", ni.mac.asStr(), ni.drv, net.mTag);
 
-    //net.init();
-    { Message m { net.mTag, 'I' }; sys::send(m); }
+    { Message m { net.mTag, 'I' }; sys::send(m); } // net.init();
 
 #if 0
     led.mode("P");  // push-pull output
