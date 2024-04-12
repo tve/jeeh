@@ -401,8 +401,12 @@ Message& sys::recv () {
 void sys::call (Message& msg) {
     auto& th = context();
     th.block = &msg;
+logf("C1 %p d%d t%c", &msg, msg.mDst, msg.mTag);
     send(msg);
-    [[maybe_unused]] auto& r = recv(); assert(&r == &msg);
+logf("C2 %p d%d t%c", &msg, msg.mDst, msg.mTag);
+    [[maybe_unused]] auto& r = recv();
+logf("C3 %p d%d t%c", &r, r.mDst, msg.mTag);
+    assert(&r == &msg);
     th.block = nullptr;
 }
 
