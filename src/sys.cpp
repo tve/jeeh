@@ -625,7 +625,9 @@ void irqDispatch () {
 }
 
 // to re-generate "stm32-irqs.h", see the "gen-irqs.sh" script
+#if !ARDUINO
 #define IRQ(f)      [[gnu::alias ("irqDispatch")]] void f ();
 #include "arch/all-irqs.h"
+#endif
 
 } // extern "C"
