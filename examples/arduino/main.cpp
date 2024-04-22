@@ -15,7 +15,7 @@ using namespace jeeh;
 #define DELAY(ms) sys::wait(ms)
 #endif //-----------------------------------------------------------------------
 
-Pin led ("B3"); // Nucleo-L432KC
+constexpr Pin led ("B3"); // Nucleo-L432KC
 
 void setup() {
 #if ARDUINO
