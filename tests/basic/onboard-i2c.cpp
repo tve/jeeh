@@ -1,7 +1,7 @@
 #include <jee.h>
 #include <jee/i2c.h>
 using namespace jeeh;
-#include "../../tests/basic/test.h"
+#include "test.h"
 
 extern "C" int _write (int, char* ptr, int len) {
     itmWrite(ptr, len);
