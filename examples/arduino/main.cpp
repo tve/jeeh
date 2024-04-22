@@ -44,7 +44,7 @@ void jeeh::hardFaultHandler (uint32_t* sp) {
 }
 
 #if !ARDUINO //-----------------------------------------------------------------
-// When not using the Arduino runtime, all of JeeH becomes available for use.
+// when not using the Arduino runtime, all of JeeH becomes available for use
 
 Uart uart ('U'); // DMA/IRQ-based UART device driver, id = 'U'
 
