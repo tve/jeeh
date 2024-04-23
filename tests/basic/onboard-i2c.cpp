@@ -13,6 +13,7 @@ int main () {
 
     I2cGpio i2c;
 
+#if STM32F723xx
     printf("PB9 + PB8:\n");
     i2c.init("B9,B8");
     i2c.detect(); // look for audio codec
@@ -20,4 +21,5 @@ int main () {
     printf("PH8 + PA8:\n");
     i2c.init("H8,A8");
     i2c.detect(); // look for touch panel
+#endif
 }
