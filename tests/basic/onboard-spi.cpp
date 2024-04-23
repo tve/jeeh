@@ -11,27 +11,43 @@ int main () {
     cycles::init();
     Pin::config("E2:U,D13"); // pull qspi d2 & d3 high
 
-    { // SPI flash interface with optimised inlined calls to the SPI handler
+    auto mhz = SystemCoreClock / 1'000'000;
+    logf("%d MHz", mhz);
+
+    { // SPI flash interface with optimized inlined calls to the SPI handler
         SpiGpio spi;
+        SpiFlash spif (spi);
 
         spi.init("C9,C10,B2,B6");
-        SpiFlash spif (spi);
         auto t = cycles::count();
-        auto id = spif.devId();
+        int id = spif.devId();
         t = cycles::count() - t;
-        logf("  direct: id %06x, %dK, %d cycles", id, spif.size(), t);
+        logf("  direct: id %06x, %d kB, %d cycles", id, spif.size(), t);
         spi.deinit();
     }
 
-    { // SPI flash interface with virtual method calls to the SPI handler
+    { // SPI flash interface with optimized final calls to the SPI handler
         SpiWrap<SpiGpio> spi;
+        SpiFlash spif (spi); // can optimize, because SpiWrap is final
 
         spi.init("C9,C10,B2,B6");
-        SpiFlash spif (spi);
         auto t = cycles::count();
-        auto id = spif.devId();
+        int id = spif.devId();
         t = cycles::count() - t;
-        logf(" virtual: id %06x, %dK, %d cycles", id, spif.size(), t);
+        logf(" virtual: id %06x, %d kB, %d cycles", id, spif.size(), t);
+        spi.deinit();
+    }
+
+    { // SPI flash interface with abstract virtual calls to the SPI handler
+        SpiWrap<SpiGpio> spi;
+        SpiBase& spib = spi;
+        SpiFlash spif (spib); // can't optimize, because it's a base class ref
+
+        spi.init("C9,C10,B2,B6");
+        auto t = cycles::count();
+        int id = spif.devId();
+        t = cycles::count() - t;
+        logf("abstract: id %06x, %d kB, %d cycles", id, spif.size(), t);
         spi.deinit();
     }
 #endif

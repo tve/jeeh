@@ -49,12 +49,19 @@ private:
     }
 };
 
+struct SpiBase {
+    virtual void enable () =0;
+    virtual void disable () =0;
+    virtual int xfer (int v) =0;
+    virtual int block (uint8_t const* out, uint8_t* in, int len) =0;
+};
+
 template< typename SPI >
-struct SpiWrap : SPI {
-    virtual void enable () { SPI::enable(); }
-    virtual void disable () { SPI::disable(); }
-    virtual int xfer (int v) { return SPI::xfer(v); }
-    virtual int block (uint8_t const* out, uint8_t* in, int len) {
+struct SpiWrap final : SpiBase, SPI {
+    void enable () override { SPI::enable(); }
+    void disable () override { SPI::disable(); }
+    int xfer (int v) override { return SPI::xfer(v); }
+    int block (uint8_t const* out, uint8_t* in, int len) override {
         return SPI::block(out, in, len);
     }
 };
