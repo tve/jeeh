@@ -40,8 +40,12 @@ int main () {
 
     { // SPI flash interface with abstract virtual calls to the SPI handler
         SpiWrap<SpiGpio> spi;
+#if 0
         SpiBase& spib = spi;
         SpiFlash spif (spib); // can't optimize, because it's a base class ref
+#else
+        SpiFlash<SpiBase> spif (spi); // ... same thing, different notation
+#endif
 
         spi.init("C9,C10,B2,B6");
         auto t = cycles::count();
