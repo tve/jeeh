@@ -19,7 +19,7 @@ struct SpiGpio {
         Pin::config(":F,,,:U", &mosi, 4); // keep NSEL pulled up
     }
 
-    int xfer (int v) {
+    int transfer (int v) {
         auto r = 0;
         for (auto i = 0; i < 8; ++i) {
             mosi = v >> 7;
@@ -33,10 +33,10 @@ struct SpiGpio {
         return r;
     }
 
-    int block (uint8_t const* out, uint8_t* in, int len) {
+    int transfer (uint8_t const* out, uint8_t* in, int len) {
         int b = 0;
         for (auto i = 0; i < len; ++i) {
-            b = xfer(out != nullptr ? out[i] : 0);
+            b = transfer(out != nullptr ? out[i] : 0);
             if (in != nullptr)
                 in[i] = b;
         }
@@ -52,17 +52,17 @@ private:
 struct SpiBase {
     virtual void enable () =0;
     virtual void disable () =0;
-    virtual int xfer (int v) =0;
-    virtual int block (uint8_t const* out, uint8_t* in, int len) =0;
+    virtual int transfer (int v) =0;
+    virtual int transfer (uint8_t const* out, uint8_t* in, int len) =0;
 };
 
 template< typename SPI >
 struct SpiWrap final : SpiBase, SPI {
     void enable () override { SPI::enable(); }
     void disable () override { SPI::disable(); }
-    int xfer (int v) override { return SPI::xfer(v); }
-    int block (uint8_t const* out, uint8_t* in, int len) override {
-        return SPI::block(out, in, len);
+    int transfer (int v) override { return SPI::transfer(v); }
+    int transfer (uint8_t const* out, uint8_t* in, int len) override {
+        return SPI::transfer(out, in, len);
     }
 };
 
@@ -81,9 +81,9 @@ struct SpiFlash {
 
     int devId () const {
         cmd(0x9F);
-        int r = spi.xfer(0) << 16;
-        r |= spi.xfer(0) << 8;
-        r |= spi.xfer(0);
+        int r = spi.transfer(0) << 16;
+        r |= spi.transfer(0) << 8;
+        r |= spi.transfer(0);
         spi.disable();
         return r;
     }
@@ -111,8 +111,8 @@ struct SpiFlash {
     void read (int offset, uint8_t* buf, int cnt) const {
         cmd(0x0B);
         w24b(offset);
-        spi.xfer(0);
-        spi.block(nullptr, buf, cnt);
+        spi.transfer(0);
+        spi.transfer(nullptr, buf, cnt);
         spi.disable();
     }
 
@@ -123,19 +123,19 @@ struct SpiFlash {
     void write (int offset, const uint8_t* buf, int cnt) const {
         wcmd(0x02);
         w24b(offset);
-        spi.block(buf, nullptr, cnt);
+        spi.transfer(buf, nullptr, cnt);
         wait();
     }
 
 private:
     void cmd (int arg) const {
         spi.enable();
-        spi.xfer(arg);
+        spi.transfer(arg);
     }
     void wait () const {
         spi.disable();
         cmd(0x05);
-        while (spi.xfer(0) & 1) {}
+        while (spi.transfer(0) & 1) {}
         spi.disable();
     }
     void wcmd (int arg) const {
@@ -145,9 +145,9 @@ private:
         cmd(arg);
     }
     void w24b (int offset) const {
-        spi.xfer(offset >> 16);
-        spi.xfer(offset >> 8);
-        spi.xfer(offset);
+        spi.transfer(offset >> 16);
+        spi.transfer(offset >> 8);
+        spi.transfer(offset);
     }
 };
 
