@@ -50,6 +50,16 @@ private:
 };
 
 template< typename SPI >
+struct SpiWrap : SPI {
+    virtual void enable () { SPI::enable(); }
+    virtual void disable () { SPI::disable(); }
+    virtual int xfer (int v) { return SPI::xfer(v); }
+    virtual int block (uint8_t const* out, uint8_t* in, int len) {
+        return SPI::block(out, in, len);
+    }
+};
+
+template< typename SPI >
 struct SpiFlash {
     SPI& spi;
 

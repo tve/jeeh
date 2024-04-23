@@ -1,4 +1,5 @@
 
 TEST
-id c2201a, 65536K
+  direct: id c2201a, 65536K, 3987 cycles
+ virtual: id c2201a, 65536K, 4203 cycles
 OK
