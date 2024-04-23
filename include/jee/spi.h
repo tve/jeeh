@@ -110,7 +110,7 @@ struct SpiFlash {
         wait();
     }
 
-//private:
+private:
     void cmd (int arg) const {
         spi.enable();
         spi.xfer(arg);

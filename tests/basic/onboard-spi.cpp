@@ -3,11 +3,6 @@
 using namespace jeeh;
 #include "test.h"
 
-extern "C" int _write (int, char* ptr, int len) {
-    itmWrite(ptr, len);
-    return len;
-}
-
 int main () {
     Tester t;
 
