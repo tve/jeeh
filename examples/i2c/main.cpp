@@ -1,5 +1,4 @@
-// This code can be compiled with either "arduino" or "cmsis" as PIO framework.
-// I.e. "pio run -e l432k-arduino" or "pio run -e l432-cmsis".
+// Simple I2C sensor readout example.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -41,7 +40,6 @@ int main () {
     led.mode("P"); // push-pull output
 
     I2cGpio i2c;
-
     printf("SDA=PB5, SCL=PB4\n");
     i2c.init("B5,B4");
     i2c.detect(); // look for audio codec
