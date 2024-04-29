@@ -1,6 +1,6 @@
 # I2C sensor readout on a Nucleo-32 L432KC
 
-This uses a "9DOF Stick", attached to D11 and D12 (PB4 and PB5).
+This uses a "9DOF Stick", attached to D4+D5 (i.e. SDA+SCL, GPIO PB7+PB6).
 
 Sample output:
 

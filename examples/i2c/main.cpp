@@ -40,11 +40,15 @@ int main () {
     led.mode("P"); // push-pull output
 
     I2cGpio i2c;
-    printf("SDA=PB5, SCL=PB4\n");
-    i2c.init("B5,B4");
+    printf("SCL=PB6, SDA=PB7\n");
+    i2c.init("B6,B7");
     i2c.detect(); // look for audio codec
 
     uint8_t buf [6];
+
+    i2c.writeReg(HMC5883, 0, 0x18); sys::wait(10); // 75 Hz
+    i2c.writeReg(HMC5883, 1, 0x40); sys::wait(10); // +/- 1.9 Ga
+    i2c.writeReg(HMC5883, 2, 0x00); sys::wait(10); // continuous
 
     for (auto i = 0; i < 3; ++i) {
         sys::wait(50);
