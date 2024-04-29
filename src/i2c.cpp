@@ -73,45 +73,11 @@ bool I2cGpio::write (uint8_t data) const {
     return ack;
 }
 
-bool I2cGpio::readRegs (int addr, int reg, uint8_t* buf, int len) const {
-    start(2*addr);
-    if (!write(reg)) {
-        stop();
-        return false;
-    }
-    start(2*addr+1);
-    for (auto i = 0; i < len; ++i)
-        *buf++ = read(i == len-1);
-    return true;
-}
-
 int I2cGpio::readReg (int addr, int reg) const {
     uint8_t val;
     if (!readRegs(addr, reg, &val, sizeof val))
         return -1;
     return val;
-}
-
-bool I2cGpio::readRegs16 (int addr, int reg, uint8_t* buf, int len) const {
-    start(2*addr);
-    auto ack = write(reg>>8);
-    if (ack)
-        ack = write(reg);
-    if (!ack) {
-        stop();
-        return false;
-    }
-    start(2*addr+1);
-    for (auto i = 0; i < len; ++i)
-        *buf++ = read(i == len-1);
-    return true;
-}
-
-int I2cGpio::readReg16 (int addr, int reg) const {
-    uint8_t val [2];
-    if (!readRegs16(addr, reg, val, sizeof val))
-        return -1;
-    return (val[0]<<8) | val[1];
 }
 
 bool I2cGpio::writeReg (int addr, int reg, int val) const {
@@ -123,15 +89,25 @@ bool I2cGpio::writeReg (int addr, int reg, int val) const {
     return ack;
 }
 
-bool I2cGpio::writeReg16 (int addr, int reg, int val) const {
+bool I2cGpio::readRegs (int addr, int reg, void* ptr, int len) const {
     start(2*addr);
-    auto ack = write(reg>>8);
-    if (ack)
-        ack = write(reg);
-    if (ack)
-        ack = write(val>>8);
-    if (ack)
-        ack = write(val);
+    if (!write(reg)) {
+        stop();
+        return false;
+    }
+    start(2*addr+1);
+    auto buf = (uint8_t*) ptr;
+    for (auto i = 0; i < len; ++i)
+        buf[i] = read(i == len-1);
+    return true;
+}
+
+bool I2cGpio::writeRegs (int addr, int reg, void const* ptr, int len) const {
+    start(2*addr);
+    bool ack = write(reg);
+    auto buf = (uint8_t const*) ptr;
+    for (auto i = 0; ack && i < len; ++i)
+        ack = write(buf[i]);
     stop();
     return ack;
 }

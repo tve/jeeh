@@ -18,12 +18,11 @@ struct I2cGpio {
     int read (bool last) const;
     bool write (uint8_t data) const;
 
-    bool readRegs (int addr, int reg, uint8_t* buf, int len) const;
     int readReg (int addr, int reg) const;
-    bool readRegs16 (int addr, int reg, uint8_t* buf, int len) const;
-    int readReg16 (int addr, int reg) const;
     bool writeReg (int addr, int reg, int val) const;
-    bool writeReg16 (int addr, int reg, int val) const;
+
+    bool readRegs (int addr, int reg, void* ptr, int len) const;
+    bool writeRegs (int addr, int reg, void const* ptr, int len) const;
 
 private:
     void hold () const {
