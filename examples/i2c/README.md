@@ -1,9 +1,19 @@
 # I2C sensor readout on a Nucleo-32 L432KC
 
-This uses a "9DOF Stick", attached to D4+D5 (i.e. SDA+SCL, GPIO PB7+PB6).
+This expects a "9DOF Stick" attached to D4+D5 (i.e. SDA+SCL, GPIO PB7+PB6).
 
 Sample output:
 
+    STM32L4x2 @ 80 MHz
+    SCL=PB6, SDA=PB7
+    00:                         -- -- -- -- -- -- -- --
+    10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 1e --
+    20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+    30: -- -- -- -- -- -- -- -- -- -- -- -- 3c -- -- --
+    40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+    50: -- -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
+    60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+    70: -- -- -- -- -- -- -- --
     HMC5883 compass: xyz = -397 -252 473
     HMC5883 compass: xyz = -397 -252 473
     HMC5883 compass: xyz = -397 -252 473
@@ -13,3 +23,5 @@ Sample output:
     ITG3200 gyro:    xyz = -4 31 5
     ITG3200 gyro:    xyz = -5 31 1
     ITG3200 gyro:    xyz = -5 32 2
+
+A simple pattern is shown on the 128x32 OLED display, if also on I2C @ 0x3C.
