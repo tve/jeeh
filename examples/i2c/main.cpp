@@ -2,6 +2,7 @@
 
 #include <jee.h>
 #include <jee/hal.h>
+#include <jee/i2c-ssd1306.h>
 using namespace jeeh;
 #include "defs.h"
 
@@ -88,6 +89,22 @@ int main () {
         auto z = (int16_t) ((buf[4] << 8) | buf[5]);
         printf("ITG3200 gyro:    xyz = %d %d %d\n", x, y, z);
     }
+
+    SSD1306 oled (i2c);
+    oled.init();
+
+    // display a trivial pattern, just to verify that it works
+    static uint8_t data [] = {
+        255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
+    };
+    oled.copyBand (  0,  0, data, sizeof data);
+    oled.copyBand (  1,  8, data, sizeof data);
+    oled.copyBand (  2, 16, data, sizeof data);
+    oled.copyBand (  3, 24, data, sizeof data);
+    oled.copyBand (100,  0, data, sizeof data);
+    oled.copyBand (101,  8, data, sizeof data);
+    oled.copyBand (102, 16, data, sizeof data);
+    oled.copyBand (103, 24, data, sizeof data);
 
     while (true) {
         sys::wait(250);
