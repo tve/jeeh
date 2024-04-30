@@ -15,3 +15,15 @@ I2C    | 0x50       | 0x57       | 2 KB
 - on I2C bus H8+H7: 0x38 = FT5x06 capacitive touch
 
 - LEDs: B0, B1, C13 (on CPU board), A4 (LCD backlight)
+
+### Sample output
+
+    STM32F429x: ram @ 180 MHz
+    4 MB PSRAM: (32b)
+    000: 40414243 44454647 48494a4b 4c4d4e4f @ABC DEFG HIJK LMNO
+    010: 50515253 54555657 58595a5b 5c5d5e5f PQRS TUVW XYZ[ \]^_
+    +********************************************++++++++++++ 0 errors
+    32 MB SDRAM: (32b)
+    000: 60616263 64656667 68696a6b 6c6d6e6f `abc defg hijk lmno
+    010: 70717273 74757677 78797a7b 7c7d7e7f pqrs tuvw xyz{ |}~.
+    +********************************************++++++++++++ 0 errors
