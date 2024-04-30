@@ -1,4 +1,4 @@
-// Simple I2C sensor readout example.
+// Access some built-in and attached peripherals via the GPIO pins.
 
 #include <jee.h>
 #include <jee/hal.h>
