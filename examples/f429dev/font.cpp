@@ -6,34 +6,38 @@ using namespace jeeh;
 #include "defs.h"
 #include "lcd.h"
 
+static uint8_t font [95][16] = {
+#include "font.h"
+};
+
 int main () {
     initBoard();
     printf("%s: lcd @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 
     initFmcPins();
-    auto psRam = initPsRam();
     auto sdRam = initSdRam();
 
     auto& bg = *(lcd::FrameBuffer<1>*) sdRam;
-    auto& fg = *(lcd::FrameBuffer<2>*) (&bg+1);
     static_assert(sizeof bg == lcd::HEIGHT * lcd::WIDTH);
-    static_assert(sizeof fg == lcd::HEIGHT * lcd::WIDTH);
 
-    printf("psram %p, sdram %p, bg %p, fg %p\n", psRam, sdRam, &bg, &fg);
+    printf("sdram %p, bg %p\n", sdRam, &bg);
 
     lcd::init();
     bg.init();
-    fg.init();
     ledB = 1; // backlight
+    cycles::init();
 
-    for (int y = 0; y < lcd::HEIGHT; ++y)
-        for (int x = 0; x < lcd::WIDTH; ++x)
-            bg(x, y) = x ^ y;
+    for (int x = 0; x < lcd::WIDTH/8; ++x)
+        for (int y = 0; y < lcd::HEIGHT/16; ++y) {
+            auto v = (x + y) % 95;
+            for (int r = 0; r < 16; ++r)
+                for (int c = 0; c < 8; ++c) {
+                    auto z = (font[v][r] << c) & 0x80 ? 0xFF : 0x00;
+                    bg(8*x+c, 16*y+r) = z;
+                }
+        }
 
-    for (int y = 0; y < lcd::HEIGHT; ++y)
-        for (int x = 0; x < lcd::WIDTH; ++x)
-            fg(x, y) = ((16*x)/lcd::WIDTH << 4) | (y >> 4);
-
+    printf("done, %d us\n", cycles::count() / (SystemCoreClock/1'000'000));
     while (true) {
         ledL.toggle();
         sys::wait(500);
