@@ -1,5 +1,12 @@
 **Demo code for the HAOYU STM32F429IG w/ 5" HD TFT on system board.**
 
+### Demo's
+
+* **`gpio.cpp`** - GPIO access to on-board LEDs, I2C devices, and SPI flash
+* **`ram.cpp`** - set up and access the 4 MB PSRAM and the 32 MB SDRAM
+* **`lcd.cpp`** - set up and access the 800x480 LCD display
+* **`font.cpp`** - generate 100x30 char text output on the LCD display
+
 ### On-board memory
 
 Type   | Start      | Limit      | Total
@@ -16,7 +23,7 @@ I2C    | 0x50       | 0x57       | 2 KB
 
 - LEDs: B0, B1, C13 (on CPU board), A4 (LCD backlight)
 
-### Sample output
+### Sample "ram" output
 
     STM32F429x: ram @ 180 MHz
     4 MB PSRAM: (32b)
