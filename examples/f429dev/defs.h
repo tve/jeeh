@@ -59,15 +59,16 @@ void initFmcPins () {
                 "H2,H3,H5");
 }
 
-void initPsRam () {
+uint8_t* initPsRam () {
     // set up 4 MB PSRAM
     enum { BCR4=0x18, BTR4=0x1C };
     FMC[BCR4] = (1<<12) | (1<<7) | (1<<4) | (1<<2); // WREN b7 MWID MTYP
     FMC[BTR4] = (1<<16) | (8<<8) | (6<<0); // BUSTURN DATAST ADDSET
     FMC[BCR4](0) = 1; // MBKEN
+    return (uint8_t*) 0x6C00'0000;
 }
 
-void initSdRam () {
+uint8_t* initSdRam () {
     // set up 32 MB SDRAM
     enum {CR1=0x140,CR2=0x144,TR1=0x148,TR2=0x14C,CMR=0x150,RTR=0x154,SR=0x158};
     FMC[CR1] = (1<<13)|(1<<12)|(2<<10)|(3<<7)|(1<<6)|(1<<4)|(2<<2)|(1<<0);
@@ -80,4 +81,6 @@ void initSdRam () {
     fmcWait(); FMC[CMR] = (1<<4)|(3<<0);                // auto-refresh
     fmcWait(); FMC[CMR] = (0x231<<9)|(1<<4)|(4<<0);     // load mode
     fmcWait(); FMC[RTR] = (51<<1);                      // refresh rate
+
+    return (uint8_t*) 0xC000'0000;
 }

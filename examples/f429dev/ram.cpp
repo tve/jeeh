@@ -11,22 +11,20 @@ int main () {
     printf("%s: ram @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 
     initFmcPins();
-    initPsRam();
-    initSdRam();
+    auto psRam = initPsRam();
+    auto sdRam = initSdRam();
 
-    auto SRAM = (uint8_t*) 0x6C00'0000;
     for (auto i = 0; i < 32; ++i)
-        SRAM[i] = i+0x40;
-    dumpHex(SRAM, 32, "4 MB PSRAM");
-    printf(" %d errors\n", memTests((uint32_t) SRAM, 4<<20));
+        psRam[i] = i+0x40;
+    dumpHex(psRam, 32, "4 MB PSRAM");
+    printf(" %d errors\n", memTests((uint32_t) psRam, 4<<20));
 
     ledR.toggle();
 
-    auto SDRAM = (uint8_t*) 0xC000'0000;
     for (auto i = 0; i < 32; ++i)
-        SDRAM[i] = i+0x60;
-    dumpHex(SDRAM, 32, "32 MB SDRAM");
-    printf(" %d errors\n", memTests((uint32_t) SDRAM, 32<<20));
+        sdRam[i] = i+0x60;
+    dumpHex(sdRam, 32, "32 MB SDRAM");
+    printf(" %d errors\n", memTests((uint32_t) sdRam, 32<<20));
 
     while (true) {
         ledL.toggle();

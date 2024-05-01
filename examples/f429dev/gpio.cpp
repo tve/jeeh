@@ -5,39 +5,8 @@
 using namespace jeeh;
 #include "defs.h"
 
-constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
-
-void jeeh::fail(void const* a, char const* f, int n) {
-    printf("\nfailed at %s:%d\nfailed caller: %p\n", f, n, a);
-    while (true) {}
-}
-
-void jeeh::hardFaultHandler (uint32_t* sp) {
-    printf("\nhard fault, sp = %p", sp);
-    fail();
-}
-
-Uart uart ('U');
-
-extern "C" int _write (int, char* ptr, int len) {
-    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
-    sys::call(m);
-    return len;
-}
-
 int main () {
-    hardFaulter = hardFaultHandler;
-    fastClock();
-    cycles::init();
-
-    ledL.mode("P");
-    ledR.mode("P");
-    ledC.mode("P");
-    ledB.mode("P");
-
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
-                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
-
+    initBoard();
     printf("%s @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 
     { // I2C bus PH5+PH4
