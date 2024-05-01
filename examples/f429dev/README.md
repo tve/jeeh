@@ -1,5 +1,8 @@
 **Demo code for the HAOYU STM32F429IG w/ 5" HD TFT on system board.**
 
+- HAOYU webpages: [CPU board](https://www.hotmcu.com/x-p-257.html?cPath=1_20)
+  and [LCD display](https://www.hotmcu.com/x-p-217.html?cPath=6_16).
+
 ### Apps
 
 * **`gpio.cpp`** - GPIO access to on-board LEDs, I2C devices, and SPI flash
@@ -33,3 +36,11 @@ I2C    | 0x50       | 0x57       | 2 KB
     000: 60616263 64656667 68696a6b 6c6d6e6f `abc defg hijk lmno
     010: 70717273 74757677 78797a7b 7c7d7e7f pqrs tuvw xyz{ |}~.
     +********************************************++++++++++++ 0 errors
+
+### Images
+![](board-lcd.jpg)
+![](board-img.jpg)
+
+### Schematics
+![](board-cpu.pdf)
+![](board-dev.pdf)
