@@ -42,5 +42,5 @@ I2C    | 0x50       | 0x57       | 2 KB
 ![](board-img.jpg)
 
 ### Schematics
-![](board-cpu.pdf)
-![](board-dev.pdf)
+- [CPU board](board-cpu.pdf)
+- [DEV board](board-dev.pdf)
