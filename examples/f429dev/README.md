@@ -1,6 +1,6 @@
 **Demo code for the HAOYU STM32F429IG w/ 5" HD TFT on system board.**
 
-### Demo's
+### Apps
 
 * **`gpio.cpp`** - GPIO access to on-board LEDs, I2C devices, and SPI flash
 * **`ram.cpp`** - set up and access the 4 MB PSRAM and the 32 MB SDRAM
@@ -20,7 +20,6 @@ I2C    | 0x50       | 0x57       | 2 KB
 
 - on I2C bus H5+H4: 0x1A = WM8978 audio codec
 - on I2C bus H8+H7: 0x38 = FT5x06 capacitive touch
-
 - LEDs: B0, B1, C13 (on CPU board), A4 (LCD backlight)
 
 ### Sample "ram" output
