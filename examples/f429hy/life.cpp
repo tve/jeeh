@@ -8,7 +8,8 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    printf("%s: lcd @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
+    auto mhz = SystemCoreClock / 1'000'000;
+    printf("%s: lcd @ %d MHz\n", SVDNAME, mhz);
 
     initFmcPins();
     auto sdRam = initSdRam();
@@ -21,43 +22,53 @@ int main () {
     ledB = 1; // backlight
     
     constexpr auto X = 400, Y = 240;
-    static uint8_t g [X][Y];
+    static uint8_t g [Y][X];
+    auto p = (uint16_t*) bg.data;
 
     auto r = 0;
     while (true) {
         memset(g, 0, sizeof g);
         for (int y = 1; y < Y-1; ++y)
             for (int x = 1; x < X-1; ++x)
-                g[x][y] = ((x^r)*y & 0xC0) == 0;
+                g[y][x] = ((x^r)*y & 0xC0) == 0;
 
         printf("%d\n", r++);
 
         for (auto k = 0; k < 1000; ++k) {
             ledL.toggle();
 
+            cycles::init();
             for (int y = 1; y < Y-1; ++y)
                 for (int x = 1; x < X-1; ++x)
-                    g[x][y] <<= 4;
+                    g[y][x] <<= 4;
+            auto t1 = cycles::count();
 
+            cycles::init();
             for (int y = 1; y < Y-1; ++y)
                 for (int x = 1; x < X-1; ++x) {
-                    auto c = g[x-1][y-1] + g[x+0][y-1] + g[x+1][y-1] +
-                        g[x-1][y+0]               + g[x+1][y+0] +
-                        g[x-1][y+1] + g[x+0][y+1] + g[x+1][y+1];
+                    auto c = g[y-1][x-1] + g[y-1][x] + g[y-1][x+1] +
+                             g[y  ][x-1]             + g[y  ][x+1]   +
+                             g[y+1][x-1] + g[y+1][x] + g[y+1][x+1];
                     switch (c >> 4) {
-                        case 2: if (!(g[x][y] >> 4))
+                        case 2: if (!(g[y][x] >> 4))
                                     break;
                                 [[fallthrough]];
-                        case 3: g[x][y] += 1;
+                        case 3: g[y][x] += 1;
                     }
                 }
+            auto t2 = cycles::count();
 
-            for (int y = 0; y < Y; ++y)
-                for (int x = 0; x < X; ++x)
-                    bg(2*x+0, 2*y+0) =
-                        bg(2*x+1, 2*y+0) =
-                        bg(2*x+0, 2*y+1) =
-                        bg(2*x+1, 2*y+1) = -(g[x][y] & 1);
+            cycles::init();
+            for (int y = 1; y < Y-1; ++y)
+                for (int x = 1; x < X-1; ++x)
+            p[2*y*X+x] = p[(2*y+1)*X+x] = -(g[y][x] & 1);
+            auto t3 = cycles::count();
+
+            if (k < 5) {
+                auto fps = (10*SystemCoreClock)/(t1+t2+t3);
+                printf("  %d us, %d us %d us, %d.%d fps\n",
+                        t1/mhz, t2/mhz, t3/mhz, fps/10, fps%10);
+            }
         }
     }
 }
