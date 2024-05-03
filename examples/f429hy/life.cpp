@@ -47,7 +47,7 @@ int main () {
             for (int y = 1; y < Y-1; ++y)
                 for (int x = 1; x < X-1; ++x) {
                     auto c = g[y-1][x-1] + g[y-1][x] + g[y-1][x+1] +
-                             g[y  ][x-1]             + g[y  ][x+1]   +
+                             g[y  ][x-1]             + g[y  ][x+1] +
                              g[y+1][x-1] + g[y+1][x] + g[y+1][x+1];
                     switch (c >> 4) {
                         case 2: if (!(g[y][x] >> 4))
@@ -61,10 +61,10 @@ int main () {
             cycles::init();
             for (int y = 1; y < Y-1; ++y)
                 for (int x = 1; x < X-1; ++x)
-            p[2*y*X+x] = p[(2*y+1)*X+x] = -(g[y][x] & 1);
+                    p[2*y*X+x] = p[(2*y+1)*X+x] = -(g[y][x] & 1);
             auto t3 = cycles::count();
 
-            if (k < 5) {
+            if (k % 100 == 0) {
                 auto fps = (10*SystemCoreClock)/(t1+t2+t3);
                 printf("  %d us, %d us %d us, %d.%d fps\n",
                         t1/mhz, t2/mhz, t3/mhz, fps/10, fps%10);
