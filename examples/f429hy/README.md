@@ -9,6 +9,7 @@
 * **`ram.cpp`** - set up and access the 4 MB PSRAM and the 32 MB SDRAM
 * **`lcd.cpp`** - set up and access the 800x480 LCD display
 * **`font.cpp`** - generate 100x30 char text output on the LCD display
+* **`life.cpp`** - Conway's Game of Life on a 400x240 grid @ 25 fps
 
 ### On-board memory
 
