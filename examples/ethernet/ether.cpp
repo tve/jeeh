@@ -38,11 +38,15 @@ int main () {
     printf(" [main] cycles %u lock %d ns msp %08x\n",
             cycles::count(), (1000*t)/MHZ, stack);
 
+    if constexpr (strstr(ETHER_PINS, "A8:") != nullptr) // only on f429hy
+        RCC[0x08](21,2) = 2; // CFGR: MCO1 set to HSE
+
     // f439n144 and f7508dk pins, all using alt mode 11:
     //      A1: refclk, A2: mdio, A7: crsdiv, C1: mdc, C4: rxd0,
     //      C5: rxd1, G11: txen, G13: txd0, B13 or G14: txd1
     Pin::config(ETHER_PINS);
     // f750d: A1:PH11,A2,A7,C1,C4,C5,G11,G13,G14
+    // f429hy: A1:PH11,A2,A7,C1,C4,C5,G11,G13,G14,A8:PV0
 
     MacAddr mac {0x32,0x31,0xC4,0x8E,0x32,0x66}; //0x?[26AE]:* is local
 
