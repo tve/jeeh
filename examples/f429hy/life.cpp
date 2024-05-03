@@ -59,8 +59,8 @@ int main () {
             auto t2 = cycles::count();
 
             cycles::init();
-            for (int y = 1; y < Y-1; ++y)
-                for (int x = 1; x < X-1; ++x)
+            for (int y = 0; y < Y; ++y)
+                for (int x = 0; x < X; ++x)
                     p[2*y*X+x] = p[(2*y+1)*X+x] = -(g[y][x] & 1);
             auto t3 = cycles::count();
 
