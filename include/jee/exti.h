@@ -31,14 +31,13 @@ struct ExtIrq : Device, Chain {
     }
 
     void start (Message& m) override {
-        auto sel = m.mTag - 'A';
-        auto pos = m.mLen;
-        auto mode = (int) m.mPtr; // NONE / RISE / FALL / BOTH
         append(m);
 
+        auto pos = m.mLen;
         auto off = 4*(pos%4) + 32*(pos/4);
-        SYSCFG[EXTICR1](off, 4) = sel;
+        SYSCFG[EXTICR1](off, 4) = m.mTag - 'A';
 
+        auto mode = (int) m.mPtr; // NONE / RISE / FALL / BOTH
         if (mode != 0) {
             EXTI[RTSR](pos) = (mode & RISE) != 0;
             EXTI[FTSR](pos) = (mode & FALL) != 0;

@@ -150,7 +150,7 @@ void sys::wait (uint16_t ms) {
 #if !STM32G0 & !STM32L0 & !STM32F1
 namespace jeeh::rtc {
 
-enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,WPR=0x24,BKPR=0x50 };
+enum { TR=0x00,DR=0x04,ICSR=0x0C,WPR=0x24,BKPR=0x50 };
 #if STM32F3
 enum { BDCR=0x20 };
 #elif STM32F4 | STM32F7 | STM32H7
@@ -181,8 +181,8 @@ DateTime getDate () {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
 
-    RTC[ISR](5) = 0;              // clear RSF
-    while (RTC[ISR](5) == 0) {}   // wait for RSF
+    RTC[ICSR](5) = 0;              // clear RSF
+    while (RTC[ICSR](5) == 0) {}   // wait for RSF
 
     RTC[WPR] = 0xFF;  // re-enable write protection
 
@@ -201,19 +201,23 @@ DateTime getDate () {
     return dt;
 }
 
+uint32_t getSecs () {
+    return getDate(); // let DateTime::operator uint32_t do the conversion
+}
+
 void set (DateTime const& dt) {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
 
-    RTC[ISR](7) = 1;             // set INIT
-    while (RTC[ISR](6) == 0) {}  // wait for INITF
+    RTC[ICSR](7) = 1;             // set INIT
+    while (RTC[ICSR](6) == 0) {}  // wait for INITF
     RTC[TR] = (dt.ss + 6 * (dt.ss/10)) |
         ((dt.mm + 6 * (dt.mm/10)) << 8) |
         ((dt.hh + 6 * (dt.hh/10)) << 16);
     RTC[DR] = (dt.dy + 6 * (dt.dy/10)) |
         ((dt.mo + 6 * (dt.mo/10)) << 8) |
         ((dt.yr + 6 * (dt.yr/10)) << 16);
-    RTC[ISR](7) = 0;             // clear INIT
+    RTC[ICSR](7) = 0;             // clear INIT
 
     RTC[WPR] = 0xFF;  // re-enable write protection
 }
