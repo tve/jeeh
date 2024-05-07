@@ -18,16 +18,16 @@ struct Uart : Device {
 
     void init (char const* pins, uint32_t baud, Config const& config) {
         Pin::config(pins);
+        dev = config;
+        RCC(dev.uena, 1) = 1;          // uart on
+        baudRate(baud);
 
         static_assert(RXBYTES % cache::align == 0);
         static_assert(TXBYTES % cache::align == 0);
         rxBuf = sys::pool(RXBYTES+TXBYTES, nullptr, cache::align);
         txBuf = rxBuf + RXBYTES;
 
-        dev = config;
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
-        RCC(dev.uena, 1) = 1;          // uart on
-
 #if STM32G4
         RCC(ena::DMAMUX, 1) = 1;
 #elif STM32H7
@@ -60,7 +60,6 @@ struct Uart : Device {
         dmaTX(CCR) = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
 #endif
 
-        baudRate(baud);
         devReg(CR3) = 0b1100'0000; // DMAT DMAR
 #if STM32F1 | STM32F4
         devReg(CR1) = 0b0010'0000'0001'1100 ; // UE IDLEIE TE RE

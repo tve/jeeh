@@ -3,7 +3,7 @@ namespace jeeh {
 struct Uart : Device {
     struct Config {
         uint32_t uart;
-        uint16_t ena;
+        uint16_t uena;
         uint8_t mhz;
         Irq idleIrq, txIrq, rxIrq;
         uint8_t dma :1, txChan :3, rxChan :3, txReq :4, rxReq :4; // 0-based
@@ -18,10 +18,11 @@ struct Uart : Device {
 
     void init (char const* pins, uint32_t baud, Config const& config) {
         Pin::config(pins);
-
         dev = config;
+        RCC(dev.uena, 1) = 1;         // uart on
+        baudRate(baud);
+
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
-        RCC(dev.ena, 1) = 1;         // uart on
 
         dmaReg(CSELR)(4*(dev.rxChan), 4) = dev.rxReq;
         dmaReg(CSELR)(4*(dev.txChan), 4) = dev.txReq;
@@ -35,7 +36,6 @@ struct Uart : Device {
         dmaTX(CPAR) = dev.uart + TDR;
         dmaTX(CCR) = 0b1001'0010; // MINC DIR TCIE
 
-        baudRate(baud);
         devReg(CR3) = 0b1100'0000; // DMAT DMAR
         devReg(CR1) = 0b0001'1101; // IDLEIE TE RE UE
 
@@ -45,7 +45,7 @@ struct Uart : Device {
     }
 
     void deinit () {
-        RCC(dev.ena, 1) = 0;          // uart off
+        RCC(dev.uena, 1) = 0;          // uart off
         RCC(ena::DMA1+dev.dma, 1) = 0;  // dma off
     }
 
