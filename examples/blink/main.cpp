@@ -11,7 +11,7 @@ int main () {
     while (true) {
         led.toggle();
 
-        for (auto i = 0; i < 1'000'000; ++i)
+        for (auto i = 0; i < 2'000'000; ++i)
             asm ("");  // prevents getting optimised away
     }
 }
