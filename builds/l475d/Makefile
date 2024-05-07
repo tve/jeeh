@@ -1,0 +1,1 @@
+include ../etc/common.mk

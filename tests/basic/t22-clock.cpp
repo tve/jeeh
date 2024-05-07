@@ -1,6 +1,7 @@
 // Check the built-in real-time clock and backup registers.
 
 #include <jee.h>
+#include <jee/exti.h>
 using namespace jeeh;
 #include "test.h"
 
@@ -70,6 +71,8 @@ struct ClockDev : Device, Chain {
 
 int main () {
     Tester t;
+
+RCC[0x58](10) = 1; // RTCAPBEN
 
 #if STM32G431xx
     // there are no OSC32 pins on Nucleo-32's G431KB, must use the 32 kHz LSI
