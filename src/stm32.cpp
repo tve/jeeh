@@ -150,7 +150,7 @@ void sys::wait (uint16_t ms) {
 #if !STM32G0 & !STM32L0 & !STM32F1
 namespace jeeh::rtc {
 
-enum { TR=0x00,DR=0x04,ICSR=0x0C,WPR=0x24,BKPR=0x50 };
+enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,CR=0x18,WPR=0x24,BKPR=0x50 };
 #if STM32F3
 enum { BDCR=0x20 };
 #elif STM32F4 | STM32F7 | STM32H7
@@ -175,22 +175,23 @@ void init (bool lse) {
     } else
         RCC[BDCR](8,2) = 2;           // RTSEL = LSI
     RCC[BDCR](15) = 1;                // RTCEN
+
+    RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
+    RTC[WPR] = 0x53;
+    RTC[CR](5) = 1;   // BYPSHAD, this is faster that waiting for RSF
+    RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
 DateTime getDate () {
-    RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
-    RTC[WPR] = 0x53;
-
-    RTC[ICSR](5) = 0;              // clear RSF
-    while (RTC[ICSR](5) == 0) {}   // wait for RSF
-
-    RTC[WPR] = 0xFF;  // re-enable write protection
-
-    // shadow registers are now valid and won't change while being read
-    uint32_t tod = RTC[TR];
-    uint32_t doy = RTC[DR];
+    uint32_t ssr, tod, doy;
+    do { // loop until SSR is stable during all reads
+        ssr = RTC[SSR];
+        tod = RTC[TR];
+        doy = RTC[DR];
+    } while ((int) ssr != RTC[SSR]);
 
     DateTime dt;
+    dt.ff = 255 - ssr; // assumes PREDIV_S is 255
     dt.ss = (tod & 0xF) + 10 * ((tod>>4) & 0x7);
     dt.mm = ((tod>>8) & 0xF) + 10 * ((tod>>12) & 0x7);
     dt.hh = ((tod>>16) & 0xF) + 10 * ((tod>>20) & 0x3);

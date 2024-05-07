@@ -33,6 +33,13 @@ int main () {
     rtc::set({ 12, 11, 10, 23, 22, 21 });
     showTime(3, rtc::getDate());
 
+    sys::wait(400); // show fractional seconds rollover
+    for (auto i = 0; i < 10; ++i) {
+        sys::wait(100);
+        auto dt = rtc::getDate();
+        logf("%4d: %d.%03d s", i, dt.ss, (dt.ff * 1000 + 128) / 256);
+    }
+
     for (auto i = 0; i < 10; ++i)
         rtc::setReg(i, i * 1111); // regs are only 16-bit on F1xx
     for (auto i = 0; i < 10; ++i)

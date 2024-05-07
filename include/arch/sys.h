@@ -170,7 +170,7 @@ class DateTime {
     }
 
 public:
-    uint8_t yr, mo, dy, hh, mm, ss;
+    uint8_t yr, mo, dy, hh, mm, ss, ff =0;
 
     constexpr DateTime (int y, int m, int d, int h =0, int i =0, int s =0)
         : yr (y % 100), mo (m), dy (d), hh (h), mm (i), ss (s) {}
