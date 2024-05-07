@@ -22,3 +22,58 @@ load to RAM: t17
 load to RAM: t18
 load to RAM: t19
 load to RAM: t20
+load to RAM: t21
+
+TEST
+one 0x2000ffac t 0x2000ffc4 c 0x2000ffd4 two 0x2000ff7c t 0x2000ff90
+10
+11 A
+20 s0 0x2000ff68 d0 tA
+20 s1 0x2000ffc4 d64 tT
+12 A
+20 s2 0x2000ff68 d0 tB
+20 s3 0x2000ffc4 d64 tT
+13 B
+20 s4 0x2000ff68 d0 tC
+30 s10 0x2000ffd4 d1 tX
+30 s11 0x2000ff90 d64 tT
+20 s5 0x2000ffd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000f61
+FAIL
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.73 seconds ==========================
+load to RAM: t22
+
+TEST
+1: 405904948
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 2.19 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+t00            SUCCESS   00:00:01.605
+t01            SUCCESS   00:00:01.674
+t02            SUCCESS   00:00:01.809
+t03            SUCCESS   00:00:01.683
+t04            SUCCESS   00:00:01.699
+t05            SUCCESS   00:00:01.739
+t06            SUCCESS   00:00:01.651
+t07            SUCCESS   00:00:01.651
+t08            SUCCESS   00:00:01.661
+t09            SUCCESS   00:00:01.728
+t10            SUCCESS   00:00:01.708
+t11            SUCCESS   00:00:01.732
+t12            SUCCESS   00:00:01.738
+t13            SUCCESS   00:00:01.867
+t14            SUCCESS   00:00:02.344
+t15            SUCCESS   00:00:01.689
+t16            SUCCESS   00:00:03.031
+t17            SUCCESS   00:00:01.688
+t18            SUCCESS   00:00:03.002
+t19            SUCCESS   00:00:02.418
+t20            SUCCESS   00:00:01.672
+t21            FAILED    00:00:01.735
+t22            FAILED    00:00:02.191
+==================== 2 failed, 21 succeeded in 00:00:43.714 ====================

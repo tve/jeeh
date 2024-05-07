@@ -1,0 +1,18 @@
+
+TEST
+one 0x2002ffac t 0x2002ffc4 c 0x2002ffd4 two 0x2002ff7c t 0x2002ff90
+10
+11 A
+20 s0 0x2002ff68 d0 tA
+20 s1 0x2002ffc4 d64 tT
+12 A
+20 s2 0x2002ff68 d0 tB
+20 s3 0x2002ffc4 d64 tT
+13 B
+20 s4 0x2002ff68 d0 tC
+30 s10 0x2002ffd4 d1 tX
+30 s11 0x2002ff90 d64 tT
+20 s5 0x2002ffd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000f01
+FAIL

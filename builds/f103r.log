@@ -1,4 +1,11 @@
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
+rewriting: ../include/jee-stm32.h
+rewriting: ../include/jee.h
 load to RAM: t00
+EST
+OK
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.15 seconds ==========================
 load to RAM: t01
 load to RAM: t02
 load to RAM: t03
@@ -17,5 +24,64 @@ load to RAM: t15
 load to RAM: t16
 load to RAM: t17
 load to RAM: t18
+
+TEST
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.67 seconds ==========================
 load to RAM: t19
 load to RAM: t20
+load to RAM: t21
+
+TEST
+one 0x20004fac t 0x20004fc4 c 0x20004fd4 two 0x20004f7c t 0x20004f90
+10
+11 A
+20 s0 0x20004f68 d0 tA
+20 s1 0x20004fc4 d64 tT
+12 A
+20 s2 0x20004f68 d0 tB
+20 s3 0x20004fc4 d64 tT
+13 B
+20 s4 0x20004f68 d0 tC
+30 s10 0x20004fd4 d1 tX
+30 s11 0x20004f90 d64 tT
+20 s5 0x20004fd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000de1
+FAIL
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.22 seconds ==========================
+/home/jcw/code/jeeh-dev/tests/basic/t22-clock.cpp: In member function 'void ClockDev::init()':
+/home/jcw/code/jeeh-dev/tests/basic/t22-clock.cpp:18:31: error: 'RTC_WKUP' is not a member of 'jeeh::Irq'
+         irqInstall((int) Irq::RTC_WKUP);
+                               ^~~~~~~~
+*** [.pio/build/t22/src/t22-clock.o] Error 1
+========================== [FAILED] Took 0.91 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+t00            FAILED    00:00:01.150
+t01            SUCCESS   00:00:01.163
+t02            SUCCESS   00:00:01.252
+t03            SUCCESS   00:00:01.168
+t04            SUCCESS   00:00:01.183
+t05            SUCCESS   00:00:01.174
+t06            SUCCESS   00:00:01.196
+t07            SUCCESS   00:00:01.165
+t08            SUCCESS   00:00:01.166
+t09            SUCCESS   00:00:01.213
+t10            SUCCESS   00:00:01.194
+t11            SUCCESS   00:00:01.230
+t12            SUCCESS   00:00:01.229
+t13            SUCCESS   00:00:01.300
+t14            SUCCESS   00:00:01.775
+t15            SUCCESS   00:00:01.190
+t16            SUCCESS   00:00:02.462
+t17            SUCCESS   00:00:01.163
+t18            FAILED    00:00:01.670
+t19            SUCCESS   00:00:01.825
+t20            SUCCESS   00:00:01.201
+t21            FAILED    00:00:01.219
+t22            FAILED    00:00:00.910
+==================== 4 failed, 19 succeeded in 00:00:30.199 ====================

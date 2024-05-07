@@ -1,0 +1,18 @@
+
+TEST
+one 0x20004fac t 0x20004fc4 c 0x20004fd4 two 0x20004f7c t 0x20004f90
+10
+11 A
+20 s0 0x20004f68 d0 tA
+20 s1 0x20004fc4 d64 tT
+12 A
+20 s2 0x20004f68 d0 tB
+20 s3 0x20004fc4 d64 tT
+13 B
+20 s4 0x20004f68 d0 tC
+30 s10 0x20004fd4 d1 tX
+30 s11 0x20004f90 d64 tT
+20 s5 0x20004fd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000de1
+FAIL

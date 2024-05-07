@@ -1,6 +1,8 @@
 rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
 rewriting: ../include/jee-stm32.h
 rewriting: ../include/jee.h
+load to RAM: i2c
+load to RAM: spi
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
@@ -21,5 +23,61 @@ load to RAM: t16
 load to RAM: t17
 load to RAM: t18
 load to RAM: t19
-pio-extra: GOT 24 b'\x00\x00\x00\x01\n' b' -1\x01\n'
 load to RAM: t20
+load to RAM: t21
+
+TEST
+one 0x2003ffac t 0x2003ffc4 c 0x2003ffd4 two 0x2003ff7c t 0x2003ff90
+10
+11 A
+20 s0 0x2003ff68 d0 tA
+20 s1 0x2003ffc4 d64 tT
+12 A
+20 s2 0x2003ff68 d0 tB
+20 s3 0x2003ffc4 d64 tT
+13 B
+20 s4 0x2003ff68 d0 tC
+30 s10 0x2003ffd4 d1 tX
+30 s11 0x2003ff90 d64 tT
+20 s5 0x2003ffd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000f29
+FAIL
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.48 seconds ==========================
+load to RAM: t22
+
+TEST
+1: 405904947
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.94 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+i2c            SUCCESS   00:00:01.488
+spi            SUCCESS   00:00:01.466
+t00            SUCCESS   00:00:01.425
+t01            SUCCESS   00:00:01.438
+t02            SUCCESS   00:00:01.505
+t03            SUCCESS   00:00:01.454
+t04            SUCCESS   00:00:01.451
+t05            SUCCESS   00:00:01.465
+t06            SUCCESS   00:00:01.451
+t07            SUCCESS   00:00:01.422
+t08            SUCCESS   00:00:01.456
+t09            SUCCESS   00:00:01.484
+t10            SUCCESS   00:00:01.482
+t11            SUCCESS   00:00:01.478
+t12            SUCCESS   00:00:01.487
+t13            SUCCESS   00:00:01.547
+t14            SUCCESS   00:00:02.042
+t15            SUCCESS   00:00:01.457
+t16            SUCCESS   00:00:02.736
+t17            SUCCESS   00:00:01.447
+t18            SUCCESS   00:00:02.707
+t19            SUCCESS   00:00:02.142
+t20            SUCCESS   00:00:01.453
+t21            FAILED    00:00:01.485
+t22            FAILED    00:00:01.940
+==================== 2 failed, 23 succeeded in 00:00:40.909 ====================
