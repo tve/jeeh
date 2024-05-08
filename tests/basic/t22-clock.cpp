@@ -72,7 +72,7 @@ struct ClockDev : Device, Chain {
 int main () {
     Tester t;
 
-RCC[0x58](10) = 1; // RTCAPBEN
+    RTC(ena::RTCAPB, 1) = 1;
 
 #if STM32G431xx
     // there are no OSC32 pins on Nucleo-32's G431KB, must use the 32 kHz LSI
