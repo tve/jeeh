@@ -2,6 +2,10 @@ rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
 rewriting: ../include/jee-stm32.h
 rewriting: ../include/jee.h
 load to RAM: t00
+EST
+OK
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.13 seconds ==========================
 load to RAM: t01
 load to RAM: t02
 load to RAM: t03
@@ -42,36 +46,16 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000de1
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.22 seconds ==========================
+========================== [FAILED] Took 1.23 seconds ==========================
 .pio/build/t22/src/t22-clock.o: In function `main':
 /home/jcw/code/jeeh-dev/tests/basic/t22-clock.cpp:27: undefined reference to `jeeh::rtc::deepSleep(unsigned short, int)'
 collect2: error: ld returned 1 exit status
 *** [.pio/build/t22/firmware.elf] Error 1
-========================== [FAILED] Took 0.95 seconds ==========================
+========================== [FAILED] Took 0.96 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t00            SUCCESS   00:00:01.108
-t01            SUCCESS   00:00:01.148
-t02            SUCCESS   00:00:01.249
-t03            SUCCESS   00:00:01.169
-t04            SUCCESS   00:00:01.170
-t05            SUCCESS   00:00:01.177
-t06            SUCCESS   00:00:01.164
-t07            SUCCESS   00:00:01.179
-t08            SUCCESS   00:00:01.169
-t09            SUCCESS   00:00:01.212
-t10            SUCCESS   00:00:01.197
-t11            SUCCESS   00:00:01.222
-t12            SUCCESS   00:00:01.225
-t13            SUCCESS   00:00:01.291
-t14            SUCCESS   00:00:01.797
-t15            SUCCESS   00:00:01.183
-t16            SUCCESS   00:00:02.481
-t17            SUCCESS   00:00:01.167
-t18            SUCCESS   00:00:03.608
-t19            SUCCESS   00:00:01.846
-t20            SUCCESS   00:00:01.175
-t21            FAILED    00:00:01.223
-t22            FAILED    00:00:00.955
-==================== 2 failed, 21 succeeded in 00:00:32.115 ====================
+t00            FAILED    00:00:01.128
+t21            FAILED    00:00:01.225
+t22            FAILED    00:00:00.964
+==================== 3 failed, 20 succeeded in 00:00:32.068 ====================

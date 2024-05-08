@@ -42,32 +42,10 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000f35
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.21 seconds ==========================
+========================== [FAILED] Took 1.23 seconds ==========================
 load to RAM: t22
 
 Environment    Status    Duration
 -------------  --------  ------------
-t00            SUCCESS   00:00:01.139
-t01            SUCCESS   00:00:01.171
-t02            SUCCESS   00:00:01.185
-t03            SUCCESS   00:00:01.182
-t04            SUCCESS   00:00:01.176
-t05            SUCCESS   00:00:01.188
-t06            SUCCESS   00:00:01.197
-t07            SUCCESS   00:00:01.167
-t08            SUCCESS   00:00:01.166
-t09            SUCCESS   00:00:01.207
-t10            SUCCESS   00:00:01.169
-t11            SUCCESS   00:00:01.224
-t12            SUCCESS   00:00:01.198
-t13            SUCCESS   00:00:01.245
-t14            SUCCESS   00:00:01.792
-t15            SUCCESS   00:00:01.192
-t16            SUCCESS   00:00:02.459
-t17            SUCCESS   00:00:01.176
-t18            SUCCESS   00:00:03.580
-t19            SUCCESS   00:00:01.215
-t20            SUCCESS   00:00:01.175
-t21            FAILED    00:00:01.209
-t22            SUCCESS   00:00:01.436
-==================== 1 failed, 22 succeeded in 00:00:31.848 ====================
+t21            FAILED    00:00:01.226
+==================== 1 failed, 22 succeeded in 00:00:32.622 ====================

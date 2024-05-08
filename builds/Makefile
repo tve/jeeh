@@ -1,5 +1,7 @@
 A = f103r f439z f723d g431k l433r l475d
-G = grep --line-buffered -v 'Library Manager'
+G = grep --line-buffered -v -e 'Library Manager' \
+			    -e ' SUCCESS   00:' \
+			    -e '^pio-extra: GOT '
 
 all: $A
 	wc *.log
