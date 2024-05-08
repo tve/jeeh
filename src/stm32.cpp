@@ -150,7 +150,8 @@ void sys::wait (uint16_t ms) {
 #if !STM32G0 & !STM32L0 & !STM32F1
 namespace jeeh::rtc {
 
-enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,CR=0x18,WPR=0x24,BKPR=0x50 };
+enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,WUTR=0x14,CR=0x18,WPR=0x24,SCR=0x5C };
+
 #if STM32F3
 enum { BDCR=0x20 };
 #elif STM32F4 | STM32F7 | STM32H7
@@ -180,6 +181,35 @@ void init (bool lse) {
     RTC[WPR] = 0x53;
     RTC[CR](5) = 1;   // BYPSHAD, this is faster that waiting for RSF
     RTC[WPR] = 0xFF;  // re-enable write protection
+}
+
+void deepSleep (uint16_t ms, int mode) {
+    assert(ms <= 16'000);
+    auto sel = 3;
+    auto count = (1000*ms) / 61;
+    while (count >= 32768) {
+        --sel;
+        count /= 2;
+    }
+
+    // see RM0440 v7 p1545
+    RTC[WPR] = 0xCA;             // disable write protection
+    RTC[WPR] = 0x53;
+    RTC[CR](10) = 0;             // ~WUTE
+    while (RTC[ICSR](2) == 0) {} // wait for WUTWF
+    RTC[WUTR] = count;
+    RTC[CR](0,3) = sel;
+    RTC[CR](14) = 1;             // WUTIE
+    RTC[SCR] = 1<<2;             // CWUTF
+    RTC[CR](10) = 1;             // WUTE
+    RTC[WPR] = 0xFF;             // re-enable write protection
+
+    EXTI[0x08](20) = 1; // RT20 in RTSR1
+    EXTI[0x04](20) = 1; // EM20 in EMR1
+
+    PWR[0x00](0, 3) = mode; // CR1: LPMS
+    SCB[0x10](2) = 1; // SLEEPDEEP
+    asm ("wfe");
 }
 
 DateTime getDate () {
