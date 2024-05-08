@@ -2,10 +2,10 @@ rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
 rewriting: ../include/jee-stm32.h
 rewriting: ../include/jee.h
 load to RAM: t00
-EST
+ÔEST
 OK
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.13 seconds ==========================
+========================== [FAILED] Took 1.11 seconds ==========================
 load to RAM: t01
 load to RAM: t02
 load to RAM: t03
@@ -55,7 +55,7 @@ collect2: error: ld returned 1 exit status
 
 Environment    Status    Duration
 -------------  --------  ------------
-t00            FAILED    00:00:01.128
-t21            FAILED    00:00:01.225
-t22            FAILED    00:00:00.964
-==================== 3 failed, 20 succeeded in 00:00:32.068 ====================
+t00            FAILED    00:00:01.113
+t21            FAILED    00:00:01.226
+t22            FAILED    00:00:00.960
+==================== 3 failed, 20 succeeded in 00:00:32.142 ====================
