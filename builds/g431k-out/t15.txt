@@ -2,5 +2,5 @@
 TEST
 wait: 10011 us
 by design, this message has exactly 50 characters
-itm:  63 us
+itm:  69 us
 OK

@@ -47,35 +47,35 @@ FAIL
 load to RAM: t22
 
 TEST
-1: 405904948
+1: 30 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.25 seconds ==========================
+========================== [FAILED] Took 2.30 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-i2c            SUCCESS   00:00:01.847
-t00            SUCCESS   00:00:01.615
+i2c            SUCCESS   00:00:01.863
+t00            SUCCESS   00:00:01.626
 t01            SUCCESS   00:00:01.707
-t02            SUCCESS   00:00:01.868
-t03            SUCCESS   00:00:01.715
-t04            SUCCESS   00:00:01.733
-t05            SUCCESS   00:00:01.750
-t06            SUCCESS   00:00:01.729
-t07            SUCCESS   00:00:01.724
-t08            SUCCESS   00:00:01.708
-t09            SUCCESS   00:00:01.785
-t10            SUCCESS   00:00:01.765
-t11            SUCCESS   00:00:01.808
-t12            SUCCESS   00:00:01.784
-t13            SUCCESS   00:00:01.924
-t14            SUCCESS   00:00:02.388
-t15            SUCCESS   00:00:01.770
-t16            SUCCESS   00:00:03.052
-t17            SUCCESS   00:00:01.721
-t18            SUCCESS   00:00:03.031
-t19            SUCCESS   00:00:02.490
-t20            SUCCESS   00:00:01.731
-t21            FAILED    00:00:01.786
-t22            FAILED    00:00:02.247
-==================== 2 failed, 22 succeeded in 00:00:46.677 ====================
+t02            SUCCESS   00:00:01.863
+t03            SUCCESS   00:00:01.737
+t04            SUCCESS   00:00:01.750
+t05            SUCCESS   00:00:01.757
+t06            SUCCESS   00:00:01.727
+t07            SUCCESS   00:00:01.703
+t08            SUCCESS   00:00:01.715
+t09            SUCCESS   00:00:01.772
+t10            SUCCESS   00:00:01.771
+t11            SUCCESS   00:00:01.810
+t12            SUCCESS   00:00:01.792
+t13            SUCCESS   00:00:01.926
+t14            SUCCESS   00:00:02.399
+t15            SUCCESS   00:00:01.768
+t16            SUCCESS   00:00:03.059
+t17            SUCCESS   00:00:01.747
+t18            SUCCESS   00:00:04.337
+t19            SUCCESS   00:00:02.516
+t20            SUCCESS   00:00:01.728
+t21            FAILED    00:00:01.787
+t22            FAILED    00:00:02.296
+==================== 2 failed, 22 succeeded in 00:00:48.156 ====================

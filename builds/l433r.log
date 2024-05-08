@@ -42,38 +42,38 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000f61
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.73 seconds ==========================
+========================== [FAILED] Took 1.74 seconds ==========================
 load to RAM: t22
 
 TEST
-1: 405904948
+1: 29 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.19 seconds ==========================
+========================== [FAILED] Took 2.22 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t00            SUCCESS   00:00:01.605
-t01            SUCCESS   00:00:01.674
-t02            SUCCESS   00:00:01.809
-t03            SUCCESS   00:00:01.683
-t04            SUCCESS   00:00:01.699
-t05            SUCCESS   00:00:01.739
-t06            SUCCESS   00:00:01.651
-t07            SUCCESS   00:00:01.651
-t08            SUCCESS   00:00:01.661
-t09            SUCCESS   00:00:01.728
-t10            SUCCESS   00:00:01.708
-t11            SUCCESS   00:00:01.732
-t12            SUCCESS   00:00:01.738
-t13            SUCCESS   00:00:01.867
-t14            SUCCESS   00:00:02.344
-t15            SUCCESS   00:00:01.689
-t16            SUCCESS   00:00:03.031
-t17            SUCCESS   00:00:01.688
-t18            SUCCESS   00:00:03.002
-t19            SUCCESS   00:00:02.418
-t20            SUCCESS   00:00:01.672
-t21            FAILED    00:00:01.735
-t22            FAILED    00:00:02.191
-==================== 2 failed, 21 succeeded in 00:00:43.714 ====================
+t00            SUCCESS   00:00:01.603
+t01            SUCCESS   00:00:01.675
+t02            SUCCESS   00:00:01.799
+t03            SUCCESS   00:00:01.679
+t04            SUCCESS   00:00:01.691
+t05            SUCCESS   00:00:01.685
+t06            SUCCESS   00:00:01.658
+t07            SUCCESS   00:00:01.685
+t08            SUCCESS   00:00:01.667
+t09            SUCCESS   00:00:01.746
+t10            SUCCESS   00:00:01.727
+t11            SUCCESS   00:00:01.738
+t12            SUCCESS   00:00:01.758
+t13            SUCCESS   00:00:01.871
+t14            SUCCESS   00:00:02.347
+t15            SUCCESS   00:00:01.699
+t16            SUCCESS   00:00:03.032
+t17            SUCCESS   00:00:01.678
+t18            SUCCESS   00:00:04.271
+t19            SUCCESS   00:00:02.402
+t20            SUCCESS   00:00:01.671
+t21            FAILED    00:00:01.737
+t22            FAILED    00:00:02.216
+==================== 2 failed, 21 succeeded in 00:00:45.031 ====================
