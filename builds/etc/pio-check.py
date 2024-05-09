@@ -87,7 +87,7 @@ def uploadAndCheck(source, **kwds):
                     if line == "TEST":
                         isTest = True
                     lines.append(line)
-                    if line in ["OK", "FAIL", "TIMEOUT"]:
+                    if len(lines) >= 250 or line in ["OK", "FAIL", "TIMEOUT"]:
                         break
 
             t.sendall("shutdown\x1A".encode())
@@ -99,7 +99,6 @@ def uploadAndCheck(source, **kwds):
     if not isTest or line != "OK":
         for l in lines:
             print(l, file=sys.stderr)
-    if not isTest or line in ["FAIL", "TIMEOUT"]:
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
