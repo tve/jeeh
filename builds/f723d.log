@@ -44,17 +44,17 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000f29
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.50 seconds ==========================
+========================== [FAILED] Took 1.49 seconds ==========================
 load to RAM: t22
 
 TEST
 1: 28 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.93 seconds ==========================
+========================== [FAILED] Took 1.94 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t21            FAILED    00:00:01.502
-t22            FAILED    00:00:01.930
-==================== 2 failed, 23 succeeded in 00:00:42.068 ====================
+t21            FAILED    00:00:01.493
+t22            FAILED    00:00:01.943
+==================== 2 failed, 23 succeeded in 00:00:42.165 ====================
