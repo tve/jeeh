@@ -86,8 +86,10 @@ def uploadAndCheck(source, **kwds):
                     print(line, file=f)
                     if line == "TEST":
                         isTest = True
+                    if len(lines) >= 250:
+                        line = "ABORT"
                     lines.append(line)
-                    if len(lines) >= 250 or line in ["OK", "FAIL", "TIMEOUT"]:
+                    if line in ["OK", "FAIL", "TIMEOUT", "ABORT"]:
                         break
 
             t.sendall("shutdown\x1A".encode())

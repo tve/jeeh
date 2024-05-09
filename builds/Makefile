@@ -3,10 +3,10 @@ G = grep --line-buffered -v -e 'Library Manager' \
 			    -e ' SUCCESS   00:' \
 			    -e '^pio-extra: GOT '
 
-all: $A
+all: $A clean
 	wc *.log
 	tail -n1 *.log
-	pio ruin -d g431k -e t00
+	pio run -d g431k -e t00
 	cd ../make && ./codegen.py -s
 
 $A:
@@ -16,4 +16,4 @@ $A:
 clean:
 	rm -rf */.pio
 
-.PHONY: $A
+.PHONY: all $A clean

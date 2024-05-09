@@ -1,11 +1,4 @@
-rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
-rewriting: ../include/jee-stm32.h
-rewriting: ../include/jee.h
 load to RAM: t00
-ÔEST
-OK
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.11 seconds ==========================
 load to RAM: t01
 load to RAM: t02
 load to RAM: t03
@@ -46,7 +39,7 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000de1
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.23 seconds ==========================
+========================== [FAILED] Took 1.22 seconds ==========================
 .pio/build/t22/src/t22-clock.o: In function `main':
 /home/jcw/code/jeeh-dev/tests/basic/t22-clock.cpp:27: undefined reference to `jeeh::rtc::deepSleep(unsigned short, int)'
 collect2: error: ld returned 1 exit status
@@ -55,7 +48,6 @@ collect2: error: ld returned 1 exit status
 
 Environment    Status    Duration
 -------------  --------  ------------
-t00            FAILED    00:00:01.113
-t21            FAILED    00:00:01.226
-t22            FAILED    00:00:00.960
-==================== 3 failed, 20 succeeded in 00:00:32.142 ====================
+t21            FAILED    00:00:01.224
+t22            FAILED    00:00:00.961
+==================== 2 failed, 21 succeeded in 00:00:32.049 ====================

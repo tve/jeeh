@@ -42,17 +42,17 @@ failed at /jcw/code/jeeh-dev/src/sys.cpp:409
 failed caller: 0x20000f61
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.77 seconds ==========================
+========================== [FAILED] Took 1.78 seconds ==========================
 load to RAM: t22
 
 TEST
-1: 29 255
+1: 30 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.23 seconds ==========================
+========================== [FAILED] Took 2.28 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t21            FAILED    00:00:01.768
-t22            FAILED    00:00:02.226
-==================== 2 failed, 21 succeeded in 00:00:44.885 ====================
+t21            FAILED    00:00:01.782
+t22            FAILED    00:00:02.281
+==================== 2 failed, 21 succeeded in 00:00:46.309 ====================
