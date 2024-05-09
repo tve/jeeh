@@ -6,6 +6,7 @@ G = grep --line-buffered -v -e 'Library Manager' \
 all: $A
 	wc *.log
 	tail -n1 *.log
+	pio ruin -d g431k -e t00
 	cd ../make && ./codegen.py -s
 
 $A:
