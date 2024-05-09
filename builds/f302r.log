@@ -1,0 +1,312 @@
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
+rewriting: ../include/jee-stm32.h
+rewriting: ../include/jee.h
+load to RAM: t00
+load to RAM: t01
+load to RAM: t02
+load to RAM: t03
+load to RAM: t04
+load to RAM: t05
+load to RAM: t06
+load to RAM: t07
+load to RAM: t08
+load to RAM: t09
+load to RAM: t10
+load to RAM: t11
+load to RAM: t12
+load to RAM: t13
+load to RAM: t14
+load to RAM: t15
+load to RAM: t16
+load to RAM: t17
+load to RAM: t18
+load to RAM: t19
+
+TEST
+cause 1
+10
+11
+12
+13
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+ABORT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 5.69 seconds ==========================
+load to RAM: t20
+load to RAM: t21
+
+TEST
+one 0x20003fac t 0x20003fc4 c 0x20003fd4 two 0x20003f7c t 0x20003f90
+10
+11 A
+20 s0 0x20003f68 d0 tA
+20 s1 0x20003fc4 d64 tT
+12 A
+20 s2 0x20003f68 d0 tB
+20 s3 0x20003fc4 d64 tT
+13 B
+20 s4 0x20003f68 d0 tC
+30 s10 0x20003fd4 d1 tX
+30 s11 0x20003f90 d64 tT
+20 s5 0x20003fd4 d2 tX
+failed at /jcw/code/jeeh-dev/src/sys.cpp:409
+failed caller: 0x20000ed1
+FAIL
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.35 seconds ==========================
+load to RAM: t22
+
+TEST
+1: 31 255
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.81 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+t19            FAILED    00:00:05.693
+t21            FAILED    00:00:01.347
+t22            FAILED    00:00:01.813
+==================== 3 failed, 20 succeeded in 00:00:39.712 ====================
