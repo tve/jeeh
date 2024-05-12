@@ -75,6 +75,9 @@ struct Task : Message, Chain {
     virtual void submit (Message& msg);
     virtual void process (Message& msg) =0;
 
+    // the msg arg in process is already set up to return to the sender
+    void reply (Message& msg); // this is the same as sys::send(msg)
+
     static Task& byId (uint8_t id);
 };
 static_assert(sizeof (Task) == 24); // Message, Chain, and vtable-ptr

@@ -225,6 +225,10 @@ Task::Task () : Message { MARKER, 0, current } {
     fail(); // too many tasks
 }
 
+void Task::reply (Message& msg) {
+    sys::send(msg);
+}
+
 void Task::submit (Message& msg) {
     assert(irqState() == 0); // must be in SVC or PendSV
 

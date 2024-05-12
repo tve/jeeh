@@ -5,7 +5,7 @@ using namespace jeeh;
 struct Doubler : Task {
     void process (Message& msg) override {
         msg.mLen *= 2;
-        sys::send(msg);
+        reply(msg);
     }
 };
 
