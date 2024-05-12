@@ -64,6 +64,31 @@ protected:
 };
 static_assert(sizeof (Chain) == 4);
 
+namespace sys {
+    int svc (int f, int x =0, int y =0, int z =0);
+
+    void send (Message& msg);
+    Message& recv ();
+    void call (Message& msg);
+    void wait (uint16_t ms);
+
+    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
+
+    void init (uint32_t* ptr, uint32_t len);
+    Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
+    void quit (intptr_t ret =0);
+
+    template< uint32_t N > // see Sys::fork comment
+    void init (uint32_t (&stack)[N]) { init(stack, N); }
+
+    // when handed an array as stack, this variant will auto-derive its size
+    template< uint32_t N >
+    inline static Message& fork (uint32_t (&s)[N], int (*f)(Message&), intptr_t a =0) {
+        return fork(s, N, f, a);
+    }
+
+} // namespace sys
+
 struct Task : Message, Chain {
     enum { LIMIT = 30, MARKER = 255 };
 
@@ -76,7 +101,7 @@ struct Task : Message, Chain {
     virtual void process (Message& msg) =0;
 
     // the msg arg in process is already set up to return to the sender
-    void reply (Message& msg); // this is the same as sys::send(msg)
+    void reply (Message& msg) { sys::send(msg); }
 
     static Task& byId (uint8_t id);
 };
@@ -119,31 +144,6 @@ protected:
     void reply (Message* mp);
 };
 static_assert(sizeof (Device) == 8);
-
-namespace sys {
-    int svc (int f, int x =0, int y =0, int z =0);
-
-    void send (Message& msg);
-    Message& recv ();
-    void call (Message& msg);
-    void wait (uint16_t ms);
-
-    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
-
-    void init (uint32_t* ptr, uint32_t len);
-    Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
-    void quit (intptr_t ret =0);
-
-    template< uint32_t N > // see Sys::fork comment
-    void init (uint32_t (&stack)[N]) { init(stack, N); }
-
-    // when handed an array as stack, this variant will auto-derive its size
-    template< uint32_t N >
-    inline static Message& fork (uint32_t (&s)[N], int (*f)(Message&), intptr_t a =0) {
-        return fork(s, N, f, a);
-    }
-
-} // namespace sys
 
 class DateTime {
     constexpr static uint8_t daysInMonth [] = {
