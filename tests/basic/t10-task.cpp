@@ -13,9 +13,9 @@ int main () {
     Tester t;
 
     Doubler doubler;
-    assert(doubler.mTag == 1);
+    assert(doubler.id() == 1);
 
-    Message m { doubler.mTag, 'D', 111 };
+    Message m { doubler.id(), 'D', 111 };
     sys::call(m);
     assert(m.mLen == 222);
 

@@ -95,13 +95,14 @@ struct Task : Message, Chain {
     Task ();
     // TODO ~Task ();
 
+    uint8_t id () const { return mTag; }
     bool isThread () const { return mDst != MARKER; }
 
     virtual void submit (Message& msg);
     virtual void process (Message& msg) =0;
 
     // the msg arg in process is already set up to return to the sender
-    void reply (Message& msg) { sys::send(msg); }
+    void reply (Message& msg) const { sys::send(msg); }
 
     static Task& byId (uint8_t id);
 };

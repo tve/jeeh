@@ -68,8 +68,8 @@ int main () {
 
     One one;
     Two two;
-    assert(one.mTag == 1);
-    assert(two.mTag == 2);
+    assert(one.id() == 1);
+    assert(two.id() == 2);
 
     sys::wait(0); // start Ticker
     logf("10");
