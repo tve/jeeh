@@ -1,0 +1,9 @@
+
+TEST
+10
+11 A
+12 A
+13 B
+failed at /code/jee/jeeh-dev/src/sys.cpp:406
+failed caller: 0x20000ee5
+FAIL

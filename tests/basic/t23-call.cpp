@@ -14,7 +14,6 @@ struct One : Task {
     // <6> wait <7> reply
 
     void process (Message& msg) override {
-        logf("20 s%d %p d%d t%c", state, &msg, msg.mDst, msg.mTag);
         switch (state++) {
             case 0:
             case 2:
@@ -24,9 +23,7 @@ struct One : Task {
                 break;
             case 4:
                 assert(msg.mTag == 'C');
-//logf("21");
                 sys::call(child); // nested task call, see main @13
-//logf("22");
                 break;
             case 6:
                 assert(msg.mTag == 'D');
@@ -52,7 +49,6 @@ struct Two : Task {
     // <10> send T <11> reply
 
     void process (Message& msg) override {
-        logf("30 s%d %p d%d t%c", state, &msg, msg.mDst, msg.mTag);
         switch (state++) {
             case 10:
                 orig = &msg;
@@ -74,9 +70,6 @@ int main () {
     Two two;
     assert(one.mTag == 1);
     assert(two.mTag == 2);
-logf("one %p t %p c %p two %p t %p",
-        (Message*) &one, &one.timer, &one.child,
-        (Message*) &two, &two.timer);
 
     sys::wait(0); // start Ticker
     logf("10");
@@ -100,6 +93,4 @@ logf("one %p t %p c %p two %p t %p",
     m.mTag = 'D';
     sys::call(m);
     logf("15 %c", m.mTag);
-
-fail();
 }
