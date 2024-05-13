@@ -162,7 +162,7 @@ struct Thread final : Task {
         //block = nullptr;
 assert(block == nullptr);
         while (!tk.isEmpty())
-            tk.process(*tk.pull()); // TODO return val >0 must start timer
+            tk.process(*tk.pull());
         //block = saved2;
         task = saved;
     }
@@ -394,6 +394,13 @@ Message& sys::recv () {
         if (auto mp = (Message*) svc((int) f); mp!= nullptr) {
             if (mp->mDst != Task::MARKER)
                 return *mp;
+            auto& tk = *(Task*) mp;
+            if (tk.id() == context().task) {
+                mp = tk.pull();
+                assert(mp != nullptr);
+                assert(tk.isEmpty()); // verify that only one msg was queued
+                return *mp;
+            }
             context().process(*mp); // this msg is in fact a task header
         }
 }

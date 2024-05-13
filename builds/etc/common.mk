@@ -22,7 +22,7 @@ all-run:
 check:
 	git ls-files ../.. | grep  -v $X | entr -c $T $M check-run E=$E
 check-run:
-	@ date; pio run -t clean -t check -s -e $E
+	@ date; pio --no-ansi run -t clean -t check -s -e $E
 
 assert:
 	pio run -e $E -s

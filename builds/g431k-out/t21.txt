@@ -1,7 +1,3 @@
 
 TEST
-20 0 A
-20 2 b
-failed at h-dev/tests/basic/t21-nest.cpp:15
-failed caller: 0x20000c29
-FAIL
+OK
