@@ -22,6 +22,8 @@ namespace jeeh {
 #include "arch/stm32l0.h"
 #elif STM32L4
 #include "arch/stm32l4.h"
+#elif STM32WL
+#include "arch/stm32wl.h"
 #endif
 
 } // namespace jeeh
@@ -157,12 +159,12 @@ enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,WUTR=0x14,
 enum { BDCR=0x20 };
 #elif STM32F4 | STM32F7 | STM32H7
 enum { BDCR=0x70 };
-#elif STM32G4 | STM32L4
+#else
 enum { BDCR=0x90 };
 #endif
 
 void init (bool lse) {
-#if !STM32H7
+#if !STM32H7 & !STM32WL
     RCC(ena::PWR, 1) = 1;
 #endif
     PWR[0x00](8) = 1; // DBP
@@ -286,7 +288,7 @@ int resetCause () {
     enum { CSR=0x74, RMVF=24 };
 #elif STM32H7
     enum { CSR=0xD0, RMVF=16 };
-#elif STM32G4 | STM32G0 | STM32L0 | STM32L4
+#elif STM32G4 | STM32G0 | STM32L0 | STM32L4 | STM32WL
     enum { CSR=0x94, RMVF=23 };
 #endif
     if (cause == 0) {

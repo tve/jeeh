@@ -19,10 +19,11 @@ namespace ena {
 #elif STM32G0
         GPIOA         =  0 + 8 * 0x34,
 #elif STM32L0
-        GPIOA         =  8 * 0x2C,
+        GPIOA         =  0 + 8 * 0x2C,
 #endif
     };
 } // namespace ena
 
 uint32_t fastClock (bool pll =true);
+int32_t slowClock (bool low =false);
 void itmWrite (void const* ptr, size_t len);

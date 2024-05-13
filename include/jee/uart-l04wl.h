@@ -6,7 +6,7 @@ struct Uart : Device {
         uint16_t uena;
         uint8_t mhz;
         Irq idleIrq, txIrq, rxIrq;
-        uint8_t dma :1, txChan :3, rxChan :3, txReq :4, rxReq :4; // 0-based
+        uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
     };
 
     auto devReg (int off) const { IoReg<0> io; return io[dev.uart+off]; }
@@ -24,8 +24,16 @@ struct Uart : Device {
 
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
 
+#if STM32WL
+        RCC(ena::DMAMUX1, 1) = 1; // dma mux on
+        uint16_t CxCR_rx = 4*((dev.dma*7)+dev.rxChan);
+        DMAMUX[CxCR_rx] = dev.rxReq;
+        uint16_t CxCR_tx = 4*((dev.dma*7)+dev.txChan);
+        DMAMUX[CxCR_tx] = dev.txReq;
+#else
         dmaReg(CSELR)(4*(dev.rxChan), 4) = dev.rxReq;
         dmaReg(CSELR)(4*(dev.txChan), 4) = dev.txReq;
+#endif
 
         dmaRX(CNDTR) = sizeof rxBuf;
         dmaRX(CMAR) = (uint32_t) rxBuf;
