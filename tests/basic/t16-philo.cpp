@@ -9,7 +9,7 @@ constexpr auto N = 5;  // number of philosophers
 constexpr auto M = 6;  // how often they want to eat
 
 char const* names [] = {
-    "Aristotle", "Kant", "Spinoza", "Marx", "Russel"
+    "Aristotle", "Kant", "Spinoza", "Marx", "Russell"
 };
 static_assert(sizeof names / sizeof *names == N);
 
