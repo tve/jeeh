@@ -24,15 +24,15 @@ static void enableClkSaver (int range) { // using MSI at 100 kHz to 4 MHz
     FLASH[0x00] = 0;                 // no ACR, no wait states
 }
 
-uint32_t fastClock (bool pll) {
+uint32_t fastClock (bool high) {
     PWR[0x00](9, 2) = 0b01;        // VOS range 1
     while (PWR[0x14](10) != 0) {}  // wait for ~VOSF
-    if (pll) enableClkWithPLL(); else enableClkMaxMSI();
-    return SystemCoreClock = pll ? 80000000 : 48000000;
+    if (high) enableClkWithPLL(); else enableClkMaxMSI();
+    return SystemCoreClock = high ? 80'000'000 : 48'000'000;
 }
 
-uint32_t slowClock (bool low) {
-    enableClkSaver(low ? 0b0000 : 0b0110);
+uint32_t slowClock (bool high) {
+    enableClkSaver(high ? 0b0110 : 0b0000);
     PWR[0x00](9, 2) = 0b10;         // VOS range 2
-    return SystemCoreClock = low ? 100000 : 4000000;
+    return SystemCoreClock = high ? 4'000'000 : 100'000;
 }
