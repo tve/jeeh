@@ -15,6 +15,12 @@
 #define assert(x) do if (!(x)) jeeh::fail(); while (false) // see jee-sys.h
 #endif
 
+extern "C" {
+    extern uint32_t SystemCoreClock; // Hz, set in CMSIS startup
+    int printf (char const* fmt ...);
+    int snprintf (char* ptr, size_t len, const char* fmt ...);
+}
+
 namespace jeeh {
 
 //CG1 version
@@ -29,9 +35,3 @@ constexpr auto VERSION = "<stripped>";
 #endif
 
 } // namespace jeeh
-
-extern "C" {
-    extern uint32_t SystemCoreClock; // Hz, set in CMSIS startup
-    int printf (char const* fmt ...);
-    int snprintf (char* ptr, size_t len, const char* fmt ...);
-}

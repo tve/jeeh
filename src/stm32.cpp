@@ -30,6 +30,35 @@ namespace jeeh {
 
 using namespace jeeh;
 
+//------------------------------------------------------------------------ SWO
+
+void jeeh::swoInit (uint32_t baud, uint32_t hz) {
+    enum { CR=0x04 }; // DBGMCU
+
+    constexpr IoReg<0xE000'0000> ITM {};
+    enum { TER=0xE00, TPR=0xE40, TCR=0xE80, LAR=0xFB0 };
+
+    constexpr IoReg<0xE000'1000> DWT {};
+    enum { CTRL=0x000 };
+
+    constexpr IoReg<0xE000'EDF0> CoreDebug {};
+    enum { DEMCR=0x0C };
+
+    constexpr IoReg<0xE0040000> TPI {};
+    enum { ACPR=0x010, SPPR=0x0F0, FFCR=0x304 };
+
+	CoreDebug[DEMCR](24) = 1; // TRCENA
+	DBGMCU[CR] = 0x00000027;  // DBGMCU_CR: IOEN STANDBY STOP SLEEP
+	TPI[SPPR] = 0x00000002;	  // SWO trace output
+	TPI[ACPR] = (hz/baud)-1;  // clock prescaler
+	ITM[LAR] = 0xC5ACCE55;	  // Lock Access
+	ITM[TCR] = 0x0001000D;	  // Trace Control
+	ITM[TPR] = ~0;			  // Trace Privilege
+	ITM[TER] = ~0;        	  // Trace Enable
+	DWT[CTRL] = 0x4000'03FE;  // Data Watchpoint and Trace
+	TPI[FFCR] = 0x0000'0100;  // Formatter and Flush Control
+}
+
 //------------------------------------------------------------------------ ITM
 
 #if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM

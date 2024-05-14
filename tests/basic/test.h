@@ -76,6 +76,9 @@ struct Tester {
 
         hardFaulter = hardFaultHandler;
         fastClock();
+#if SWO_FREQ
+        swoInit(SWO_FREQ); // TODO openocd didn't init ITM/SWO on STM32WL
+#endif
 
         itmWrite("\nTEST\n", 6);
     }

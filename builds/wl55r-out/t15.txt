@@ -1,0 +1,6 @@
+
+TEST
+wait: 10029 us
+by design, this message has exactly 50 characters
+itm:  47 us
+OK

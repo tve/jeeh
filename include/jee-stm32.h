@@ -27,3 +27,4 @@ namespace ena {
 uint32_t fastClock (bool high =true);
 uint32_t slowClock (bool high =true);
 void itmWrite (void const* ptr, size_t len);
+void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
