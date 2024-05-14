@@ -25,36 +25,15 @@ load to RAM: t18
 load to RAM: t19
 load to RAM: t20
 load to RAM: t21
-
-TEST
-one 0x2003ffac t 0x2003ffc4 c 0x2003ffd4 two 0x2003ff7c t 0x2003ff90
-10
-11 A
-20 s0 0x2003ff68 d0 tA
-20 s1 0x2003ffc4 d64 tT
-12 A
-20 s2 0x2003ff68 d0 tB
-20 s3 0x2003ffc4 d64 tT
-13 B
-20 s4 0x2003ff68 d0 tC
-30 s10 0x2003ffd4 d1 tX
-30 s11 0x2003ff90 d64 tT
-20 s5 0x2003ffd4 d2 tX
-failed at /jcw/code/jeeh-dev/src/sys.cpp:409
-failed caller: 0x20000f29
-FAIL
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.49 seconds ==========================
 load to RAM: t22
 
 TEST
 1: 28 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.94 seconds ==========================
+========================== [FAILED] Took 1.95 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t21            FAILED    00:00:01.493
-t22            FAILED    00:00:01.943
-==================== 2 failed, 23 succeeded in 00:00:42.165 ====================
+t22            FAILED    00:00:01.954
+==================== 1 failed, 24 succeeded in 00:00:42.350 ====================

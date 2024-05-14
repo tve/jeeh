@@ -32,6 +32,8 @@ using namespace jeeh;
 
 //------------------------------------------------------------------------ SWO
 
+#if STM32WL // TODO only needed on WL55 so far
+                         //
 void jeeh::swoInit (uint32_t baud, uint32_t hz) {
     enum { CR=0x04 }; // DBGMCU
 
@@ -59,6 +61,8 @@ void jeeh::swoInit (uint32_t baud, uint32_t hz) {
 	TPI[FFCR] = 0x0000'0100;  // Formatter and Flush Control
 }
 
+#endif
+
 //------------------------------------------------------------------------ ITM
 
 #if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
@@ -82,7 +86,7 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
     }
 }
 
-#endif // !STM32L0
+#endif
 
 //--------------------------------------------------------------------- Ticker
 

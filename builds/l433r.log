@@ -23,36 +23,15 @@ load to RAM: t18
 load to RAM: t19
 load to RAM: t20
 load to RAM: t21
-
-TEST
-one 0x2000ffac t 0x2000ffc4 c 0x2000ffd4 two 0x2000ff7c t 0x2000ff90
-10
-11 A
-20 s0 0x2000ff68 d0 tA
-20 s1 0x2000ffc4 d64 tT
-12 A
-20 s2 0x2000ff68 d0 tB
-20 s3 0x2000ffc4 d64 tT
-13 B
-20 s4 0x2000ff68 d0 tC
-30 s10 0x2000ffd4 d1 tX
-30 s11 0x2000ff90 d64 tT
-20 s5 0x2000ffd4 d2 tX
-failed at /jcw/code/jeeh-dev/src/sys.cpp:409
-failed caller: 0x20000f61
-FAIL
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.74 seconds ==========================
 load to RAM: t22
 
 TEST
 1: 29 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.21 seconds ==========================
+========================== [FAILED] Took 2.22 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t21            FAILED    00:00:01.737
-t22            FAILED    00:00:02.214
-==================== 2 failed, 21 succeeded in 00:00:44.927 ====================
+t22            FAILED    00:00:02.223
+==================== 1 failed, 22 succeeded in 00:00:45.059 ====================
