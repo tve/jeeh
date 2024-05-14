@@ -193,14 +193,16 @@ enum { BDCR=0x90 };
 #endif
 
 void init (bool lse) {
-#if !STM32H7 & !STM32WL
+#if STM32WL
+    RCC(ena::RTCAPB, 1) = 1;
+#elif !STM32H7
     RCC(ena::PWR, 1) = 1;
 #endif
     PWR[0x00](8) = 1; // DBP
 
     if (lse) {
-#if STM32F723xx
-        RCC[BDCR](3,2) = 1;           // LSEDRV (needed on f723d)
+#if STM32F723xx | STM32WLE5xx
+        RCC[BDCR](3,2) = 1;           // LSEDRV (needed on f723d and wl55r)
 #endif
         RCC[BDCR](0) = 1;             // LSEON backup domain
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
@@ -211,7 +213,7 @@ void init (bool lse) {
 
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
-    RTC[CR](5) = 1;   // BYPSHAD, this is faster that waiting for RSF
+    RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
     RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
@@ -286,7 +288,7 @@ void set (DateTime const& dt) {
 }
 
 uint32_t getReg (int reg) {
-#if STM32G4
+#if STM32G4 | STM32WL
     return TAMP[0x100+4*reg]; // regs 0..31
 #else
     return RTC[BKPR+4*reg];   // regs 0..31
@@ -294,7 +296,7 @@ uint32_t getReg (int reg) {
 }
 
 void setReg (int reg, uint32_t val) {
-#if STM32G4
+#if STM32G4 | STM32WL
     TAMP[0x100+4*reg] = val;  // regs 0..31
 #else
     RTC[BKPR+4*reg] = val;    // regs 0..31
