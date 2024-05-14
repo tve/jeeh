@@ -27,9 +27,9 @@ load to RAM: t21
 /home/jcw/code/jeeh-dev/tests/basic/t22-clock.cpp:27: undefined reference to `jeeh::rtc::deepSleep(unsigned short, int)'
 collect2: error: ld returned 1 exit status
 *** [.pio/build/t22/firmware.elf] Error 1
-========================== [FAILED] Took 1.01 seconds ==========================
+========================== [FAILED] Took 0.95 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:01.007
-==================== 1 failed, 22 succeeded in 00:00:32.279 ====================
+t22            FAILED    00:00:00.952
+==================== 1 failed, 22 succeeded in 00:00:32.213 ====================

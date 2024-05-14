@@ -29,9 +29,9 @@ TEST
 1: 29 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.03 seconds ==========================
+========================== [FAILED] Took 2.09 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:02.030
-==================== 1 failed, 22 succeeded in 00:00:41.274 ====================
+t22            FAILED    00:00:02.092
+==================== 1 failed, 22 succeeded in 00:00:41.223 ====================

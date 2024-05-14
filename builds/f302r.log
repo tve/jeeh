@@ -21,17 +21,271 @@ load to RAM: t16
 load to RAM: t17
 load to RAM: t18
 load to RAM: t19
+
+TEST
+cause 1
+10
+11
+12
+13
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+14
+
+TEST
+cause -1
+ABORT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 5.70 seconds ==========================
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
 
 TEST
-1: 28 255
+1: 32 255
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.82 seconds ==========================
+========================== [FAILED] Took 1.80 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:01.821
-==================== 1 failed, 22 succeeded in 00:00:36.071 ====================
+t19            FAILED    00:00:05.701
+t22            FAILED    00:00:01.801
+==================== 2 failed, 21 succeeded in 00:00:39.805 ====================
