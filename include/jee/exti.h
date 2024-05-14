@@ -75,8 +75,8 @@ struct ExtIrq : Device, Chain {
 private:
     uint32_t flags =0;
 
-#if STM32H7
-    enum { EXTICR1=0x08, RTSR=0x00, FTSR=0x04, IMR=0x80, PR=0x88 }; // cpu1
+#if STM32H7 | STM32WL
+    enum { EXTICR1=0x08, RTSR=0x00, FTSR=0x04, IMR=0x80, PR=0x0C }; // cpu1
 #else
     enum { EXTICR1=0x08, IMR=0x00, RTSR=0x08, FTSR=0x0C, PR=0x14 };
 #endif

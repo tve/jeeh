@@ -8,18 +8,24 @@ using namespace jeeh;
 constexpr auto N = 5;  // number of philosophers
 constexpr auto M = 6;  // how often they want to eat
 
+char const* names [] = {
+    "Aristotle", "Kant", "Spinoza", "Marx", "Russel"
+};
+static_assert(sizeof names / sizeof *names == N);
+
 Lock forks [N];
 
 int philo (Message& m) {
     auto id = m.mTag;
     assert(1 <= id && id <= N);
+    auto name = names[id-1];
 
     auto& forkOnLeft = forks[id-1];
     auto& forkOnRight = forks[id%N];
 
     for (auto i = 0; i < M; ++i) {
         sys::wait(30 + rand() % 100);
-        logf("%d is hungry", id);
+        logf("%s is hungry", name);
 
         auto f1 = &forkOnLeft, f2 = &forkOnRight;
         while (true) {
@@ -27,13 +33,13 @@ int philo (Message& m) {
             if (f2->acquire(false))
                 break;
             f1->release();
-            logf("%d swaps forks", id);
+            logf("%s swaps forks", name);
             swap(f1, f2);
         }
 
-        logf("%d starts eating", id);
+        logf("%s starts eating", name);
         sys::wait(10 + rand() % 90);
-        logf("%d finishes eating and leaves to think", id);
+        logf("%s finishes eating and leaves to think", name);
 
         f2->release();
         f1->release();

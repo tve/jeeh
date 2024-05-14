@@ -1,104 +1,104 @@
 
 TEST
-5 is hungry
-5 starts eating
-5 finishes eating and leaves to think
-4 is hungry
-4 starts eating
-5 is hungry
-1 is hungry
-1 starts eating
-4 finishes eating and leaves to think
-5 swaps forks
-2 is hungry
-3 is hungry
-3 starts eating
-1 finishes eating and leaves to think
-2 swaps forks
-5 starts eating
-4 is hungry
-5 finishes eating and leaves to think
-1 is hungry
-1 starts eating
-3 finishes eating and leaves to think
-4 starts eating
-2 swaps forks
-5 is hungry
-4 finishes eating and leaves to think
-5 swaps forks
-3 is hungry
-3 starts eating
-1 finishes eating and leaves to think
-2 swaps forks
-5 starts eating
-3 finishes eating and leaves to think
-2 starts eating
-2 finishes eating and leaves to think
-1 is hungry
-4 is hungry
-4 swaps forks
-5 finishes eating and leaves to think
-4 starts eating
-1 starts eating
-3 is hungry
-3 swaps forks
-2 is hungry
-4 finishes eating and leaves to think
-3 starts eating
-1 finishes eating and leaves to think
-2 swaps forks
-3 finishes eating and leaves to think
-2 starts eating
-5 is hungry
-5 starts eating
-3 is hungry
-2 finishes eating and leaves to think
-3 starts eating
-4 is hungry
-1 is hungry
-5 finishes eating and leaves to think
-1 starts eating
-3 finishes eating and leaves to think
-4 starts eating
-2 is hungry
-5 is hungry
-1 finishes eating and leaves to think
-2 starts eating
-2 finishes eating and leaves to think
-2 is hungry
-2 starts eating
-2 finishes eating and leaves to think
-2 is hungry
-2 starts eating
-4 finishes eating and leaves to think
-5 starts eating
-3 is hungry
-1 is hungry
-2 finishes eating and leaves to think
-3 starts eating
-4 is hungry
-5 finishes eating nvs to think
-1 starts eating
-3 finishes eating and leaves to think
-4 starts eating
-1 finishes eating and leaves to think
-2 is hungry
-2 starts eating
-1 is hungry
-1 swaps forks
-4 finishes eating and leaves to think
-3 is hungry
-2 finishes eating and leaves to think
-3 starts eating
-1 starts eating
-5 is hungry
-5 swaps forks
-1 finishes eating and leaves to think
-5 starts eating
-4 is hungry
-3 finishes eating and leaves to think
-4 swaps forks
-5 finishes eating and leaves to think
-4 starts eating
-4 finishes eating and leaves to think
+Russel is hungry
+Russel starts eating
+Russel finishes eating and leaves to think
+Marx is hungry
+Marx starts eating
+Russel is hungry
+Aristotle is hungry
+Aristotle starts eating
+Marx finishes eating and leaves to think
+Russel swaps forks
+Kant is hungry
+Spinoza is hungry
+Spinoza starts eating
+Aristotle finishes eating and leaves to think
+Kant swaps forks
+Russel starts eating
+Marx is hungry
+Russel finishes eating and leaves to think
+Aristotle is hungry
+Aristotle starts eating
+Spinoza finishes eating and leaves to think
+Marx starts eating
+Kant swaps forks
+Russel is hungry
+Marx finishes eating and leaves to think
+Russel swaps forks
+Spinoza is hungry
+Spinoza starts eating
+Aristotle finishes eating and leaves to think
+Kant swaps forks
+Russel starts eating
+Spinoza finishes eating and leaves to think
+Kant starts eating
+Kant finishes eating and leaves to think
+Aristotle is hungry
+Marx is hungry
+Marx swaps forks
+Russel finishes eating and leaves to think
+Marx starts eating
+Aristotle starts eating
+Spinoza is hungry
+Spinoza swaps forks
+Kant is hungry
+Marx finishes eating and leaves to think
+Spinoza starts eating
+Aristotle finishes eating and leaves to think
+Kant swaps forks
+Spinoza finishes eating and leaves to think
+Kant starts eating
+Russel is hungry
+Russel starts eating
+Spinoza is hungry
+Kant finishes eating and leaves to think
+Spinoza starts eating
+Marx is hungry
+Aristotle is hungry
+Russel finishes eating and leaves to think
+Aristotle starts eating
+Spinoza finishes eating and leaves to think
+Marx starts eating
+Kant is hungry
+Russel is hungry
+Aristotle finishes eating and leaves to think
+Kant starts eating
+Kant finishes eating and leaves to think
+Kant is hungry
+Kant starts eating
+Kant finishes eating and leaves to think
+Kant is hungry
+Kant starts eating
+Marx finishes eating and leaves to think
+Russel starts eating
+Spinoza is hungry
+Aristotle is hungry
+Kant finishes eating and leaves to think
+Spinoza starts eating
+Marx is hungry
+Russel finishes eating and leaves to think
+Aristotle starts eating
+Spinoza finishes eating and leaves to think
+Marx starts eating
+Aristotle finishes eating and leaves to think
+Kant is hungry
+Kant starts eating
+Aristotle is hungry
+Aristotle swaps forks
+Marx finishes eating and leaves to think
+Spinoza is hungry
+Kant finishes eating and leaves to think
+Spinoza starts eating
+Aristotle starts eating
+Russel is hungry
+Russel swaps forks
+Aristotle finishes eating and leaves to think
+Russel starts eating
+Marx is hungry
+Spinoza finishes eating and leaves to think
+Marx swaps forks
+Russel finishes eating and leaves to think
+Marx starts eating
+Marx finishes eating and leaves to think
 OK
