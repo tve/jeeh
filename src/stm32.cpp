@@ -47,7 +47,9 @@ void jeeh::swoInit (uint32_t baud, uint32_t hz) {
     constexpr IoReg<0xE0040000> TPI {};
     enum { ACPR=0x010, SPPR=0x0F0, FFCR=0x304 };
 
+#if !STM32H7
     constexpr IoReg<0xE004'2000> DBGMCU;
+#endif
     enum { CR=0x04 };
 
     CoreDebug[DEMCR](24) = 1; // TRCENA
