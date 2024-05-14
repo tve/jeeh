@@ -27,6 +27,9 @@ static void enableClkSaver (int range) { // using MSI at 100 kHz to 4 MHz
 }
 
 uint32_t fastClock (bool pll) {
+#if STM32WL
+    pll = false; // no need for max 48 MHz clock, since it can use MSI
+#endif
     PWR[0x00](9, 2) = 0b01;        // VOS range 1
     while (PWR[0x14](10) != 0) {}  // wait for ~VOSF
     if (pll) enableClkWithPLL(); else enableClkMaxMSI();

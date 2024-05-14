@@ -25,5 +25,5 @@ namespace ena {
 } // namespace ena
 
 uint32_t fastClock (bool pll =true);
-int32_t slowClock (bool low =false);
+//int32_t slowClock (bool low =false);
 void itmWrite (void const* ptr, size_t len);
