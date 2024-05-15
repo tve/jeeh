@@ -1,0 +1,6 @@
+
+TEST
+
+failed at -dev/tests/basic/t05-serio.cpp:51
+failed caller: 0x200004d7
+FAIL

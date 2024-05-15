@@ -22,9 +22,17 @@ int main () {
     i2c.init("H8,A8");
     i2c.detect(); // touch panel
 #endif
-#if STM32L475xx // f475d
+#if STM32L475xx // l475d
     printf("PB11 + PB10:\n");
     i2c.init("B11,B10");
     i2c.detect(); // 7 devices on I2C2
+#endif
+#if STM32L496xx // l496d
+    Pin lcd ("H0"); lcd.mode("P"); lcd = 0;
+    Pin mfx ("H6"); mfx.mode("P"); mfx = 1;
+    Pin bkl ("I0"); bkl.mode("P"); bkl = 1;
+    printf("PB14 + PH4:\n");
+    i2c.init("B14,H4", 40);
+    i2c.detect(); // 2 devices on I2C2
 #endif
 }

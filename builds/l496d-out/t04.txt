@@ -1,0 +1,5 @@
+
+TEST
+failed at dev/tests/basic/t04-jumper.cpp:16
+failed caller: 0x200004d7
+FAIL
