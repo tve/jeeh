@@ -26,12 +26,12 @@ load to RAM: t21
 load to RAM: t22
 
 TEST
-1: 29 255
+1: 33 0
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.09 seconds ==========================
+========================== [FAILED] Took 2.14 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:02.092
-==================== 1 failed, 22 succeeded in 00:00:41.223 ====================
+t22            FAILED    00:00:02.144
+==================== 1 failed, 22 succeeded in 00:00:41.283 ====================

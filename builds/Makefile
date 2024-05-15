@@ -1,4 +1,4 @@
-A = f103r f302r f439z f723d g431k l433r l475d wl55r
+A = f103r f302r f439z f723d g431k l433r l475d l496d wl55r
 G = grep --line-buffered -v -e 'Library Manager' \
 			    -e ' SUCCESS   00:' \
 			    -e '^pio-extra: GOT '

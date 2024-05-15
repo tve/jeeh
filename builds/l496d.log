@@ -1,7 +1,6 @@
-rewriting: /Users/jcw/code/jee/jeeh-dev/tests/basic/defs.h
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
 rewriting: ../include/jee-stm32.h
 rewriting: ../include/jee.h
-load to RAM: i2c
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
@@ -25,14 +24,4 @@ load to RAM: t19
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
-
-TEST
-1: 31 255
-TIMEOUT
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.77 seconds ==========================
-
-Environment    Status    Duration
--------------  --------  ------------
-t22            FAILED    00:00:02.774
-==================== 1 failed, 23 succeeded in 00:01:00.021 ====================
+PASS: l496d

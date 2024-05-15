@@ -273,19 +273,12 @@ TEST
 cause -1
 ABORT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 5.70 seconds ==========================
+========================== [FAILED] Took 5.72 seconds ==========================
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
 
-TEST
-1: 32 255
-TIMEOUT
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.80 seconds ==========================
-
 Environment    Status    Duration
 -------------  --------  ------------
-t19            FAILED    00:00:05.701
-t22            FAILED    00:00:01.801
-==================== 2 failed, 21 succeeded in 00:00:39.805 ====================
+t19            FAILED    00:00:05.723
+==================== 1 failed, 22 succeeded in 00:00:39.521 ====================
