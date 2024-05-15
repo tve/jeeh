@@ -123,6 +123,13 @@ struct Lock {
     Chain waiting;
 };
 
+struct BlockIRQ {
+    BlockIRQ () { asm ("mrs %0, primask; cpsid i" : "=r" (mask)); }
+    ~BlockIRQ () { asm ("msr primask, %0" :: "r" (mask)); }
+private:
+    uint32_t mask;
+};
+
 struct Device {
     enum { BASE = '@', LAST = 'Z' };
 

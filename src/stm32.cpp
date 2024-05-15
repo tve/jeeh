@@ -185,11 +185,16 @@ void sys::wait (uint16_t ms) {
     call(m);
 }
 
-#if !STM32G0 & !STM32L0 & !STM32F1
+#if !STM32F1
 namespace jeeh::rtc {
 
+#if STM32G4 | STM32WL
 enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,WUTR=0x14,
-        CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x50 };
+        CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
+#else
+enum { TR=0x00,DR=0x04,SSR=0x28,ICSR=0x0C,WUTR=0x14,
+        CR=0x08,WPR=0x24,BKPR=0x50 };
+#endif
 
 #if STM32F3
 enum { BDCR=0x20 };
@@ -200,9 +205,8 @@ enum { BDCR=0x90 };
 #endif
 
 void init (bool lse) {
-#if STM32WL
     RCC(ena::RTCAPB, 1) = 1;
-#elif !STM32H7
+#if !STM32H7
     RCC(ena::PWR, 1) = 1;
 #endif
     PWR[0x00](8) = 1; // DBP
@@ -233,7 +237,6 @@ void deepSleep (uint16_t ms, int mode) {
         count /= 2;
     }
 
-    // see RM0440 v7 p1545
     RTC[WPR] = 0xCA;             // disable write protection
     RTC[WPR] = 0x53;
     RTC[CR](10) = 0;             // ~WUTE
@@ -241,7 +244,11 @@ void deepSleep (uint16_t ms, int mode) {
     RTC[WUTR] = count;
     RTC[CR](0,3) = sel;
     RTC[CR](14) = 1;             // WUTIE
+#if STM32G4 | STM32WL
     RTC[SCR] = 1<<2;             // CWUTF
+#else
+    RTC[ICSR] = RTC[ICSR] & ~(1<<10); // WUTF
+#endif
     RTC[CR](10) = 1;             // WUTE
     RTC[WPR] = 0xFF;             // re-enable write protection
 
@@ -296,22 +303,22 @@ void set (DateTime const& dt) {
 
 uint32_t getReg (int reg) {
 #if STM32G4 | STM32WL
-    return TAMP[0x100+4*reg]; // regs 0..31
+    return TAMP[BKPR+4*reg]; // regs 0..31
 #else
-    return RTC[BKPR+4*reg];   // regs 0..31
+    return RTC[BKPR+4*reg];  // regs 0..31
 #endif
 }
 
 void setReg (int reg, uint32_t val) {
 #if STM32G4 | STM32WL
-    TAMP[0x100+4*reg] = val;  // regs 0..31
+    TAMP[BKPR+4*reg] = val;  // regs 0..31
 #else
-    RTC[BKPR+4*reg] = val;    // regs 0..31
+    RTC[BKPR+4*reg] = val;   // regs 0..31
 #endif
 }
 
 } // namespace jeeh::rtc
-#endif // !STM32G0 & !STM32L0 & !STM32F1
+#endif // !STM32F1
 
 namespace jeeh::dog {
 

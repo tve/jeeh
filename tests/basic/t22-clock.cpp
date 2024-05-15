@@ -23,17 +23,25 @@ int main () {
     Pin led (LED);
     led.mode("P");
 
-    for (auto i = 0; i < 10; ++i) {
+    for (auto i = 0; i < 5; ++i) {
+        sys::wait(25);
+        led.toggle();
+    }
+
+    auto dt2 = rtc::getDate();
+    logf("2: %d %d", dt2.ss, dt2.ff); // 125 ms later, approx 26 ff ticks
+
+    for (auto i = 0; i < 5; ++i) {
         rtc::deepSleep(25, 1);
         led.toggle();
     }
 
     fastClock();
 
-    auto dt2 = rtc::getDate();
-    logf("2: %d %d", dt2.ss, dt2.ff);
+    auto dt3 = rtc::getDate();
+    logf("3: %d %d", dt3.ss, dt3.ff);
 
     assert(dt1.ff == 0);
-    assert(50 <= dt2.ff && dt2.ff <= 60); // these are 256 Hz ticks, not msec
+    assert(50 <= dt3.ff && dt3.ff <= 60); // these are 256 Hz ticks, not msec
     assert(dt1.ss == dt2.ss);
 }
