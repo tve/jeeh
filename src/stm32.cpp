@@ -32,7 +32,7 @@ using namespace jeeh;
 
 //------------------------------------------------------------------------ SWO
 
-#if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
+#if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
                          //
 void jeeh::swoInit (uint32_t baud, uint32_t hz) {
     constexpr IoReg<0xE000'0000> ITM;
@@ -68,7 +68,7 @@ void jeeh::swoInit (uint32_t baud, uint32_t hz) {
 
 //------------------------------------------------------------------------ ITM
 
-#if !STM32G0 && !STM32L0 // Cortex M0+ doesn't support ITM
+#if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
 
 void jeeh::itmWrite (void const* ptr, size_t len) {
     constexpr IoReg<0xE000'0000> ITM;

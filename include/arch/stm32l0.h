@@ -14,6 +14,27 @@ extern "C" uint32_t __atomic_exchange_4 (void volatile* p, uint32_t v, int) {
     return t;
 }
 
+void itmWrite (void const* ptr, size_t len) {
+    enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28 };
+
+    static bool inited;
+    if (!inited) {
+        inited = true;
+
+        Pin::config("A2:4");
+        RCC((int) ena::USART2, 1) = 1;
+
+        USART2[BRR] = SystemCoreClock / 115'200;
+        USART2[CR1] = (1<<3) | (1<<0);  // TE UE
+    }
+
+    auto p = (uint8_t const*) ptr;
+    while (len-- > 0U) {
+        while (!USART2[ISR](7)) {} // ISR: TXE
+        USART2[TDR] = *p++;        // TDR
+    }
+}
+
 uint32_t fastClock (bool pll) {
     FLASH[0x00] = pll ? 0x03 : 0x02;  // ACR: 1/0 wait, enable prefetch
     RCC[0x00](0) = 1;                 // HSION

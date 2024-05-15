@@ -19,11 +19,14 @@ inline namespace {
 //------------------------------------------------------------------------ logf
 
 void jeeh::logf (char const* fmt ...) {
+#if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
 
     // check for enabled ITM flags before generating any printf output
-    if (ITM[TCR](0) && ITM[TER](0)) {
+    if (ITM[TCR](0) && ITM[TER](0))
+#endif
+    {
         static char buf [80];
 
         va_list ap;
