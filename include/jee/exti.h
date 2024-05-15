@@ -14,7 +14,7 @@ struct ExtIrq : Device, Chain {
     enum { NONE, RISE, FALL, BOTH };
 
     ExtIrq () : Device ('E') {
-#if !STM32WL
+#if !(STM32L0 | STM32WL)
         RCC(ena::SYSCFG, 1) = 1;
 #endif
 #if STM32G0 | STM32L0
