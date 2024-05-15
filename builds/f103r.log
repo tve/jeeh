@@ -31,5 +31,5 @@ collect2: error: ld returned 1 exit status
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:00.970
-==================== 1 failed, 22 succeeded in 00:00:32.292 ====================
+t22            FAILED    00:00:00.965
+==================== 1 failed, 22 succeeded in 00:00:32.274 ====================

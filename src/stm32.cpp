@@ -254,6 +254,7 @@ void deepSleep (uint16_t ms, int mode) {
     RTC[CR](10) = 1;             // WUTE
     RTC[WPR] = 0xFF;             // re-enable write protection
 
+    EXTI[0x14] = 1<<20; // PIF20 in PR1
     EXTI[0x08](20) = 1; // RT20 in RTSR1
     EXTI[0x04](20) = 1; // EM20 in EMR1
 
