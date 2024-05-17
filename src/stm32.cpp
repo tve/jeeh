@@ -93,18 +93,19 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
 
 //--------------------------------------------------------------------- Ticker
 
-volatile uint32_t ticks; // TODO needed by sys.cpp
-
 inline namespace {
 
 struct Ticker : Device, Chain {
     uint16_t rate;
+    volatile uint32_t ticks;
+    uint32_t ticksPerMs;
 
-    Ticker () : Device (Device::BASE), rate (1) {
+    Ticker () : Device (Device::BASE), rate (0), ticks (0) {
         dPower = SHUTDOWN;
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
+    // next timeout: -1 if none, 0 if now or overdue, else first timeout ms
     int next () const {
         auto p = first();
         if (p == nullptr)
@@ -113,19 +114,22 @@ struct Ticker : Device, Chain {
         return t <= 60'000 ? t : 0;
     }
 
+    void skip (uint16_t ms) {
+        ticks += ms;
+        // TODO ...
+    }
+
     void start (Message& msg) override {
         auto ms = msg.mLen;
         assert(ms <= 60'000);
 
-        if (!isEmpty()) {
-            auto next = (uint16_t) (cHead->mLen - ticks);
-            if (ms > next)
-                ms = next;
-        }
+        auto up = next();
+        if (up > ms)
+            up = ms; // new entry will become the first one
 
-        if (0 && ms < rate) {
+        if (up < rate) {
             ticks = millis(); // update actual tick count
-            STK[0x0] = 0;     // stop the clock
+            STK[0x0] = 0;     // stop the clock, will restart with a new rate
         }
 
         auto t = ticks;
@@ -143,32 +147,32 @@ struct Ticker : Device, Chain {
     void finish () override {
         while (expired())
             reply(pull());
-        if (isEmpty()) {
-            dPower = SHUTDOWN;
-            ///STK[0x0] = 0; // disable
-        } else {
-            // TODO this is a hack: assumes RTC running if DBP bit set in PWR
-            dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
 
-            auto ticksPerMs = SystemCoreClock / 1000;
+        auto up = next();
+        if (up < 0) {
+            dPower = SHUTDOWN;
+            STK[0x0] = 0; // disable
+            return;
+        }
+        rate = up < 100 ? up : 100;
+
+        ticksPerMs = SystemCoreClock / 1000;
 #if STM32G4
-            if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
-                ticksPerMs /= 2; // HPRE set to 2 (AHB freq must be <= 150 MHz)
+        if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
+            ticksPerMs /= 2; // HPRE set to 2 (AHB freq must be <= 150 MHz)
 #endif
 
-            ///uint16_t next = cHead->mLen - ticks;
-            ///rate = next < 100 ? next : 100;
+        // TODO this is a hack: assumes RTC running if DBP bit set in PWR
+        dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
 
-            STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
-            STK[0x0] = 0b011;                       // enable, clk/8 mode
-        }
+        STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
+        STK[0x8] = 0;
+        STK[0x0] = 0b011;                       // enable, clk/8 mode
     }
 
     bool interrupt (int) override {
         ticks += rate;
-        assert(cHead != nullptr);
-        uint16_t next = cHead->mLen - ticks;
-        return next < rate || next > 60'000;
+        return next() < rate;
     }
 
     bool expired () const {
@@ -178,8 +182,9 @@ struct Ticker : Device, Chain {
     uint32_t millis () const {
         // the result has millisecond resolution, even when rate > 1
         while (true) // spinloop, in case ticks changes midway
-            if (uint32_t t = ticks, n = STK[0x08]; t == ticks)
-                return t - (n*8)/(SystemCoreClock/1000);
+            if (uint32_t t = ticks, c = STK[0x08]; t == ticks) {
+                return t + rate - (c*8)/ticksPerMs;
+        }
     }
 };
 
@@ -189,7 +194,9 @@ Ticker ticker;
 
 extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
 
-int nextTick () { return ticker.next(); } // TODO needed by sys.cpp
+// TODO these are needed by sys.cpp
+int nextTick () { return ticker.next(); }
+void skipTime (uint16_t ms) { ticker.skip(ms); }
 
 void sys::wait (uint16_t ms) {
     Message m { ticker.dId, 'T', ms };
@@ -241,7 +248,7 @@ void init (bool lse) {
     RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
-void deepSleep (uint16_t ms, int mode) {
+void deepSleep (uint16_t ms, int mode, bool wait) {
     assert(ms <= 16'000);
     auto sel = 3;
     auto count = (1000*ms) / 61;
@@ -271,7 +278,8 @@ void deepSleep (uint16_t ms, int mode) {
 
     PWR[0x00](0, 3) = mode; // CR1: LPMS
     SCB[0x10](2) = 1; // SLEEPDEEP
-    //asm ("wfe");
+    if (wait)
+        asm ("wfe");
 }
 
 DateTime getDate () {

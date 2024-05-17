@@ -5,7 +5,7 @@ using namespace jeeh;
 
 // defined in stm32.cpp
 extern int nextTick ();
-extern volatile uint32_t ticks;
+extern void skipTime (uint16_t ms);
 
 inline namespace {
 
@@ -203,30 +203,25 @@ assert(block == nullptr);
                 idler.finish();
                 if (nextToRun != current)
                     triggerPendSV();
-                break;
+                return;
             }
-            if (nextToRun == 0) {
-#if 0
-                // TODO this code is in the wrong place :(
-                idler.state.mTag = Device::SLOWEST;
-                idler.state.mLen = nextTick();
-                idler.start(idler.state);
-                if (idler.state.mTag >= Device::STOP0) {
-                    // FIXME wrong: save curr time, and fix in finish
-                    //  this is essential when woken up sooner for any reason
-                    ticks += idler.state.mLen;
-                    rtc::deepSleep(idler.state.mLen,
-                                    idler.state.mTag - Device::STOP0);
-                } else {
-                    PWR[0x00](0, 3) = 0; // CR1: LPMS
-                    SCB[0x10](2) = 0; // ~SLEEPDEEP
-                }
-#endif
-                SCB[0x10](1) = 1; // SLEEPONEXIT
+            if (nextToRun == 0)
                 break;
-            }
             --nextToRun;
         }
+#if 1
+        // TODO this code is in the wrong place :(
+        Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
+        idler.start(m);
+        if (m.mTag >= Device::STOP0) {
+            // FIXME wrong: save curr time, and fix in finish
+            //  this is essential when woken up sooner for any reason
+            skipTime(m.mLen);
+            rtc::deepSleep(m.mLen, m.mTag - Device::STOP0, false);
+        } else
+            SCB[0x10](2) = 0; // ~SLEEPDEEP
+#endif
+        SCB[0x10](1) = 1; // SLEEPONEXIT
     }
 };
 

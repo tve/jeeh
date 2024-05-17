@@ -159,8 +159,6 @@ protected:
 static_assert(sizeof (Device) == 8);
 
 struct LowPower : Device {
-    Message state {};
-
     LowPower () : Device ('L') {}
 
     void start (Message&) override;
@@ -247,7 +245,7 @@ namespace rtc {
     void init (bool lse =true);
     void deinit ();
 
-    void deepSleep (uint16_t ms, int mode =0);
+    void deepSleep (uint16_t ms, int mode =0, bool wait =true);
 
     DateTime getDate ();
     uint32_t getSecs ();

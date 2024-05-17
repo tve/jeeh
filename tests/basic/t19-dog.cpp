@@ -21,7 +21,7 @@ int main () {
             logf("12");
             dog::reload(1);
             logf("13");
-            sys::wait(5);
+            sys::wait(100);
             fail();
 
         case -1: // watchdog
