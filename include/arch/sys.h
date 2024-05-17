@@ -87,9 +87,6 @@ namespace sys {
         return fork(s, N, f, a);
     }
 
-    uint8_t idle (uint16_t ms);
-    void coma (uint8_t mode);
-
 } // namespace sys
 
 struct Task : Message, Chain {

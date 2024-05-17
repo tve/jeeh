@@ -31,16 +31,17 @@ int main () {
     showTime(2, rtc::getDate());
 
     rtc::set({ 12, 11, 10, 23, 22, 21 });
+    sys::wait(400); // advance a fraction of a second
     showTime(3, rtc::getDate());
+    sys::wait(400); // advance a bit more, just before rollover
 
-    sys::wait(400); // show fractional seconds rollover
-    for (auto i = 0; i < 10; ++i) {
+    for (auto i = 0; i < 5; ++i) {
         sys::wait(100);
-        auto dt = rtc::getDate();
-        logf("%4d: %d.%03d s", i, dt.ss, (dt.ff * 1000) / 256);
+        auto ms = rtc::todMillis();
+        logf("%4d: %d.%03d s", i, (ms / 1000) % 100, ms % 1000);
     }
 
-    constexpr int delays [] = { 50, 100, 100, 50, 100, 100, 200 };
+    constexpr int delays [] = { 50, 100, 200, 100, 50 };
     for (auto ms : delays) {
         auto t1 = rtc::todMillis();
         sys::wait(ms);
@@ -48,8 +49,8 @@ int main () {
         logf("%3d ms: %d", ms, t2 - t1);
     }
 
-    for (auto i = 0; i < 10; ++i)
+    for (auto i = 0; i < 5; ++i)
         rtc::setReg(i, i * 1111); // regs are only 16-bit on F1xx
-    for (auto i = 0; i < 10; ++i)
+    for (auto i = 0; i < 5; ++i)
         logf("%d: %04d", i, rtc::getReg(i));
 }

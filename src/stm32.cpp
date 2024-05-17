@@ -100,7 +100,7 @@ inline namespace {
 struct Ticker : Device, Chain {
     uint16_t rate;
 
-    Ticker () : Device (Device::BASE), rate (0) {
+    Ticker () : Device (Device::BASE), rate (1) {
         dPower = SHUTDOWN;
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
@@ -114,12 +114,6 @@ struct Ticker : Device, Chain {
     }
 
     void start (Message& msg) override {
-        if (msg.mTag == 'Q') { // query when next timeout will come
-            auto p = first();
-            msg.mLen = p != nullptr ? cHead->mLen - ticks : ~0;
-            return; // not queued, no reply sent, msg has the result
-        }
-
         auto ms = msg.mLen;
         assert(ms <= 60'000);
 
@@ -129,7 +123,7 @@ struct Ticker : Device, Chain {
                 ms = next;
         }
 
-        if (ms < rate) {
+        if (0 && ms < rate) {
             ticks = millis(); // update actual tick count
             STK[0x0] = 0;     // stop the clock
         }
@@ -151,7 +145,7 @@ struct Ticker : Device, Chain {
             reply(pull());
         if (isEmpty()) {
             dPower = SHUTDOWN;
-            STK[0x0] = 0; // disable
+            ///STK[0x0] = 0; // disable
         } else {
             // TODO this is a hack: assumes RTC running if DBP bit set in PWR
             dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
@@ -162,8 +156,8 @@ struct Ticker : Device, Chain {
                 ticksPerMs /= 2; // HPRE set to 2 (AHB freq must be <= 150 MHz)
 #endif
 
-            uint16_t next = cHead->mLen - ticks;
-            rate = next < 100 ? next : 100;
+            ///uint16_t next = cHead->mLen - ticks;
+            ///rate = next < 100 ? next : 100;
 
             STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
             STK[0x0] = 0b011;                       // enable, clk/8 mode
@@ -306,7 +300,7 @@ uint32_t getSecs () {
 
 uint32_t todMillis () {
     auto dt = rtc::getDate();
-    return (((dt.hh*60) + dt.mm)*60 + dt.ss)*1000 + (dt.ff*1000) / 256;
+    return ((dt.hh * 60 + dt.mm) * 60 + dt.ss) * 1000 + (dt.ff * 1000) / 256;
 }
 
 void set (DateTime const& dt) {
@@ -401,21 +395,6 @@ void kick () {
 }
 
 } // namespace jeeh::dog
-
-uint8_t sys::idle (uint16_t ms) {
-    Message m { Device::BASE, 'Q' };
-    send(m);
-    logf("idle %d", m.mLen);
-    return ms < m.mLen ? (uint8_t) Device::SLOWEST : Device::powerScan();
-}
-
-void sys::coma (uint8_t mode) {
-    if (mode > Device::SLOWEST) {
-        assert(PWR[0x00](8)); // make sure the RTC is running, see "hack" above
-        Message m { Device::BASE, 'Q' };
-        send(m);
-    }
-}
 
 // cache management code needs the CMSIS headers
 

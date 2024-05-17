@@ -206,6 +206,7 @@ assert(block == nullptr);
                 break;
             }
             if (nextToRun == 0) {
+#if 0
                 // TODO this code is in the wrong place :(
                 idler.state.mTag = Device::SLOWEST;
                 idler.state.mLen = nextTick();
@@ -220,6 +221,7 @@ assert(block == nullptr);
                     PWR[0x00](0, 3) = 0; // CR1: LPMS
                     SCB[0x10](2) = 0; // ~SLEEPDEEP
                 }
+#endif
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }
