@@ -188,17 +188,14 @@ assert(block == nullptr);
             nextToRun = mTag;
         while (true) {
             auto th = entry(nextToRun);
-            if (th != nullptr && th->state == RUN) {
-                //if (onIdle.fun != nullptr && SCB[0x10](1))
-                //    onIdle.fun(1, onIdle.arg); // just woke up
+            assert(th != nullptr);
+            if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
                 if (nextToRun != current)
                     triggerPendSV();
                 break;
             }
             if (nextToRun == 0) {
-                //if (onIdle.fun != nullptr)
-                //    onIdle.fun(0, onIdle.arg); // about to go to sleep
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }
@@ -357,6 +354,14 @@ Device& Device::byId (uint8_t id) {
     assert(BASE <= id && id <= LAST);
     assert(devices[id-BASE] != nullptr);
     return *devices[id-BASE];
+}
+
+uint8_t Device::powerScan () {
+    uint8_t min = SHUTDOWN;
+    for (auto e : devices)
+        if (e != nullptr && min > e->dPower)
+            min = e->dPower;
+    return min;
 }
 
 void Device::reply (Message* mp) {

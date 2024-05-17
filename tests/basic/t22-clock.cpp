@@ -18,7 +18,7 @@ int main () {
 
     auto dt1 = rtc::getDate();
     logf("1: %d %d", dt1.ss, dt1.ff);
-    sys::wait(1);
+    sys::wait(2);
 
     Pin led (LED);
     led.mode("P");
@@ -30,6 +30,7 @@ int main () {
 
     auto dt2 = rtc::getDate();
     logf("2: %d %d", dt2.ss, dt2.ff); // 125 ms later, approx 26 ff ticks
+    sys::wait(2); // make sure it gets out
 
     for (auto i = 0; i < 5; ++i) {
         rtc::deepSleep(25, 1);

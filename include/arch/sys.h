@@ -87,6 +87,9 @@ namespace sys {
         return fork(s, N, f, a);
     }
 
+    uint8_t idle (uint16_t ms);
+    void coma (uint8_t mode);
+
 } // namespace sys
 
 struct Task : Message, Chain {
@@ -132,8 +135,12 @@ private:
 
 struct Device {
     enum { BASE = '@', LAST = 'Z' };
+    enum {
+        FASTEST, FAST, SLOW, SLOWEST, STOP0, STOP1, STOP2, STANDBY, SHUTDOWN
+    };
 
     uint8_t dId;
+    uint8_t dPower =SLOWEST; // default value: sysclk must keep running
 
     Device (uint8_t id);
     // TODO ~Device ();
@@ -144,6 +151,7 @@ struct Device {
     void irqTrigger (uint8_t num);
 
     static Device& byId (uint8_t id);
+    static uint8_t powerScan ();
 
 protected:
     virtual bool interrupt (int) =0;

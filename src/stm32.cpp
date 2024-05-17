@@ -100,6 +100,7 @@ struct Ticker : Device, Chain {
     uint16_t rate;
 
     Ticker () : Device (Device::BASE), ticks (0), rate (0) {
+        dPower = SHUTDOWN;
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
@@ -118,6 +119,12 @@ struct Ticker : Device, Chain {
     }
 
     void start (Message& msg) override {
+        if (msg.mTag == 'Q') { // query when next timeout will come
+            auto p = first();
+            msg.mLen = p != nullptr ? cHead->mLen - ticks : ~0;
+            return; // not queued, no reply sent, msg has the result
+        }
+
         auto ms = msg.mLen;
         assert(ms <= 60'000);
 
@@ -147,10 +154,14 @@ struct Ticker : Device, Chain {
     void finish () override {
         while (expired())
             reply(pull());
-        if (isEmpty())
+        if (isEmpty()) {
+            dPower = SHUTDOWN;
             STK[0x0] = 0; // disable
-        else
+        } else {
+            // TODO this is a hack: assumes RTC running if DBP bit set in PWR
+            dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
             init();
+        }
     }
 
     bool interrupt (int) override {
@@ -379,6 +390,21 @@ void kick () {
 }
 
 } // namespace jeeh::dog
+
+uint8_t sys::idle (uint16_t ms) {
+    Message m { Device::BASE, 'Q' };
+    send(m);
+    logf("idle %d", m.mLen);
+    return ms < m.mLen ? (uint8_t) Device::SLOWEST : Device::powerScan();
+}
+
+void sys::coma (uint8_t mode) {
+    if (mode > Device::SLOWEST) {
+        assert(PWR[0x00](8)); // make sure the RTC is running, see "hack" above
+        Message m { Device::BASE, 'Q' };
+        send(m);
+    }
+}
 
 // cache management code needs the CMSIS headers
 
