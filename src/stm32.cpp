@@ -118,6 +118,16 @@ struct Ticker : Device, Chain {
         STK[0x0] = 0b011;                       // enable, clk/8 mode
     }
 
+    int next () const {
+        auto p = first();
+        if (p != nullptr) {
+            uint16_t t = cHead->mLen - ticks;
+            if (t <= 60'000)
+                return t;
+        }
+        return -1;
+    }
+
     void start (Message& msg) override {
         if (msg.mTag == 'Q') { // query when next timeout will come
             auto p = first();

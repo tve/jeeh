@@ -116,13 +116,18 @@ Message* Chain::pull () {
 
 //---------------------------------------------------------------------- Thread
 
-static Task* tasks [Task::LIMIT]; // all tasks and threads
-static uint8_t current;           // currently running thread id
-static uint8_t nextToRun;         // thread id of next thread to run
-static bool fixed;                // cannot switch threads when set
+inline namespace {
+    Task* tasks [Task::LIMIT]; // all tasks and threads
+    uint8_t current;           // currently running thread id
+    uint8_t nextToRun;         // thread id of next thread to run
+    bool fixed;                // cannot switch threads when set
+    LowPower idler;
 
-static void triggerPendSV () {
-    SCB[0x04](28) = 1; // ICSR PENDSVSET
+    void triggerPendSV () { SCB[0x04](28) = 1; } // ICSR PENDSVSET
+}
+
+bool LowPower::interrupt (int) {
+    return false;
 }
 
 struct Thread final : Task {
@@ -191,11 +196,13 @@ assert(block == nullptr);
             assert(th != nullptr);
             if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
+                idler.finish();
                 if (nextToRun != current)
                     triggerPendSV();
                 break;
             }
             if (nextToRun == 0) {
+                idler.start(idler.state);
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }

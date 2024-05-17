@@ -67,6 +67,12 @@ namespace jeeh {
 
         fail();
     }
+
+#if !OWN_LOWPOWER
+    void LowPower::start (Message&) {}
+    void LowPower::finish () {}
+#endif
+
 } // namespace jeeh
 
 struct Tester {

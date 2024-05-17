@@ -161,6 +161,17 @@ protected:
 };
 static_assert(sizeof (Device) == 8);
 
+struct LowPower : Device {
+    Message state {};
+
+    LowPower () : Device ('L') {}
+
+    void start (Message&) override;
+    void finish () override;
+
+    bool interrupt (int) override;
+};
+
 class DateTime {
     constexpr static uint8_t daysInMonth [] = {
         31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
