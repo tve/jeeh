@@ -1,5 +1,8 @@
 
 TEST
 1: 33 0
-2:3 33 50
-OK
+2: 33 26
+3: 33 32
+failed at -dev/tests/basic/t22-clock.cpp:46
+failed caller: 0x20000507
+FAIL

@@ -3,6 +3,10 @@ using namespace jeeh;
 #include <cstdarg>
 #include <cstdio>
 
+// defined in stm32.cpp
+extern int nextTick ();
+extern volatile uint32_t ticks;
+
 inline namespace {
 
     [[maybe_unused]]
@@ -202,7 +206,20 @@ assert(block == nullptr);
                 break;
             }
             if (nextToRun == 0) {
+                // TODO this code is in the wrong place :(
+                idler.state.mTag = Device::SLOWEST;
+                idler.state.mLen = nextTick();
                 idler.start(idler.state);
+                if (idler.state.mTag >= Device::STOP0) {
+                    // FIXME wrong: save curr time, and fix in finish
+                    //  this is essential when woken up sooner for any reason
+                    ticks += idler.state.mLen;
+                    rtc::deepSleep(idler.state.mLen,
+                                    idler.state.mTag - Device::STOP0);
+                } else {
+                    PWR[0x00](0, 3) = 0; // CR1: LPMS
+                    SCB[0x10](2) = 0; // ~SLEEPDEEP
+                }
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }

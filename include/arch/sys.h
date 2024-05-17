@@ -254,6 +254,7 @@ namespace rtc {
 
     DateTime getDate ();
     uint32_t getSecs ();
+    uint32_t todMillis ();
 
     void set (DateTime const& dt);
     void set (uint32_t t);

@@ -93,39 +93,24 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
 
 //--------------------------------------------------------------------- Ticker
 
+volatile uint32_t ticks; // TODO needed by sys.cpp
+
 inline namespace {
 
 struct Ticker : Device, Chain {
-    volatile uint32_t ticks;
     uint16_t rate;
 
-    Ticker () : Device (Device::BASE), ticks (0), rate (0) {
+    Ticker () : Device (Device::BASE), rate (0) {
         dPower = SHUTDOWN;
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
-    void init () {
-        auto ticksPerMs = SystemCoreClock / 1000;
-#if STM32G4
-        if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
-            ticksPerMs /= 2; // HPRE is set to 2 (AHB freq must be <= 150 MHz)
-#endif
-
-        uint16_t next = cHead->mLen - ticks;
-        rate = next < 100 ? next : 100;
-
-        STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
-        STK[0x0] = 0b011;                       // enable, clk/8 mode
-    }
-
     int next () const {
         auto p = first();
-        if (p != nullptr) {
-            uint16_t t = cHead->mLen - ticks;
-            if (t <= 60'000)
-                return t;
-        }
-        return -1;
+        if (p == nullptr)
+            return -1;
+        uint16_t t = cHead->mLen - ticks;
+        return t <= 60'000 ? t : 0;
     }
 
     void start (Message& msg) override {
@@ -170,7 +155,18 @@ struct Ticker : Device, Chain {
         } else {
             // TODO this is a hack: assumes RTC running if DBP bit set in PWR
             dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
-            init();
+
+            auto ticksPerMs = SystemCoreClock / 1000;
+#if STM32G4
+            if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
+                ticksPerMs /= 2; // HPRE set to 2 (AHB freq must be <= 150 MHz)
+#endif
+
+            uint16_t next = cHead->mLen - ticks;
+            rate = next < 100 ? next : 100;
+
+            STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
+            STK[0x0] = 0b011;                       // enable, clk/8 mode
         }
     }
 
@@ -193,15 +189,15 @@ struct Ticker : Device, Chain {
     }
 };
 
-} // namespace inline
+Ticker ticker;
 
-extern "C"
-void SysTick_Handler () {
-    Device::byId(Device::BASE).irqTrigger(0);
-}
+} // inline namespace
+
+extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
+
+int nextTick () { return ticker.next(); } // TODO needed by sys.cpp
 
 void sys::wait (uint16_t ms) {
-    static Ticker ticker;
     Message m { ticker.dId, 'T', ms };
     call(m);
 }
@@ -281,7 +277,7 @@ void deepSleep (uint16_t ms, int mode) {
 
     PWR[0x00](0, 3) = mode; // CR1: LPMS
     SCB[0x10](2) = 1; // SLEEPDEEP
-    asm ("wfe");
+    //asm ("wfe");
 }
 
 DateTime getDate () {
@@ -306,6 +302,11 @@ DateTime getDate () {
 
 uint32_t getSecs () {
     return getDate(); // let DateTime::operator uint32_t do the conversion
+}
+
+uint32_t todMillis () {
+    auto dt = rtc::getDate();
+    return (((dt.hh*60) + dt.mm)*60 + dt.ss)*1000 + (dt.ff*1000) / 256;
 }
 
 void set (DateTime const& dt) {

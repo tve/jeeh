@@ -1,0 +1,13 @@
+
+TEST
+wait 10
+send 15
+recv
+20 ms: 12
+30 ms: 187
+40 ms: 274
+50 ms: 371
+40 ms: 461
+30 ms: 367
+20 ms: 31
+OK

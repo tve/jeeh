@@ -37,7 +37,15 @@ int main () {
     for (auto i = 0; i < 10; ++i) {
         sys::wait(100);
         auto dt = rtc::getDate();
-        logf("%4d: %d.%03d s", i, dt.ss, (dt.ff * 1000 + 128) / 256);
+        logf("%4d: %d.%03d s", i, dt.ss, (dt.ff * 1000) / 256);
+    }
+
+    constexpr int delays [] = { 50, 100, 100, 50, 100, 100, 200 };
+    for (auto ms : delays) {
+        auto t1 = rtc::todMillis();
+        sys::wait(ms);
+        auto t2 = rtc::todMillis();
+        logf("%3d ms: %d", ms, t2 - t1);
     }
 
     for (auto i = 0; i < 10; ++i)
