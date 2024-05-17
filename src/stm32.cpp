@@ -115,8 +115,10 @@ struct Ticker : Device, Chain {
     }
 
     void skip (uint16_t ms) {
-        ticks += ms;
-        // TODO ...
+        STK[0x0] = 0;     // stop the clock, will restart with a new rate
+        ticks = millis(); // update actual tick count
+        ticks += ms;      // time advances
+        finish();         // restart ticker
     }
 
     void start (Message& msg) override {
@@ -125,11 +127,10 @@ struct Ticker : Device, Chain {
 
         auto up = next();
         if (up > ms)
-            up = ms; // new entry will become the first one
-
+            up = ms;          // new entry will become the first one
         if (up < rate) {
-            ticks = millis(); // update actual tick count
             STK[0x0] = 0;     // stop the clock, will restart with a new rate
+            ticks = millis(); // update actual tick count
         }
 
         auto t = ticks;

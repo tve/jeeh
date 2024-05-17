@@ -195,12 +195,16 @@ assert(block == nullptr);
         state = newState;
         if (mTag > nextToRun)
             nextToRun = mTag;
+
+        static uint16_t lostTicks;
+
         while (true) {
             auto th = entry(nextToRun);
             assert(th != nullptr);
             if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
                 idler.finish();
+                skipTime(lostTicks);
                 if (nextToRun != current)
                     triggerPendSV();
                 return;
@@ -209,18 +213,14 @@ assert(block == nullptr);
                 break;
             --nextToRun;
         }
-#if 1
-        // TODO this code is in the wrong place :(
+
         Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
         idler.start(m);
         if (m.mTag >= Device::STOP0) {
-            // FIXME wrong: save curr time, and fix in finish
-            //  this is essential when woken up sooner for any reason
-            skipTime(m.mLen);
+            lostTicks = m.mLen;
             rtc::deepSleep(m.mLen, m.mTag - Device::STOP0, false);
         } else
             SCB[0x10](2) = 0; // ~SLEEPDEEP
-#endif
         SCB[0x10](1) = 1; // SLEEPONEXIT
     }
 };
