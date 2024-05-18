@@ -1,6 +1,6 @@
 
 TEST
-wait: 10019 us
+wait: 10020 us
 by design, this message has exactly 50 characters
-itm:  328 us
+itm:  313 us
 OK

@@ -1,0 +1,5 @@
+
+TEST
+failed at eeh-dev/include/arch/stm32f1.h:22
+failed caller: 0x2000058b
+FAIL

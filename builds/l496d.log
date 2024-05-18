@@ -24,4 +24,18 @@ load to RAM: t19
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
-PASS: Wed 15 May 16:56:50 CEST 2024
+load to RAM: t23
+
+TEST
+wait 10
+send 15
+recv
+20 ms: 19
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 2.44 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+t23            FAILED    00:00:02.443
+==================== 1 failed, 23 succeeded in 00:00:51.319 ====================

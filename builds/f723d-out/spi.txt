@@ -1,7 +1,7 @@
 
 TEST
 216 MHz
-  direct: id c2201a, 65536 kB, 4021 cycles
- virtual: id c2201a, 65536 kB, 4048 cycles
-abstract: id c2201a, 65536 kB, 4211 cycles
+  direct: id c2201a, 65536 kB, 3966 cycles
+ virtual: id c2201a, 65536 kB, 3989 cycles
+abstract: id c2201a, 65536 kB, 4146 cycles
 OK

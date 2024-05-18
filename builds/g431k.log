@@ -1,3 +1,4 @@
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
 rewriting: ../include/jee-stm32.h
 rewriting: ../include/jee.h
 load to RAM: t00
@@ -23,4 +24,5 @@ load to RAM: t19
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
-PASS: Wed 15 May 16:58:41 CEST 2024
+load to RAM: t23
+PASS: Sat 18 May 07:19:44 CEST 2024

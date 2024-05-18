@@ -56,6 +56,11 @@ uint32_t getSecs () {
     }
 }
 
+uint32_t todMillis () {
+    auto dt = rtc::getDate();
+    return ((dt.hh * 60 + dt.mm) * 60 + dt.ss) * 1000 + (dt.ff * 1000) / 256;
+}
+
 void set (DateTime const& dt) {
     set((uint32_t) dt);
 }

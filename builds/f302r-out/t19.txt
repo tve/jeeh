@@ -5,9 +5,6 @@ cause 1
 11
 12
 13
-
-TEST
-cause -1
-14
-15
-OK
+failed at eh-dev/tests/basic/t19-dog.cpp:25
+failed caller: 0x200004b7
+FAIL
