@@ -37,6 +37,11 @@ void init (bool lse) {
 
 }
 
+void deepSleep (uint16_t ms, int mode, bool wait) {
+    (void) ms; (void) mode; (void) wait;
+    fail(); // TODO
+}
+
 DateTime getDate () {
     return DateTime { getSecs() };
 }
