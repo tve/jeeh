@@ -5,7 +5,6 @@ using namespace jeeh;
 
 // defined in stm32.cpp
 extern int nextTick ();
-extern void skipTime (uint16_t ms);
 
 inline namespace {
 
@@ -196,16 +195,11 @@ assert(block == nullptr);
         if (mTag > nextToRun)
             nextToRun = mTag;
 
-        static uint32_t todLast;
-
         while (true) {
             auto th = entry(nextToRun);
             assert(th != nullptr);
             if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
-                idler.finish();
-                if (todLast != ~0U)
-                    skipTime(rtc::todMillis() - todLast); // TODO wraparound
                 if (nextToRun != current)
                     triggerPendSV();
                 break;
@@ -213,13 +207,9 @@ assert(block == nullptr);
             if (nextToRun == 0) {
                 Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
                 idler.start(m);
-                if (m.mTag >= Device::STOP0) {
-                    todLast = rtc::todMillis();
-                    rtc::deepSleep(m.mLen, m.mTag - Device::STOP0, false);
-                } else {
-                    todLast = ~0U;
-                    SCB[0x10](2) = 0; // ~SLEEPDEEP
-                }
+                if (m.mTag >= Device::STOP0)
+                    rtc::deepSleep(m.mLen, m.mTag - Device::STOP0);
+                idler.finish();
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }

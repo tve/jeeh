@@ -245,7 +245,7 @@ namespace rtc {
     void init (bool lse =true);
     void deinit ();
 
-    void deepSleep (uint16_t ms, int mode =0, bool wait =true);
+    void deepSleep (uint16_t ms, int mode =0);
 
     DateTime getDate ();
     uint32_t getSecs ();

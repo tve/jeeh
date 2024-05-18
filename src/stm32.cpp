@@ -191,7 +191,6 @@ extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
 
 // TODO these are needed by sys.cpp
 int nextTick () { return ticker.next(); }
-void skipTime (uint16_t ms) { ticker.skip(ms); }
 
 uint32_t jeeh::clockChange (uint32_t hz) {
     auto n = hz/1000, o = SystemCoreClock/1000;
@@ -256,7 +255,7 @@ void init (bool lse) {
     //RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
-void deepSleep (uint16_t ms, int mode, bool wait) {
+void deepSleep (uint16_t ms, int mode) {
     assert(ms <= 16'000);
     auto sel = 3;
     auto count = (1000*ms) / 61;
@@ -284,10 +283,14 @@ void deepSleep (uint16_t ms, int mode, bool wait) {
     EXTI[0x08](20) = 1; // RT20 in RTSR1
     EXTI[0x04](20) = 1; // EM20 in EMR1
 
+    // TODO probably needs a BlockIRQ here
     PWR[0x00](0, 3) = mode; // CR1: LPMS
+    auto todLast = todMillis();
+    SCB[0x10](4) = 1; // SEVONPEND
     SCB[0x10](2) = 1; // SLEEPDEEP
-    if (wait)
-        asm ("wfe");
+    asm ("wfe");
+    SCB[0x10](2) = 0; // ~SLEEPDEEP
+    ticker.skip(todMillis() - todLast); // TODO wraparound
 }
 
 DateTime getDate () {

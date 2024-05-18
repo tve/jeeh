@@ -5,15 +5,15 @@ using namespace jeeh;
 
 void LowPower::start (Message& m) {
     m.mTag = m.mLen >= 50 ? Device::STOP1 :
-             m.mLen >= 30 ? Device::STOP0 :
+             m.mLen >= 40 ? Device::STOP0 :
                             Device::SLOWEST;
-    logf("S %d -> %d", m.mLen, m.mTag);
+    //logf("S %d -> %d", m.mLen, m.mTag);
     for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
 }
 
 void LowPower::finish () {
     fastClock();
-    logf("F");
+    //logf("F");
 }
 
 int main () {
@@ -32,7 +32,7 @@ int main () {
     logf("recv");
     sys::recv();
 
-    constexpr int delays [] = { 20, 30, 40, 50, 60, 40, 20 };
+    constexpr int delays [] = { 30, 40, 50, 100, 200 };
     for (auto ms : delays) {
         auto t1 = rtc::todMillis();
         sys::wait(ms);
@@ -40,6 +40,6 @@ int main () {
 
         int n = t2 - t1;
         logf("%d ms: %d", ms, n);
-        assert(ms-5 < n && n < ms+5);
+        assert(9*ms <= 10*n && 10*n <= 11*ms); // +/- 10% TODO g431 uses LSI
     }
 }
