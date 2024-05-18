@@ -196,7 +196,7 @@ assert(block == nullptr);
         if (mTag > nextToRun)
             nextToRun = mTag;
 
-        static uint16_t lostTicks;
+        static uint32_t todLast;
 
         while (true) {
             auto th = entry(nextToRun);
@@ -204,24 +204,27 @@ assert(block == nullptr);
             if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
                 idler.finish();
-                skipTime(lostTicks);
+                if (todLast != ~0U)
+                    skipTime(rtc::todMillis() - todLast); // TODO wraparound
                 if (nextToRun != current)
                     triggerPendSV();
-                return;
-            }
-            if (nextToRun == 0)
                 break;
+            }
+            if (nextToRun == 0) {
+                Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
+                idler.start(m);
+                if (m.mTag >= Device::STOP0) {
+                    todLast = rtc::todMillis();
+                    rtc::deepSleep(m.mLen, m.mTag - Device::STOP0, false);
+                } else {
+                    todLast = ~0U;
+                    SCB[0x10](2) = 0; // ~SLEEPDEEP
+                }
+                SCB[0x10](1) = 1; // SLEEPONEXIT
+                break;
+            }
             --nextToRun;
         }
-
-        Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
-        idler.start(m);
-        if (m.mTag >= Device::STOP0) {
-            lostTicks = m.mLen;
-            rtc::deepSleep(m.mLen, m.mTag - Device::STOP0, false);
-        } else
-            SCB[0x10](2) = 0; // ~SLEEPDEEP
-        SCB[0x10](1) = 1; // SLEEPONEXIT
     }
 };
 

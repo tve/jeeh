@@ -4,17 +4,16 @@ using namespace jeeh;
 #include "test.h"
 
 void LowPower::start (Message& m) {
-    //logf("S %d", m.mLen);
-    for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
-
-    m.mTag = m.mLen >= 40 ? Device::STOP1 :
+    m.mTag = m.mLen >= 50 ? Device::STOP1 :
              m.mLen >= 30 ? Device::STOP0 :
                             Device::SLOWEST;
+    logf("S %d -> %d", m.mLen, m.mTag);
+    for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
 }
 
 void LowPower::finish () {
     fastClock();
-    //logf("F");
+    logf("F");
 }
 
 int main () {
@@ -33,11 +32,14 @@ int main () {
     logf("recv");
     sys::recv();
 
-    constexpr int delays [] = { 20, 30, 40, 50, 40, 30, 20 };
+    constexpr int delays [] = { 20, 30, 40, 50, 60, 40, 20 };
     for (auto ms : delays) {
         auto t1 = rtc::todMillis();
         sys::wait(ms);
         auto t2 = rtc::todMillis();
-        logf("%d ms: %d", ms, t2 - t1);
+
+        int n = t2 - t1;
+        logf("%d ms: %d", ms, n);
+        assert(ms-5 < n && n < ms+5);
     }
 }

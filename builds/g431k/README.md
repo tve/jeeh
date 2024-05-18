@@ -39,8 +39,8 @@ Macrocell) to generate output through the SWO pin which is connected to the
 on-board ST-Link V3. The UART tied to the ST-Link's `VCP` endpoint is not
 necessary to verify tests and can be used to develop the UART driver itself, or
 to implement an app console, for example.  Although ITM is output-only and
-polled, with an ST-Link V3 it can be very fast (about 10 Mbaud when the µC is
-running at 150 MHz - this was one reason to pick this specific board).
+polled, with an ST-Link V3 it can be very fast (over 10 Mbaud when the µC is
+running at 170 MHz - this was one reason to pick this specific board).
 
 ## Code generator
 

@@ -16,33 +16,30 @@ int main () {
 #endif
     rtc::set({ 1, 2, 3, 11, 22, 33 });
 
-    auto dt1 = rtc::getDate();
-    logf("1: %d %d", dt1.ss, dt1.ff);
-    sys::wait(2);
+    auto dt1 = rtc::todMillis();
+    logf("1: %d", dt1);
 
     Pin led (LED);
     led.mode("P");
 
     for (auto i = 0; i < 5; ++i) {
-        sys::wait(25);
+        sys::wait(32);
         led.toggle();
     }
 
-    auto dt2 = rtc::getDate();
-    logf("2: %d %d", dt2.ss, dt2.ff); // 125 ms later, approx 26 ff ticks
-    sys::wait(2); // make sure it gets out
+    auto dt2 = rtc::todMillis();
+    logf("2: %d", dt2);
+    for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
 
     for (auto i = 0; i < 5; ++i) {
-        rtc::deepSleep(25, 1);
+        rtc::deepSleep(32, 2);
         led.toggle();
     }
-
     fastClock();
 
-    auto dt3 = rtc::getDate();
-    logf("3: %d %d", dt3.ss, dt3.ff);
+    auto dt3 = rtc::todMillis();
+    logf("3: %d", dt3);
 
-    assert(dt1.ff == 0);
-    assert(50 <= dt3.ff && dt3.ff <= 60); // these are 256 Hz ticks, not msec
-    assert(dt1.ss == dt2.ss);
+    auto ms = dt3 - dt1;
+    assert(250 <= ms && ms <= 350);
 }

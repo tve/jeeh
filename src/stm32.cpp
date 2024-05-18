@@ -93,12 +93,12 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
 
 //--------------------------------------------------------------------- Ticker
 
+
 inline namespace {
 
 struct Ticker : Device, Chain {
     uint16_t rate;
     volatile uint32_t ticks;
-    uint32_t ticksPerMs;
 
     Ticker () : Device (Device::BASE), rate (0), ticks (0) {
         dPower = SHUTDOWN;
@@ -157,18 +157,12 @@ struct Ticker : Device, Chain {
         }
         rate = up < 100 ? up : 100;
 
-        ticksPerMs = SystemCoreClock / 1000;
-#if STM32G4
-        if (SystemCoreClock > 150'000'000) // TODO use actual HPRE divider
-            ticksPerMs /= 2; // HPRE set to 2 (AHB freq must be <= 150 MHz)
-#endif
-
         // TODO this is a hack: assumes RTC running if DBP bit set in PWR
         dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
 
-        STK[0x4] = (rate * ticksPerMs) / 8 - 1; // reload value
+        STK[0x4] = (rate * (SystemCoreClock/1000)) / 8 - 1; // reload value
         STK[0x8] = 0;
-        STK[0x0] = 0b011;                       // enable, clk/8 mode
+        STK[0x0] = 0b011; // enable, clk/8 mode
     }
 
     bool interrupt (int) override {
@@ -184,8 +178,8 @@ struct Ticker : Device, Chain {
         // the result has millisecond resolution, even when rate > 1
         while (true) // spinloop, in case ticks changes midway
             if (uint32_t t = ticks, c = STK[0x08]; t == ticks) {
-                return t + rate - (c*8)/ticksPerMs;
-        }
+                return t + rate - (c*8)/(SystemCoreClock/1000);
+            }
     }
 };
 
@@ -198,6 +192,16 @@ extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
 // TODO these are needed by sys.cpp
 int nextTick () { return ticker.next(); }
 void skipTime (uint16_t ms) { ticker.skip(ms); }
+
+uint32_t jeeh::clockChange (uint32_t hz) {
+    auto n = hz/1000, o = SystemCoreClock/1000;
+    if (n != o) {
+        STK[0x4] = (STK[0x4] / o ) * n + 1; // make sure it's not zero
+        STK[0x8] = 0;
+        SystemCoreClock = hz;
+    }
+    return hz;
+}
 
 void sys::wait (uint16_t ms) {
     Message m { ticker.dId, 'T', ms };
@@ -216,11 +220,11 @@ enum { TR=0x00,DR=0x04,SSR=0x28,ICSR=0x0C,WUTR=0x14,
 #endif
 
 #if STM32F3
-enum { BDCR=0x20 };
+enum { BDCR=0x20, CSR=0x24 };
 #elif STM32F4 | STM32F7 | STM32H7
-enum { BDCR=0x70 };
+enum { BDCR=0x70, CSR=0x74 };
 #else
-enum { BDCR=0x90 };
+enum { BDCR=0x90, CSR=0x94 };
 #endif
 
 void init (bool lse) {
@@ -234,19 +238,23 @@ void init (bool lse) {
 
     if (lse) {
 #if STM32F723xx | STM32WLE5xx
-        RCC[BDCR](3,2) = 1;           // LSEDRV (needed on f723d and wl55r)
+        RCC[BDCR](3,2) = 1;           // LSEDRV on f723d and wl55r
 #endif
         RCC[BDCR](0) = 1;             // LSEON backup domain
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
         RCC[BDCR](8,2) = 1;           // RTSEL = LSE
-    } else
+    } else {
+        assert(RCC[CSR](1) != 0);
+      //RCC[CSR](0) = 1;              // LSION backup domain
+      //while (RCC[CSR](1) == 0) {}   // wait for LSIRDY
         RCC[BDCR](8,2) = 2;           // RTSEL = LSI
+    }
     RCC[BDCR](15) = 1;                // RTCEN
 
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
-    RTC[WPR] = 0xFF;  // re-enable write protection
+    //RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
 void deepSleep (uint16_t ms, int mode, bool wait) {
@@ -271,7 +279,7 @@ void deepSleep (uint16_t ms, int mode, bool wait) {
     RTC[ICSR] = RTC[ICSR] & ~(1<<10); // clear WUTF
 #endif
     RTC[CR](10) = 1;             // WUTE
-    RTC[WPR] = 0xFF;             // re-enable write protection
+    //RTC[WPR] = 0xFF;             // re-enable write protection
 
     EXTI[0x14] = 1<<20; // PIF20 in PR1
     EXTI[0x08](20) = 1; // RT20 in RTSR1
