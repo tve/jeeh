@@ -244,9 +244,8 @@ void init (bool lse) {
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
         RCC[BDCR](8,2) = 1;           // RTSEL = LSE
     } else {
-        assert(RCC[CSR](1) != 0);
-      //RCC[CSR](0) = 1;              // LSION backup domain
-      //while (RCC[CSR](1) == 0) {}   // wait for LSIRDY
+        RCC[CSR](0) = 1;              // LSION backup domain
+        while (RCC[CSR](1) == 0) {}   // wait for LSIRDY
         RCC[BDCR](8,2) = 2;           // RTSEL = LSI
     }
     RCC[BDCR](15) = 1;                // RTCEN
