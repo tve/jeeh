@@ -1,8 +1,7 @@
 
 TEST
-wait 10
-send 15
-recv
+wait 1sn 15
+Ù
 30 ms: 27
 40 ms: 39
 50 ms: 47

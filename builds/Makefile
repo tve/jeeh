@@ -21,9 +21,9 @@ first:
 	date >LASTRUN.txt
 
 $A $B:
-	make -C $@ clean stub
-	(pio run -d $@ -t check -s 2>&1 && echo PASS: `date`) | $G | tee $@.log
-	grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
+	@ make -C $@ clean stub
+	@ (pio run -d $@ -t check -s 2>&1 && echo PASS) | $G | tee $@.log
+	@ grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
 
 clean:
 	pio run -d g431k -e t00 -s

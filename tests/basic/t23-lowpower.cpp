@@ -8,7 +8,6 @@ void LowPower::start (Message& m) {
              m.mLen >= 40 ? Device::STOP0 :
                             Device::SLOWEST;
     //logf("S %d -> %d", m.mLen, m.mTag);
-    for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
 }
 
 void LowPower::finish () {
@@ -34,6 +33,7 @@ int main () {
 
     constexpr int delays [] = { 30, 40, 50, 100, 200 };
     for (auto ms : delays) {
+        itmFlush();
         auto t1 = rtc::todMillis();
         sys::wait(ms);
         auto t2 = rtc::todMillis();

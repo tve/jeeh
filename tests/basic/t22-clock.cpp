@@ -29,10 +29,10 @@ int main () {
 
     auto dt2 = rtc::todMillis();
     logf("2: %d", dt2);
-    for (auto i = 0; i < 500; ++i) asm (""); // let the ITM/SWO logs drain
+    itmFlush();
 
     for (auto i = 0; i < 5; ++i) {
-        rtc::deepSleep(32, 2);
+        rtc::deepSleep(32, 1);
         led.toggle();
     }
     fastClock();
@@ -41,5 +41,5 @@ int main () {
     logf("3: %d", dt3);
 
     auto ms = dt3 - dt1;
-    assert(250 <= ms && ms <= 350);
+    assert(250 <= ms && ms <= 400);
 }

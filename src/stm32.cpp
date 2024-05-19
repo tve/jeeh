@@ -89,6 +89,13 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
     }
 }
 
+void jeeh::itmFlush () {
+    constexpr IoReg<0xE000'0000> ITM;
+    enum { TCR=0xE80 };
+
+    while (ITM[TCR](23)) {} // ~BUSY: wait for ITM to drain
+}
+
 #endif
 
 //--------------------------------------------------------------------- Ticker
@@ -211,10 +218,10 @@ void sys::wait (uint16_t ms) {
 namespace jeeh::rtc {
 
 #if STM32G4 | STM32WL
-enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,WUTR=0x14,
+enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
 #else
-enum { TR=0x00,DR=0x04,SSR=0x28,ICSR=0x0C,WUTR=0x14,
+enum { TR=0x00,DR=0x04,SSR=0x28,ICSR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x08,WPR=0x24,BKPR=0x50 };
 #endif
 
@@ -252,7 +259,7 @@ void init (bool lse) {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
-    //RTC[WPR] = 0xFF;  // re-enable write protection
+    RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
 void deepSleep (uint16_t ms, int mode) {
@@ -277,11 +284,15 @@ void deepSleep (uint16_t ms, int mode) {
     RTC[ICSR] = RTC[ICSR] & ~(1<<10); // clear WUTF
 #endif
     RTC[CR](10) = 1;             // WUTE
-    //RTC[WPR] = 0xFF;             // re-enable write protection
+    RTC[WPR] = 0xFF;             // re-enable write protection
 
-    EXTI[0x14] = 1<<20; // PIF20 in PR1
+#if STM32WL
+    EXTI[0x00](20) = 1; // RT20 in RTSR1
+    EXTI[0x84](20) = 1; // EM20 in EMR1
+#else
     EXTI[0x08](20) = 1; // RT20 in RTSR1
     EXTI[0x04](20) = 1; // EM20 in EMR1
+#endif
 
     // TODO probably needs a BlockIRQ here
     PWR[0x00](0, 3) = mode; // CR1: LPMS

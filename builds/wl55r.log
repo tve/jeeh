@@ -24,16 +24,5 @@ load to RAM: t19
 load to RAM: t20
 load to RAM: t21
 load to RAM: t22
-
-TEST
-1: 40953000
-2: 40953156
-TIMEOUT
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.01 seconds ==========================
 load to RAM: t23
-
-Environment    Status    Duration
--------------  --------  ------------
-t22            FAILED    00:00:02.012
-==================== 1 failed, 23 succeeded in 00:00:38.427 ====================
+PASS

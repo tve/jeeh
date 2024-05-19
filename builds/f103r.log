@@ -29,21 +29,21 @@ TEST
 1: 40953000
 2: 40953000
 failed at eeh-dev/include/arch/stm32f1.h:42
-failed caller: 0x2000073f
+failed caller: 0x2000073b
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.38 seconds ==========================
+========================== [FAILED] Took 1.36 seconds ==========================
 load to RAM: t23
 
 TEST
 failed at eeh-dev/include/arch/stm32f1.h:22
-failed caller: 0x2000058d
+failed caller: 0x20000585
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.22 seconds ==========================
+========================== [FAILED] Took 1.21 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:01.377
-t23            FAILED    00:00:01.215
-==================== 2 failed, 22 succeeded in 00:00:34.653 ====================
+t22            FAILED    00:00:01.359
+t23            FAILED    00:00:01.212
+==================== 2 failed, 22 succeeded in 00:00:34.591 ====================

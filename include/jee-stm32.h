@@ -30,3 +30,4 @@ uint32_t clockChange (uint32_t hz);
 
 void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
 void itmWrite (void const* ptr, size_t len);
+void itmFlush ();

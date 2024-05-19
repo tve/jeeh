@@ -1,4 +1,11 @@
 
 TEST
-É 2250000
-TIMEOUT
+d42250000
+
+[Hard Fault]  SP=20003fc0  HFSR=40000000  CFSR=00020000
+  Usage fault 0002
+	 R0=200036f0  R1=00000025  R2=00000015  R3=20003820
+	R12=0c000000  LR=2000195b  PC=20003820 PSR=20000035
+failed at de/jeeh-dev/tests/basic/test.h:68
+failed caller: 0xfffffff1
+FAIL
