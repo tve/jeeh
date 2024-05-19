@@ -17,29 +17,29 @@ int main () {
     rtc::set({ 1, 2, 3, 11, 22, 33 });
 
     auto dt1 = rtc::todMillis();
-    logf("1: %d", dt1);
+    logf("1: %d", dt1 % 10'000);
 
     Pin led (LED);
     led.mode("P");
 
     for (auto i = 0; i < 5; ++i) {
-        sys::wait(32);
+        sys::wait(30);
         led.toggle();
     }
 
     auto dt2 = rtc::todMillis();
-    logf("2: %d", dt2);
+    logf("2: %d", dt2 % 10'000);
     itmFlush();
 
     for (auto i = 0; i < 5; ++i) {
-        rtc::deepSleep(32, 1);
+        rtc::deepSleep(30, 1);
         led.toggle();
     }
     fastClock();
 
     auto dt3 = rtc::todMillis();
-    logf("3: %d", dt3);
+    logf("3: %d", dt3 % 10'000);
 
     auto ms = dt3 - dt1;
-    assert(250 <= ms && ms <= 400);
+    assert(220 <= ms && ms <= 300);
 }

@@ -1,6 +1,6 @@
 namespace jeeh {
     void fail (void const* a, char const* f, int n) {
-        constexpr auto N = 30;
+        constexpr auto N = 25;
         char buf [N+20];
         if (strlen(f) > N)
             f += strlen(f) - N;
