@@ -33,7 +33,7 @@ int main () {
     rtc::set({ 12, 11, 10, 23, 22, 21 });
     sys::wait(400); // advance a fraction of a second
     showTime(3, rtc::getDate());
-    sys::wait(400); // advance a bit more, just before rollover
+    sys::wait(300); // advance a bit more, just before rollover
 
     for (auto i = 0; i < 5; ++i) {
         sys::wait(100);

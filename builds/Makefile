@@ -25,9 +25,13 @@ $A $B:
 	@ (pio run -d $@ -t check -s 2>&1 && echo PASS) | $G | tee $@.log
 	@ grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
 
+# ignore the output files, re-fetch what's in git
+drop-out:
+	git checkout -- *-out/
+
 clean:
 	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
 	rm -rf */.pio
 
-.PHONY: all all-1 all-2 clean $A $B
+.PHONY: all all-1 all-2 drop-out clean $A $B
