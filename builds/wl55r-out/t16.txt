@@ -1,9 +1,75 @@
 
 TEST
+Kant is hungry
+Kant starts eating
+Kant finishes eating and leaves to think
+Marx is hungry
+Marx starts eating
+Aristotle is hungry
+Aristotle starts eating
+Spinoza is hungry
+Spinoza swaps forks
+Russell is hungry
+Marx finishes eating and leaves to think
+Russell swaps forks
+Spinoza starts eating
+Spinoza finishes eating and leaves to think
+Kant is hungry
+Aristotle finishes eating and leaves to think
+Kant starts eating
+Russell starts eating
+Marx is hungry
+Marx swaps forks
+Kant finishes eating and leaves to think
+Spinoza is hungry
+Spinoza starts eating
+Russell finishes eating and leaves to think
+Marx swaps forks
+Aristotle is hungry
+Aristotle starts eating
+Spinoza finishes eating and leaves to think
+Marx starts eating
+Spinoza is hungry
+Spinoza swaps forks
+Marx finishes eating and leaves to think
+Spinoza starts eating
+Kant is hungry
+Aristotle finishes eating and leaves to think
+Kant swaps forks
+Russell is hungry
+Russell starts eating
+Russell finishes eating and leaves to think
+Aristotle is hungry
+Aristotle starts eating
+Marx is hungry
+Spinoza finishes eating and leaves to think
+Marx starts eating
+Kant swaps forks
+Aristotle finishes eating and leaves to think
+Kant starts eating
+Russell is hungry
+Kant finishes eating and leaves to think
+Spinoza is hungry
+Spinoza swaps forks
+Aristotle is hungry
+Aristotle starts eating
+Marx finishes eating and leaves to think
+Russell swaps forks
+Spinoza starts eating
+Aristotle finishes eating and leaves to think
+Russell starts eating
+Spinoza finishes eating and leaves to think
+Kant is hungry
+Kant starts eating
+Spinoza is hungry
+Kant finishes eating and leaves to think
+Spinoza starts eating
+Russell finishes eating and leaves to think
+Marx is hungry
 Russell is hungry
 Russell starts eating
 Aristotle is hungry
-Marx is hungry
+Spinoza finishes eating and leaves to think
 Marx swaps forks
 Kant is hungry
 Kant starts eating
@@ -14,94 +80,27 @@ Aristotle swaps forks
 Kant finishes eating and leaves to think
 Spinoza swaps forks
 Aristotle starts eating
-Marx finishes eating and leaves to think
-Spinoza starts eating
-Spinoza finishes eating and leaves to think
-Kant is hungry
 Russell is hungry
-Russell swaps forks
-Spinoza is hungry
-Spinoza starts eating
 Aristotle finishes eating and leaves to think
-Russell starts eating
-Kant swaps forks
-Marx is hungry
-Russell finishes eating and leaves to think
-Aristotle is hungry
-Aristotle starts eating
-Spinoza finishes eating and leaves to think
-Marx starts eating
-Kant swaps forks
-Aristotle finishes eating and leaves to think
-Kant starts eating
-Spinoza is hungry
-Russell is hungry
-Kant finishes eating and leaves to think
-Spinoza swaps forks
 Marx finishes eating and leaves to think
 Russell starts eating
 Spinoza starts eating
 Russell finishes eating and leaves to think
-Marx is hungry
 Aristotle is hungry
 Aristotle starts eating
-Spinoza finishes eating and leaves to think
-Marx starts eating
 Kant is hungry
+Spinoza finishes eating and leaves to think
 Aristotle finishes eating and leaves to think
 Kant starts eating
-Marx finishes eating and leaves to think
 Russell is hungry
 Russell starts eating
-Spinoza is hungry
 Marx is hungry
 Marx swaps forks
 Kant finishes eating and leaves to think
-Spinoza starts eating
-Aristotle is hungry
-Russell finishes eating and leaves to think
-Marx swaps forks
-Aristotle starts eating
-Kant is hungry
-Russell is hungry
-Russell swaps forks
-Spinoza finishes eating and leaves to think
-Marx starts eating
-Aristotle finishes eating and leaves to think
-Kant starts eating
-Russell swaps forks
-Marx finishes eating and leaves to think
-Russell starts eating
-Russell finishes eating and leaves to think
-Spinoza is hungry
-Kant finishes eating and leaves to think
-Spinoza starts eating
-Marx is hungry
-Russell is hungry
-Russell starts eating
-Spinoza finishes eating and leaves to think
-Marx swaps forks
 Russell finishes eating and leaves to think
 Marx starts eating
-Aristotle is hungry
-Aristotle starts eating
 Marx finishes eating and leaves to think
-Aristotle finishes eating and leaves to think
-Kant is hungry
-Kant starts eating
-Spinoza is hungry
 Marx is hungry
 Marx starts eating
-Kant finishes eating and leaves to think
-Spinoza swaps forks
-Aristotle is hungry
-Aristotle starts eating
 Marx finishes eating and leaves to think
-Spinoza starts eating
-Aristotle finishes eating and leaves to think
-Kant is hungry
-Kant swaps forks
-Spinoza finishes eating and leaves to think
-Kant starts eating
-Kant finishes eating and leaves to think
 OK

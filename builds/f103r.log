@@ -1,3 +1,6 @@
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
+rewriting: ../include/jee-stm32.h
+rewriting: ../include/jee.h
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
@@ -23,24 +26,24 @@ load to RAM: t21
 load to RAM: t22
 
 TEST
-1: 33 0
-2: 33 0
+1: 40953000
+2: 40953000
 failed at eeh-dev/include/arch/stm32f1.h:42
-failed caller: 0x20000761
+failed caller: 0x2000073f
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.34 seconds ==========================
+========================== [FAILED] Took 1.38 seconds ==========================
 load to RAM: t23
 
 TEST
 failed at eeh-dev/include/arch/stm32f1.h:22
-failed caller: 0x2000058b
+failed caller: 0x2000058d
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.23 seconds ==========================
+========================== [FAILED] Took 1.22 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:01.339
-t23            FAILED    00:00:01.235
-==================== 2 failed, 22 succeeded in 00:00:34.481 ====================
+t22            FAILED    00:00:01.377
+t23            FAILED    00:00:01.215
+==================== 2 failed, 22 succeeded in 00:00:34.653 ====================

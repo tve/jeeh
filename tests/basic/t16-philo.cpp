@@ -50,6 +50,7 @@ int philo (Message& m) {
 
 int main () {
     Tester t;
+    srand(123456789); // force same sequence for each run
 
     uint32_t stack [300];
     sys::init(stack);

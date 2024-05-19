@@ -4,9 +4,18 @@ G = grep --line-buffered -v -e 'Library Manager' \
 			    -e ' SUCCESS   00:' \
 			    -e '^pio-extra: GOT '
 
-all: first $A clean
+# allways run these tests by default
+all-1: first $A clean
 	tail -n1 *.log | grep -v '^$$'
 	date >>LASTRUN.txt
+
+# these boards are not always connected
+all-2: $B clean
+	tail -n1 *.log | grep -v '^$$'
+	date >>LASTRUN.txt
+
+# force a full test, assuming all boards are present
+all: all-1 all-2
 
 first:
 	date >LASTRUN.txt
@@ -21,4 +30,4 @@ clean:
 	cd ../make && ./codegen.py -s
 	rm -rf */.pio
 
-.PHONY: all $A $B clean
+.PHONY: all all-1 all-2 clean $A $B

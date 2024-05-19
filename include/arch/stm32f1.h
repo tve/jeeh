@@ -37,8 +37,8 @@ void init (bool lse) {
 
 }
 
-void deepSleep (uint16_t ms, int mode, bool wait) {
-    (void) ms; (void) mode; (void) wait;
+void deepSleep (uint16_t ms, int mode) {
+    (void) ms; (void) mode;
     fail(); // TODO
 }
 

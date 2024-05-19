@@ -26,24 +26,14 @@ load to RAM: t21
 load to RAM: t22
 
 TEST
-1: 33 0
-2: 33 32
+1: 40953000
+2: 40953156
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.03 seconds ==========================
+========================== [FAILED] Took 2.01 seconds ==========================
 load to RAM: t23
-
-TEST
-wait 10
-send 15
-recv
-20 ms: 19
-TIMEOUT
-*** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.87 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:02.033
-t23            FAILED    00:00:01.867
-==================== 2 failed, 22 succeeded in 00:00:38.896 ====================
+t22            FAILED    00:00:02.012
+==================== 1 failed, 23 succeeded in 00:00:38.427 ====================

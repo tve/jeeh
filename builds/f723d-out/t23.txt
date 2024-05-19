@@ -1,6 +1,10 @@
 
 TEST
-wait 10
-send 15
+ß¥Ñ 0sn 15
 recv
-TIMEOUT
+30 ms: Ã1
+40 ms: Ç9
+50 ms: 4ß
+100 ms: 98
+200 ms: 195
+OK
