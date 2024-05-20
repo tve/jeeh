@@ -9,3 +9,5 @@
 #define UART_FREQ  80
 #define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
 //CG]
+
+void jeeh::fail(void const*, char const*, int) { while (true) {} }

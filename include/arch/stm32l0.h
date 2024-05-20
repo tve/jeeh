@@ -35,6 +35,11 @@ void itmWrite (void const* ptr, size_t len) {
     }
 }
 
+void itmFlush () {
+    enum { ISR=0x1C };
+    while (!USART2[ISR](6)) {} // ISR: TC
+}
+
 uint32_t fastClock (bool pll) {
     FLASH[0x00] = pll ? 0x03 : 0x02;  // ACR: 1/0 wait, enable prefetch
     RCC[0x00](0) = 1;                 // HSION
