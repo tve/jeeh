@@ -218,10 +218,10 @@ void sys::wait (uint16_t ms) {
 namespace jeeh::rtc {
 
 #if STM32G4 | STM32WL
-enum { TR=0x00,DR=0x04,SSR=0x08,ICSR=0x0C,PRER=0x10,WUTR=0x14,
+enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
 #else
-enum { TR=0x00,DR=0x04,SSR=0x28,ICSR=0x0C,PRER=0x10,WUTR=0x14,
+enum { TR=0x00,DR=0x04,SSR=0x28,ISR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x08,WPR=0x24,BKPR=0x50 };
 #endif
 
@@ -233,8 +233,14 @@ enum { BDCR=0x70, CSR=0x74 };
 enum { BDCR=0x90, CSR=0x94 };
 #endif
 
+void reset () {
+    RCC[BDCR](16) = 1; // BDRST
+    sys::wait(2);
+    RCC[BDCR](16) = 0; // ~BDRST
+}
+
 void init (bool lse) {
-#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0 | STM32L4)
+#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0)
     RCC(ena::RTCAPB, 1) = 1;
 #endif
 #if !(STM32H7 | STM32WL)
@@ -259,7 +265,7 @@ void init (bool lse) {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
-    RTC[WPR] = 0xFF;  // re-enable write protection
+    //RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
 void deepSleep (uint16_t ms, int mode) {
@@ -271,20 +277,11 @@ void deepSleep (uint16_t ms, int mode) {
         count /= 2;
     }
 
-    RTC[WPR] = 0xCA;             // disable write protection
-    RTC[WPR] = 0x53;
-    RTC[CR](10) = 0;             // ~WUTE
-    while (RTC[ICSR](2) == 0) {} // wait for WUTWF
-    RTC[WUTR] = count;
-    RTC[CR](0,3) = sel;
-    RTC[CR](14) = 1;             // WUTIE
 #if STM32G4 | STM32WL
     RTC[SCR] = 1<<2;             // CWUTF
 #else
-    RTC[ICSR] = RTC[ICSR] & ~(1<<10); // clear WUTF
+    RTC[ISR] = RTC[ISR] & ~(1<<10); // clear WUTF
 #endif
-    RTC[CR](10) = 1;             // WUTE
-    RTC[WPR] = 0xFF;             // re-enable write protection
 
 #if STM32WL
     EXTI[0x00](20) = 1; // RT20 in RTSR1
@@ -294,6 +291,18 @@ void deepSleep (uint16_t ms, int mode) {
     EXTI[0x04](20) = 1; // EM20 in EMR1
 #endif
 
+    RTC[WPR] = 0xCA;             // disable write protection
+    RTC[WPR] = 0x53;
+    RTC[CR](10) = 0;             // ~WUTE
+    while (RTC[ISR](2) == 0) {} // wait for WUTWF
+
+    RTC[WUTR] = count;
+    RTC[CR](0,3) = sel;
+
+    RTC[CR](14) = 1;             // WUTIE
+    RTC[CR](10) = 1;             // WUTE
+    //RTC[WPR] = 0xFF;             // re-enable write protection
+
     // TODO probably needs a BlockIRQ here
     PWR[0x00](0, 3) = mode; // CR1: LPMS
     auto todLast = todMillis();
@@ -301,7 +310,57 @@ void deepSleep (uint16_t ms, int mode) {
     SCB[0x10](2) = 1; // SLEEPDEEP
     asm ("wfe");
     SCB[0x10](2) = 0; // ~SLEEPDEEP
+
     ticker.skip(todMillis() - todLast); // TODO wraparound
+}
+
+void alarm (uint32_t ms, int mode) {
+    (void) ms;
+
+#if STM32G4 | STM32WL
+    RTC[SCR] = 1<<0;             // CALRAF
+#else
+    RTC[ISR] = RTC[ISR] & ~(1<<8); // clear ALRAF
+#endif
+
+#if STM32WL
+    EXTI[0x00](18) = 1; // RT18 in RTSR1
+    EXTI[0x84](18) = 1; // EM18 in EMR1
+#else
+//EXTI[0x14](18) = 1; // PIF18 in PR1
+    EXTI[0x08](18) = 1; // RT18 in RTSR1
+    EXTI[0x04](18) = 1; // EM18 in EMR1
+//EXTI[0x00](18) = 1; // IM18 in IMR1
+#endif
+    //RCC[0x78](10) = 0;; // RTCAPBSMEN RM0393 p.224
+
+    RTC[WPR] = 0xCA;             // disable write protection
+    RTC[WPR] = 0x53;
+    RTC[CR](8) = 0;             // ~ALRAE
+    while (RTC[ISR](0) == 0) {} // wait for ALRAWF
+
+    enum { ALRMAR=0x1C, ALRMASSR=0x44 };
+    auto s = RTC[TR] & 0x7F; // seconds, BCD
+    s = (s & 0xF) < 9 ? s + 1 : s < 0x59 ? s + 7 : s - 0x59;
+    RTC[ALRMAR] = (1<<31)|(1<<23)|(1<<15)|s;
+    RTC[ALRMASSR] = 0;
+
+    RTC[CR](12) = 1;             // ALRAIE
+    RTC[CR](8) = 1;              // ALRAE
+    //RTC[WPR] = 0xFF;             // re-enable write protection
+
+//BlockIRQ irq;
+    // TODO probably needs a BlockIRQ here
+    PWR[0x00](0, 3) = mode; // CR1: LPMS
+PWR[0x08](15) = 1; // EIWUL RM0393 p.155
+    //auto todLast = todMillis();
+    SCB[0x10](4) = 1; // SEVONPEND
+    SCB[0x10](2) = 1; // SLEEPDEEP
+    asm ("wfe");
+    SCB[0x10](2) = 0; // ~SLEEPDEEP
+
+//EXTI[0x14](18) = 1; // PIF18 in PR1
+    //ticker.skip(todMillis() - todLast); // TODO wraparound
 }
 
 DateTime getDate () {
@@ -337,15 +396,15 @@ void set (DateTime const& dt) {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
 
-    RTC[ICSR](7) = 1;             // set INIT
-    while (RTC[ICSR](6) == 0) {}  // wait for INITF
+    RTC[ISR](7) = 1;             // set INIT
+    while (RTC[ISR](6) == 0) {}  // wait for INITF
     RTC[TR] = (dt.ss + 6 * (dt.ss/10)) |
         ((dt.mm + 6 * (dt.mm/10)) << 8) |
         ((dt.hh + 6 * (dt.hh/10)) << 16);
     RTC[DR] = (dt.dy + 6 * (dt.dy/10)) |
         ((dt.mo + 6 * (dt.mo/10)) << 8) |
         ((dt.yr + 6 * (dt.yr/10)) << 16);
-    RTC[ICSR](7) = 0;             // clear INIT
+    RTC[ISR](7) = 0;             // clear INIT
 
     RTC[WPR] = 0xFF;  // re-enable write protection
 }
