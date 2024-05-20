@@ -4,20 +4,28 @@
 #include "defs.h"
 using namespace jeeh;
 
+void LowPower::start (Message&) {}
+void LowPower::finish () {}
+
 int main () {
+    for (auto i = 0; i < 100; ++i) asm ("");
     slowClock(false);
+    for (auto i = 0; i < 100; ++i) asm ("");
 
     Pin led (LED);
     led.mode("P");
 
     rtc::init();
+    for (auto i = 0; i < 50; ++i) asm ("");
 
-    while (true) {
-        led = 1;
-        rtc::deepSleep(10, 2);
-        led = 0;
-        rtc::deepSleep(5000, 4);
-    }
+    led = 1;
+    rtc::deepSleep(10, 2);
+    for (auto i = 0; i < 50; ++i) asm ("");
+
+    led = 0;
+    rtc::deepSleep(5000, 4);
+    
+    while (true) { led.toggle(); sys::wait(100); } // never reached
 }
 
 void jeeh::fail(void const*, char const*, int) { while (true) {} }
