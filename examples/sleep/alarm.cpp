@@ -11,10 +11,14 @@ int main () {
     slowClock();
 
     rtc::init();
-    rtc::alarm(1000, 0); // STOP0
-    rtc::alarm(1000, 1); // STOP1
-    rtc::alarm(1000, 2); // STOP2
-    rtc::alarm(1000, 4); // SHUTDOWN
+    rtc::deepSleep(100, 1); // 100 ms STOP 1:   periodic timer
+    rtc::alarm(1000, 0);    // 900 ms STOP 0:   alarm
+    rtc::deepSleep(100, 2); // 100 ms STOP 2:   periodic timer
+    rtc::alarm(1000, 1);    // 900 ms STOP 1:   alarm
+    rtc::deepSleep(100, 0); // 100 ms STOP 0:   periodic timer
+    rtc::alarm(1000, 2);    // 900 ms STOP 2:   alarm
+    rtc::deepSleep(100, 1); // 100 ms STOP 1:   periodic timer
+    rtc::alarm(1000, 4);    // 900 ms SHUTDOWN: alarm then RESET
 
     constexpr Pin led (LED); led.mode("P"); // never reached
     while (true) { led.toggle(); sys::wait(100); }

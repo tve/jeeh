@@ -16,8 +16,8 @@ int main () {
 #endif
     rtc::set({ 1, 2, 3, 11, 22, 33 });
 
-    auto dt1 = rtc::towMillis();
-    logf("1: %d", dt1);
+    auto ms1 = rtc::getDate().todMillis();
+    logf("1: %d", ms1);
 
     Pin led (LED);
     led.mode("P");
@@ -27,8 +27,8 @@ int main () {
         led.toggle();
     }
 
-    auto dt2 = rtc::towMillis();
-    logf("2: %d", dt2);
+   auto ms2 = rtc::getDate().todMillis();
+    logf("2: %d", ms2);
     itmFlush();
 
     for (auto i = 0; i < 5; ++i) {
@@ -37,9 +37,9 @@ int main () {
     }
     fastClock();
 
-    auto dt3 = rtc::towMillis();
-    logf("3: %d", dt3);
+    auto ms3 = rtc::getDate().todMillis();
+    logf("3: %d", ms3);
 
-    auto ms = dt3 - dt1;
+    auto ms = ms3 - ms1;
     assert(220 <= ms && ms <= 350);
 }

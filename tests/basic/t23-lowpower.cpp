@@ -34,11 +34,11 @@ int main () {
     constexpr int delays [] = { 30, 40, 50, 100, 200 };
     for (auto ms : delays) {
         itmFlush();
-        auto t1 = rtc::towMillis();
+        auto t1 = rtc::getDate();
         sys::wait(ms);
-        auto t2 = rtc::towMillis();
+        auto t2 = rtc::getDate();
 
-        int n = t2 - t1;
+        int n = t2.todMillis() - t1.todMillis();
         logf("%d ms: %d", ms, n);
         assert(9*ms <= 10*n && 10*n <= 11*ms); // +/- 10% TODO g431 uses LSI
     }

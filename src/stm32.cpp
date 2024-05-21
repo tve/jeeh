@@ -33,7 +33,7 @@ using namespace jeeh;
 //------------------------------------------------------------------------ SWO
 
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
-                         //
+
 void jeeh::swoInit (uint32_t baud, uint32_t hz) {
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TPR=0xE40, TCR=0xE80, LAR=0xFB0 };
@@ -264,34 +264,30 @@ void init (bool lse) {
     RCC[BDCR](15) = 1;                // RTCEN
 
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
-    RTC[WPR] = 0x53;
+    RTC[WPR] = 0x53;  // ... and leave it unlocked from now on
+
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
-    RTC[WPR] = 0xFF;  // re-enable write protection
+
+    SCB[0x10](4) = 1; // SEVONPEND
 }
 
 void sleepNow (int mode) {
-    // TODO probably needs a BlockIRQ here
+    BlockIRQ irq;
     PWR[0x00](0, 3) = mode; // CR1: LPMS
-    SCB[0x10](4) = 1; // SEVONPEND
     SCB[0x10](2) = 1; // SLEEPDEEP
     asm ("wfe");
     SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
 
-void deepSleep (uint16_t ms, int mode) {
+bool deepSleep (uint16_t ms, int mode) {
     assert(ms <= 16'000);
     auto sel = 3;
-    auto count = (1000*ms) / 61;
+    auto count = (100'000*ms) / 6104; // 61.035 us, but need to avoid overflow
     while (count >= 32768) {
         --sel;
         count /= 2;
     }
-
-#if STM32G4 | STM32WL
-    RTC[SCR] = 1<<2;    // CWUTF
-#else
-    RTC[ISR](10) = 0;   // clear WUTF
-#endif
+    assert(sel >= 0);
 
 #if STM32WL
     EXTI[0x00](20) = 1; // RT20 in RTSR1
@@ -301,31 +297,48 @@ void deepSleep (uint16_t ms, int mode) {
     EXTI[0x04](20) = 1; // EM20 in EMR1
 #endif
 
-    RTC[WPR] = 0xCA;             // disable write protection
-    RTC[WPR] = 0x53;
     RTC[CR](10) = 0;             // ~WUTE
-    while (RTC[ISR](2) == 0) {} // wait for WUTWF
+    while (RTC[ISR](2) == 0) {}  // wait for WUTWF
 
     RTC[WUTR] = count;
     RTC[CR](0,3) = sel;
 
     RTC[CR](14) = 1;             // WUTIE
     RTC[CR](10) = 1;             // WUTE
-    RTC[WPR] = 0xFF;             // re-enable write protection
 
-    auto todLast = towMillis();
+    auto todLast = getDate().todMillis();
     sleepNow(mode);
-    ticker.skip(towMillis() - todLast); // TODO wraparound
+    ticker.skip(getDate().todMillis() - todLast); // TODO wraparound
+
+    RTC[CR](10) = 0;    // ~WUTE: always disable, even if it didn't trigger
+    if (!RTC[ISR](10))  // ~WUTF
+        return false;
+
+#if STM32G4 | STM32WL
+    RTC[SCR] = 1<<2;    // CWUTF
+#else
+    RTC[ISR](10) = 0;   // clear WUTF
+#endif
+    return true;
 }
 
-void alarm (uint32_t ms, int mode) {
-    (void) ms;
+bool waitAlarm (int mode) {
+    sleepNow(mode);
+
+    if (!RTC[ISR](8))   // ~ALRAF
+        return false;
+    RTC[CR](8) = 0;     // ~ALRAE: only disable once it has triggered
 
 #if STM32G4 | STM32WL
     RTC[SCR] = 1<<0;    // CALRAF
 #else
     RTC[ISR](8) = 0;    // clear ALRAF
 #endif
+    return true;
+}
+
+bool alarm (uint32_t ms, int mode) {
+    (void) ms;
 
 #if STM32WL
     EXTI[0x00](18) = 1; // RT18 in RTSR1
@@ -335,8 +348,6 @@ void alarm (uint32_t ms, int mode) {
     EXTI[0x04](18) = 1; // EM18 in EMR1
 #endif
 
-    RTC[WPR] = 0xCA;             // disable write protection
-    RTC[WPR] = 0x53;
     RTC[CR](8) = 0;             // ~ALRAE
     while (RTC[ISR](0) == 0) {} // wait for ALRAWF
 
@@ -347,9 +358,8 @@ void alarm (uint32_t ms, int mode) {
 
     RTC[CR](12) = 1;             // ALRAIE
     RTC[CR](8) = 1;              // ALRAE
-    RTC[WPR] = 0xFF;             // re-enable write protection
 
-    sleepNow(mode);
+    return waitAlarm(mode);
 }
 
 DateTime getDate () {
@@ -365,7 +375,7 @@ DateTime getDate () {
     dt.ss = (tod & 0xF) + 10 * ((tod>>4) & 0x7);
     dt.mm = ((tod>>8) & 0xF) + 10 * ((tod>>12) & 0x7);
     dt.hh = ((tod>>16) & 0xF) + 10 * ((tod>>20) & 0x3);
-    dt.ww = (doy>>13) & 0x7;
+    dt.wd = (doy>>13) & 0x7;
     dt.dy = (doy & 0xF) + 10 * ((doy>>4) & 0x3);
     dt.mo = ((doy>>8) & 0xF) + 10 * ((doy>>12) & 0x1);
     // works until end 2063, will fail (i.e. roll over) in 2064 !
@@ -377,15 +387,7 @@ uint32_t getSecs () {
     return getDate(); // let DateTime::operator uint32_t do the conversion
 }
 
-uint32_t towMillis () {
-    auto dt = rtc::getDate();
-    return (((((dt.ww-1)*7)+dt.hh)*60+dt.mm-1)*60+dt.ss)*1000+(dt.ff*1000)/256;
-}
-
 void set (DateTime const& dt) {
-    RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
-    RTC[WPR] = 0x53;
-
     RTC[ISR](7) = 1;             // set INIT
     while (RTC[ISR](6) == 0) {}  // wait for INITF
     RTC[TR] = (dt.ss + 6 * (dt.ss/10)) |
@@ -395,8 +397,6 @@ void set (DateTime const& dt) {
         ((dt.mo + 6 * (dt.mo/10)) << 8) |
         ((dt.yr + 6 * (dt.yr/10)) << 16);
     RTC[ISR](7) = 0;             // clear INIT
-
-    RTC[WPR] = 0xFF;  // re-enable write protection
 }
 
 uint32_t getReg (int reg) {

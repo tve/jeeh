@@ -37,15 +37,15 @@ int main () {
 
     for (auto i = 0; i < 5; ++i) {
         sys::wait(100);
-        auto ms = rtc::todMillis();
+        auto ms = rtc::getDate().todMillis();
         logf("%4d: %d.%03d s", i, (ms / 1000) % 100, ms % 1000);
     }
 
     constexpr int delays [] = { 50, 100, 200, 100, 50 };
     for (auto ms : delays) {
-        auto t1 = rtc::todMillis();
+        auto t1 = rtc::getDate().todMillis();
         sys::wait(ms);
-        auto t2 = rtc::todMillis();
+        auto t2 = rtc::getDate().todMillis();
         logf("%3d ms: %d", ms, t2 - t1);
     }
 
