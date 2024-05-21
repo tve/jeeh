@@ -195,15 +195,15 @@ class DateTime {
     }
 
 public:
-    uint8_t yr, mo, dy, hh, mm, ss, ff =0;
+    uint8_t yr, mo, dy, ww, hh, mm, ss, ff =0;
 
     constexpr DateTime (int y, int m, int d, int h =0, int i =0, int s =0)
-        : yr (y % 100), mo (m), dy (d), hh (h), mm (i), ss (s) {}
+        : yr (y % 100), mo (m), dy (d), ww (1), hh (h), mm (i), ss (s) {}
 
     // sample input: d = "Jan  1 2000", t = "12:34:56"
     constexpr DateTime (char const* d =__DATE__, char const* t =__TIME__)
         : yr (conv2d(d+9)), mo (month2d(d)), dy (conv2d(d+4)),
-          hh (conv2d(t)), mm (conv2d(t+3)), ss (conv2d(t+6)) {}
+          ww (1), hh (conv2d(t)), mm (conv2d(t+3)), ss (conv2d(t+6)) {}
 
     explicit DateTime (uint32_t t) {
         ss = t % 60;
@@ -212,6 +212,7 @@ public:
         t /= 60;
         hh = t % 24;
         uint16_t days = t / 24;
+        ww = days % 7 + 1;
         uint8_t leap;
         for (yr = 0; ; ++yr) {
             leap = yr % 4 == 0;
@@ -251,7 +252,7 @@ namespace rtc {
 
     DateTime getDate ();
     uint32_t getSecs ();
-    uint32_t todMillis ();
+    uint32_t towMillis ();
 
     void set (DateTime const& dt);
     void set (uint32_t t);

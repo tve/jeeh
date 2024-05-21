@@ -34,9 +34,9 @@ int main () {
     constexpr int delays [] = { 30, 40, 50, 100, 200 };
     for (auto ms : delays) {
         itmFlush();
-        auto t1 = rtc::todMillis();
+        auto t1 = rtc::towMillis();
         sys::wait(ms);
-        auto t2 = rtc::todMillis();
+        auto t2 = rtc::towMillis();
 
         int n = t2 - t1;
         logf("%d ms: %d", ms, n);

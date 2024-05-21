@@ -32,6 +32,6 @@ drop-out:
 clean:
 	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
-	rm -rf */.pio
+	rm -rf */.pio ../examples/*/.pio
 
 .PHONY: all all-1 all-2 drop-out clean $A $B

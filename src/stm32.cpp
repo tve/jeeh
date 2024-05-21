@@ -224,6 +224,7 @@ enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
 enum { TR=0x00,DR=0x04,SSR=0x28,ISR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x08,WPR=0x24,BKPR=0x50 };
 #endif
+enum { ALRMAR=0x1C, ALRMASSR=0x44 };
 
 #if STM32F3
 enum { BDCR=0x20, CSR=0x24 };
@@ -265,7 +266,16 @@ void init (bool lse) {
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
-    //RTC[WPR] = 0xFF;  // re-enable write protection
+    RTC[WPR] = 0xFF;  // re-enable write protection
+}
+
+void sleepNow (int mode) {
+    // TODO probably needs a BlockIRQ here
+    PWR[0x00](0, 3) = mode; // CR1: LPMS
+    SCB[0x10](4) = 1; // SEVONPEND
+    SCB[0x10](2) = 1; // SLEEPDEEP
+    asm ("wfe");
+    SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
 
 void deepSleep (uint16_t ms, int mode) {
@@ -278,9 +288,9 @@ void deepSleep (uint16_t ms, int mode) {
     }
 
 #if STM32G4 | STM32WL
-    RTC[SCR] = 1<<2;             // CWUTF
+    RTC[SCR] = 1<<2;    // CWUTF
 #else
-    RTC[ISR] = RTC[ISR] & ~(1<<10); // clear WUTF
+    RTC[ISR](10) = 0;   // clear WUTF
 #endif
 
 #if STM32WL
@@ -301,45 +311,35 @@ void deepSleep (uint16_t ms, int mode) {
 
     RTC[CR](14) = 1;             // WUTIE
     RTC[CR](10) = 1;             // WUTE
-    //RTC[WPR] = 0xFF;             // re-enable write protection
+    RTC[WPR] = 0xFF;             // re-enable write protection
 
-    // TODO probably needs a BlockIRQ here
-    PWR[0x00](0, 3) = mode; // CR1: LPMS
-    auto todLast = todMillis();
-    SCB[0x10](4) = 1; // SEVONPEND
-    SCB[0x10](2) = 1; // SLEEPDEEP
-    asm ("wfe");
-    SCB[0x10](2) = 0; // ~SLEEPDEEP
-
-    ticker.skip(todMillis() - todLast); // TODO wraparound
+    auto todLast = towMillis();
+    sleepNow(mode);
+    ticker.skip(towMillis() - todLast); // TODO wraparound
 }
 
 void alarm (uint32_t ms, int mode) {
     (void) ms;
 
 #if STM32G4 | STM32WL
-    RTC[SCR] = 1<<0;             // CALRAF
+    RTC[SCR] = 1<<0;    // CALRAF
 #else
-    RTC[ISR] = RTC[ISR] & ~(1<<8); // clear ALRAF
+    RTC[ISR](8) = 0;    // clear ALRAF
 #endif
 
 #if STM32WL
     EXTI[0x00](18) = 1; // RT18 in RTSR1
     EXTI[0x84](18) = 1; // EM18 in EMR1
 #else
-//EXTI[0x14](18) = 1; // PIF18 in PR1
     EXTI[0x08](18) = 1; // RT18 in RTSR1
     EXTI[0x04](18) = 1; // EM18 in EMR1
-//EXTI[0x00](18) = 1; // IM18 in IMR1
 #endif
-    //RCC[0x78](10) = 0;; // RTCAPBSMEN RM0393 p.224
 
     RTC[WPR] = 0xCA;             // disable write protection
     RTC[WPR] = 0x53;
     RTC[CR](8) = 0;             // ~ALRAE
     while (RTC[ISR](0) == 0) {} // wait for ALRAWF
 
-    enum { ALRMAR=0x1C, ALRMASSR=0x44 };
     auto s = RTC[TR] & 0x7F; // seconds, BCD
     s = (s & 0xF) < 9 ? s + 1 : s < 0x59 ? s + 7 : s - 0x59;
     RTC[ALRMAR] = (1<<31)|(1<<23)|(1<<15)|s;
@@ -347,20 +347,9 @@ void alarm (uint32_t ms, int mode) {
 
     RTC[CR](12) = 1;             // ALRAIE
     RTC[CR](8) = 1;              // ALRAE
-    //RTC[WPR] = 0xFF;             // re-enable write protection
+    RTC[WPR] = 0xFF;             // re-enable write protection
 
-//BlockIRQ irq;
-    // TODO probably needs a BlockIRQ here
-    PWR[0x00](0, 3) = mode; // CR1: LPMS
-PWR[0x08](15) = 1; // EIWUL RM0393 p.155
-    //auto todLast = todMillis();
-    SCB[0x10](4) = 1; // SEVONPEND
-    SCB[0x10](2) = 1; // SLEEPDEEP
-    asm ("wfe");
-    SCB[0x10](2) = 0; // ~SLEEPDEEP
-
-//EXTI[0x14](18) = 1; // PIF18 in PR1
-    //ticker.skip(todMillis() - todLast); // TODO wraparound
+    sleepNow(mode);
 }
 
 DateTime getDate () {
@@ -376,6 +365,7 @@ DateTime getDate () {
     dt.ss = (tod & 0xF) + 10 * ((tod>>4) & 0x7);
     dt.mm = ((tod>>8) & 0xF) + 10 * ((tod>>12) & 0x7);
     dt.hh = ((tod>>16) & 0xF) + 10 * ((tod>>20) & 0x3);
+    dt.ww = (doy>>13) & 0x7;
     dt.dy = (doy & 0xF) + 10 * ((doy>>4) & 0x3);
     dt.mo = ((doy>>8) & 0xF) + 10 * ((doy>>12) & 0x1);
     // works until end 2063, will fail (i.e. roll over) in 2064 !
@@ -387,9 +377,9 @@ uint32_t getSecs () {
     return getDate(); // let DateTime::operator uint32_t do the conversion
 }
 
-uint32_t todMillis () {
+uint32_t towMillis () {
     auto dt = rtc::getDate();
-    return ((dt.hh * 60 + dt.mm) * 60 + dt.ss) * 1000 + (dt.ff * 1000) / 256;
+    return (((((dt.ww-1)*7)+dt.hh)*60+dt.mm-1)*60+dt.ss)*1000+(dt.ff*1000)/256;
 }
 
 void set (DateTime const& dt) {
