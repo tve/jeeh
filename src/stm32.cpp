@@ -322,21 +322,6 @@ bool deepSleep (uint16_t ms, int mode) {
     return true;
 }
 
-bool waitAlarm (int mode) {
-    sleepNow(mode);
-
-    if (!RTC[ISR](8))   // ~ALRAF
-        return false;
-    RTC[CR](8) = 0;     // ~ALRAE: only disable once it has triggered
-
-#if STM32G4 | STM32WL
-    RTC[SCR] = 1<<0;    // CALRAF
-#else
-    RTC[ISR](8) = 0;    // clear ALRAF
-#endif
-    return true;
-}
-
 bool alarm (uint32_t ms, int mode) {
     (void) ms;
 
@@ -359,7 +344,18 @@ bool alarm (uint32_t ms, int mode) {
     RTC[CR](12) = 1;             // ALRAIE
     RTC[CR](8) = 1;              // ALRAE
 
-    return waitAlarm(mode);
+    sleepNow(mode);
+
+    if (!RTC[ISR](8))   // ~ALRAF
+        return false;
+    RTC[CR](8) = 0;     // ~ALRAE: only disable once it has triggered
+
+#if STM32G4 | STM32WL
+    RTC[SCR] = 1<<0;    // CALRAF
+#else
+    RTC[ISR](8) = 0;    // clear ALRAF
+#endif
+    return true;
 }
 
 DateTime getDate () {
