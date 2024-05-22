@@ -208,7 +208,7 @@ assert(block == nullptr);
                 Message m { 0, sys::SLOWEST, (uint16_t) nextTick() };
                 idler.start(m);
                 if (m.mTag >= sys::STOP0)
-                    rtc::shortSleep(m.mLen, m.mTag - sys::STOP0);
+                    rtc::shortSleep(m.mLen, m.mTag);
                 idler.finish();
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;

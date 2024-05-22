@@ -4,10 +4,10 @@ using namespace jeeh;
 #include "test.h"
 
 void LowPower::start (Message& m) {
-    m.mTag = m.mLen >= 50 ? Device::STOP1 :
-             m.mLen >= 40 ? Device::STOP0 :
-                            Device::SLOWEST;
-    //logf("S %d -> %d", m.mLen, m.mTag);
+    m.mTag = m.mLen >= 50 ? sys::STOP1 :
+             m.mLen >= 40 ? sys::STOP0 :
+                            sys::SLOWEST;
+    //logf("S %d -> %d", m.mLen, m.mTag); itmFlush();
 }
 
 void LowPower::finish () {
@@ -21,25 +21,26 @@ int main () {
     rtc::init(false); // no 32 kHz xtal on Nucleo-G431KB
     rtc::set({ 1, 2, 3, 11, 22, 33 });
 
-    logf("wait 10");
+    logf("wait 10"); itmFlush();
     sys::wait(10);
 
-    logf("send 15");
+    logf("send 15"); itmFlush();
     Message m { '@', 'T', 15 };
     sys::send(m);
 
-    logf("recv");
+    logf("recv"); itmFlush();
     sys::recv();
 
     constexpr int delays [] = { 30, 40, 50, 100, 200 };
     for (auto ms : delays) {
-        itmFlush();
         auto t1 = rtc::getDate();
         sys::wait(ms);
         auto t2 = rtc::getDate();
 
         int n = t2.todMillis() - t1.todMillis();
-        logf("%d ms: %d", ms, n);
+        logf("%d ms: %d", ms, n); itmFlush();
         assert(9*ms <= 10*n && 10*n <= 11*ms); // +/- 10% TODO g431 uses LSI
     }
+
+    fastClock();
 }

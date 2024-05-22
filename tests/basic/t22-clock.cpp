@@ -32,7 +32,7 @@ int main () {
     itmFlush();
 
     for (auto i = 0; i < 5; ++i) {
-        rtc::deepSleep(30, 1);
+        rtc::shortSleep(30, sys::STOP1);
         led.toggle();
     }
     fastClock();
