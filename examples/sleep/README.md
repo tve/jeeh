@@ -5,3 +5,15 @@ see <https://www.st.com/en/evaluation-tools/x-nucleo-lpm01a.html>.
 
 Results have been graphed with STM's `STM32CubeMonitor-Power` app,  
 see <https://www.st.com/en/development-tools/stm32-lpm01-xn.html>.
+
+### `blink.cpp`
+![](blink.png)
+
+### `stop.cpp`
+![](stop.png)
+
+### `alarm.cpp`
+![](alarm.png)
+
+### `coma.cpp`
+![](coma.png)

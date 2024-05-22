@@ -108,7 +108,7 @@ struct Ticker : Device, Chain {
     volatile uint32_t ticks;
 
     Ticker () : Device (Device::BASE), rate (0), ticks (0) {
-        dPower = SHUTDOWN;
+        dPower = sys::SHUTDOWN;
         SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
     }
 
@@ -158,14 +158,15 @@ struct Ticker : Device, Chain {
 
         auto up = next();
         if (up < 0) {
-            dPower = SHUTDOWN;
+            dPower = sys::SHUTDOWN;
             STK[0x0] = 0; // disable
             return;
         }
         rate = up < 100 ? up : 100;
 
         // TODO this is a hack: assumes RTC running if DBP bit set in PWR
-        dPower = PWR[0x00](8) ? STOP2 : SLOWEST; // need SysTick if no RTC
+        //  need SysTick if no RTC
+        dPower = PWR[0x00](8) ? sys::STOP2 : sys::SLOWEST;
 
         STK[0x4] = (rate * (SystemCoreClock/1000)) / 8 - 1; // reload value
         STK[0x8] = 0;
@@ -212,6 +213,13 @@ uint32_t jeeh::clockChange (uint32_t hz) {
 void sys::wait (uint16_t ms) {
     Message m { ticker.dId, 'T', ms };
     call(m);
+}
+
+bool sys::coma (uint32_t sec, int mode) {
+    if (ticker.isEmpty())
+        return rtc::longSleep(sec, mode);
+    uint16_t ms = ticker.next(); // if there is a timeout, don't exceed that
+    return rtc::shortSleep(ms < 1000 * sec ? ms : 1000 * sec, mode);
 }
 
 #if !STM32F1
@@ -271,15 +279,24 @@ void init (bool lse) {
     SCB[0x10](4) = 1; // SEVONPEND
 }
 
+uint8_t fromBcd (uint8_t v) {
+    return v - 6 * (v>>4);
+}
+
+uint8_t toBcd (uint8_t v) {
+    return v + 6 * (v/10);
+}
+
 void sleepNow (int mode) {
+    assert(mode >= sys::STOP0);
     BlockIRQ irq;
-    PWR[0x00](0, 3) = mode; // CR1: LPMS
+    PWR[0x00](0, 3) = mode - sys::STOP0; // CR1: LPMS
     SCB[0x10](2) = 1; // SLEEPDEEP
     asm ("wfe");
     SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
 
-bool deepSleep (uint16_t ms, int mode) {
+bool shortSleep (uint16_t ms, int mode) {
     assert(ms <= 16'000);
     auto sel = 3;
     auto count = (100'000*ms) / 6104; // 61.035 us, but need to avoid overflow
@@ -322,8 +339,9 @@ bool deepSleep (uint16_t ms, int mode) {
     return true;
 }
 
-bool alarm (uint32_t ms, int mode) {
-    (void) ms;
+bool longSleep (uint32_t sec, int mode) {
+    assert(sec > 0);
+    DateTime dt (getSecs() + sec);
 
 #if STM32WL
     EXTI[0x00](18) = 1; // RT18 in RTSR1
@@ -336,10 +354,9 @@ bool alarm (uint32_t ms, int mode) {
     RTC[CR](8) = 0;             // ~ALRAE
     while (RTC[ISR](0) == 0) {} // wait for ALRAWF
 
-    auto s = RTC[TR] & 0x7F; // seconds, BCD
-    s = (s & 0xF) < 9 ? s + 1 : s < 0x59 ? s + 7 : s - 0x59;
-    RTC[ALRMAR] = (1<<31)|(1<<23)|(1<<15)|s;
-    RTC[ALRMASSR] = 0;
+    RTC[ALRMAR] = (toBcd(dt.dy)<<24) | (toBcd(dt.hh)<<16) |
+                   (toBcd(dt.mm)<<8) | toBcd(dt.ss);
+    //RTC[ALRMASSR] = 0;
 
     RTC[CR](12) = 1;             // ALRAIE
     RTC[CR](8) = 1;              // ALRAE
@@ -368,14 +385,14 @@ DateTime getDate () {
 
     DateTime dt;
     dt.ff = 255 - ssr; // assumes PREDIV_S is 255
-    dt.ss = (tod & 0xF) + 10 * ((tod>>4) & 0x7);
-    dt.mm = ((tod>>8) & 0xF) + 10 * ((tod>>12) & 0x7);
-    dt.hh = ((tod>>16) & 0xF) + 10 * ((tod>>20) & 0x3);
+    dt.ss = fromBcd(tod);
+    dt.mm = fromBcd(tod>>8);
+    dt.hh = fromBcd((tod>>16) & 0x3F);
     dt.wd = (doy>>13) & 0x7;
-    dt.dy = (doy & 0xF) + 10 * ((doy>>4) & 0x3);
-    dt.mo = ((doy>>8) & 0xF) + 10 * ((doy>>12) & 0x1);
+    dt.dy = fromBcd(doy);
+    dt.mo = fromBcd((doy>>8) & 0x1F);
     // works until end 2063, will fail (i.e. roll over) in 2064 !
-    dt.yr = ((doy>>16) & 0xF) + 10 * ((doy>>20) & 0x7);
+    dt.yr = fromBcd(doy>>16);
     return dt;
 }
 
@@ -386,12 +403,8 @@ uint32_t getSecs () {
 void set (DateTime const& dt) {
     RTC[ISR](7) = 1;             // set INIT
     while (RTC[ISR](6) == 0) {}  // wait for INITF
-    RTC[TR] = (dt.ss + 6 * (dt.ss/10)) |
-        ((dt.mm + 6 * (dt.mm/10)) << 8) |
-        ((dt.hh + 6 * (dt.hh/10)) << 16);
-    RTC[DR] = (dt.dy + 6 * (dt.dy/10)) |
-        ((dt.mo + 6 * (dt.mo/10)) << 8) |
-        ((dt.yr + 6 * (dt.yr/10)) << 16);
+    RTC[TR] = toBcd(dt.ss) | (toBcd(dt.mm) << 8) | (toBcd(dt.hh) << 16);
+    RTC[DR] = toBcd(dt.dy) | (toBcd(dt.mo) << 8) | (toBcd(dt.yr) << 16);
     RTC[ISR](7) = 0;             // clear INIT
 }
 

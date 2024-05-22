@@ -205,10 +205,10 @@ assert(block == nullptr);
                 break;
             }
             if (nextToRun == 0) {
-                Message m { 0, Device::SLOWEST, (uint16_t) nextTick() };
+                Message m { 0, sys::SLOWEST, (uint16_t) nextTick() };
                 idler.start(m);
-                if (m.mTag >= Device::STOP0)
-                    rtc::deepSleep(m.mLen, m.mTag - Device::STOP0);
+                if (m.mTag >= sys::STOP0)
+                    rtc::shortSleep(m.mLen, m.mTag - sys::STOP0);
                 idler.finish();
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
@@ -371,7 +371,7 @@ Device& Device::byId (uint8_t id) {
 }
 
 uint8_t Device::powerScan () {
-    uint8_t min = SHUTDOWN;
+    uint8_t min = sys::SHUTDOWN;
     for (auto e : devices)
         if (e != nullptr && min > e->dPower)
             min = e->dPower;

@@ -65,12 +65,16 @@ protected:
 static_assert(sizeof (Chain) == 4);
 
 namespace sys {
+    enum { FASTEST, FAST, SLOW, SLOWEST,
+            STOP0, STOP1, STOP2, STANDBY, SHUTDOWN };
+
     int svc (int f, int x =0, int y =0, int z =0);
 
     void send (Message& msg);
     Message& recv ();
     void call (Message& msg);
     void wait (uint16_t ms);
+    bool coma (uint32_t sec, int mode =STOP0);
 
     uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
 
@@ -132,12 +136,9 @@ private:
 
 struct Device {
     enum { BASE = '@', LAST = 'Z' };
-    enum {
-        FASTEST, FAST, SLOW, SLOWEST, STOP0, STOP1, STOP2, STANDBY, SHUTDOWN
-    };
 
     uint8_t dId;
-    uint8_t dPower =SLOWEST; // default value: sysclk must keep running
+    uint8_t dPower =sys::SLOWEST; // default value: sysclk must keep running
 
     Device (uint8_t id);
     // TODO ~Device ();
@@ -251,8 +252,8 @@ namespace rtc {
     void init (bool lse =true);
     void deinit ();
 
-    bool deepSleep (uint16_t ms, int mode =0);
-    bool alarm (uint32_t ms, int mode =0);
+    bool shortSleep (uint16_t ms, int mode =0);
+    bool longSleep (uint32_t sec, int mode =0);
 
     DateTime getDate ();
     uint32_t getSecs ();

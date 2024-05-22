@@ -14,21 +14,22 @@ int main () {
 
     rtc::init();
 
-    rtc::deepSleep(500, 0);     // STOP0
-    rtc::deepSleep(500, 0);
+    rtc::shortSleep(500, sys::STOP0);
+    rtc::shortSleep(500, sys::STOP0);
     slowClock(true);
-    rtc::deepSleep(500, 0);
+    rtc::shortSleep(500, sys::STOP0);
 
-    rtc::deepSleep(500, 1);     // STOP1
-    rtc::deepSleep(500, 1);
+    rtc::shortSleep(500, sys::STOP1);
+    rtc::shortSleep(500, sys::STOP1);
     slowClock(true);
-    rtc::deepSleep(500, 1);
+    rtc::shortSleep(500, sys::STOP1);
 
-    rtc::deepSleep(500, 2);     // STOP2
-    rtc::deepSleep(500, 2);
+    rtc::shortSleep(500, sys::STOP2);
+    rtc::shortSleep(500, sys::STOP2);
     slowClock(true);
-    rtc::deepSleep(1000, 2);
+    rtc::shortSleep(1000, sys::STOP2);
 
-    rtc::deepSleep(500, 3);     // STANDBY
-    while (true) { led.toggle(); sys::wait(100); } // never reached
+    rtc::shortSleep(500, sys::STANDBY);
+
+    fail(); // blink LED
 }

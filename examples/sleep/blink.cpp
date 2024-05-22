@@ -9,7 +9,7 @@ void LowPower::finish () {}
 
 int main () {
     for (auto i = 0; i < 100; ++i) asm ("");
-    slowClock(false);           // 100 kHz
+    slowClock(false); // 100 kHz
     for (auto i = 0; i < 100; ++i) asm ("");
 
     constexpr Pin led (LED);
@@ -19,10 +19,11 @@ int main () {
     for (auto i = 0; i < 50; ++i) asm ("");
 
     led = 1;
-    rtc::deepSleep(10, 2);      // STOP2
+    rtc::shortSleep(10, sys::STOP2);
     for (auto i = 0; i < 50; ++i) asm ("");
 
     led = 0;
-    rtc::deepSleep(5000, 4);    // SHUTDOWN
-    while (true) { led.toggle(); sys::wait(100); } // never reached
+    rtc::shortSleep(5000, sys::SHUTDOWN);
+
+    fail(); // blink LED
 }

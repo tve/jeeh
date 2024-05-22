@@ -11,15 +11,14 @@ int main () {
     slowClock();
 
     rtc::init();
-    rtc::deepSleep(100, 1); // 100 ms STOP 1:   periodic timer
-    rtc::alarm(1000, 0);    // 900 ms STOP 0:   alarm
-    rtc::deepSleep(100, 2); // 100 ms STOP 2:   periodic timer
-    rtc::alarm(1000, 1);    // 900 ms STOP 1:   alarm
-    rtc::deepSleep(100, 0); // 100 ms STOP 0:   periodic timer
-    rtc::alarm(1000, 2);    // 900 ms STOP 2:   alarm
-    rtc::deepSleep(100, 1); // 100 ms STOP 1:   periodic timer
-    rtc::alarm(1000, 4);    // 900 ms SHUTDOWN: alarm then RESET
+    rtc::shortSleep(100, sys::STOP1); // 100 ms - periodic timer
+    rtc::longSleep(1, sys::STOP0);    // 900 ms - alarm
+    rtc::shortSleep(100, sys::STOP2); // 100 ms - periodic timer
+    rtc::longSleep(1, sys::STOP1);    // 900 ms - alarm
+    rtc::shortSleep(100, sys::STOP0); // 100 ms - periodic timer
+    rtc::longSleep(1, sys::STOP2);    // 900 ms - alarm
+    rtc::shortSleep(100, sys::STOP1); // 100 ms - periodic timer
+    rtc::longSleep(1, sys::SHUTDOWN); // 900 ms - alarm then RESET
 
-    constexpr Pin led (LED); led.mode("P"); // never reached
-    while (true) { led.toggle(); sys::wait(100); }
+    fail(); // blink LED
 }
