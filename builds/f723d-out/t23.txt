@@ -1,10 +1,11 @@
 
 TEST
 wait 10
-Ã¹ 5rc
+send 15
+reÙ
 30 ms: 31
 40 ms: 39
 50 ms: 47
 100 ms: 102
-200 ms: 199
+200 ms: 195
 OK

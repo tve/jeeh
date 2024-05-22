@@ -1,10 +1,11 @@
-Sun 19 May 22:48:26 CEST 2024
-f103r.log:t22            FAILED    00:00:01.359
-f103r.log:t23            FAILED    00:00:01.212
-f302r.log:t13            FAILED    00:00:01.484
-f439z.log:t22            FAILED    00:00:02.224
-f723d.log:t22            FAILED    00:00:02.099
-g431k.log:PASS
+Wed 22 May 13:43:55 CEST 2024
+f103r.log:t22            FAILED    00:00:01.369
+f103r.log:t23            FAILED    00:00:01.223
+f302r.log:t13            FAILED    00:00:01.474
+f439z.log:t22            FAILED    00:00:02.217
+f439z.log:t23            FAILED    00:00:02.527
+f723d.log:t22            FAILED    00:00:02.173
+g431k.log:t22            FAILED    00:00:01.833
 l433r.log:PASS
-wl55r.log:PASS
-Sun 19 May 22:53:22 CEST 2024
+wl55r.log:t22            FAILED    00:00:02.020
+Wed 22 May 13:48:55 CEST 2024

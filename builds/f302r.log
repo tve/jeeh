@@ -17,17 +17,16 @@ load to RAM: t12
 load to RAM: t13
 
 TEST
-d42250000
 
-[Hard Fault]  SP=20003fc0  HFSR=40000000  CFSR=00020000
-  Usage fault 0002
-	 R0=200036f0  R1=00000025  R2=00000015  R3=20003820
-	R12=0c000000  LR=2000195b  PC=20003820 PSR=20000035
-failed at de/jeeh-dev/tests/basic/test.h:68
-failed caller: 0xfffffff1
+[Hard Fault]  SP=200036c0  HFSR=40000000  CFSR=00000100
+  Bus fault 01
+	 R0=00000007  R1=20003733  R2=200036e1  R3=00000007
+	R12=20003733  LR=2000218f  PC=30522009 PSR=3030303d
+failed at eh-dev/tests/basic/test.h:68
+failed caller: 0xfffffffd
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.48 seconds ==========================
+========================== [FAILED] Took 1.47 seconds ==========================
 load to RAM: t14
 load to RAM: t15
 load to RAM: t16
@@ -41,5 +40,5 @@ load to RAM: t23
 
 Environment    Status    Duration
 -------------  --------  ------------
-t13            FAILED    00:00:01.484
-==================== 1 failed, 23 succeeded in 00:00:38.821 ====================
+t13            FAILED    00:00:01.474
+==================== 1 failed, 23 succeeded in 00:00:38.780 ====================
