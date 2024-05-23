@@ -305,6 +305,7 @@ bool shortSleep (uint16_t ms, int mode) {
         count /= 2;
     }
     assert(sel >= 0);
+//RTC[SCR] = 1<<2;    // CWUTF
 
 #if STM32WL
     EXTI[0x00](20) = 1; // RT20 in RTSR1
@@ -327,16 +328,15 @@ bool shortSleep (uint16_t ms, int mode) {
     sleepNow(mode);
     ticker.skip(getDate().todMillis() - todLast); // TODO wraparound
 
-    RTC[CR](10) = 0;    // ~WUTE: always disable, even if it didn't trigger
-    if (!RTC[ISR](10))  // ~WUTF
-        return false;
+    RTC[CR](10) = 0;    // ~WUTE
 
+    bool done = RTC[ISR](10);
 #if STM32G4 | STM32WL
     RTC[SCR] = 1<<2;    // CWUTF
 #else
     RTC[ISR](10) = 0;   // clear WUTF
 #endif
-    return true;
+    return done;
 }
 
 bool longSleep (uint32_t sec, int mode) {

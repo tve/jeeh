@@ -28,8 +28,7 @@ int main () {
     }
 
    auto ms2 = rtc::getDate().todMillis();
-    logf("2: %d", ms2);
-    itmFlush();
+    logf("2: %d", ms2); itmFlush();
 
     for (auto i = 0; i < 5; ++i) {
         rtc::shortSleep(30, sys::STOP1);
@@ -41,5 +40,5 @@ int main () {
     logf("3: %d", ms3);
 
     auto ms = ms3 - ms1;
-    assert(220 <= ms && ms <= 350);
+    assert(220 <= ms && ms <= 320);
 }
