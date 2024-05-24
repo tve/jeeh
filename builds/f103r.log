@@ -1,3 +1,6 @@
+rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
+rewriting: ../include/jee-stm32.h
+rewriting: ../include/jee.h
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
@@ -17,6 +20,11 @@ load to RAM: t15
 load to RAM: t16
 load to RAM: t17
 load to RAM: t18
+
+TEST
+TIMEOUT
+*** [check] Explicit exit, status 1
+========================== [FAILED] Took 1.70 seconds ==========================
 load to RAM: t19
 load to RAM: t20
 load to RAM: t21
@@ -41,6 +49,7 @@ FAIL
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:01.369
-t23            FAILED    00:00:01.223
-==================== 2 failed, 22 succeeded in 00:00:34.596 ====================
+t18            FAILED    00:00:01.699
+t22            FAILED    00:00:01.368
+t23            FAILED    00:00:01.222
+==================== 3 failed, 21 succeeded in 00:00:32.530 ====================

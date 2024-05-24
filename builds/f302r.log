@@ -17,13 +17,15 @@ load to RAM: t12
 load to RAM: t13
 
 TEST
+ó(2250000
 
-[Hard Fault]  SP=200036c0  HFSR=40000000  CFSR=00000100
-  Bus fault 01
-	 R0=00000007  R1=20003733  R2=200036e1  R3=00000007
-	R12=20003733  LR=2000218f  PC=30522009 PSR=3030303d
+[Hard Fault]  SP=20003fc0  HFSR=40000000  CFSR=00008200
+  Bus fault 82
+    BFAR 0001cd28
+	 R0=00000003  R1=00000025  R2=00000015  R3=0001cd20
+	R12=0c000000  LR=2000197b  PC=2000198e PSR=21000035
 failed at eh-dev/tests/basic/test.h:68
-failed caller: 0xfffffffd
+failed caller: 0xfffffff1
 FAIL
 *** [check] Explicit exit, status 1
 ========================== [FAILED] Took 1.47 seconds ==========================
@@ -40,5 +42,5 @@ load to RAM: t23
 
 Environment    Status    Duration
 -------------  --------  ------------
-t13            FAILED    00:00:01.474
-==================== 1 failed, 23 succeeded in 00:00:38.780 ====================
+t13            FAILED    00:00:01.468
+==================== 1 failed, 23 succeeded in 00:00:39.298 ====================
