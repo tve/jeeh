@@ -255,6 +255,10 @@ namespace rtc {
 
     uint32_t getReg (int reg);
     void setReg (int reg, uint32_t val);
+
+#if STM32WL
+    uint32_t getMillis();
+#endif
 } // namespace rtc
 
 namespace dog {

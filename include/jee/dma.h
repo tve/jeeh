@@ -4,8 +4,8 @@ namespace jeeh::dma {
 
 template< typename T, T const& C >
 struct DmaConfig {
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-    enum { ISR=0x00,IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4 | STM32WL
+    enum X { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
     enum { CHAN_STEP=0x14 };
 #else
     enum { ISR=0x00,IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
@@ -25,7 +25,7 @@ struct DmaConfig {
 #if STM32G4
         RCC(ena::DMAMUX,1) = 1;
     #if STM32G431xx | STM32G441xx
-        constexpr auto CHMAP = 6;
+        constexpr auto CHMAP = 6; // chans per DMA unit
     #else
         constexpr auto CHMAP = 8;
     #endif
@@ -33,6 +33,7 @@ struct DmaConfig {
     #define DMAMUX DMAMUX1
         constexpr auto CHMAP = 8;
 #else // STM32WB | STM32WL
+        RCC(ena::DMAMUX1, 1) = 1;
         constexpr auto CHMAP = 7;
 #endif
         DMAMUX[4*(CHMAP*C.dmaIdx+C.dmaTs)] = C.dmaTc;
@@ -43,7 +44,7 @@ struct DmaConfig {
 #endif
 
         // channel configuration
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4 | STM32WL
         DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
         DRX[CCR] = 0b1000'0010; // MINC TCIE
 #elif STM32H7
@@ -69,6 +70,7 @@ struct DmaConfig {
         cache::clean(p, n);
         DTX[CMAR] = (uintptr_t) p;
         DTX[CNDTR] = n;
+        // logf("DTX[CCR]=%x (pre-enable)", +DTX[CCR]);
         DTX[CCR](0) = 1; // EN
     }
 
@@ -81,10 +83,10 @@ struct DmaConfig {
     constexpr static uint8_t ifcBits [] = { 0, 6, 16, 22 };
 
     int rxCompleted () const {
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4 | STM32WL
         if (DMA[ISR](4*C.dmaRs+2)) { // HTIF
             DMA[IFCR] = 1<<(4*C.dmaRs+2);
-#if STM32F1 | STM32F3 | STM32G4
+#if STM32F1 | STM32F3 | STM32G4 | STM32WL
             if (DRX[CCR](5)) // only report if circular
 #else
             if (DRX[CCR](8)) // only report if circular
@@ -92,7 +94,7 @@ struct DmaConfig {
                 return RXHALF;
         }
         if (DMA[ISR](4*C.dmaRs)) { // GIF
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4 | STM32WL
             if (!DRX[CCR](5)) // only disable if not circular
 #else
             if (!DRX[CCR](8)) // only disable if not circular
@@ -112,7 +114,7 @@ struct DmaConfig {
     }
 
     int txCompleted () const {
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4 | STM32WL
         if (DMA[ISR](4*C.dmaTs)) { // GIF
             DTX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*C.dmaTs);

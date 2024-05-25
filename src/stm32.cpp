@@ -109,18 +109,21 @@ uint32_t jeeh::clockChange (uint32_t hz) {
     return hz;
 }
 
+//------------------------------------------------------------------------ RTC
+
 #if !STM32F1
 namespace jeeh::rtc {
 
 #if STM32G4 | STM32L4 | STM32WL
 enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
-        CR=0x18,WPR=0x24,CALR=0x28,SCR=0x5C,BKPR=0x100 };
+        CR=0x18,WPR=0x24,CALR=0x28,SR=0x50,SCR=0x5C,BKPR=0x100 };
 #else
 enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
         WPR=0x24,SSR=0x28,CALR=0x3C,BKPR=0x50 };
 #endif
 enum { ALRMAR=0x1C, SHIFTR=0x2C, ALRMASSR=0x44 };
 
+// RCC registers relevant to RTC
 #if STM32F3
 enum { BDCR=0x20, CSR=0x24 };
 #elif STM32F4 | STM32F7 | STM32H7
@@ -133,9 +136,11 @@ enum { BDCR=0x90, CSR=0x94 };
 
 #if !STM32L0
 void reset () {
+    PWR[0x00](8) = 1; // DBP
     RCC[BDCR](16) = 1; // BDRST
     //sys::wait(2);
     RCC[BDCR](16) = 0; // ~BDRST
+    for (auto i=0; i<100; i++) asm("nop");
 }
 #endif
 
@@ -149,7 +154,7 @@ void init (bool lse) {
     PWR[0x00](8) = 1; // DBP
 
     if (lse) {
-#if STM32F723xx | STM32WLE5xx
+#if STM32F723xx | STM32WL
         RCC[BDCR](3,2) = 1;           // LSEDRV on f723d and wl55r
 #endif
 #if STM32L0
@@ -160,6 +165,13 @@ void init (bool lse) {
         RCC[BDCR](0) = 1;             // LSEON backup domain
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
         RCC[BDCR](8,2) = 1;           // RTSEL = LSE
+        RCC[0](2) = 1;                // MSI PLLEN
+#if 0
+        // enable this code to output clock to verify frequency
+        RCC[BDCR](24,2) = 3;          // enable LSCO to verify clock freq
+        RCC[BDCR](7) = 1;
+        Pin{}.init("A2:P0");
+        #endif
 #endif
     } else {
         RCC[CSR](0) = 1;              // LSION backup domain
@@ -226,6 +238,13 @@ uint32_t getSecs () {
     return getDate(); // let DateTime::operator uint32_t do the conversion
 }
 
+#if STM32WL
+uint32_t getMillis () {
+    uint32_t cntup = ~RTC[SSR];
+    return ((uint64_t)cntup * 250) >> 6;
+}
+#endif
+
 void set (DateTime const& dt) {
     RTC[ISR](7) = 1; // set INIT
     while (!RTC[ISR](6)) {} // ~INITF
@@ -266,6 +285,8 @@ void setReg (int reg, uint32_t val) {
 
 } // namespace jeeh::rtc
 #endif // !STM32F1
+
+//------------------------------------------------------------------- Watchdog
 
 namespace jeeh::dog {
 
@@ -323,6 +344,8 @@ void kick () {
 }
 
 } // namespace jeeh::dog
+
+//---------------------------------------------------------------------- Cache
 
 // cache management code needs the CMSIS headers
 

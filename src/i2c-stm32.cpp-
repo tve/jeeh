@@ -1,0 +1,147 @@
+#include "jee.h"
+#include "jee/hal.h"
+
+extern void polledWriter (void const* ptr, size_t len);
+extern jeeh::Pin DBG;
+
+namespace jeeh {
+
+void I2cSync::init (char const* pins, uint16_t khz, I2cSync::Config const& config) { // desc: pins in SDA,SCL order
+    Pin::config(pins);
+    dev = config;
+    // NVIC
+    IRQnum = (uint8_t)jeeh::Irq::DMA1_CH1 + dev.rxChan;
+    Ireg = 4*(IRQnum>>5); // register offset in NVIC
+    Ibit = IRQnum & 0x1f; // event and error interrupt bits (2 bits) offset in register
+
+    RCC(dev.ena, 1) = 1; // i2c device on
+    speed(khz);
+    RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
+
+#if STM32WL
+    RCC(ena::DMAMUX1, 1) = 1; // dma mux on
+    uint16_t CxCR_rx = 4*((dev.dma*7)+dev.rxChan);
+    DMAMUX[CxCR_rx] = dev.rxReq;
+    uint16_t CxCR_tx = 4*((dev.dma*7)+dev.txChan);
+    DMAMUX[CxCR_tx] = dev.txReq;
+#else
+    #error non-STM32WL is not supported, needs work...
+    dmaReg(CSELR)(4*(dev.rxChan), 4) = dev.rxReq;
+    dmaReg(CSELR)(4*(dev.txChan), 4) = dev.txReq;
+#endif
+
+    // configure DMA channels (the DMAMUX is )
+    RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
+    RCC(ena::DMAMUX1, 1) = 1; // dmamux on
+    DMAMUX[CxCR_rx] = dev.rxReq;
+    DMAMUX[CxCR_tx] = dev.txReq;
+    // DMA set-up
+    dmaRX(DMA_CPAR) = dev.i2c+RXDR;
+    dmaRX(DMA_CCR) = 0b0000'1000'0000; // MSIZE0 PSIZE0 MINC
+    dmaTX(DMA_CPAR) = dev.i2c+TXDR;
+    dmaTX(DMA_CCR) = 0b0000'1001'0000; // MSIZE0 PSIZE0 MINC DIR
+    devReg(CR1) = 3<<14; // TXDMAEN RXDMAEN
+
+    // interrupts
+    irqInstall((int) dev.ev_irq); // i2c event
+    irqInstall((int) dev.ev_irq+1); // i2c error
+    NVIC[ISER+Ireg] = 3<<Ibit; // enable interrupts
+}
+
+void I2cSync::speed(uint16_t khz) {
+    assert(khz == 400);
+    assert(SystemCoreClock = 4'000'000);
+    // numbers adapted from example in RM table 217 result in 243khz clock @4Mhz
+    uint32_t presc = 0;
+    uint32_t scll = 5; // 5 or 9
+    uint32_t sclh = 5;
+    uint32_t sdadel = 1;
+    uint32_t scldel = 3; // 2 or 3
+    devReg(TIMINGR) = (presc<<28) | (scldel<<20) | (sdadel<<16) | (sclh<<8) | (scll<<0);
+    // fixed timeouts just as a fail-safe, should be done more smartly...
+    uint32_t timeoutA = 98; // SCL-low 50ms @ 4Mhz sysclock
+    devReg(TIMOUTR) = (1<<15) | timeoutA; // TIMOUTEN
+}
+
+void I2cSync::detect () {
+    for (auto i = 0; i < 128; i += 16) {
+        printf("%02x:", i);
+        for (auto j = 0; j < 16; ++j) {
+            int addr = i + j;
+            if (0x08 <= addr && addr <= 0x77) {
+                bool ack = transfer(Write|Stop, addr, nullptr, 0);
+                printf(ack ? " %02x" : " --", addr);
+            } else
+                printf("   ");
+        }
+        printf("\n");
+    }
+}
+
+bool I2cSync::transfer (int fl, uint16_t addr, void* ptr, uint16_t len, uint8_t reg) {
+    volatile uint32_t status;
+    assert(addr<256); // 10-bit addressing not implemented
+    assert(len<256); // longer requires reloading DMA: not implemented
+    // prep I2C device to transfer data being read
+    uint8_t dir = fl&1;
+    bool stop = (fl&Stop) != 0;
+    uint8_t xfer_len = fl&Reg ? len+1 : len;
+    devReg(CR2) = (addr<<1) | (dir<<10) | (xfer_len<<16) | ((!!stop)<<25);
+    // set DMA regs to memory locations
+    if (len > 0) {
+        dma(dir, DMA_CMAR) = (uint32_t)ptr;
+        dma(dir, DMA_CNDTR) = len;
+        dma(dir, DMA_CCR)(0) = 1; // enable DMA
+    }
+    // wait for CR2 reconfig to propagate (toggles SCL on repeat-start)
+    waitBusy();
+    devReg(ICR) = 0xfff0; // clear flags
+    // printf("I2C RX: I2C_ISR=0x%lx DMA_ISR=0x%lx I2C_CR1=0x%lx I2C_CR2=0x%lx(pre)\n",
+    //     (uint32_t)devReg(ISR), (uint32_t)dmaReg(DMA_ISR), (uint32_t)devReg(CR1), (uint32_t)devReg(CR2));
+    assert((devReg(ISR) & 0x1ff0) == 0);
+    // if auto-stop is enabled then stop interrupt occurs, else transfer complete interrupt occurs...
+    devReg(CR1)(0,8) = stop ? 0b1011'0001 : 0b1101'0001; // enable interrupts (ERRIE, STOPF/TCIE, NACKIE) and enable peripheral
+    if (fl & Reg) devReg(TXDR) = reg; // push first byte out explicitly
+    devReg(CR2)(13) = 1; // start -> starts bus operation
+
+    // wait for completion
+    while (((status=devReg(ISR)) & 0x1ff0) == 0) {
+        // printf("I2C RX: I2C_ISR=0x%lx DMA_ISR=0x%lx I2C_CR1=0x%lx NVIC=0x%lx\n",
+        //     status, (uint32_t)dmaReg(DMA_ISR), (uint32_t)devReg(CR1), (uint32_t)NVIC[IABR+Ireg](Ibit,3));
+        // asm("nop");
+        asm("wfi");
+    }
+    dma(dir, DMA_CCR)(0) = 0; // disable DMA
+
+    // see what happened
+    // printf("I2C RX: I2C_ISR=0x%lx\n", status);
+    if ((status & 0x1f90) != 0) {
+        // some error, incl NACK from slave: clean-up and return error flag
+        if (status & 0x8000) {
+            // bus busy: send stop to end that
+            devReg(CR2)(14) = 1; // send stop
+            waitBusy(); // wait for stop to happen
+        }
+#if 1
+        printf("I2C err: I2C_ISR=0x%lx DMA_ISR=0x%lx", status, (uint32_t)dmaReg(DMA_ISR));
+        if (status & 0x1000) printf(" T-OUT");
+        if (status & 0x0F00) printf(" ?ERR?");
+        if (status & 0x0080) printf(" TCR?");
+        if (status & 0x0010) printf(" NACK");
+        printf("\n");
+#endif
+        devReg(CR1)(0) = 0; // peripheral-disable
+        return false;
+    }
+
+    if (stop) devReg(CR1)(0) = 0; // peripheral-disable
+    // printf("*ptr=0x%x\n", *(uint8_t*)ptr);
+    return true;
+}
+
+bool I2cSync::interrupt (int) {
+    devReg(CR1)(4,4) = 0; // disable interrupts
+    return false;
+}
+
+} // namespace jeeh

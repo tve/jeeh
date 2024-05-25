@@ -33,7 +33,7 @@ struct Poll {
         baudRate(hz);
 
         UART[CR1] = (1<<3) | (1<<2) | (1<<UE);  // TE RE UE
-#if STM32G4 || STM32H7
+#if STM32G4 || STM32H7 || STM32WL
         UART[CR1](29) = 1; // FIFOEN
 #endif
     }

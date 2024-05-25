@@ -16,7 +16,8 @@ int veprintf (void (*fun)(void*,int), void* arg, char const* fmt, va_list ap) {
             while (radix == 0)
                 switch (c = *fmt++) {
                     case '-': left = 1; break;
-                    case 'o': radix = 8; break;
+                    case 'l': break; // 'long': ignore but make compiler checks happy
+                    case 'o': radix =  8; break;
                     case 'u':
                     case 'd': radix = 10; break;
                     case 'p': pad = '0'; width = 8;

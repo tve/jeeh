@@ -1,5 +1,7 @@
 // Hardware digital to analog converter.
 
+#if !STM32WL
+
 namespace jeeh::dac {
 
 enum { CR=0x00, DHR12R1=0x08, MCR=0x3C };
@@ -19,3 +21,5 @@ void set (uint32_t v) {
 }
 
 } // namespace jeeh::dac
+
+#endif

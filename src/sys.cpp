@@ -23,10 +23,14 @@ inline namespace {
 
 //----------------------------------------------------------------------- flags
 
+#if 0 // seems unused
 #if !NOFLAGS
 
 uint32_t jeeh::flagsAtoZ [26]; // A..Z: settings for global use
 
+// match has the form A or Aab, where A is the flag name in range A-Z, and ab are flag bits
+// in range a-z. Using the former form the flag value is returned. Using the latter form, 
+// 1 is returned if any of the bits are set (a=1, b=2, c=4, d=8, e=16, ...)
 [[gnu::weak]] uint32_t jeeh::flag (char const* match) {
     assert('A' <= *match && *match <= 'Z');
     auto f = flagsAtoZ[*match++ - 'A'];
@@ -38,6 +42,7 @@ uint32_t jeeh::flagsAtoZ [26]; // A..Z: settings for global use
     return 0;
 }
 
+#endif
 #endif
 
 //------------------------------------------------------------------------ logf
@@ -81,12 +86,13 @@ void jeeh::logf (char const* fmt, ...) {
 [[gnu::weak]] void jeeh::hardFaultHandler (uint32_t* sp) {
     enum { CFSR=0x28, HFSR=0x2C, MMAR=0x34, BFAR=0x38 };
 
+    uint32_t scb_icsr2 = +SCB[0x04];
     uint32_t hfsr = SCB[HFSR], cfsr = SCB[CFSR],
             bfar = SCB[BFAR], mmar = SCB[MMAR];
 
     asm ("cpsid i"); // disable all interrupts
 
-    logf("\n[Hard Fault]  SP=%08x  HFSR=%08x  CFSR=%08x", sp, hfsr, cfsr);
+    logf("\n[Hard Fault]  SP=%08x  HFSR=%08x  CFSR=%08x  ICSR=%08x", sp, hfsr, cfsr, scb_icsr2);
     if (hfsr & (1<<30)) {
         if (cfsr & 0xFFFF0000)
             logf("  Usage fault %04x", cfsr >> 16);

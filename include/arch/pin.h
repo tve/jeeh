@@ -5,8 +5,8 @@ struct Pin {
     explicit constexpr Pin (char const* s) : id (parse(s)) {}
     Pin (char const* s, char const* m) : Pin (s) { mode(m); }
 
-    constexpr int port () const { return id/16-1; }
-    constexpr int pin () const { return id%16; }
+    constexpr uint8_t port () const { return id/16-1; }
+    constexpr uint8_t pin () const { return id%16; }
 
     bool isValid () const { return id != 0; }
 
@@ -36,6 +36,8 @@ struct Pin {
     int operator= (int v) const { write(v); return v; }
 
     // pin definition string: [A-O][<pin#>]:[AFPO][DU][LNHV][<alt#>][,]
+    // Modes: Analog, Floating, Open-drain, Push-pull
+    // Opt: pull-Down, pull-Up, Low-speed, Normal-speed, High-speed, Very-high-speed
     // return -1 on error, 0 if no mode set, or the mode (always > 0)
     int init (char const* desc) {
         if (auto t = parse(desc); t != 0)

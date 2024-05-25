@@ -1,0 +1,15 @@
+{
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.defines": [
+        "STM32WL",
+        "MOSTAG_V2"
+    ],
+    "C_Cpp.default.includePath": [
+        "./include",
+        "./include/arch"
+    ],
+    "C_Cpp.default.forcedInclude": [
+        "jee.h",
+        "jee/hal.h"
+    ]
+}
