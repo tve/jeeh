@@ -1,2 +1,2 @@
 //CG1 board leds
-#define LED  "B0"
+#define LED  "B3"
