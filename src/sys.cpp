@@ -567,7 +567,14 @@ void PendSV_Handler () {
 
         " mrs      r0,psp        \n"
 #if STM32G0 | STM32L0
-        // TODO ...
+        " sub      r0,#32        \n"
+        " mov      r3,r0         \n"
+        " stmia    r3!,{r4-r7}   \n"
+        " mov      r4,r8         \n"
+        " mov      r5,r9         \n"
+        " mov      r6,r10        \n"
+        " mov      r7,r11        \n"
+        " stmia    r3,{r4-r7}    \n"
 #else
 #if FPU_USED
         " tst      lr,#0x10      \n"
@@ -580,7 +587,15 @@ void PendSV_Handler () {
         " str      r0,[r1]       \n"
 
 #if STM32G0 | STM32L0
-        // TODO ...
+        " add      r2,#16        \n"
+        " ldmia    r2!,{r4-r7}   \n"
+        " mov      r8,r4         \n"
+        " mov      r9,r5         \n"
+        " mov      r10,r6        \n"
+        " mov      r11,r7        \n"
+        " mov      r1,r2         \n"
+        " sub      r1,#32        \n"
+        " ldmia    r1,{r4-r7}    \n"
 #else
         " ldmia    r2!,{r4-r11}  \n"
 #if FPU_USED
