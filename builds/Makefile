@@ -25,6 +25,9 @@ $A $B:
 	@ (pio run -d $@ -t check -s 2>&1 && echo PASS) | $G | tee $@.log
 	@ grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
 
+examples:
+	for i in ../examples/*/; do echo $$i:; pio run -d $$i -s || true; done
+
 # ignore the output files, re-fetch what's in git
 drop-out:
 	git checkout -- *-out/
@@ -34,4 +37,4 @@ clean:
 	cd ../make && ./codegen.py -s
 	rm -rf */.pio ../examples/*/.pio
 
-.PHONY: all all-1 all-2 drop-out clean $A $B
+.PHONY: all all-1 all-2 examples drop-out clean $A $B

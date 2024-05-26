@@ -574,7 +574,7 @@ void PendSV_Handler () {
         " mov      r5,r9         \n"
         " mov      r6,r10        \n"
         " mov      r7,r11        \n"
-        " stmia    r3,{r4-r7}    \n"
+        " stmia    r3!,{r4-r7}   \n"
 #else
 #if FPU_USED
         " tst      lr,#0x10      \n"
@@ -595,7 +595,7 @@ void PendSV_Handler () {
         " mov      r11,r7        \n"
         " mov      r1,r2         \n"
         " sub      r1,#32        \n"
-        " ldmia    r1,{r4-r7}    \n"
+        " ldmia    r1!,{r4-r7}   \n"
 #else
         " ldmia    r2!,{r4-r11}  \n"
 #if FPU_USED
