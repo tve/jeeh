@@ -352,7 +352,9 @@ bool longSleep (uint32_t sec, int mode) {
 #endif
 
     RTC[CR](8) = 0;             // ~ALRAE
+#if !STM32WL
     while (RTC[ISR](0) == 0) {} // wait for ALRAWF
+#endif
 
     RTC[ALRMAR] = (toBcd(dt.dy)<<24) | (toBcd(dt.hh)<<16) |
                    (toBcd(dt.mm)<<8) | toBcd(dt.ss);
@@ -401,11 +403,14 @@ uint32_t getSecs () {
 }
 
 void set (DateTime const& dt) {
-    RTC[ISR](7) = 1;             // set INIT
-    while (RTC[ISR](6) == 0) {}  // wait for INITF
+    RTC[ISR](7) = 1;            // set INIT
+    while (RTC[ISR](6) == 0) {} // wait for INITF
     RTC[TR] = toBcd(dt.ss) | (toBcd(dt.mm) << 8) | (toBcd(dt.hh) << 16);
     RTC[DR] = toBcd(dt.dy) | (toBcd(dt.mo) << 8) | (toBcd(dt.yr) << 16);
-    RTC[ISR](7) = 0;             // clear INIT
+#if STM32WL
+    RTC[ISR](9) = 1;            // BIN 1x, mixed mode
+#endif
+    RTC[ISR](7) = 0;            // clear INIT
 }
 
 uint32_t getReg (int reg) {

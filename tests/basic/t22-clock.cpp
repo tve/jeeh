@@ -39,6 +39,10 @@ int main () {
     auto ms3 = rtc::getDate().todMillis();
     logf("3: %d", ms3);
 
+#if STM32WL
+    logf("isr %08x ssr %08x", +RTC[0x0C], +RTC[0x08]);
+#endif
+
     auto ms = ms3 - ms1;
     assert(220 <= ms && ms <= 320);
 }
