@@ -5,6 +5,14 @@
 
 enum struct Irq : uint8_t {
     //CG: svd irqs
+#if STM32L0
+    DMA1_Channel2 = DMA1_Channel2_3,
+    DMA1_Channel3 = DMA1_Channel2_3,
+    DMA1_Channel4 = DMA1_Channel4_7,
+    DMA1_Channel5 = DMA1_Channel4_7,
+    DMA1_Channel6 = DMA1_Channel4_7,
+    DMA1_Channel7 = DMA1_Channel4_7,
+#endif
 };
 
 enum : uint16_t {

@@ -29,8 +29,12 @@ int main () {
     uint32_t stack [300];
     sys::init(stack);
 
+#if STM32L0
+    auto baud = 115'200;
+#else
     auto baud = SystemCoreClock / 32; // i.e. 4'687'500 baud @ 150 MHz
-    logf("10 %d", baud);
+#endif
+    logf("10 %d", baud); itmFlush();
     uart.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
                                  UART_FREQ, Irq::UART_NAME, UART_CONF });
 
@@ -44,5 +48,9 @@ int main () {
     auto& r = sys::recv();
     assert(&r == &my);
     logf("14 %d", r.mArg);
+#if STM32L0
+    assert(r.mArg == 71*71+4); // messed up by log output on same uart
+#else
     assert(r.mArg == 71*71+1);
+#endif
 }

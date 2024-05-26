@@ -134,7 +134,7 @@ def parseSvd():
     svdInfo['ioregs'] = sorted(ioregs, key=lambda s: natsort(s[28:]))
     svdInfo['irqs'] = ['%-22s = %3s,' % (t, irqs[t]) \
                             for t in sorted(irqs, key=natsort)] + \
-                      [f'limit = {irqLimit}']
+                      [f'limit = {irqLimit},']
     svdInfo['rccs'] = ['%-8s = 0x%X,' % t for t in sorted(rccs)]
     svdInfo['enables'] = ['%-13s = %2d + 8 * %s,' % (t, *enables[t]) \
                             for t in sorted(enables)]
