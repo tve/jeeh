@@ -38,14 +38,13 @@ reÙ
 30 ms: 31
 40 ms: 39
 50 ms: 47
-100 ms: 10r
-200 ms: ÊÊROK
+100 ms: 10ò@00ms: ÊÊROK
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.49 seconds ==========================
+========================== [FAILED] Took 2.48 seconds ==========================
 
 Environment    Status    Duration
 -------------  --------  ------------
 t22            FAILED    00:00:02.237
-t23            FAILED    00:00:02.490
-==================== 2 failed, 22 succeeded in 00:00:45.032 ====================
+t23            FAILED    00:00:02.484
+==================== 2 failed, 22 succeeded in 00:00:45.057 ====================

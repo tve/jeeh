@@ -31,10 +31,10 @@ TEST
 1: 40893000
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 2.13 seconds ==========================
+========================== [FAILED] Took 2.11 seconds ==========================
 load to RAM: t23
 
 Environment    Status    Duration
 -------------  --------  ------------
-t22            FAILED    00:00:02.127
-==================== 1 failed, 25 succeeded in 00:00:45.773 ====================
+t22            FAILED    00:00:02.110
+==================== 1 failed, 25 succeeded in 00:00:45.545 ====================

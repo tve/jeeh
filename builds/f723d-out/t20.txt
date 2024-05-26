@@ -18,6 +18,6 @@ long long  8 % 8 b
     Fixer  1 % 1 b
      Lock  8 % 4 b
    Device  8 % 4 b
- DateTime  8 % 1 b
+ DateTime  7 % 1 b
       Pin  1 % 1 b
 OK

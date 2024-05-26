@@ -2,7 +2,7 @@
 TEST
 wait 10
 send 15
-reÙ
+reÙ
 30 ms: 31
 40 ms: 39
 50 ms: 47
