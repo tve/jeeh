@@ -276,6 +276,9 @@ void init (bool lse) {
 
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
 
+    if (!RTC[ISR](4)) // INITS
+        set({1,1,1}); // set to 2001-01-01, so it starts running properly
+
     SCB[0x10](4) = 1; // SEVONPEND
 }
 
@@ -390,7 +393,6 @@ DateTime getDate () {
     dt.ss = fromBcd(tod);
     dt.mm = fromBcd(tod>>8);
     dt.hh = fromBcd((tod>>16) & 0x3F);
-    dt.wd = (doy>>13) & 0x7;
     dt.dy = fromBcd(doy);
     dt.mo = fromBcd((doy>>8) & 0x1F);
     // works until end 2063, will fail (i.e. roll over) in 2064 !
@@ -411,6 +413,10 @@ void set (DateTime const& dt) {
     RTC[ISR](9) = 1;            // BIN 1x, mixed mode
 #endif
     RTC[ISR](7) = 0;            // clear INIT
+}
+
+void set (uint32_t t) {
+    set(DateTime (t));
 }
 
 uint32_t getReg (int reg) {
