@@ -1,6 +1,3 @@
-rewriting: /home/jcw/code/jeeh-dev/tests/basic/defs.h
-rewriting: ../include/jee-stm32.h
-rewriting: ../include/jee.h
 load to RAM: t00
 load to RAM: t01
 load to RAM: t02
@@ -24,7 +21,7 @@ load to RAM: t18
 TEST
 TIMEOUT
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.70 seconds ==========================
+========================== [FAILED] Took 1.72 seconds ==========================
 load to RAM: t19
 load to RAM: t20
 load to RAM: t21
@@ -37,7 +34,7 @@ failed at ev/include/arch/stm32f1.h:42
 failed caller: 0x2000078b
 FAIL
 *** [check] Explicit exit, status 1
-========================== [FAILED] Took 1.35 seconds ==========================
+========================== [FAILED] Took 1.37 seconds ==========================
 load to RAM: t23
 
 TEST
@@ -49,7 +46,7 @@ FAIL
 
 Environment    Status    Duration
 -------------  --------  ------------
-t18            FAILED    00:00:01.697
-t22            FAILED    00:00:01.354
-t23            FAILED    00:00:01.222
-==================== 3 failed, 21 succeeded in 00:00:32.273 ====================
+t18            FAILED    00:00:01.716
+t22            FAILED    00:00:01.366
+t23            FAILED    00:00:01.223
+==================== 3 failed, 21 succeeded in 00:00:32.274 ====================
