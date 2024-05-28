@@ -1,7 +1,0 @@
-
-TEST
-1: 40893000
-2: 40893000
-failed at ev/include/arch/stm32f1.h:42
-failed caller: 0x2000078b
-FAIL

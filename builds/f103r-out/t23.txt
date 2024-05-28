@@ -1,5 +1,0 @@
-
-TEST
-failed at ev/include/arch/stm32f1.h:22
-failed caller: 0x20000581
-FAIL

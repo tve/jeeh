@@ -1,6 +1,0 @@
-
-TEST
-wait: 10019 us
-by design, this message has exactly 50 characters
-itm:  313 us
-OK

@@ -1,9 +1,0 @@
-
-TEST
-wait Rsend 15
-reÙ
-30 ms: 31
-40 ms: 39
-50 ms: 47
-100 ms: 10ò 00ms: ÊÊROK
-TIMEOUT

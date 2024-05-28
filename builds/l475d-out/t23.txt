@@ -1,7 +1,0 @@
-
-TEST
-wait 10
-send 15
-recv
-20 ms: 19
-TIMEOUT
