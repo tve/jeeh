@@ -27,7 +27,7 @@ template2 = '''
 [env:%s]
 board = %s
 board_serial = %s
-upload_flags = -c, adapter serial ${board_serial}'''
+upload_flags = -c, adapter serial ${this.board_serial}'''
 
 DEVS = '/dev/serial/by-id/'
 found = set()
@@ -43,4 +43,10 @@ if os.path.exists(DEVS):
                     break
         for e, s, b in sorted(attached):
             print(template2 % (e, b, s), file=f)
+            if os.path.isdir(e):
+                with open('%s/serial.tcl' % e, 'w') as g:
+                    print('# %s = %s' % (e, b), file=g)
+                    print('adapter serial %s' % s, file=g)
+else:
+    found.add('g431k')
 print(' '.join(sorted(found)))

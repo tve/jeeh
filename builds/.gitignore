@@ -3,3 +3,4 @@ attached.ini
 boards.ini
 *.log
 *-out/
+*/serial.tcl

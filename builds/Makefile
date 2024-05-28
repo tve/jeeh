@@ -7,7 +7,7 @@ G = grep --line-buffered -v -e 'Library Manager' \
 all: first $A clean
 	tail -n1 *.log | grep -v '^$$'
 
-g431k $A:
+$A:
 	@ make -C $@ clean stub
 	@ (pio run -d $@ -t check -s 2>&1 && echo PASS) | $G | tee $@.log
 	@ grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
@@ -25,4 +25,4 @@ clean:
 	cd ../make && ./codegen.py -s
 	rm -rf `find .. -name .pio`
 
-.PHONY: all g431k examples attached first clean $A $B
+.PHONY: all examples attached first clean $A $B
