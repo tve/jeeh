@@ -49,4 +49,8 @@ if os.path.exists(DEVS):
                     print('adapter serial %s' % s, file=g)
 else:
     found.add('g431k')
+    for e, s, b in boards:
+        if os.path.isdir(e):
+            with open('%s/serial.tcl' % e, 'w') as g:
+                pass
 print(' '.join(sorted(found)))

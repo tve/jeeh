@@ -22,6 +22,7 @@ first:
 	>LASTRUN.txt
 
 clean:
+	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
 	rm -rf `find .. -name .pio`
 
