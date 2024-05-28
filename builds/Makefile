@@ -1,26 +1,13 @@
-A = f103r f439z f723d g431k l433r wl55r
-B = f302r h743z l073r l475d l496d
+A = $(shell etc/attached.py)
 G = grep --line-buffered -v -e 'Library Manager' \
 			    -e ' SUCCESS   00:' \
 			    -e '^pio-extra: GOT '
 
-# allways run these tests by default
-all-1: first $A clean
+# run tests for all attached boards
+all: first $A clean
 	tail -n1 *.log | grep -v '^$$'
-	date >>LASTRUN.txt
 
-# these boards are not always connected
-all-2: $B clean
-	tail -n1 *.log | grep -v '^$$'
-	date >>LASTRUN.txt
-
-# force a full test, assuming all boards are present
-all: all-1 all-2
-
-first:
-	date >LASTRUN.txt
-
-$A $B:
+g431k $A:
 	@ make -C $@ clean stub
 	@ (pio run -d $@ -t check -s 2>&1 && echo PASS) | $G | tee $@.log
 	@ grep -H -e ' FAILED ' -e '^PASS' $@.log >>LASTRUN.txt
@@ -28,13 +15,14 @@ $A $B:
 examples:
 	for i in ../examples/*/; do echo $$i:; pio run -d $$i -s || true; done
 
-# ignore the output files, re-fetch what's in git
-drop-out:
-	git checkout -- *-out/
+attached:
+	etc/attached.py
+
+first:
+	>LASTRUN.txt
 
 clean:
-	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
-	rm -rf */.pio ../examples/*/.pio
+	rm -rf `find .. -name .pio`
 
-.PHONY: all all-1 all-2 examples drop-out clean $A $B
+.PHONY: all g431k examples attached first clean $A $B
