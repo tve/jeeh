@@ -5,8 +5,6 @@ G = grep --line-buffered -v -e 'Library Manager' \
 
 # run tests for all attached boards
 all: first $A clean
-	date >>LASTRUN.txt
-	tail -n1 *.log | grep -v '^$$'
 
 $A:
 	@ make -C $@ clean stub
@@ -23,6 +21,7 @@ first:
 	date >LASTRUN.txt
 
 clean:
+	date >>LASTRUN.txt
 	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
 	rm -rf `find .. -name .pio`
