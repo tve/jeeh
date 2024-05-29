@@ -13,6 +13,7 @@ PA15 | DIO5  | -
 PB3  | DIO1  | -
 PB4  | DIO2  | -
 PB5  | DIO0  | -
+PA8  | NRST  | RESET
 
 On the right, the Hy-Tiny is attached to an ST-Link v2.1 from a Nucleo board:
 
