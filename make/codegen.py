@@ -95,7 +95,7 @@ def processFile(fpath):
     if hasattr(cgdefs, 'onFileDone'):
         cgdefs.onFileDone(fpath, result)
     if result and result != lines:
-        print('rewriting:', fpath, file=sys.stderr)
+        print('rewriting: %s (%s)' % (fpath, cgdefs.projEnv), file=sys.stderr)
         with open(fpath, 'w') as fd: # FIXME not safe
             for s in result:
                 fd.write(s+'\n')

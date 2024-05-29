@@ -249,7 +249,7 @@ void reset () {
 }
 
 void init (bool lse) {
-#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0)
+#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0 | STM32L4)
     RCC(ena::RTCAPB, 1) = 1;
 #endif
 #if !(STM32H7 | STM32WL)
