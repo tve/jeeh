@@ -5,6 +5,7 @@ G = grep --line-buffered -v -e 'Library Manager' \
 
 # run tests for all attached boards
 all: first $A clean
+	date >>LASTRUN.txt
 	tail -n1 *.log | grep -v '^$$'
 
 $A:
@@ -19,11 +20,11 @@ attached:
 	etc/attached.py
 
 first:
-	>LASTRUN.txt
+	date >LASTRUN.txt
 
 clean:
 	pio run -d g431k -e t00 -s
 	cd ../make && ./codegen.py -s
 	rm -rf `find .. -name .pio`
 
-.PHONY: all examples attached first clean $A $B
+.PHONY: all examples attached first clean $A
