@@ -206,7 +206,8 @@ public:
         : yr (conv2d(d+9)), mo (month2d(d)), dy (conv2d(d+4)),
           hh (conv2d(t)), mm (conv2d(t+3)), ss (conv2d(t+6)) {}
 
-    explicit DateTime (uint32_t t) {
+    explicit DateTime (uint32_t t, uint8_t f =0) {
+        ff = f;
         ss = t % 60;
         t /= 60;
         mm = t % 60;

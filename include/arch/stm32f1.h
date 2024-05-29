@@ -16,24 +16,29 @@ uint32_t fastClock (bool pll) {
 }
 
 namespace rtc {
-    enum { BDCR=0x20, CRL=0x04, PRLL=0x0C, CNTH=0x18, CNTL=0x1C };
+    enum { CRL=0x04,PRLL=0x0C,DIVL=0x10,CNTH=0x18,CNTL=0x1C,BDCR=0x20,CSR=0x24 };
 
 void init (bool lse) {
-    assert(lse); // TODO
     RCC(ena::PWR, 1) = 1;
     PWR[0x00](8) = 1; // DBP
     RCC(ena::BKP, 1) = 1;
 
-    RCC[BDCR](0) = 1;               // LSEON
-    while (RCC[BDCR](1) == 0) {}    // wait for LSRDY
-    RCC[BDCR](8) = 1;               // RTSEL = LSE
-    RCC[BDCR](15) = 1;              // RTCEN
-    RTC[CRL](3) = 0;                // ~RSF
-    while (RTC[CRL](3) == 0) {}     // wait for RSF
-    RTC[CRL](4) = 1;                // CNF
-    RTC[PRLL] = 32767;              // 32 kHz crystal
-    RTC[CRL](4) = 0;                // ~CNF
-    while (RTC[CRL](5) == 0) {}     // wait for RTOFF
+    if (lse) {
+        RCC[BDCR](0) = 1;               // LSEON
+        while (RCC[BDCR](1) == 0) {}    // wait for LSERDY
+        RCC[BDCR](8,2) = 1;             // RTSEL = LSE
+    } else {
+        RCC[CSR](0) = 1;                // LSION
+        while (RCC[CSR](1) == 0) {}     // wait for LSIRDY
+        RCC[BDCR](8,2) = 2;             // RTSEL = LSI
+    }
+    RCC[BDCR](15) = 1;                  // RTCEN
+    RTC[CRL](3) = 0;                    // ~RSF
+    while (RTC[CRL](3) == 0) {}         // wait for RSF
+    RTC[CRL](4) = 1;                    // CNF
+    RTC[PRLL] = lse ? 32'767 : 39'999;  // 32 kHz crystal or ≈40 kHz LSI
+    RTC[CRL](4) = 0;                    // ~CNF
+    while (RTC[CRL](5) == 0) {}         // wait for RTOFF
 
 }
 
