@@ -9,4 +9,4 @@
 - **`trace/`** - SPI + logic analyzer trace setup for a Nucleo-32 G431KB
 - **`rtt/`** - exploring Real Time Transfer with Blackmagic's BMDA
 - **`hytiny/`** - use a HyTiny to receive packets w/ an RFM69 RF module
-- **`sensor/`** - explore low-power Wireless Sensor Networking w/ L031K6
+- **`wsn/`** - explore low-power Wireless Sensor Networking w/ Nucleo-32 L031K6
