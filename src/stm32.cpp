@@ -229,8 +229,8 @@ namespace jeeh::rtc {
 enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
 #else
-enum { TR=0x00,DR=0x04,SSR=0x28,ISR=0x0C,PRER=0x10,WUTR=0x14,
-        CR=0x08,WPR=0x24,BKPR=0x50 };
+enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
+        WPR=0x24,SSR=0x28,BKPR=0x50 };
 #endif
 enum { ALRMAR=0x1C, ALRMASSR=0x44 };
 
@@ -238,15 +238,19 @@ enum { ALRMAR=0x1C, ALRMASSR=0x44 };
 enum { BDCR=0x20, CSR=0x24 };
 #elif STM32F4 | STM32F7 | STM32H7
 enum { BDCR=0x70, CSR=0x74 };
+#elif STM32L0
+enum { CSR=0x50 };
 #else
 enum { BDCR=0x90, CSR=0x94 };
 #endif
 
+#if 0
 void reset () {
     RCC[BDCR](16) = 1; // BDRST
     sys::wait(2);
     RCC[BDCR](16) = 0; // ~BDRST
 }
+#endif
 
 void init (bool lse) {
 #if !(STM32F3 | STM32F4 | STM32F7 | STM32L0 | STM32L4)
@@ -261,15 +265,29 @@ void init (bool lse) {
 #if STM32F723xx | STM32WLE5xx
         RCC[BDCR](3,2) = 1;           // LSEDRV on f723d and wl55r
 #endif
+#if STM32L0
+        RCC[CSR](8) = 1;              // LSEON backup domain
+        while (RCC[CSR](9) == 0) {}   // wait for LSERDY
+        RCC[CSR](16,2) = 1;           // RTSEL = LSE
+#else
         RCC[BDCR](0) = 1;             // LSEON backup domain
         while (RCC[BDCR](1) == 0) {}  // wait for LSERDY
         RCC[BDCR](8,2) = 1;           // RTSEL = LSE
+#endif
     } else {
         RCC[CSR](0) = 1;              // LSION backup domain
         while (RCC[CSR](1) == 0) {}   // wait for LSIRDY
+#if STM32L0
+        RCC[CSR](16,2) = 2;           // RTSEL = LSI
+#else
         RCC[BDCR](8,2) = 2;           // RTSEL = LSI
+#endif
     }
+#if STM32L0
+    RCC[CSR](18) = 1;                 // RTCEN
+#else
     RCC[BDCR](15) = 1;                // RTCEN
+#endif
 
     RTC[WPR] = 0xCA;  // disable write protection, [1] p.803
     RTC[WPR] = 0x53;  // ... and leave it unlocked from now on
