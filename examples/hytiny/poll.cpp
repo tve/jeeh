@@ -39,14 +39,14 @@ int main () {
     rf.init(63, 42, 8686);  // node 63, group 42, 868.3 MHz
     rf.txPower(0);
 
-    printf("30 %d\n", rtc::getSecs());
     while (true) {
         uint8_t buf [60];
         auto n = rf.receive(buf, sizeof buf);
         if (n > 0) {
-            printf("rssi %d lna %d afc %d\n", rf.rssi, rf.lna, rf.afc);
+            printf("rssi %d lna %d afc %d @ %d\n",
+                    rf.rssi, rf.lna, rf.afc, rtc::getSecs());
             dumpHex(buf, n);
         }
-        sys::wait(10);
+        sys::wait(100);
     }
 }
