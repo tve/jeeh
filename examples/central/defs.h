@@ -30,7 +30,8 @@ uint8_t initBoard (char const* appName) {
     fastClock();
     rtc::init();
 
-    led.mode("P");  // push-pull output
+    led.mode("P");       // push-pull output
+    Pin::config("D3:P"); // ESP8266 CH_PD, power down
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });

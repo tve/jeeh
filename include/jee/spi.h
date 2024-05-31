@@ -11,7 +11,7 @@ struct SpiGpio {
     void init (char const* desc) {
         Pin::config(desc, &mosi, 4);
         disable(); // start with NSEL high
-        Pin::config(":PH,:UH,:PH,", &mosi, 4);
+        Pin::config(":P,:U,:P,", &mosi, 4);
         sclk = cpol;
     }
 
