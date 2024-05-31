@@ -16,5 +16,3 @@ int main () {
         sys::wait(250);
     }
 }
-
-void jeeh::fail(void const*, char const*, int) { while (true) {} }

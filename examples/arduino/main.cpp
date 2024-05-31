@@ -33,16 +33,6 @@ void loop() {
     static int count; ++count; assert(count <= 10);
 }
 
-void jeeh::fail(void const* a, char const* f, int n) {
-    printf("\nfailed at %s:%d\nfailed caller: %p\n", f, n, a);
-    while (true) {}
-}
-
-void jeeh::hardFaultHandler (uint32_t* sp) {
-    printf("\nhard fault, sp = %p", sp);
-    fail();
-}
-
 #if !ARDUINO //-----------------------------------------------------------------
 // when not using the Arduino runtime, all of JeeH becomes available for use
 

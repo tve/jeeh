@@ -10,16 +10,6 @@ enum { HMC5883=0x1E, ADXL345=0x53, ITG3200=0x68 };
 
 constexpr Pin led ("B3"); // Nucleo-L432KC
 
-void jeeh::fail(void const* a, char const* f, int n) {
-    printf("\nfailed at %s:%d\nfailed caller: %p\n", f, n, a);
-    while (true) {}
-}
-
-void jeeh::hardFaultHandler (uint32_t* sp) {
-    printf("\nhard fault, sp = %p", sp);
-    fail();
-}
-
 Uart uart ('U'); // DMA/IRQ-based UART device driver, id = 'U'
 
 extern "C" int _write (int, char* ptr, int len) {

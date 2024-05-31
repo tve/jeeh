@@ -10,11 +10,6 @@
 
 constexpr Pin led (LED);
 
-void jeeh::fail (void const* a, char const* f, int n) {
-    printf("%s:%d - called at %p\n", f, n, a);
-    while (true) {}
-}
-
 uint8_t initBoard (char const* appName) {
     fastClock();
     led.mode("P");

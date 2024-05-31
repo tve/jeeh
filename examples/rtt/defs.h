@@ -2,5 +2,3 @@
 
 //CG1 board leds
 #define LED  "B5"
-
-void jeeh::fail(void const*, char const*, int) { while (true) {} }

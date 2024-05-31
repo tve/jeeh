@@ -17,16 +17,6 @@
 
 constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
 
-void jeeh::fail(void const* a, char const* f, int n) {
-    printf("\nfailed at %s:%d\nfailed caller: %p\n", f, n, a);
-    while (true) {}
-}
-
-void jeeh::hardFaultHandler (uint32_t* sp) {
-    printf("\nhard fault, sp = %p", sp);
-    fail();
-}
-
 Uart uart ('U');
 
 extern "C" int _write (int, char* ptr, int len) {
