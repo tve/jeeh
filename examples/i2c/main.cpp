@@ -19,7 +19,6 @@ extern "C" int _write (int, char* ptr, int len) {
 }
 
 int main () {
-    hardFaulter = hardFaultHandler;
     fastClock();
     cycles::init();
 

@@ -12,7 +12,6 @@ extern "C" uint8_t* _sbrk (uint32_t);
 constexpr Pin led (LED);  // defined in platformio.ini
 
 int main () {
-    hardFaulter = hardFaultHandler;
     fastClock();
     cycles::init();
 

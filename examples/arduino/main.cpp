@@ -45,7 +45,6 @@ extern "C" int _write (int, char* ptr, int len) {
 }
 
 int main () {
-    hardFaulter = hardFaultHandler;
     fastClock();
 
     // the UART config comes from platformio.ini and is defined in defs.h

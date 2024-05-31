@@ -31,7 +31,6 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 }
 
 void initBoard () {
-    hardFaulter = hardFaultHandler;
     fastClock();
     cycles::init();
 
