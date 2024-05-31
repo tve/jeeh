@@ -19,3 +19,12 @@ PH5  | DIO5  | 10     | 6R   | SDA
 
 This assumes the PMOD selection pins are set as: PH15=1 and PI10=0.  
 TX+RX are available for the 12-pin PMod, 8-pin ESP-01, or 4-pin Grove connector.
+
+The complete setup uses an F723-Disco kit plus a custom RFM69 breakout board:
+
+![](f723d-overview.jpg)
+
+Detail of the "Fanout Board" included with this Discovery kit (RFM69 not yet
+hooked up):
+
+![](f723d-fanout.jpg)
