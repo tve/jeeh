@@ -18,5 +18,3 @@ int main () {
 }
 
 void jeeh::fail(void const*, char const*, int) { while (true) {} }
-void LowPower::start (Message&) {}
-void LowPower::finish() {}

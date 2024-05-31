@@ -37,5 +37,4 @@ uint32_t slowClock (bool high =true);
 uint32_t clockChange (uint32_t hz);
 
 void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
-void itmWrite (void const* ptr, size_t len);
-void itmFlush ();
+void swoWrite (void const* ptr =nullptr, size_t len =0);

@@ -10,9 +10,6 @@
 
 constexpr Pin led (LED);
 
-void jeeh::LowPower::start (Message&) {}
-void jeeh::LowPower::finish () {}
-
 void jeeh::fail (void const* a, char const* f, int n) {
     printf("%s:%d - called at %p\n", f, n, a);
     while (true) {}

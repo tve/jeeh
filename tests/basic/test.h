@@ -24,14 +24,14 @@ namespace jeeh {
         *p++ = ':';
         p = itoa(p, n);
         *p++ = '\n';
-        itmWrite(buf, p - buf);
+        swoWrite(buf, p - buf);
 
         logf("failed caller: %p\n", a);
 
 #if MUST_FAIL
-        itmWrite("OK\n", 3);
+        swoWrite("OK\n", 3);
 #else
-        itmWrite("FAIL\n", 5);
+        swoWrite("FAIL\n", 5);
 #endif
         while (true) {}
     }
@@ -68,11 +68,6 @@ namespace jeeh {
         fail();
     }
 
-#if !OWN_LOWPOWER
-    void LowPower::start (Message&) {}
-    void LowPower::finish () {}
-#endif
-
 } // namespace jeeh
 
 struct Tester {
@@ -86,15 +81,16 @@ struct Tester {
         swoInit(SWO_FREQ); // TODO openocd didn't init ITM/SWO on STM32WL
 #endif
 
-        itmWrite("\nTEST\n", 6);
+        swoWrite("\nTEST\n", 6);
     }
 
     ~Tester () {
 #if MUST_FAIL
-        itmWrite("Should have failed\n", 19);
-        itmWrite("FAIL\n", 5);
+        swoWrite("Should have failed\n", 19);
+        swoWrite("FAIL\n", 5);
 #else
-        itmWrite("OK\n", 3);
+        swoWrite("OK\n", 3);
 #endif
+        swoWrite(); // flush
     }
 };

@@ -14,7 +14,7 @@ extern "C" uint32_t __atomic_exchange_4 (void volatile* p, uint32_t v, int) {
     return t;
 }
 
-void itmWrite (void const* ptr, size_t len) {
+void swoWrite (void const* ptr, size_t len) {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28 };
 
     static bool inited;
@@ -28,16 +28,14 @@ void itmWrite (void const* ptr, size_t len) {
         USART2[CR1] = (1<<3) | (1<<0);  // TE UE
     }
 
+    if (len == 0) // when no args given: flush
+        while (!USART2[ISR](6)) {} // ISR: TC
+
     auto p = (uint8_t const*) ptr;
     while (len-- > 0U) {
         while (!USART2[ISR](7)) {} // ISR: TXE
         USART2[TDR] = *p++;        // TDR
     }
-}
-
-void itmFlush () {
-    enum { ISR=0x1C };
-    while (!USART2[ISR](6)) {} // ISR: TC
 }
 
 uint32_t fastClock (bool pll) {

@@ -21,13 +21,17 @@ inline namespace {
 
 //------------------------------------------------------------------------ logf
 
+[[gnu::weak]] void jeeh::logWriter (void const* ptr, size_t len) {
+    swoWrite(ptr, len);
+}
+
 void jeeh::logf (char const* fmt ...) {
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
 
     // check for enabled ITM flags before generating any printf output
-    if (ITM[TCR](0) && ITM[TER](0))
+    if (logWriter != swoWrite || (ITM[TCR](0) && ITM[TER](0)))
 #endif
     {
         static char buf [80];
@@ -43,7 +47,7 @@ void jeeh::logf (char const* fmt ...) {
             ++n;
         buf[n-1] = '\n';
 
-        itmWrite(buf, n);
+        logWriter(buf, n);
     }
 }
 
@@ -124,14 +128,15 @@ inline namespace {
     uint8_t current;           // currently running thread id
     uint8_t nextToRun;         // thread id of next thread to run
     bool fixed;                // cannot switch threads when set
-    LowPower idler;
 
     void triggerPendSV () { SCB[0x04](28) = 1; } // ICSR PENDSVSET
 }
 
-bool LowPower::interrupt (int) {
-    return false;
+[[gnu::weak]] uint8_t jeeh::lowestPower (uint16_t, uint8_t power) {
+    return power;
 }
+
+[[gnu::weak]] void jeeh::resumePower () {}
 
 struct Thread final : Task {
     enum { RUN=0x00, WAIT=0x01, DEAD=0x02 };
@@ -205,11 +210,11 @@ assert(block == nullptr);
                 break;
             }
             if (nextToRun == 0) {
-                Message m { 0, sys::SLOWEST, (uint16_t) nextTick() };
-                idler.start(m);
-                if (m.mTag >= sys::STOP0)
-                    rtc::shortSleep(m.mLen, m.mTag);
-                idler.finish();
+                auto t = nextTick();
+                auto power = lowestPower(t, Device::powerScan());
+                if (power >= sys::STOP0)
+                    rtc::shortSleep(t, power);
+                resumePower();
                 SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }

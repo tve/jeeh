@@ -15,7 +15,7 @@ int main () {
     logf("wait: %d us", c / (SystemCoreClock / 1'000'000));
 
     c = cycles::count();
-    itmWrite("by design, this message has exactly 50 characters\n", 50);
+    swoWrite("by design, this message has exactly 50 characters\n", 50);
     c = cycles::count() - c;
 
     logf("itm:  %d us", c / (SystemCoreClock / 1'000'000));

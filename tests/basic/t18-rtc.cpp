@@ -24,9 +24,9 @@ int main () {
 
     for (auto i = 0; i < 10; ++i) {
         sys::wait(101);
-        itmWrite(".", 1); // send some output to avoid a timeout
+        swoWrite(".", 1); // send some output to avoid a timeout
     }
-    itmWrite("\n", 1);
+    swoWrite("\n", 1);
 
     showTime(2, rtc::getDate());
 

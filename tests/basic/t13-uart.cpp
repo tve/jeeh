@@ -34,7 +34,7 @@ int main () {
 #else
     auto baud = SystemCoreClock / 32; // i.e. 4'687'500 baud @ 150 MHz
 #endif
-    logf("10 %d", baud); itmFlush();
+    logf("10 %d", baud); swoWrite();
     uart.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
                                  UART_FREQ, Irq::UART_NAME, UART_CONF });
 

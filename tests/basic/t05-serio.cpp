@@ -27,20 +27,12 @@ int getch () {
     return UART_NAME[RDR];
 }
 
-// on Nucleo-L031K6, the UART and ITM both use the same serial port
-// this test is ok if we flush debug output before sending test bytes
-
-void flush () {
-#if STM32L0
-    sys::wait(1);
-    while (UART_NAME[ISR](5)) // RXFNE
-        getch();
-#endif
-}
-
 int main () {
     Tester t;
-    flush();
+
+    // on Nucleo-L031K6, the UART and ITM both use the same serial port
+    // this test is ok if we flush debug output before sending test bytes
+    swoWrite();
 
     if (serio()) {
         // msg must fit in the UART's FIFO (i.e. the TX+RX FIFO's combined)
@@ -49,8 +41,8 @@ int main () {
             putch(*p);
         for (auto p = msg; *p != 0; ++p) {
             auto c = getch();
-            itmWrite(&c, 1);
-            itmWrite("\n", 1);
+            swoWrite(&c, 1);
+            swoWrite("\n", 1);
             assert(c == *p);
         }
     } else {
@@ -59,10 +51,10 @@ int main () {
             putch(*p);
             auto c = getch();
 #if !STM32L0
-            itmWrite(&c, 1);
+            swoWrite(&c, 1);
 #endif
-            itmWrite("\n", 1);
-            flush();
+            swoWrite("\n", 1);
+            swoWrite();
             assert(c == *p);
         }
     }

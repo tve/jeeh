@@ -4,9 +4,6 @@
 #include "defs.h"
 using namespace jeeh;
 
-void LowPower::start (Message&) {}
-void LowPower::finish () {}
-
 int main () {
     for (auto i = 0; i < 100; ++i) asm ("");
     slowClock(false); // 100 kHz

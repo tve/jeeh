@@ -5,11 +5,11 @@ using namespace jeeh;
 int main () {
     Tester t;
 
-    itmWrite("10\n", 3);
+    swoWrite("10\n", 3);
     sys::wait(10);
-    itmWrite("11\n", 3);
+    swoWrite("11\n", 3);
     sys::wait(20);
-    itmWrite("12\n", 3);
+    swoWrite("12\n", 3);
     sys::wait(30);
-    itmWrite("13\n", 3);
+    swoWrite("13\n", 3);
 }

@@ -8,7 +8,9 @@ void fail (void const* addr =__builtin_return_address(0),
 void hardFaultHandler (uint32_t* sp);
 
 void logf (char const* fmt ...);
-void dumpHex (void const* p, int n =16, char const* msg =nullptr);
+void logWriter (void const* ptr, size_t len); // weak, can be redefined
+
+void dumpHex (void const* ptr, int len =16, char const* msg =nullptr);
 
 inline void (*hardFaulter) (uint32_t*) = nullptr;
 
@@ -159,14 +161,9 @@ protected:
 };
 static_assert(sizeof (Device) == 8);
 
-struct LowPower : Device {
-    LowPower () : Device ('L') {}
-
-    void start (Message&) override;
-    void finish () override;
-
-    bool interrupt (int) override;
-};
+// both are called in handler mode (PendSV, via Thread::reschedule)
+uint8_t lowestPower (uint16_t ms, uint8_t power); // weak, can be redefined
+void resumePower ();                              // weak, can be redefined
 
 class DateTime {
     constexpr static uint8_t daysInMonth [] = {

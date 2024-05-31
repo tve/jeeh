@@ -70,11 +70,14 @@ void jeeh::swoInit (uint32_t baud, uint32_t hz) {
 
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
 
-void jeeh::itmWrite (void const* ptr, size_t len) {
+void jeeh::swoWrite (void const* ptr, size_t len) {
     constexpr IoReg<0xE000'0000> ITM;
     enum { TER=0xE00, TCR=0xE80 };
 
     if (ITM[TCR](0) && ITM[TER](0)) { // ITM and channel 0 both enabled
+        if (len == 0) // when no args given: flush
+            while (ITM[TCR](23)) {} // ~BUSY: wait for ITM to drain
+
         auto pos = (uintptr_t) ptr;
         while (len > 0) {
             while (!ITM[0](0)) {}
@@ -87,13 +90,6 @@ void jeeh::itmWrite (void const* ptr, size_t len) {
             len -= step;
         }
     }
-}
-
-void jeeh::itmFlush () {
-    constexpr IoReg<0xE000'0000> ITM;
-    enum { TCR=0xE80 };
-
-    while (ITM[TCR](23)) {} // ~BUSY: wait for ITM to drain
 }
 
 #endif

@@ -4,9 +4,6 @@
 #include "defs.h"
 using namespace jeeh;
 
-void LowPower::start (Message& m) {}
-void LowPower::finish () {}
-
 int main () {
     rtc::reset();
     rtc::init();

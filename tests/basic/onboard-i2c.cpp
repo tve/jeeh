@@ -4,7 +4,7 @@ using namespace jeeh;
 #include "test.h"
 
 extern "C" int _write (int, char* ptr, int len) {
-    itmWrite(ptr, len);
+    swoWrite(ptr, len);
     return len;
 }
 
