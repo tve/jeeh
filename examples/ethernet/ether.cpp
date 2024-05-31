@@ -115,7 +115,7 @@ int main () {
 #endif
 
             case 'd':
-                dumpHex(stack, sizeof stack, "irq stack");
+                logDump(stack, sizeof stack, "irq stack");
                 break;
 
             case 'l': {

@@ -27,3 +27,8 @@ extern "C" int _write (int, char* ptr, int len) {
     sys::call(m);
     return len;
 }
+
+void jeeh::logWriter (void const* ptr, size_t len) {
+    _write(1, ptr, len);
+    return len;
+}

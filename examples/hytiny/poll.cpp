@@ -45,7 +45,7 @@ int main () {
         if (n > 0) {
             printf("rssi %d lna %d afc %d @ %d\n",
                     rf.rssi, rf.lna, rf.afc, rtc::getSecs());
-            dumpHex(buf, n);
+            logDump(buf, n);
         }
         sys::wait(100);
     }

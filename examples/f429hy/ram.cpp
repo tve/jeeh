@@ -8,7 +8,7 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    printf("%s: ram @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
+    logf("%s: ram @ %d MHz", SVDNAME, SystemCoreClock / 1'000'000);
 
     initFmcPins();
     auto psRam = initPsRam();
@@ -16,15 +16,15 @@ int main () {
 
     for (auto i = 0; i < 32; ++i)
         psRam[i] = i+0x40;
-    dumpHex(psRam, 32, "4 MB PSRAM");
-    printf(" %d errors\n", memTests((uint32_t) psRam, 4<<20));
+    logDump(psRam, 32, "4 MB PSRAM");
+    logf(" %d errors", memTests((uint32_t) psRam, 4<<20));
 
     ledR.toggle();
 
     for (auto i = 0; i < 32; ++i)
         sdRam[i] = i+0x60;
-    dumpHex(sdRam, 32, "32 MB SDRAM");
-    printf(" %d errors\n", memTests((uint32_t) sdRam, 32<<20));
+    logDump(sdRam, 32, "32 MB SDRAM");
+    logf(" %d errors", memTests((uint32_t) sdRam, 32<<20));
 
     while (true) {
         ledL.toggle();

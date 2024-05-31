@@ -17,6 +17,8 @@ inline namespace {
         }
     }
 
+    char logBuf [80];
+
 } // inline namespace
 
 [[gnu::weak]] void jeeh::logWriter (void const* ptr, size_t len) {
@@ -34,20 +36,19 @@ void jeeh::logf (char const* fmt ...) {
     if (logWriter != swoWrite || (ITM[TCR](0) && ITM[TER](0)))
 #endif
     {
-        static char buf [80];
 
         va_list ap;
         va_start(ap, fmt);
-        auto n = vsnprintf(buf, sizeof buf, fmt, ap);
+        auto n = vsnprintf(logBuf, sizeof logBuf, fmt, ap);
         va_end(ap);
 
-        if (n >= (int) sizeof buf)
-            n = sizeof buf;
-        else if (n == 0 || buf[n-1] != '\n')
+        if (n >= (int) sizeof logBuf)
+            n = sizeof logBuf;
+        else if (n == 0 || logBuf[n-1] != '\n')
             ++n;
-        buf[n-1] = '\n';
+        logBuf[n-1] = '\n';
 
-        logWriter(buf, n);
+        logWriter(logBuf, n);
     }
 }
 
@@ -94,34 +95,36 @@ void jeeh::logf (char const* fmt ...) {
     fail();
 }
 
-//--------------------------------------------------------------------- dumpHex
+//--------------------------------------------------------------------- logDump
 
-void jeeh::dumpHex (void const* p, int n, char const* msg) {
+void jeeh::logDump (void const* p, int n, char const* msg) {
     if (msg != nullptr)
-        printf("%s: (%db)\n", msg, n);
+        logf("%s: (%db)", msg, n);
     auto q = (uint8_t const*) p;
     for (int off = 0; off < n; off += 16) {
         if (off > 0 && memcmp(q + off, q + off-16, 16) == 0) {
             if (off > 16 && memcmp(q + off, q + off-32, 16) != 0)
-                printf("*\n");
+                logf("*");
             continue;
         }
-        printf(" %03x:", off);
+        auto p = logBuf;
+        p += vsnprintf(logBuf, sizeof logBuf, " %03x:", off);
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
-                printf(" ");
+                *p++ = ' ';
             if (off+i >= n)
-                printf("  ");
+                *p++ = '  ';
             else
-                printf("%02x", q[off+i]);
+                p += vsnprintf(logBuf, sizeof logBuf, "%02x", q[off+i]);
         }
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
-                printf(" ");
+                *p++ = ' ';
             auto b = q[off+i];
-            printf("%c", off+i >= n ? ' ' : ' ' <= b && b <= '~' ? b : '.');
+            *p++ = off+i >= n ? ' ' : ' ' <= b && b <= '~' ? b : '.';
         }
-        printf("\n");
+        *p += '\n';
+        swoWrite(logBuf, p - logBuf);
     }
 }
 

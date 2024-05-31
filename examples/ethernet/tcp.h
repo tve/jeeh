@@ -7,7 +7,7 @@ struct TcpHandler : PortHandler {
     }
 
     bool received (Message& m) override {
-        dumpHex(m.mPtr, m.mLen, "tcp RECV");
+        logDump(m.mPtr, m.mLen, "tcp RECV");
         return false;
     }
 };
