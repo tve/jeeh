@@ -19,11 +19,11 @@ inline namespace {
 
 } // inline namespace
 
-//------------------------------------------------------------------------ logf
-
 [[gnu::weak]] void jeeh::logWriter (void const* ptr, size_t len) {
     swoWrite(ptr, len);
 }
+
+//------------------------------------------------------------------------ logf
 
 void jeeh::logf (char const* fmt ...) {
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
@@ -49,6 +49,49 @@ void jeeh::logf (char const* fmt ...) {
 
         logWriter(buf, n);
     }
+}
+
+//------------------------------------------------------------------------ fail
+
+[[gnu::weak]] void jeeh::fail (void const* a, char const* f, int n) {
+    logf("\n" "failed at %s:%d\n"
+              "failed caller: %p", f, n, a);
+    BlockIRQ irq;
+    while (true) {}
+}
+
+//------------------------------------------------------------ hardFaultHandler
+
+[[gnu::weak]] void jeeh::hardFaultHandler (uint32_t* sp) {
+    enum { CFSR=0x28, HFSR=0x2C, MMAR=0x34, BFAR=0x38 };
+
+    uint32_t hfsr = SCB[HFSR], cfsr = SCB[CFSR],
+            bfar = SCB[BFAR], mmar = SCB[MMAR];
+
+    asm ("cpsid i"); // disable all interrupts
+
+    logf("\n[Hard Fault]  SP=%08x  HFSR=%08x  CFSR=%08x", sp, hfsr, cfsr);
+    if (hfsr & (1<<30)) {
+        if (cfsr & 0xFFFF0000)
+            logf("  Usage fault %04x", cfsr >> 16);
+        if (cfsr & 0xFF00) {
+            logf("  Bus fault %02x", (uint8_t) (cfsr >> 8));
+            if (cfsr & (1<<15))
+                logf("    BFAR %08x", bfar);
+        }
+        if (cfsr & 0xFF) {
+            logf("  Memory fault %02x", (uint8_t) cfsr);
+            if (cfsr & (1<<7))
+                logf("    MMAR %08x", mmar);
+        }
+    }
+
+    logf("\t R0=%08x  R1=%08x  R2=%08x  R3=%08x",
+            sp[0], sp[1], sp[2], sp[3]);
+    logf("\tR12=%08x  LR=%08x  PC=%08x PSR=%08x",
+            sp[4], sp[5], sp[6], sp[7]);
+
+    fail();
 }
 
 //--------------------------------------------------------------------- dumpHex
@@ -556,7 +599,7 @@ void HardFault_Handler () {
         " mrsne r0,psp \n"
 #endif
         " bx    %0     \n"
-    :: "r" (hardFaulter));
+    :: "r" (hardFaultHandler));
 }
 
 //---------------------------------------------------------------------- PendSV

@@ -5,14 +5,12 @@ void fail (void const* addr =__builtin_return_address(0),
            char const* file =__builtin_FILE(),
            int line =__builtin_LINE());
 [[noreturn]]
-void hardFaultHandler (uint32_t* sp);
+void hardFaultHandler (uint32_t* sp); // weak, can be redefined
 
 void logf (char const* fmt ...);
 void logWriter (void const* ptr, size_t len); // weak, can be redefined
 
 void dumpHex (void const* ptr, int len =16, char const* msg =nullptr);
-
-inline void (*hardFaulter) (uint32_t*) = nullptr;
 
 template <typename T>
 T take (T& x) { T r = x; x = {}; return r; }

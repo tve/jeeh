@@ -1,9 +1,9 @@
 #include <jee.h>
 using namespace jeeh;
 
-void jeeh::fail (void const*, char const*, int) {
-    while (true) {}
-}
+// avoid pulling in logf, etc
+void jeeh::fail (void const*, char const*, int) { while (true) {} }
+void jeeh::hardFaultHandler (uint32_t*) { fail(); }
 
 int main () {
     fastClock();
