@@ -108,14 +108,15 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
             continue;
         }
         auto p = logBuf;
-        p += vsnprintf(logBuf, sizeof logBuf, " %03x:", off);
+        p += snprintf(logBuf, sizeof logBuf, " %03x:", off);
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
                 *p++ = ' ';
-            if (off+i >= n)
-                *p++ = '  ';
-            else
-                p += vsnprintf(logBuf, sizeof logBuf, "%02x", q[off+i]);
+            if (off+i >= n) {
+                *p++ = ' ';
+                *p++ = ' ';
+            } else
+                p += snprintf(logBuf, sizeof logBuf, "%02x", q[off+i]);
         }
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
