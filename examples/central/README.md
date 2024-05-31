@@ -4,7 +4,7 @@ There's an RFM69 attached to the 20-pin P1-STMod+ connector:
 
 GPIO | RFM69 | STMod+ | MBUS | Note
 -----|-------|--------|------|-----
-P    | DIO0  | 13     | 1L   | ADC
+PA4  | DIO0  | 13     | 1L   | ADC
 PF11 | NRST  | 12     | 2L   | RST
 PI0  | NSS   | 1      | 3L   | NSS2
 PI1  | SCK   | 4      | 4L   | SCK2
