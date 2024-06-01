@@ -12,21 +12,22 @@ SpiGpio spi;
 RF69 rf (spi);
 
 constexpr Pin nrst ("F11");
-constexpr Pin dio0 ("A4");
-constexpr Pin dio1 ("B0");
-constexpr Pin dio2 ("B11");
-constexpr Pin dio3 ("H4");
-constexpr Pin dio5 ("H5");
+// not attached:
+//constexpr Pin dio0 ("A4");
+//constexpr Pin dio1 ("B0");
+//constexpr Pin dio2 ("B11");
+//constexpr Pin dio3 ("H4");
+//constexpr Pin dio5 ("H5");
 
 int main () {
     initBoard("poll"); // in defs.h
 
     nrst.mode("P");
-    dio0.mode("D");
-    dio1.mode("D");
-    dio2.mode("D");
-    dio3.mode("D");
-    dio5.mode("D");
+    //dio0.mode("D");
+    //dio1.mode("D");
+    //dio2.mode("D");
+    //dio3.mode("D");
+    //dio5.mode("D");
 
     nrst = 1;
     sys::wait(10);
@@ -34,7 +35,6 @@ int main () {
     sys::wait(10);
 
     spi.init("C3,C2,I1,I0"); // div=0 @ 16 MHz: 8 Mhz
-spi.rate = 5;
     rf.init(63, 42, 8686);  // node 63, group 42, 868.3 MHz
     rf.txPower(0);
 
