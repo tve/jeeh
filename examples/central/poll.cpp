@@ -1,4 +1,4 @@
-// LED blinker, with RTC seconds sent to the UART console.
+// Polled access to the RFM69 radio, via bit-banged or hardware SPI.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -8,7 +8,39 @@ using namespace jeeh;
 //#define RF69_SPI_BULK 1
 #include "spi-rf69-v1.h"
 
-SpiGpio spi;
+struct SpiHw : SpiGpio {
+    enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C };
+
+    void init (char const* desc) {
+        SpiGpio::init(desc);
+        Pin::config(":5,,", &mosi, 3);
+
+        RCC(ena::SPI2, 1) = 1;
+
+        SPI2[CR1] = (3<<3) | (1<<2); // BD/16 MSTR
+        SPI2[CR2] = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
+        SPI2[CR1](6) = 1; // SPE
+    }
+
+    int transfer (int v) {
+        SPI2.byte(DR) = v;
+        while (SPI2[SR](0) == 0) {} // RXNE
+        return SPI2.byte(DR);
+    }
+
+    int transfer (uint8_t const* out, uint8_t* in, int len) {
+        int b = 0;
+        for (auto i = 0; i < len; ++i) {
+            b = transfer(out != nullptr ? out[i] : 0);
+            if (in != nullptr)
+                in[i] = b;
+        }
+        return b;
+    }
+};
+
+//SpiGpio spi;
+SpiHw spi;
 RF69 rf (spi);
 
 constexpr Pin nrst ("F11");
