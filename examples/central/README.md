@@ -8,8 +8,8 @@ PA4  | DIO0  | 13     | 1L   | ADC
 PF11 | NRST  | 12     | 2L   | RST
 PI0  | NSS   | 1      | 3L   | NSS2
 PI1  | SCK   | 4      | 4L   | SCK2
-PI2  | MISO  | 9      | 5L   | MISO2
-PI3  | MOSI  | 8      | 6L   | MOSI2
+PC2  | MISO  | 9      | 5L   | MISO2
+PC3  | MOSI  | 8      | 6L   | MOSI2
 -    | +3.3  | -      | 7L   | 3.3V
 -    | GND   | -      | 8L   | GND
 PB0  | DIO1  | 14     | 1R   | PWM

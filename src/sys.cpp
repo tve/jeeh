@@ -108,7 +108,7 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
             continue;
         }
         auto p = logBuf;
-        p += snprintf(logBuf, sizeof logBuf, " %03x:", off);
+        p += snprintf(p, sizeof logBuf, " %03x:", off);
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
                 *p++ = ' ';
@@ -116,7 +116,7 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
                 *p++ = ' ';
                 *p++ = ' ';
             } else
-                p += snprintf(logBuf, sizeof logBuf, "%02x", q[off+i]);
+                p += snprintf(p, sizeof logBuf, "%02x", q[off+i]);
         }
         for (int i = 0; i < 16; ++i) {
             if (i % 4 == 0)
@@ -124,8 +124,8 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
             auto b = q[off+i];
             *p++ = off+i >= n ? ' ' : ' ' <= b && b <= '~' ? b : '.';
         }
-        *p += '\n';
-        swoWrite(logBuf, p - logBuf);
+        *p++ = '\n';
+        logWriter(logBuf, p - logBuf);
     }
 }
 

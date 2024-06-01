@@ -33,19 +33,16 @@ int main () {
     nrst = 0;
     sys::wait(10);
 
-    spi.init("I3,I2,I1,I0"); // div=0 @ 16 MHz: 8 Mhz
+    spi.init("C3,C2,I1,I0"); // div=0 @ 16 MHz: 8 Mhz
 spi.rate = 5;
-logf("10");
     rf.init(63, 42, 8686);  // node 63, group 42, 868.3 MHz
-logf("11");
     rf.txPower(0);
 
     while (true) {
-logf("12");
         uint8_t buf [60];
         auto n = rf.receive(buf, sizeof buf);
         if (n > 0) {
-            printf("rssi %d lna %d afc %d @ %d\n",
+            logf("rssi %d lna %d afc %d @ %d",
                     rf.rssi, rf.lna, rf.afc, rtc::getSecs());
             logDump(buf, n);
         }
