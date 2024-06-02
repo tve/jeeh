@@ -5,18 +5,17 @@
 using namespace jeeh;
 #include "defs.h"
 
-//#define RF69_SPI_BULK 1
+#define RF69_SPI_BULK 1
 #include "spi-rf69-v1.h"
 
 struct SpiHw : SpiGpio {
-    enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C };
+    enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
 
     void init (char const* desc) {
         SpiGpio::init(desc);
         Pin::config(":5,,", &mosi, 3);
 
         RCC(ena::SPI2, 1) = 1;
-
         SPI2[CR1] = (3<<3) | (1<<2); // BD/16 MSTR
         SPI2[CR2] = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
         SPI2[CR1](6) = 1; // SPE
@@ -28,19 +27,84 @@ struct SpiHw : SpiGpio {
         return SPI2.byte(DR);
     }
 
-    int transfer (uint8_t const* out, uint8_t* in, int len) {
-        int b = 0;
+    void transfer (uint8_t const* out, uint8_t* in, int len) {
+logf("19");
         for (auto i = 0; i < len; ++i) {
-            b = transfer(out != nullptr ? out[i] : 0);
+            auto b = transfer(out != nullptr ? out[i] : 0);
             if (in != nullptr)
                 in[i] = b;
         }
-        return b;
+    }
+};
+
+// TODO this is hard-coded for SPI2 and DMA1
+struct SpiDma : SpiHw {
+    enum { IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C }; // DMA regs
+    enum { STREAM_STEP=0x18 };
+    enum { TX_STR=4, RX_STR=3, TX_CH=0, RX_CH=0 }; // hard-coded SPI2 config
+
+    auto dmaTX (int off) const { return DMA1[off+STREAM_STEP*TX_STR]; }
+    auto dmaRX (int off) const { return DMA1[off+STREAM_STEP*RX_STR]; }
+
+    void init (char const* desc) {
+        SpiHw::init(desc);
+
+        SPI2[CR2](0) = 1; // RXDMAEN
+        SPI2[CR2](1) = 1; // TXDMAEN
+
+        RCC(ena::DMA1, 1) = 1;
+        dmaTX(CPAR) = SPI2.ADDR + DR;
+        dmaTX(CCR) = (TX_CH<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        dmaRX(CPAR) = SPI2.ADDR + DR;
+        dmaRX(CCR) = (RX_CH<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+
+        SCB[0x10](4) = 1; // SEVONPEND
+    }
+
+    using SpiHw::transfer; // use the polled version for single-byte transfers
+
+    void transfer (uint8_t const* out, uint8_t* in, int len) {
+        assert(out != nullptr || in != nullptr);
+if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
+
+        if (in != nullptr) {
+            dmaRX(CMAR) = (uint32_t) in;
+            dmaRX(CNDTR) = len;
+            dmaRX(CCR)(0) = 1; // EN
+        }
+        if (out != nullptr) {
+            dmaTX(CMAR) = (uint32_t) out;
+            dmaTX(CNDTR) = len;
+            dmaTX(CCR)(0) = 1; // EN
+        }
+
+        static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
+logf("20"); cycles::init();
+        if (out != nullptr) {
+            do
+                asm ("wfe");
+            while (dmaTX(CCR)(0)); // EN
+            DMA1[IFCR+(TX_STR&~3)] = 0b111101 << ifcBits[TX_STR&3]; // clr irq
+        }
+logf("21 %d", cycles::count()); cycles::init();
+        if (in != nullptr) {
+            do
+                asm ("wfe");
+            while (dmaRX(CCR)(0)); // EN
+            DMA1[IFCR+(RX_STR&~3)] = 0b111101 << ifcBits[RX_STR&3]; // clr irq
+        }
+logf("22 %d", cycles::count());
+
+        if (in == nullptr) { // clear OVR flag, as the data was never read
+            (void) +SPI2[DR];
+            (void) +SPI2[SR];
+        }
     }
 };
 
 //SpiGpio spi;
-SpiHw spi;
+//SpiHw spi;
+SpiDma spi;
 RF69 rf (spi);
 
 constexpr Pin nrst ("F11");

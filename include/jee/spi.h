@@ -33,14 +33,12 @@ struct SpiGpio {
         return r;
     }
 
-    int transfer (uint8_t const* out, uint8_t* in, int len) {
-        int b = 0;
+    void transfer (uint8_t const* out, uint8_t* in, int len) {
         for (auto i = 0; i < len; ++i) {
-            b = transfer(out != nullptr ? out[i] : 0);
+            auto b = transfer(out != nullptr ? out[i] : 0);
             if (in != nullptr)
                 in[i] = b;
         }
-        return b;
     }
 
 private:
