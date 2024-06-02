@@ -77,15 +77,19 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             dmaTX(CNDTR) = len;
             dmaTX(CCR)(0) = 1; // EN
 
-            while (dmaTX(CCR)(0)) // EN
+            do
                 asm ("wfe");
+            while (dmaTX(CCR)(0)); // EN
+
             DMA1[IFCR+(TX_STR&~3)] = 0b111101 << ifcBits[TX_STR&3]; // clr irq
             auto n = (uint8_t) Irq::DMA1_Stream4;
             NVIC[0x180 + 4*(n/32)] = 1 << n%32;
         }
         if (in != nullptr) {
-            while (dmaRX(CCR)(0)) // EN
+            do
                 asm ("wfe");
+            while (dmaRX(CCR)(0)); // EN
+
             DMA1[IFCR+(RX_STR&~3)] = 0b111101 << ifcBits[RX_STR&3]; // clr irq
             auto n = (uint8_t) Irq::DMA1_Stream3;
             NVIC[0x180 + 4*(n/32)] = 1 << n%32;
