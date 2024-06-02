@@ -83,7 +83,7 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
 
             DMA1[IFCR+(TX_STR&~3)] = 0b111101 << ifcBits[TX_STR&3]; // clr irq
             auto n = (uint8_t) Irq::DMA1_Stream4;
-            NVIC[0x180 + 4*(n/32)] = 1 << n%32;
+            NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         }
         if (in != nullptr) {
             do
@@ -92,7 +92,7 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
 
             DMA1[IFCR+(RX_STR&~3)] = 0b111101 << ifcBits[RX_STR&3]; // clr irq
             auto n = (uint8_t) Irq::DMA1_Stream3;
-            NVIC[0x180 + 4*(n/32)] = 1 << n%32;
+            NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         } else { // clear OVR flag, as the data was never read
             (void) +SPI2[DR];
             (void) +SPI2[SR];
