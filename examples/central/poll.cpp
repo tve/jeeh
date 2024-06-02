@@ -16,7 +16,7 @@ struct SpiHw : SpiGpio {
         Pin::config(":5,,", &mosi, 3);
 
         RCC(ena::SPI2, 1) = 1;
-        SPI2[CR1] = (3<<3) | (1<<2); // BD/16 MSTR
+        SPI2[CR1] = (2<<3) | (1<<2); // BD/8 (APB1 = 54 MHz) MSTR
         SPI2[CR2] = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
         SPI2[CR1](6) = 1; // SPE
     }
@@ -28,7 +28,6 @@ struct SpiHw : SpiGpio {
     }
 
     void transfer (uint8_t const* out, uint8_t* in, int len) {
-logf("19");
         for (auto i = 0; i < len; ++i) {
             auto b = transfer(out != nullptr ? out[i] : 0);
             if (in != nullptr)
@@ -66,6 +65,7 @@ struct SpiDma : SpiHw {
     void transfer (uint8_t const* out, uint8_t* in, int len) {
         assert(out != nullptr || in != nullptr);
 if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
+        static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
 
         if (in != nullptr) {
             dmaRX(CMAR) = (uint32_t) in;
@@ -76,26 +76,20 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             dmaTX(CMAR) = (uint32_t) out;
             dmaTX(CNDTR) = len;
             dmaTX(CCR)(0) = 1; // EN
-        }
 
-        static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
-logf("20"); cycles::init();
-        if (out != nullptr) {
-            do
+            while (dmaTX(CCR)(0)) // EN
                 asm ("wfe");
-            while (dmaTX(CCR)(0)); // EN
             DMA1[IFCR+(TX_STR&~3)] = 0b111101 << ifcBits[TX_STR&3]; // clr irq
+            auto n = (uint8_t) Irq::DMA1_Stream4;
+            NVIC[0x180 + 4*(n/32)] = 1 << n%32;
         }
-logf("21 %d", cycles::count()); cycles::init();
         if (in != nullptr) {
-            do
+            while (dmaRX(CCR)(0)) // EN
                 asm ("wfe");
-            while (dmaRX(CCR)(0)); // EN
             DMA1[IFCR+(RX_STR&~3)] = 0b111101 << ifcBits[RX_STR&3]; // clr irq
-        }
-logf("22 %d", cycles::count());
-
-        if (in == nullptr) { // clear OVR flag, as the data was never read
+            auto n = (uint8_t) Irq::DMA1_Stream3;
+            NVIC[0x180 + 4*(n/32)] = 1 << n%32;
+        } else { // clear OVR flag, as the data was never read
             (void) +SPI2[DR];
             (void) +SPI2[SR];
         }
