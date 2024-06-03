@@ -9,10 +9,10 @@ constexpr Pin led (LED);
 ExtIrq extirq;
 
 int exti (Message&) {
-    constexpr Pin in (EXT_IN);
+    constexpr Pin in (EXTI_IN);
     in.mode("F");
 
-    Message msg {extirq.dId, EXT_IN[0], in.pin(), (uint8_t*) ExtIrq::BOTH};
+    Message msg {extirq.dId, EXTI_IN[0], in.pin(), (uint8_t*) ExtIrq::BOTH};
 
     while (true) {
         sys::call(msg); // configure and block until pin changes
@@ -28,7 +28,7 @@ int main () {
     uint32_t stack [300];
     sys::init(stack);
 
-    constexpr Pin out (EXT_OUT);
+    constexpr Pin out (EXTI_OUT);
     out.mode("P");
 
     uint32_t extiStack [150];

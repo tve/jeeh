@@ -1,6 +1,6 @@
 //CG2 board exti
-#define EXT_IN  "A10"
-#define EXT_OUT "A9"
+#define EXTI_IN "A10"
+#define EXTI_OUT "A9"
 
 //CG1 board leds
 #define LED  "B8"

@@ -17,47 +17,71 @@ def VERSION(block):
 def VERSION_strip(block):
     return 'constexpr auto VERSION = "<stripped>";'
 
-#------------------------------------ inject board settings
+#----------------------------------- Inject board settings from platformio.ini
 
-def BOARD(block, name):
+def BOARD(block, name, suffix=''):
     tag = 'board_' + name
     if tag not in projOpts:
         print('not found:', tag)
         return []
     info = projOpts[tag].split()
-    if name == 'ether':
-        return [f'#define ETHER_PINS "{info[0]}"']
-    if name == 'exti':
-        return [f'#define EXT_IN  "{info[0]}"',
-                f'#define EXT_OUT "{info[1]}"']
+    if suffix:
+        suffix = "_" + suffix.upper()
     if name == 'leds':
         r = [f'#define LED  "{info[0]}"']
         if len(info) > 1:
             for i, v in enumerate(info):
                 r.append(f'#define LED{i+1} "{v}"')
         return r
-    if name == 'uart':
+    if name.startswith('uart'):
         f = { 'O': '0' }
         for x in info:
-            k, v = x.split('=')
+            k, v = x.split(':', 1)
             f[k] = v
-        # N=USART2 P=A2:7,A3 F=150 V=2 D=1 L=CH O=0 T=1 R=2 C=26,27
+        # N:USART2 P:A2:7,A3 F:150 V:2 D:1 L:CH O:0 T:1 R:2 C:26,27
         # def: UART_NAME  USART2
         # def: UART_PINS  "A2:7,A3"
         # def: UART_FREQ  150
         # def: UART_VERS  2
         # def: UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,26,27
-        r = ['#define UART_NAME  %s' % f['N'],
-             '#define UART_PINS  "%s"' % f['P'],
-             '#define UART_FREQ  %s' % f['F']]
+        r = [f'#define UART{suffix}_NAME  {f['N']}',
+             f'#define UART{suffix}_PINS  "{f['P']}"',
+             f'#define UART{suffix}_FREQ  {f['F']}']
         if 'V' in f:
-            r.append('#define UART_VERS  %s' % f['V'])
+            r.append(f'#define UART{suffix}_VERS  {f['V']}')
         if 'D' in f:
             t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
                          '$D-1,$T-$O,$R-$O,$C').substitute(f)
-            r.append('#define UART_CONF  ' + t)
+            r.append(f'#define UART{suffix}_CONF  ' + t)
         return r
-    return info
+    if name.startswith('i2c'):
+        f = { 'O': '0' }
+        for x in info:
+            k, v = x.split(':', 1)
+            f[k] = v
+        # N:I2C1 P:A2:7,A3 D:1 L:CH O:0 T:1 R:2 C:26,27
+        r = [f'#define I2C{suffix}_NAME  {f['N']}',
+             f'#define I2C{suffix}_PINS  "{f['P']}"']
+        if 'D' in f:
+            t = Template(
+                    'Irq::${N}_EV,' # Irq::I2Cx_EV
+                    '$D-1,$T-$O,$R-$O,$C' # dma dev, tx/rx chans, tx/rx req's
+                ).substitute(f)
+            r.append(f'#define I2C{suffix}_CONF  ' + t)
+        return r
+
+    # catch-all: "board_foo = BAR=123 BAZ=xyz" will generate:
+    #   #define FOO_BAR (123)
+    #   #define FOO_BAZ "xyz"
+    n = name.upper() + suffix
+    r = []
+    for x in info:
+        k, v = x.split(':', 1)
+        if v[0].isdigit():
+            r.append(f'#define {n}_{k} ({v})')
+        else:
+            r.append(f'#define {n}_{k} "{v}"')
+    return r
 
 #-------------------------------------------------------------- Parse SVD file
 
