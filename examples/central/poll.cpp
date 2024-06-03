@@ -8,7 +8,6 @@ using namespace jeeh;
 #define RF69_SPI_BULK 1
 #include "spi-rf69-v1.h"
 
-// TODO this is hard-coded for SPI2
 struct SpiSync : SpiGpio {
     struct Config {
         uint32_t addr;
