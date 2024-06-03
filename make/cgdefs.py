@@ -44,9 +44,9 @@ def BOARD(block, name, suffix=''):
         # def: UART_FREQ  150
         # def: UART_VERS  2
         # def: UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,26,27
-        r = [f'#define UART{suffix}_NAME  {f['N']}',
-             f'#define UART{suffix}_PINS  "{f['P']}"',
-             f'#define UART{suffix}_FREQ  {f['F']}']
+        r = [f'#define UART{suffix}_NAME  {f["N"]}',
+             f'#define UART{suffix}_PINS  "{f["P"]}"',
+             f'#define UART{suffix}_FREQ  {f["F"]}']
         if 'V' in f:
             r.append(f'#define UART{suffix}_VERS  {f['V']}')
         if 'D' in f:
@@ -60,8 +60,8 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             f[k] = v
         # N:I2C1 P:A2:7,A3 D:1 L:CH O:0 T:1 R:2 C:26,27
-        r = [f'#define I2C{suffix}_NAME  {f['N']}',
-             f'#define I2C{suffix}_PINS  "{f['P']}"']
+        r = [f'#define I2C{suffix}_NAME  {f["N"]}',
+             f'#define I2C{suffix}_PINS  "{f["P"]}"']
         if 'D' in f:
             t = Template(
                     'Irq::${N}_EV,' # Irq::I2Cx_EV
