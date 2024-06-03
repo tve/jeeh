@@ -5,11 +5,25 @@
 #define LED3 "B1"
 //CG]
 
-//CG[ board uart
+//CG[ board uart_c
 #define UART_NAME  USART6
 #define UART_PINS  "C6:8,C7"
 #define UART_FREQ  108
 #define UART_CONF  Irq::DMA2_Stream6,Irq::DMA2_Stream2,2-1,6-0,2-0,5,5
+//CG]
+
+//CG[ board uart_j jmp
+#define UART_JMP_NAME  USART2
+#define UART_JMP_PINS  "A2:7,A3"
+#define UART_JMP_FREQ  108
+#define UART_JMP_CONF  Irq::DMA1_Stream6,Irq::DMA1_Stream5,1-1,6-0,5-0,4,4
+//CG]
+
+//CG[ board uart_e esp
+#define UART_ESP_NAME  UART5
+#define UART_ESP_PINS  "C12:8,D2"
+#define UART_ESP_FREQ  54
+#define UART_ESP_CONF  Irq::DMA1_Stream7,Irq::DMA1_Stream0,1-1,7-0,0-0,4,4
 //CG]
 
 constexpr Pin led (LED);  // defined in platformio.ini
