@@ -19,7 +19,7 @@ struct SpiGpio {
         Pin::config(":F,,,:U", &mosi, 4); // keep NSEL pulled up
     }
 
-    int transfer (int v) {
+    int transfer (int v) const {
         auto r = 0;
         for (auto i = 0; i < 8; ++i) {
             mosi = v >> 7;
@@ -33,7 +33,7 @@ struct SpiGpio {
         return r;
     }
 
-    void transfer (uint8_t const* out, uint8_t* in, int len) {
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
         for (auto i = 0; i < len; ++i) {
             auto b = transfer(out != nullptr ? out[i] : 0);
             if (in != nullptr)

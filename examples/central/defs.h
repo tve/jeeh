@@ -26,6 +26,13 @@
 #define UART_ESP_CONF  Irq::DMA1_Stream7,Irq::DMA1_Stream0,1-1,7-0,0-0,4,4
 //CG]
 
+//CG[ board spi
+#define SPI_NAME  SPI2
+#define SPI_PINS  "C3:5,C2,I1,I0:P"
+#define SPI_FREQ  54
+#define SPI_CONF  Irq::DMA1_Stream4,Irq::DMA1_Stream3,1-1,4-0,3-0,0,0
+//CG]
+
 constexpr Pin led (LED);  // defined in platformio.ini
 
 Uart uart ('U');

@@ -2,14 +2,14 @@ namespace jeeh {
 
 struct Uart : Device {
     struct Config {
-        uint32_t uart;
-        uint16_t uena;
+        uint32_t addr;
+        uint16_t ena;
         uint8_t mhz;
         Irq idleIrq, txIrq, rxIrq;
         uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
     };
 
-    auto devReg (int off) const { IoReg<0> io; return io[dev.uart+off]; }
+    auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
     auto dmaReg (int off) const { return DMA1[0x400*dev.dma+off]; }
     auto dmaRX (int off) const { return dmaReg(off+CHAN_STEP*dev.rxChan); }
     auto dmaTX (int off) const { return dmaReg(off+CHAN_STEP*dev.txChan); }
@@ -19,7 +19,7 @@ struct Uart : Device {
     void init (char const* pins, uint32_t baud, Config const& config) {
         Pin::config(pins);
         dev = config;
-        RCC(dev.uena, 1) = 1;          // uart on
+        RCC(dev.ena, 1) = 1;          // uart on
         baudRate(baud);
 
         static_assert(RXBYTES % cache::align == 0);
@@ -40,7 +40,7 @@ struct Uart : Device {
 
         dmaRX(CNDTR) = RXBYTES;
         dmaRX(CMAR) = (uint32_t) rxBuf;
-        dmaRX(CPAR) = dev.uart + RDR;
+        dmaRX(CPAR) = dev.addr + RDR;
 #if STM32F1 | STM32F3 | STM32G4
         dmaRX(CCR) = 0b1010'0111; // MINC CIRC HTIE TCIE EN
 #elif STM32H7
@@ -51,7 +51,7 @@ struct Uart : Device {
 #endif
 
         dmaTX(CNDTR) = 0;
-        dmaTX(CPAR) = dev.uart + TDR;
+        dmaTX(CPAR) = dev.addr + TDR;
 #if STM32F1 | STM32F3 | STM32G4
         dmaTX(CCR) = 0b1001'0010; // MINC DIR TCIE
 #elif STM32H7
@@ -73,7 +73,7 @@ struct Uart : Device {
     }
 
     void deinit () {
-        RCC(dev.uena, 1) = 0;          // uart off
+        RCC(dev.ena, 1) = 0;          // uart off
         RCC(ena::DMA1+dev.dma, 1) = 0; // dma off
     }
 

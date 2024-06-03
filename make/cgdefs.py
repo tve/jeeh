@@ -27,23 +27,20 @@ def BOARD(block, name, suffix=''):
     info = projOpts[tag].split()
     if suffix:
         suffix = "_" + suffix.upper()
+
     if name == 'leds':
         r = [f'#define LED  "{info[0]}"']
         if len(info) > 1:
             for i, v in enumerate(info):
                 r.append(f'#define LED{i+1} "{v}"')
         return r
+
     if name.startswith('uart'):
         f = { 'O': '0' }
         for x in info:
             k, v = x.split(':', 1)
             f[k] = v
         # N:USART2 P:A2:7,A3 F:150 V:2 D:1 L:CH O:0 T:1 R:2 C:26,27
-        # def: UART_NAME  USART2
-        # def: UART_PINS  "A2:7,A3"
-        # def: UART_FREQ  150
-        # def: UART_VERS  2
-        # def: UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,2-0,1-0,26,27
         r = [f'#define UART{suffix}_NAME  {f["N"]}',
              f'#define UART{suffix}_PINS  "{f["P"]}"',
              f'#define UART{suffix}_FREQ  {f["F"]}']
@@ -54,6 +51,7 @@ def BOARD(block, name, suffix=''):
                          '$D-1,$T-$O,$R-$O,$C').substitute(f)
             r.append(f'#define UART{suffix}_CONF  ' + t)
         return r
+
     if name.startswith('i2c'):
         f = { 'O': '0' }
         for x in info:
@@ -68,6 +66,21 @@ def BOARD(block, name, suffix=''):
                     '$D-1,$T-$O,$R-$O,$C' # dma dev, tx/rx chans, tx/rx req's
                 ).substitute(f)
             r.append(f'#define I2C{suffix}_CONF  ' + t)
+        return r
+
+    if name.startswith('spi'):
+        f = { 'O': '0' }
+        for x in info:
+            k, v = x.split(':', 1)
+            f[k] = v
+        # N:SPI1 P:A7:5,A6,A5,A4:P F:54 D:1 L:CH O:0 T:4 R:3 C:0,0
+        r = [f'#define SPI{suffix}_NAME  {f["N"]}',
+             f'#define SPI{suffix}_PINS  "{f["P"]}"',
+             f'#define SPI{suffix}_FREQ  {f["F"]}']
+        if 'D' in f:
+            t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
+                         '$D-1,$T-$O,$R-$O,$C').substitute(f)
+            r.append(f'#define SPI{suffix}_CONF  ' + t)
         return r
 
     # catch-all: "board_foo = BAR=123 BAZ=xyz" will generate:
