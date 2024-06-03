@@ -48,7 +48,7 @@ def BOARD(block, name, suffix=''):
              f'#define UART{suffix}_PINS  "{f["P"]}"',
              f'#define UART{suffix}_FREQ  {f["F"]}']
         if 'V' in f:
-            r.append(f'#define UART{suffix}_VERS  {f['V']}')
+            r.append(f'#define UART{suffix}_VERS  {f["V"]}')
         if 'D' in f:
             t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
                          '$D-1,$T-$O,$R-$O,$C').substitute(f)
