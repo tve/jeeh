@@ -14,6 +14,7 @@ $A:
 
 examples:
 	for i in ../examples/*/; do echo $$i:; pio run -d $$i -s || true; done
+	cd ../examples/ && size */.pio/build/*/firmware.elf
 
 attached:
 	etc/attached.py
