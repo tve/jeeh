@@ -465,9 +465,11 @@ Message& sys::recv () {
         return th.pull();
     };
     while (true)
-        if (auto mp = (Message*) svc((int) f); mp!= nullptr) {
-            if (mp->mDst != Task::MARKER)
+        if (auto mp = (Message*) svc((int) f); mp != nullptr) {
+            if (mp->mDst != Task::MARKER) {
+                mp->mFun(*mp); // trigger the callback
                 return *mp;
+            }
             auto& tk = *(Task*) mp;
             if (tk.id() == context().task) {
                 mp = tk.pull();
