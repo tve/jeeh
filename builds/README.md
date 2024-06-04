@@ -14,7 +14,7 @@ Test  | Name     | Description
 `t07` | fault    | Generate a fault exception (a "usage fault" in this case) to verify that it is caught and reported by the `hardFaultHandler` set up by the `Tester` object.
 `t08` | pool     | Try out the memory allocator via the `sys::pool()` system call interface (which makes it thread-safe).
 `t09` | wait     | Perform a brief delay through the `sys::wait()` system call, which sets up `SysTick` interrupts and implements a message-based timer chain.
-`t10` | task     | Create a very simple `Doubler` task, and use JeeH's message-based `sys::call()` mechanism to pass information into it and back.
+`t10` | callback | Test the method callback machinery, now implemented for all messages picked up in sys::recv.
 `t11` | block    | Use a blocking `sys::wait()` call inside a task. This needs to be special-cased to suspend and resume the task's owner thread.
 `t12` | thread   | Fork a second thread and let them each block in an alternating manner to exercise context switching, then wait on thread exit.
 `t13` | uart     | Test the DMA-based UART driver by sending out text over the loopback-jumper at maximum speed and counting the bytes being received.

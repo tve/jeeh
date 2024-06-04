@@ -467,7 +467,7 @@ Message& sys::recv () {
     while (true)
         if (auto mp = (Message*) svc((int) f); mp != nullptr) {
             if (mp->mDst != Task::MARKER) {
-                mp->mFun(*mp); // trigger the callback
+                mp->callback();
                 return *mp;
             }
             auto& tk = *(Task*) mp;

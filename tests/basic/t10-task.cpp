@@ -2,26 +2,28 @@
 using namespace jeeh;
 #include "test.h"
 
-struct Doubler : Task {
-    void process (Message& msg) override {
-        msg.mLen *= 2;
-        reply(msg);
+struct MyObj {
+    char const* s = "ping";
+
+    void ping (Message&) {
+        logf(s);
     }
 };
 
 int main () {
     Tester t;
 
-    Doubler doubler;
-    assert(doubler.id() == 1);
+    MyObj o;
 
-    Message m { doubler.id(), 'D', 111 };
-    sys::call(m);
-    assert(m.mLen == 222);
+    Message m { '@', 'T', 10 };
+    m.setCallback(&o, &MyObj::ping);
+    sys::send(m);
 
-    sys::wait(10);
+    logf("10");
+    sys::wait(20);
+    logf("11");
+    sys::recv();
+    logf("12");
 
-    assert(!m.inUse());
-    sys::call(m);
-    assert(m.mLen == 444);
+    logDump(&m, sizeof m);
 }
