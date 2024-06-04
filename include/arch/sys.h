@@ -39,17 +39,17 @@ struct Message {
     uint8_t  mTag =0;
     uint16_t mLen =0;
     uint8_t* mPtr =nullptr;
-    void   (*mMcb)(void*, Message*) =[](void*,Message*) {}; // method callback
+    void   (*mMcb)(uint8_t*,Message&) =[](uint8_t*,Message&) {}; // callback
     Message* mLnk =this;
 
     template< typename T >
     void setCallback(T* o, void (T::* f)(Message&)) {
         mPtr = (uint8_t*) o;
-        mMcb = (void (*) (void*,Message*)) ((uint32_t*) &f)[0];
+        mMcb = (void (*) (uint8_t*,Message&)) ((uint32_t*) &f)[0];
         assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
     }
 
-    void callback () { mMcb(mPtr, this); }
+    void callback () { mMcb(mPtr, *this); }
 
     bool inUse () const { return mLnk != this; }
 
