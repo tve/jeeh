@@ -34,30 +34,23 @@ void duffs (T* dst, T const* src, uint32_t count) {
     }
 }
 
-struct Message;
-
 struct Message {
     uint8_t  mDst =0;
     uint8_t  mTag =0;
     uint16_t mLen =0;
     uint8_t* mPtr =nullptr;
-    intptr_t mMcb =0; // method callback
+    void   (*mMcb)(void*, Message*) =[](void*,Message*) {}; // method callback
     Message* mLnk =this;
 
     template< typename T >
     void setCallback(T* o, void (T::* f)(Message&)) {
         mPtr = (uint8_t*) o;
-        assert(((intptr_t*) &f)[1] == 0); // TODO vtable support
-        mMcb = ((intptr_t*) &f)[0];
+        mMcb = (void (*) (void*,Message*)) ((uint32_t*) &f)[0];
+        assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
     }
 
     void callback () {
-        if (mMcb != 0) {
-            auto o = (Message*) mPtr;
-            void (Message::* f)(Message&) = nullptr;
-            ((intptr_t*) &f)[0] = mMcb;
-            (o->*f)(*this);
-        }
+        mMcb((Message*) mPtr, this);
     }
 
     bool inUse () const { return mLnk != this; }
