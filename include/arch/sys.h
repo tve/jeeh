@@ -49,9 +49,7 @@ struct Message {
         assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
     }
 
-    void callback () {
-        mMcb((Message*) mPtr, this);
-    }
+    void callback () { mMcb(mPtr, this); }
 
     bool inUse () const { return mLnk != this; }
 
