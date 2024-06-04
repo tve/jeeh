@@ -554,7 +554,7 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
     auto tp = new (p) Thread;
     tp->mDst = current;
     tp->mLen = n;
-    tp->mArg = a;
+    tp->mPtr = (uint8_t*) a;
 
     tp->sp = p + n - 16;
     tp->sp[8] = (uint32_t)(Message*) tp; // r0
@@ -571,7 +571,7 @@ Message& sys::fork (uint32_t* p, uint16_t n, int (*h)(Message&), intptr_t a) {
 
 void sys::quit (intptr_t ret) {
     auto& th = context();
-    th.mArg = ret;
+    th.mPtr = (uint8_t*) ret;
     send(th);
     th.~Thread();
 

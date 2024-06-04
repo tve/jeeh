@@ -47,10 +47,10 @@ int main () {
 
     auto& r = sys::recv();
     assert(&r == &my);
-    logf("14 %d", r.mArg);
+    logf("14 %d", r.mPtr);
 #if STM32L0
-    assert(r.mArg == 71*71+4); // messed up by log output on same uart
+    assert((int) r.mPtr == 71*71+4); // messed up by log output on same uart
 #else
-    assert(r.mArg == 71*71+1);
+    assert((int) r.mPtr == 71*71+1);
 #endif
 }

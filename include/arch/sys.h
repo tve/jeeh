@@ -39,8 +39,18 @@ struct Message {
     uint8_t  mTag =0;
     uint16_t mLen =0;
     uint8_t* mPtr =nullptr;
-    intptr_t mArg =0;
+    void   (*mFun)(Message&) =[](Message&) {};
     Message* mLnk =this;
+
+    template< typename T >
+    void setCallback(T* o, void (T::* f)(Message&)) {
+        mPtr = (uint8_t*) o;
+        mFun = [](Message& m) {
+            auto o = (T*) m.mPtr;
+            auto f = (void (T::*)(Message&)) m.mFun;
+            (o->*f)(m);
+        };
+    }
 
     bool inUse () const { return mLnk != this; }
 

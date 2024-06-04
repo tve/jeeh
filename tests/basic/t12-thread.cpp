@@ -33,6 +33,6 @@ int main () {
 
     auto& r = sys::recv();
     assert(&r == &my);
-    logf("15 %d", r.mArg);
-    assert(r.mArg == 12345);
+    logf("15 %d", r.mPtr);
+    assert((int) r.mPtr == 12345);
 }
