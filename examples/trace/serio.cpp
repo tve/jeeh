@@ -39,6 +39,6 @@ int main () {
         putch('0' + i % 10);
         pa1.toggle();
         //sys::wait(10);
-        rtc::deepSleep(20, 0);
+        rtc::longSleep(20, 0);
     }
 }

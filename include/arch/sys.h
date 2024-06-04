@@ -39,24 +39,26 @@ struct Message {
     uint8_t  mTag =0;
     uint16_t mLen =0;
     uint8_t* mPtr =nullptr;
-    void   (*mMcb)(uint8_t*,Message&) =[](uint8_t*,Message&) {}; // callback
+
+    void*    mObj =nullptr;
+    void   (*mFun)(void*,Message&) =[](void*,Message&) {}; // callback
     Message* mLnk =this;
 
     template< typename T >
     void setCallback(T* o, void (T::* f)(Message&)) {
-        mPtr = (uint8_t*) o;
-        mMcb = (void (*) (uint8_t*,Message&)) ((uint32_t*) &f)[0];
+        mObj = (uint8_t*) o;
+        mFun = (void (*) (void*,Message&)) ((uint32_t*) &f)[0];
         assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
     }
 
-    void callback () { mMcb(mPtr, *this); }
+    void callback () { mFun(mObj, *this); }
 
     bool inUse () const { return mLnk != this; }
 
     Message (const Message&) =delete;
     void operator= (const Message&) =delete;
 };
-static_assert(sizeof (Message) == 16);
+static_assert(sizeof (Message) == 20);
 
 struct Chain {
     bool isEmpty () const { return cHead == nullptr; }
@@ -118,7 +120,7 @@ struct Task : Message, Chain {
 
     static Task& byId (uint8_t id);
 };
-static_assert(sizeof (Task) == 24); // Message, Chain, and vtable-ptr
+static_assert(sizeof (Task) == 28); // Message, Chain, and vtable-ptr
 
 struct Fixer {
     Fixer ();

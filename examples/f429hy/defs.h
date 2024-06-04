@@ -26,8 +26,7 @@ extern "C" int _write (int, char* ptr, int len) {
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    _write(1, ptr, len);
-    return len;
+    _write(1, (char*) ptr, len);
 }
 
 void initBoard () {
