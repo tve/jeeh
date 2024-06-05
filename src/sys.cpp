@@ -242,7 +242,8 @@ struct Thread : Message, Chain {
                 break;
             }
             if (nextToRun == 0) {
-                auto power = lowestPower(Device::powerScan(), nextTick());
+                auto t = nextTick();
+                auto power = lowestPower(Device::powerScan(), t);
                 if (power >= sys::STOP0)
                     rtc::shortSleep(t, power);
                 resumePower();
