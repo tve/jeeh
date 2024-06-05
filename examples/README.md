@@ -11,3 +11,4 @@
 - **`sleep`** - measuring low-power consumption with a Nucleo-32 L432KC
 - **`trace`** - SPI + logic analyzer trace setup for a Nucleo-32 G431KB
 - **`wsn`** - a low-power Wireless Sensor Node using a Nucleo-32 L031K6
+- **`z474`** - various apps for the Nucleo-G474RE or WeAct-G474CE board
