@@ -2,7 +2,7 @@
 using namespace jeeh;
 #include "test.h"
 
-uint8_t jeeh::lowestPower (uint16_t, uint8_t power) {
+uint8_t jeeh::lowestPower (uint8_t power, uint16_t) {
     return power >= 50 ? sys::STOP1 :
            power >= 40 ? sys::STOP0 :
                          sys::SLOWEST;

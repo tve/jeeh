@@ -151,7 +151,7 @@ protected:
 static_assert(sizeof (Device) == 8);
 
 // both are called in handler mode (PendSV, via Thread::reschedule)
-uint8_t lowestPower (uint16_t ms, uint8_t power); // weak, can be redefined
+uint8_t lowestPower (uint8_t power, uint16_t ms); // weak, can be redefined
 void resumePower ();                              // weak, can be redefined
 
 class DateTime {

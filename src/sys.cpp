@@ -178,7 +178,7 @@ inline namespace {
     void triggerPendSV () { SCB[0x04](28) = 1; } // ICSR PENDSVSET
 }
 
-[[gnu::weak]] uint8_t jeeh::lowestPower (uint16_t, uint8_t power) {
+[[gnu::weak]] uint8_t jeeh::lowestPower (uint8_t power, uint16_t) {
     return power;
 }
 
@@ -242,8 +242,7 @@ struct Thread : Message, Chain {
                 break;
             }
             if (nextToRun == 0) {
-                auto t = nextTick();
-                auto power = lowestPower(t, Device::powerScan());
+                auto power = lowestPower(Device::powerScan(), nextTick());
                 if (power >= sys::STOP0)
                     rtc::shortSleep(t, power);
                 resumePower();
