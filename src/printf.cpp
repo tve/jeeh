@@ -1,14 +1,6 @@
 #include "jee.h"
 using namespace jeeh;
 #include <cstdarg>
-#include <cstdio>
-
-#if 0
-        va_list ap;
-        va_start(ap, fmt);
-        auto n = vsnprintf(logBuf, sizeof logBuf, fmt, ap);
-        va_end(ap);
-#endif
 
 int veprintf (void (*fun)(void*,int), void* arg, char const* fmt, va_list ap) {
     int pad, left = 0, count = 0;
@@ -94,18 +86,9 @@ extern "C" {
 
 int _write (int fd, char* ptr, int len);
 
-int putchar (int c) {
-    return _write(1, (char*) &c, 1);
-}
-
-int puts (char const* s) {
-    _write(1, (char*) s, strlen(s));
-    return putchar('\n');
-}
-
 int printf (char const* fmt ...) {
     // TODO figure out a way to avoid char-by-char call overhead
-    auto emit = +[](void*, int c) { putchar(c); };
+    auto emit = +[](void*, int c) { _write(1, (char*) c, 1); };
 
     va_list ap;
     va_start(ap, fmt);
