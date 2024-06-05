@@ -103,25 +103,6 @@ namespace sys {
 
 } // namespace sys
 
-struct Task : Message, Chain {
-    enum { LIMIT = 30, MARKER = 255 };
-
-    Task ();
-    // TODO ~Task ();
-
-    uint8_t id () const { return mTag; }
-    bool isThread () const { return mDst != MARKER; }
-
-    void submit (Message& msg);
-    virtual void process (Message& msg) =0;
-
-    // the msg arg in process is already set up to return to the sender
-    void reply (Message& msg) const { sys::send(msg); }
-
-    static Task& byId (uint8_t id);
-};
-static_assert(sizeof (Task) == 28); // Message, Chain, and vtable-ptr
-
 struct Fixer {
     Fixer ();
     ~Fixer ();

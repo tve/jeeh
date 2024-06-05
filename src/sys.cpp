@@ -171,10 +171,9 @@ Message* Chain::pull () {
 //---------------------------------------------------------------------- Thread
 
 inline namespace {
-    Task* tasks [Task::LIMIT]; // all tasks and threads
-    uint8_t current;           // currently running thread id
-    uint8_t nextToRun;         // thread id of next thread to run
-    bool fixed;                // cannot switch threads when set
+    uint8_t current;   // currently running thread id
+    uint8_t nextToRun; // thread id of next thread to run
+    bool fixed;        // cannot switch threads when set
 
     void triggerPendSV () { SCB[0x04](28) = 1; } // ICSR PENDSVSET
 }
@@ -185,23 +184,30 @@ inline namespace {
 
 [[gnu::weak]] void jeeh::resumePower () {}
 
-struct Thread final : Task {
+struct Thread : Message, Chain {
+    enum { LIMIT = 20 };
+    static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
+
     enum { RUN=0x00, WAIT=0x01, DEAD=0x02 };
 
     uint32_t* sp =nullptr;   // saved stack pointer when not running
     Message* block =nullptr; // block until this specific msg is received
     uint8_t state =RUN;      // current state of this thread
-    uint8_t task;            // current task, else this thread itself
 
     // see https://en.cppreference.com/w/cpp/memory/new/operator_new
     static void* operator new (size_t, void* p) { return p; }
 
-    Thread () {
-        mDst = current;
-        task = mLen = mTag;
+    Thread () : Message { current } {
+        for (auto i = 0; i < LIMIT; ++i)
+            if (threads[i] == nullptr) {
+                mTag = i;
+                threads[i] = this;
+                return;
+            }
+        fail(); // too many threads
     }
 
-    void wakeUp (Message& msg) {
+    void submit (Message& msg) {
         assert(irqState() == 0); // must be in SVC or PendSV
 
         if (block == &msg) {
@@ -214,29 +220,8 @@ struct Thread final : Task {
             reschedule();
     }
 
-    void process (Message& msg) override {
-        assert(msg.mDst == MARKER);
-        auto& tk = (Task&) msg;
-        assert(&tk == &Task::byId(tk.mTag)); // make sure this really is a task
-
-        auto saved = task;
-        task = tk.mTag;
-        //auto saved2 = block;
-        //block = nullptr;
-assert(block == nullptr);
-        while (!tk.isEmpty())
-            tk.process(*tk.pull());
-        //block = saved2;
-        task = saved;
-    }
-
-    static Thread* entry (uint8_t id) {
-        auto p = tasks[id];
-        return p != nullptr && p->isThread() ? (Thread*) p : nullptr;
-    }
-
     static Thread& byId (uint8_t id) {
-        auto p = entry(id);
+        auto p = threads[id];
         assert(p != nullptr);
         return *p;
     }
@@ -248,7 +233,7 @@ assert(block == nullptr);
             nextToRun = mTag;
 
         while (true) {
-            auto th = entry(nextToRun);
+            auto th = threads[nextToRun];
             assert(th != nullptr);
             if (th->state == RUN) {
                 SCB[0x10](1) = 0; // ~SLEEPONEXIT
@@ -268,52 +253,14 @@ assert(block == nullptr);
             --nextToRun;
         }
     }
+
+    inline static Thread* threads [LIMIT];
 };
 
-static Thread mainThread; // this self-installs as task #0 TODO yuck ...
+static Thread mainThread; // this self-installs as thread #0 TODO yuck ...
 
 static Thread& context () {
     return Thread::byId(current);
-}
-
-//------------------------------------------------------------------------ Task
-
-Task::Task () : Message { MARKER, 0, current } {
-    static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
-
-    for (auto i = 0; i < LIMIT; ++i)
-        if (tasks[i] == nullptr) {
-            assert(i == 0 || i != mLen); // task zero is also main thread
-            mTag = i;
-            tasks[i] = this;
-            return;
-        }
-    fail(); // too many tasks
-}
-
-void Task::submit (Message& msg) {
-    assert(irqState() == 0); // must be in SVC or PendSV
-
-    auto& th = Thread::byId(isThread() ? mTag : mLen);
-    if (isThread() || mTag == th.task) {
-        th.wakeUp(msg);
-        return;
-    }
-
-    if (th.block == &msg) {
-        insert(msg);
-        th.block = this;
-    } else
-        append(msg);
-
-    if (!inUse())
-        th.submit(*this);
-}
-
-Task& Task::byId (uint8_t id) {
-    assert(id < Task::LIMIT);
-    assert(tasks[id] != nullptr);
-    return *tasks[id];
 }
 
 //----------------------------------------------------------------------- Fixer
@@ -378,11 +325,11 @@ inline namespace {
             return nullptr; // no context switch
 
         // switch contexts: return ptr to {&oldsp,newsp}, see PendSV_Handler
-        static struct { uint32_t **oldSp, *newSp; } temp;
-        temp.oldSp = &context().sp;
+        static struct { uint32_t **oldSp, *newSp; } stacks;
+        stacks.oldSp = &context().sp;
         current = nextToRun;
-        temp.newSp = context().sp;
-        return &temp;
+        stacks.newSp = context().sp;
+        return &stacks;
     }
 
 } // inline namespace
@@ -435,7 +382,7 @@ void Device::reply (Message* mp) {
     if (mp != nullptr) {
         auto id = mp->mDst;
         mp->mDst = dId; // restore original destination, i.e. this driver
-        Task::byId(id).submit(*mp);
+        Thread::byId(id).submit(*mp);
     }
 }
 
@@ -445,9 +392,9 @@ void sys::send (Message& m) {
     assert(irqState() < 0); // must be in thread mode
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
-        msg.mDst = context().task;
-        if (id < Task::LIMIT)
-            Task::byId(id).submit(msg);
+        msg.mDst = context().mTag;
+        if (id < Thread::LIMIT)
+            Thread::byId(id).submit(msg);
         else
             Device::byId(id).start(msg);
     };
@@ -466,18 +413,8 @@ Message& sys::recv () {
     };
     while (true)
         if (auto mp = (Message*) svc((int) f); mp != nullptr) {
-            if (mp->mDst != Task::MARKER) {
-                mp->callback();
-                return *mp;
-            }
-            auto& tk = *(Task*) mp;
-            if (tk.id() == context().task) {
-                mp = tk.pull();
-                assert(mp != nullptr);
-                assert(tk.isEmpty()); // verify that only one msg was queued
-                return *mp;
-            }
-            context().process(*mp); // this msg is in fact a task header
+            mp->callback();
+            return *mp;
         }
 }
 
