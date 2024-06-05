@@ -2,8 +2,10 @@
 using namespace jeeh;
 #include "test.h"
 
-struct Doubler : Task {
-    void process (Message& msg) override {
+// FIXME no longer useful without tasks
+
+struct Doubler {
+    void process (Message& msg) {
         logf("20");
         sys::wait(20); // nested blocking call
         logf("21");
@@ -16,20 +18,20 @@ struct Doubler : Task {
 int main () {
     Tester t;
 
-    Doubler doubler;
-    assert(doubler.mTag == 1);
+    //Doubler doubler;
+    //assert(doubler.mTag == 1);
 
     logf("10");
-    Message m { doubler.mTag, 'D', 222 };
-    sys::call(m);
-    assert(m.mLen == 444);
+    //Message m { doubler.mTag, 'D', 222 };
+    //sys::call(m);
+    //assert(m.mLen == 444);
 
     sys::wait(10);
 
     logf("11");
-    assert(!m.inUse());
-    sys::call(m);
-    assert(m.mLen == 888);
+    //assert(!m.inUse());
+    //sys::call(m);
+    //assert(m.mLen == 888);
 
     logf("12");
 }

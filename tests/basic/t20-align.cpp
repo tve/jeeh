@@ -25,7 +25,6 @@ int main () {
     logf("");
     logf("  Message %2d %% %d b", sizeof (Message),   alignof (Message));
     logf("    Chain %2d %% %d b", sizeof (Chain),     alignof (Chain));
-    logf("     Task %2d %% %d b", sizeof (Task),      alignof (Task));
     logf("    Fixer %2d %% %d b", sizeof (Fixer),     alignof (Fixer));
     logf("     Lock %2d %% %d b", sizeof (Lock),      alignof (Lock));
     logf("   Device %2d %% %d b", sizeof (Device),    alignof (Device));

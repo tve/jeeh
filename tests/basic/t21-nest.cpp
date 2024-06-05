@@ -2,31 +2,33 @@
 using namespace jeeh;
 #include "test.h"
 
-struct Two : Task {
-    void process (Message& msg) override {
+// FIXME no longer useful without tasks
+
+struct Two {
+    void process (Message&) {
         sys::wait(20);
 
-        msg.mTag = 'b';
-        reply(msg);
+        //msg.mTag = 'b';
+        //reply(msg);
 
         sys::wait(21);
     }
 };
 
-struct One : Task {
-    void process (Message& msg) override {
+struct One {
+    void process (Message&) {
         sys::wait(10);
 
-        Two two;
+        //Two two;
 
-        Message m { two.id(), 'B' };
-        sys::call(m);
-        assert(m.mTag == 'b');
+        //Message m { two.id(), 'B' };
+        //sys::call(m);
+        //assert(m.mTag == 'b');
 
         sys::wait(11);
 
-        msg.mTag = 'a';
-        reply(msg);
+        //msg.mTag = 'a';
+        //reply(msg);
 
         sys::wait(12);
     }
@@ -35,9 +37,9 @@ struct One : Task {
 int main () {
     Tester t;
 
-    One one;
+    //One one;
 
-    Message m { one.id(), 'A' };
-    sys::call(m);
-    assert(m.mTag == 'a');
+    //Message m { one.id(), 'A' };
+    //sys::call(m);
+    //assert(m.mTag == 'a');
 }
