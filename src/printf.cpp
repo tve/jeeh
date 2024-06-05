@@ -103,6 +103,7 @@ int vsnprintf (char* buf, size_t len, char const* fmt, va_list ap) {
         auto r = (char**) p;
         if (r[0] < r[1])
             *r[0]++ = c;
+        *r[0] = 0;
     };
 
     return veprintf(emit, range, fmt, ap);
