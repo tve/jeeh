@@ -3,10 +3,19 @@ using namespace jeeh;
 #include "test.h"
 
 struct MyObj {
-    char const* s = "ping";
+    int v = 1;
+    Message m = { '@', 'T', 5 };
 
     void ping (Message&) {
-        logf(s);
+        logf("ping %d", v++);
+
+        m.setCallback(this, &MyObj::pong);
+        sys::send(m);
+    }
+
+    void pong (Message&) {
+        logf("pong %d", v);
+        v += 10;
     }
 };
 
@@ -21,9 +30,15 @@ int main () {
 
     logf("10");
     sys::wait(20);
+
     logf("11");
     sys::recv();
+
     logf("12");
+    sys::recv();
+
+    logf("13");
+    assert(o.v == 12);
 
     logDump(&m, sizeof m);
 }
