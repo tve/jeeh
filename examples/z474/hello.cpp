@@ -20,11 +20,5 @@ int main () {
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
 
-    Pin led (LED);
-    led.mode("P");
-    while (true) {
-printf("\n%s: hello @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
-        led.toggle();
-        sys::wait(500);
-    }
+    printf("\n%s: hello @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 }

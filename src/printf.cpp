@@ -88,7 +88,7 @@ int _write (int fd, char* ptr, int len);
 
 int printf (char const* fmt ...) {
     // TODO figure out a way to avoid char-by-char call overhead
-    auto emit = +[](void*, int c) { _write(1, (char*) c, 1); };
+    auto emit = +[](void*, int c) { _write(1, (char*) &c, 1); };
 
     va_list ap;
     va_start(ap, fmt);
