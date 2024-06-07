@@ -12,10 +12,12 @@ int main () {
 
     dog::init(2); // will fire approx. every 2 secs
 
-    struct Kicker : Message {
-        Kicker () : Message { '@', 'T' } {
-            setCallback(this, &Kicker::trigger);
-            trigger(*this); // start the cycle
+    struct Kicker {
+        Message timer { '@', 'T' };
+
+        Kicker () {
+            timer.setCallback(this, &Kicker::trigger);
+            trigger(timer); // start the cycle
         }
 
         void trigger (Message&) {
@@ -23,10 +25,10 @@ int main () {
             dog::kick();
 
             static int ms = 1000;
-            mLen = ms; // timeout
+            timer.mLen = ms; // timeout
             ms += 500;
 
-            sys::send(*this);
+            sys::send(timer);
         }
     };
 
