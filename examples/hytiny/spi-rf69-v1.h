@@ -233,7 +233,7 @@ int RF69<SPI>::receive (void* ptr, int len) {
 #if RF69_SPI_BULK
             spi.enable();
             spi.transfer(REG_FIFO);
-            int count = spi.transfer(0);
+            uint16_t count = spi.transfer(0);
             spi.transfer(nullptr, (uint8_t*) ptr, count);
             spi.disable();
 #else
