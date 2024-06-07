@@ -87,7 +87,7 @@ namespace sys {
     void wait (uint16_t ms);
     bool coma (uint32_t sec, int mode =STOP0);
 
-    uint8_t* pool (uint32_t bytes, uint8_t* ptr =nullptr, uint32_t align =4);
+    uint8_t* pool (uint32_t bytes, uint32_t align =4);
 
     void init (uint32_t* ptr, uint32_t len);
     Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);

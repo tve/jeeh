@@ -429,22 +429,18 @@ void sys::call (Message& msg) {
 
 //------------------------------------------------------------------------ pool
 
-uint8_t* sys::pool (uint32_t b, uint8_t* p, uint32_t a) {
+uint8_t* sys::pool (uint32_t b, uint32_t a) {
     assert(irqState() < 0); // must be in thread mode
-    auto f = +[](uint32_t bytes, uint8_t* ptr, uint32_t align) {
-        if (bytes > 0) {
-            if (align > 8)
-                bytes += align - 8; // allocate enough slack
-            ptr = (uint8_t*) realloc(ptr, bytes);
-            if (align > 8)
-                ptr += (1 + ~(uint32_t) ptr) % align;
-        } else if (ptr != nullptr) {
-            free(ptr);
-            ptr = nullptr;
-        }
+    auto f = +[](uint32_t bytes, uint32_t align) {
+        assert(bytes > 0);
+        if (align > 8)
+            bytes += align - 8; // allocate enough slack
+        auto ptr = (uint8_t*) malloc(bytes);
+        if (align > 8)
+            ptr += (1 + ~(uint32_t) ptr) % align;
         return ptr;
     };
-    return (uint8_t*) svc((int) f, b, (int) p, a);
+    return (uint8_t*) svc((int) f, b, a);
 }
 
 //------------------------------------------------------------------------ init

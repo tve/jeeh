@@ -115,7 +115,7 @@ struct Interface {
 
     Interface (MacAddr const& addr, int did, uint32_t size)
             : mac (addr), drv (did) {
-        bufs = (Buffer*) sys::pool(size, nullptr, cache::align);
+        bufs = (Buffer*) sys::pool(size, cache::align);
         assert(cache::align == 0 || (uintptr_t) bufs % cache::align == 0);
 
         nBufs = size / sizeof (Buffer);

@@ -24,7 +24,7 @@ struct Uart : Device {
 
         static_assert(RXBYTES % cache::align == 0);
         static_assert(TXBYTES % cache::align == 0);
-        rxBuf = sys::pool(RXBYTES+TXBYTES, nullptr, cache::align);
+        rxBuf = sys::pool(RXBYTES+TXBYTES, cache::align);
         txBuf = rxBuf + RXBYTES;
 
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on

@@ -44,7 +44,7 @@ struct Eth : Device {
     DmaDesc *txDone, *txFree, *rxDone, *rxFree;
 
     Eth (uint8_t id, uint32_t nDesc) : Device (id) {
-        auto descs = sys::pool(nDesc * sizeof (DmaDesc), nullptr, cache::align);
+        auto descs = sys::pool(nDesc * sizeof (DmaDesc), cache::align);
         assert(cache::align == 0 || (uint32_t) descs % cache::align == 0);
 
         auto txDesc = (DmaDesc*) descs;
