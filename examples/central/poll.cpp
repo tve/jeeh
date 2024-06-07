@@ -8,7 +8,7 @@ using namespace jeeh;
 #define RF69_SPI_BULK 1
 #include "spi-rf69-v1.h"
 
-struct SpiSync : SpiGpio {
+struct SpiSync : Device, SpiGpio {
     struct Config {
         uint32_t addr;
         uint16_t ena;
@@ -17,7 +17,15 @@ struct SpiSync : SpiGpio {
         uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
     } const dev;
 
-    SpiSync (Config const& config) : dev (config) {}
+    struct Request : Message {
+         uint8_t const* out;
+         bool more;
+
+         Request (uint8_t const* o, uint8_t* i, uint16_t n, bool m =false)
+             : Message { 0, 'T', n, i }, out (o), more (m) {}
+    };
+
+    SpiSync (Config const& config) : Device ('S'), dev (config) {}
 
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
     auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
@@ -98,6 +106,18 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             (void) +devReg(SR);
         }
     }
+
+    void transfer (Request const& req) const {
+        enable();
+        transfer(req.out, req.mPtr, req.mLen);
+        if (!req.more)
+            disable();
+    }
+
+private:
+    void start (Message&) override {}
+    void finish () override {}
+    bool interrupt (int) override { return false; }
 };
 
 //SpiGpio spi;
