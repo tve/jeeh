@@ -49,7 +49,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
     _write(1, (char*) ptr, len);
 }
 
-void initBoard (char const* appName) {
+void initBoard (char const* app) {
     fastClock();
     rtc::init();
 
@@ -66,5 +66,5 @@ void initBoard (char const* appName) {
                 { UART_W_NAME.ADDR, ena::UART_W_NAME,
                   UART_W_FREQ, Irq::UART_W_NAME, UART_W_CONF });
 
-    printf("\n%s: %s @ %d MHz\n", SVDNAME, appName, SystemCoreClock / 1'000'000);
+    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
 }

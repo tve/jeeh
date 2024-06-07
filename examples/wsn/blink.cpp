@@ -6,12 +6,12 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard();
+    initBoard("blink");
 
     while (true) {
         logf("%d", rtc::getSecs());
         led.toggle();
-        //rtc::shortSleep(100, sys::STOP2);
-        sys::wait(250);
+        //rtc::shortSleep(500, sys::STOP2);
+        sys::wait(500);
     }
 }

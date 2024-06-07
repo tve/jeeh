@@ -234,7 +234,7 @@ int RF69<SPI>::receive (void* ptr, int len) {
             spi.enable();
             spi.transfer(REG_FIFO);
             uint16_t count = spi.transfer(0);
-            spi.transfer(nullptr, (uint8_t*) ptr, count);
+            spi.transfer(nullptr, (uint8_t*) ptr, count > len ? len : count);
             spi.disable();
 #else
             int count = readReg(REG_FIFO);
