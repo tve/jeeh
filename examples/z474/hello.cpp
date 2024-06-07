@@ -6,7 +6,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard();
+    initBoard("hello");
 
     while (true) {
         led.toggle();
