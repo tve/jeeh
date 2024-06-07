@@ -15,10 +15,7 @@ int main () {
     struct Kicker {
         Message timer { '@', 'T' };
 
-        Kicker () {
-            timer.setCallback(this, &Kicker::trigger);
-            trigger(timer); // start the cycle
-        }
+        Kicker () { trigger(timer); } // start the cycle
 
         void trigger (Message&) {
             logf("kick @ %d ms", rtc::getDate().todMillis() % 10'000);
@@ -28,7 +25,7 @@ int main () {
             timer.mLen = ms; // timeout
             ms += 500;
 
-            sys::send(timer);
+            sys::send(timer.setCallback(this, &Kicker::trigger));
         }
     };
 
