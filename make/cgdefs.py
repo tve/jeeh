@@ -36,6 +36,8 @@ def BOARD(block, name, suffix=''):
         return r
 
     if name.startswith('uart'):
+        if not suffix:
+            suffix = name[4:].upper();
         f = { 'O': '0' }
         for x in info:
             k, v = x.split(':', 1)
@@ -53,6 +55,9 @@ def BOARD(block, name, suffix=''):
         return r
 
     if name.startswith('i2c'):
+        if not suffix:
+            suffix = name[3:].upper();
+        f = { 'O': '0' }
         f = { 'O': '0' }
         for x in info:
             k, v = x.split(':', 1)
@@ -69,6 +74,9 @@ def BOARD(block, name, suffix=''):
         return r
 
     if name.startswith('spi'):
+        if not suffix:
+            suffix = name[3:].upper();
+        f = { 'O': '0' }
         f = { 'O': '0' }
         for x in info:
             k, v = x.split(':', 1)
