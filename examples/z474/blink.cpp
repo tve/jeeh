@@ -10,8 +10,6 @@ int main () {
 
     while (true) {
         led.toggle();
-
-        for (auto i = 0; i < 2'000'000; ++i)
-            asm ("");  // prevents getting optimised away
+        sys::wait(250);
     }
 }
