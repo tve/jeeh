@@ -45,10 +45,11 @@ struct Message {
     Message* mLnk =this;
 
     template< typename T >
-    void setCallback(T* o, void (T::* f)(Message&)) {
+    Message& setCallback(T* o, void (T::* f)(Message&)) {
         mObj = (uint8_t*) o;
         mFun = (void (*) (void*,Message&)) ((uint32_t*) &f)[0];
         assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
+        return *this;
     }
 
     void callback () { mFun(mObj, *this); }
