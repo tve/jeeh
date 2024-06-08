@@ -112,7 +112,7 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             dmaTX(CCR)(0) = 0; // ~EN
 #endif
 
-#if STM32L0 // FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#if STM32L0 // FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 logf("11"); //  leaving this out breaks SPI-DMA on L0 (UART is also using DMA!)
 #endif
 
