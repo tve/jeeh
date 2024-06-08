@@ -20,12 +20,17 @@ struct SpiSync : Device, SpiGpio {
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
     auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
 
+#if STM32F1 | STM32F3 | STM32G4
+    enum { IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
+    enum { CHAN_STEP=0x14 };
+#else
     enum { IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C }; // DMA regs
-    enum { STREAM_STEP=0x18 };
+    enum { CHAN_STEP=0x18 };
+#endif
 
     auto dmaReg (int off) const { return DMA1[0x400*dev.dma+off]; }
-    auto dmaTX (int off) const { return dmaReg(off+STREAM_STEP*dev.txChan); }
-    auto dmaRX (int off) const { return dmaReg(off+STREAM_STEP*dev.rxChan); }
+    auto dmaTX (int off) const { return dmaReg(off+CHAN_STEP*dev.txChan); }
+    auto dmaRX (int off) const { return dmaReg(off+CHAN_STEP*dev.rxChan); }
 
     void init (char const* pins, int speed) {
         SpiGpio::init(pins);
@@ -37,20 +42,33 @@ struct SpiSync : Device, SpiGpio {
 
         RCC(dev.ena, 1) = 1;
         devReg(CR1) = (div<<3) | (1<<2); // BD MSTR
+#if STM32F1
+        devReg(CR2) = (1<<2); // SSOE
+#else
         devReg(CR2) = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
-        devReg(CR1)(6) = 1; // SPE
-
+#endif
         devReg(CR2)(0) = 1; // RXDMAEN
         devReg(CR2)(1) = 1; // TXDMAEN
+        devReg(CR1)(6) = 1; // SPE
 
         RCC(ena::DMA1+dev.dma, 1) = 1;
         dmaTX(CPAR) = dev.addr + DR;
-        dmaTX(CCR) = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
         dmaRX(CPAR) = dev.addr + DR;
+#if STM32F1 | STM32F3 | STM32G4
+        dmaTX(CCR) = 0b1001'0010; // MINC DIR TCIE
+        dmaRX(CCR) = 0b1000'0010; // MINC TCIE
+#elif STM32H7
+        dmaTX(CCR) = 0b0100'0101'0000; // MINC DIR TCIE
+        dmaRX(CCR) = 0b0100'0001'0000; // MINC TCIE
+#else
+        dmaTX(CCR) = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
         dmaRX(CCR) = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+#endif
 
         SCB[0x10](4) = 1; // SEVONPEND
     }
+
+    //using SpiGpio::transfer;
 
     int transfer (int v) const {
         *(volatile uint8_t*) (dev.addr+DR) = v;
@@ -61,7 +79,7 @@ struct SpiSync : Device, SpiGpio {
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         assert(out != nullptr || in != nullptr);
 if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
-        static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
+        [[maybe_unused]] static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
 
         if (in != nullptr) {
             dmaRX(CMAR) = (uint32_t) in;
@@ -75,20 +93,34 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
 
             do
                 asm ("wfe");
-            while (dmaTX(CCR)(0)); // EN
+            while (dmaTX(CNDTR) != 0);
+#if STM32F1
+            dmaTX(CCR)(0) = 0; // ~EN
+#endif
 
+#if STM32F1 | STM32F3 | STM32G4
+            dmaReg(IFCR) = 1<<(4*dev.txChan);
+#else
             auto t = dev.txChan;
             dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
+#endif
             auto n = (uint8_t) dev.txIrq;
             NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         }
         if (in != nullptr) {
             do
                 asm ("wfe");
-            while (dmaRX(CCR)(0)); // EN
+            while (dmaRX(CNDTR) != 0);
+#if STM32F1
+            dmaRX(CCR)(0) = 0; // ~EN
+#endif
 
+#if STM32F1 | STM32F3 | STM32G4
+            dmaReg(IFCR) = 1<<(4*dev.rxChan);
+#else
             auto r = dev.rxChan;
             dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
+#endif
             auto n = (uint8_t) dev.rxIrq;
             NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         } else { // clear OVR flag, as the data was never read
