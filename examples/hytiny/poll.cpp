@@ -5,18 +5,20 @@
 using namespace jeeh;
 #include "defs.h"
 
-//#define RF69_SPI_BULK 1
+#define RF69_SPI_BULK 1
 #include "spi-rf69-v1.h"
+#include "spi-sync.h"
 
 SpiGpio spi;
+//SpiSync spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 RF69 rf (spi);
 
 constexpr Pin nrst ("A8");
-constexpr Pin dio0 ("B5");
-constexpr Pin dio1 ("B3");
-constexpr Pin dio2 ("B4");
-constexpr Pin dio3 ("B0");
-constexpr Pin dio5 ("A15");
+//constexpr Pin dio0 ("B5");
+//constexpr Pin dio1 ("B3");
+//constexpr Pin dio2 ("B4");
+//constexpr Pin dio3 ("B0");
+//constexpr Pin dio5 ("A15");
 
 int main () {
     initBoard("poll"); // in defs.h
@@ -24,18 +26,19 @@ int main () {
     AFIO[0x04](24,3) = 2;
 
     nrst.mode("P");
-    dio0.mode("D");
-    dio1.mode("D");
-    dio2.mode("D");
-    dio3.mode("D");
-    dio5.mode("D");
+    //dio0.mode("D");
+    //dio1.mode("D");
+    //dio2.mode("D");
+    //dio3.mode("D");
+    //dio5.mode("D");
 
     nrst = 1;
     sys::wait(10);
     nrst = 0;
     sys::wait(10);
 
-    spi.init("A7,A6,A5,A4"); // div=0 @ 16 MHz: 8 Mhz
+    spi.init(SPI_PINS);
+    //spi.init(SPI_PINS, 10);
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);
 
