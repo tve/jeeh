@@ -76,8 +76,7 @@ protected:
 static_assert(sizeof (Chain) == 4);
 
 namespace sys {
-    enum { FASTEST, FAST, SLOW, SLOWEST,
-            STOP0, STOP1, STOP2, STANDBY, SHUTDOWN };
+    enum { SLEEP, STOP0, STOP1, STOP2, STANDBY, SHUTDOWN };
 
     int svc (int f, int x =0, int y =0, int z =0);
 
@@ -130,7 +129,7 @@ struct Device {
     enum { BASE = '@', LAST = 'Z' };
 
     uint8_t dId;
-    uint8_t dPower =sys::SLOWEST; // default value: sysclk must keep running
+    uint8_t dPower =sys::SLEEP; // default value: sysclk must keep running
 
     Device (uint8_t id);
     // TODO ~Device ();

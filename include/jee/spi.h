@@ -51,7 +51,7 @@ struct SpiBase {
     virtual void enable () =0;
     virtual void disable () =0;
     virtual int transfer (int v) =0;
-    virtual int transfer (uint8_t const* out, uint8_t* in, int len) =0;
+    virtual void transfer (uint8_t const* out, uint8_t* in, int len) =0;
 };
 
 template< typename SPI >
@@ -59,8 +59,8 @@ struct SpiWrap final : SpiBase, SPI {
     void enable () override { SPI::enable(); }
     void disable () override { SPI::disable(); }
     int transfer (int v) override { return SPI::transfer(v); }
-    int transfer (uint8_t const* out, uint8_t* in, int len) override {
-        return SPI::transfer(out, in, len);
+    void transfer (uint8_t const* out, uint8_t* in, int len) override {
+        SPI::transfer(out, in, len);
     }
 };
 

@@ -5,7 +5,7 @@ using namespace jeeh;
 uint8_t jeeh::lowestPower (uint8_t, uint16_t ms) {
     return ms >= 50 ? sys::STOP1 :
            ms >= 40 ? sys::STOP0 :
-                      sys::SLOWEST;
+                      sys::SLEEP;
 }
 
 void jeeh::resumePower () {

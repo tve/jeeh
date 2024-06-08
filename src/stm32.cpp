@@ -162,7 +162,7 @@ struct Ticker : Device, Chain {
 
         // TODO this is a hack: assumes RTC running if DBP bit set in PWR
         //  need SysTick if no RTC
-        dPower = PWR[0x00](8) ? sys::STOP2 : sys::SLOWEST;
+        dPower = PWR[0x00](8) ? sys::STOP2 : sys::SLEEP;
 
         STK[0x4] = (rate * (SystemCoreClock/1000)) / 8 - 1; // reload value
         STK[0x8] = 0;
