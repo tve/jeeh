@@ -2,10 +2,10 @@
 using namespace jeeh;
 #include "test.h"
 
-uint8_t jeeh::lowestPower (uint8_t power, uint16_t) {
-    return power >= 50 ? sys::STOP1 :
-           power >= 40 ? sys::STOP0 :
-                         sys::SLOWEST;
+uint8_t jeeh::lowestPower (uint8_t, uint16_t ms) {
+    return ms >= 50 ? sys::STOP1 :
+           ms >= 40 ? sys::STOP0 :
+                      sys::SLOWEST;
 }
 
 void jeeh::resumePower () {
