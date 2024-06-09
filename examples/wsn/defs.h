@@ -16,15 +16,15 @@
 //CG]
 
 constexpr Pin led (LED);  // defined in platformio.ini
-
-Uart uart ('U');
+inline Uart uart ('U');
+inline SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
 extern "C" int _write (int, char*, int) {
     fail();
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
 }
 
@@ -36,4 +36,6 @@ void initBoard (char const* app) {
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+
+    spi.init(SPI_PINS, 10);
 }

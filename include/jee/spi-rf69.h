@@ -87,7 +87,7 @@ struct RF69 {
                 spi.transfer(req); // sync with wfe & sleep
 #else
                 SpiDev::Request req (nullptr, ptr, len);
-                req.mDst = 'S'; // TODO yuck
+                req.mDst = spi.dId; // TODO yuck
                 sys::call(req); // async with thread suspend
 #endif
                 spi.disable();

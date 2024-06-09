@@ -16,21 +16,23 @@
 //CG]
 
 constexpr Pin led (LED);
+inline Uart uart ('U');
+inline SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
-uint8_t initBoard (char const* app) {
+void initBoard (char const* app) {
     fastClock();
     led.mode("P");
     rtc::init(false);
 
-    static Uart uart ('U');
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
-    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
-    return uart.dId;
+    logf("\n%s: %s @ %d MHz", SVDNAME, app, SystemCoreClock / 1'000'000);
+
+    spi.init(SPI_PINS, 10);
 }
 
 extern "C" int _write (int, char* ptr, int len) {
-    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
     return len;
 }

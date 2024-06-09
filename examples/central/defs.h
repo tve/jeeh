@@ -40,12 +40,13 @@ constexpr Pin green ("B1"); green.mode("P"); green = 1;
 constexpr Pin red ("A7"); red.mode("P"); red = 1;
 #endif
 
-Uart uart ('U');
-Uart uart_l ('L');
-Uart uart_w ('W');
+inline Uart uart ('U');
+inline Uart uart_l ('L');
+inline Uart uart_w ('W');
+inline SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
 extern "C" int _write (int, char* ptr, int len) {
-    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
     return len;
 }
@@ -64,6 +65,8 @@ void initBoard (char const* app) {
     uart.init(UART_PINS, 115'200,
                 { UART_NAME.ADDR, ena::UART_NAME,
                   UART_FREQ, Irq::UART_NAME, UART_CONF });
+    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+
     uart_l.init(UART_PINS, SystemCoreClock / 32,
                 { UART_L_NAME.ADDR, ena::UART_L_NAME,
                   UART_L_FREQ, Irq::UART_L_NAME, UART_L_CONF });
@@ -71,5 +74,5 @@ void initBoard (char const* app) {
                 { UART_W_NAME.ADDR, ena::UART_W_NAME,
                   UART_W_FREQ, Irq::UART_W_NAME, UART_W_CONF });
 
-    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+    spi.init(SPI_PINS, 10);
 }

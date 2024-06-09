@@ -5,8 +5,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
-
 #include <jee/spi-rf69.h>
 RF69 rf (spi);
 
@@ -22,8 +20,6 @@ int main () {
     nrst = 0;
     sys::wait(10);
 
-    //spi.init(SPI_PINS);
-    spi.init(SPI_PINS, 10);
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);
 
