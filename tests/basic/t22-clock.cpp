@@ -27,8 +27,8 @@ int main () {
         led.toggle();
     }
 
-   auto ms2 = rtc::getDate().todMillis();
-    logf("2: %d", ms2); swoWrite();
+    auto ms2 = rtc::getDate().todMillis();
+    logf("2: %d", ms2); sys::wait(2);
 
     for (auto i = 0; i < 5; ++i) {
         rtc::shortSleep(30, sys::STOP1);
