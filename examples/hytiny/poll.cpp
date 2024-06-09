@@ -14,6 +14,14 @@ constexpr Pin nrst ("A8");
 //constexpr Pin dio2 ("B4");
 //constexpr Pin dio3 ("B0");
 //constexpr Pin dio5 ("A15");
+#elif STM32L0
+constexpr Pin nrst ("B1");
+// not attached:
+//constexpr Pin dio0 ("A0");
+//constexpr Pin dio1 ("A1");
+//constexpr Pin dio2 ("A3");
+//constexpr Pin dio3 ("A8");
+//constexpr Pin dio5 ("B6");
 #else
 constexpr Pin nrst ("F11");
 // not attached:
@@ -88,28 +96,28 @@ int main () {
 
     SpiAsync spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
-    {   
+    if (1) {   
         logf("\n>>> SpiGpio: bit-banged");
         SpiGpio spi;
         spi.init(SPI_PINS);
         radioTest(spi);
         spi.deinit();
     }
-    {   
+    if (1) {   
         logf("\n>>> SpiDev: polled h/w regs");
         auto& spi = (SpiDev&) spi2;
         spi.init(SPI_PINS, 10);
         radioTest(spi);
         spi.deinit();
     }
-    {   
+    if (1) {   
         logf("\n>>> SpiSync: sync wfe-loop");
         auto& spi = (SpiSync&) spi2;
         spi.init(SPI_PINS, 10);
         radioTest(spi);
         spi.deinit();
     }
-    {   
+    if (1) {   
         logf("\n>>> SpiAsync: async device");
         auto& spi = (SpiAsync&) spi2;
         spi.init(SPI_PINS, 10);
