@@ -12,7 +12,7 @@ struct SpiSync : Device, SpiGpio {
          bool more;
 
          Request (uint8_t const* o, uint8_t* i, uint16_t n, bool m =false)
-             : Message { 0, 'T', n, i }, out (o), more (m) {}
+             : Message { 0, 'X', n, i }, out (o), more (m) {}
     };
 
     SpiSync (Config const& config) : Device ('S'), dev (config) {}
@@ -73,6 +73,9 @@ struct SpiSync : Device, SpiGpio {
 #endif
 
         SCB[0x10](4) = 1; // SEVONPEND
+
+        irqInstall((uint8_t) dev.txIrq);
+        irqInstall((uint8_t) dev.rxIrq);
     }
 
     int transfer (int v) const {
@@ -93,7 +96,6 @@ struct SpiSync : Device, SpiGpio {
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         assert(out != nullptr || in != nullptr);
 if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
-        [[maybe_unused]] static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
 
         if (in != nullptr) {
             dmaRX(CMAR) = (uint32_t) in;
@@ -105,36 +107,12 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             dmaTX(CNDTR) = len;
             dmaTX(CCR)(0) = 1; // EN
 
-            while (dmaTX(CNDTR) != 0)
+            while (dmaTX(CCR)(0) != 0) // EN
                 asm ("wfe");
-#if STM32F1 | STM32L0 | STM32L4
-            dmaTX(CCR)(0) = 0; // ~EN
-#endif
-
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-            dmaReg(IFCR) = 1<<(4*dev.txChan);
-#else
-            auto t = dev.txChan;
-            dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
-#endif
-            auto n = (uint8_t) dev.txIrq;
-            NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         }
         if (in != nullptr) {
-            while (dmaRX(CNDTR) != 0)
+            while (dmaRX(CCR)(0) != 0) // EN
                 asm ("wfe");
-#if STM32F1 | STM32L0 | STM32L4
-            dmaRX(CCR)(0) = 0; // ~EN
-#endif
-
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-            dmaReg(IFCR) = 1<<(4*dev.rxChan);
-#else
-            auto r = dev.rxChan;
-            dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
-#endif
-            auto n = (uint8_t) dev.rxIrq;
-            NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         } else { // clear OVR flag, as the data was never read
             (void) +devReg(DR);
             (void) +devReg(SR);
@@ -150,7 +128,34 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
     }
 
 private:
-    void start (Message&) override {}
-    void finish () override {}
-    bool interrupt (int) override { return false; }
+    void start (Message&) override {
+    }
+
+    void finish () override {
+    }
+
+    bool interrupt (int) override {
+        [[maybe_unused]] static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
+
+        auto t = dev.txChan;
+        auto r = dev.rxChan;
+
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+        if (dmaReg(0x00)(4*t)) { // GIF
+            dmaTX(CCR)(0) = 0; // ~EN
+            dmaReg(IFCR) = 1<<(4*t);
+        }
+        if (dmaReg(0x00)(4*r)) { // GIF
+            dmaRX(CCR)(0) = 0; // ~EN
+            dmaReg(IFCR) = 1<<(4*r);
+        }
+#else
+        if (dmaReg(t&~3)(5+ifcBits[t&3])) // TCIF
+            dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
+        if (dmaReg(r&~3)(5+ifcBits[r&3])) // TCIF
+            dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
+#endif
+
+        return false;
+    }
 };
