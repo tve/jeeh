@@ -36,7 +36,7 @@ void radioTest (SPI& spi) {
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);
 
-    while (true < 2) {
+    while (true) {
         uint8_t buf [60];
         auto n = rf.receive(buf, sizeof buf);
         if (n > 0) {
