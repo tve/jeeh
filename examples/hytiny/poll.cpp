@@ -2,11 +2,9 @@
 
 #include <jee.h>
 #include <jee/hal.h>
+#include <jee/spi-rf69.h>
 using namespace jeeh;
 #include "defs.h"
-
-#include <jee/spi-rf69.h>
-RF69 rf (spi);
 
 #if STM32F1
 constexpr Pin nrst ("A8");
@@ -26,6 +24,54 @@ constexpr Pin nrst ("F11");
 //constexpr Pin dio5 ("H5");
 #endif
 
+template< typename SPI >
+void radioTest (SPI& spi) {
+    RF69 rf (spi);
+
+    nrst = 1;
+    sys::wait(10);
+    nrst = 0;
+    sys::wait(10);
+
+    rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
+    rf.txPower(0);
+
+    while (true < 2) {
+        uint8_t buf [60];
+        auto n = rf.receive(buf, sizeof buf);
+        if (n > 0) {
+            logf("rssi %d lna %d afc %d @ %d",
+                    rf.rssi, rf.lna, rf.afc, rtc::getSecs());
+            logDump(buf, n);
+            break;
+        }
+        sys::wait(100);
+    }
+}
+
+struct SpiSync : SpiDev {
+    using SpiDev::SpiDev;
+    using SpiDev::transfer;
+
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        SpiDev::Request req (out, in, len);
+        SpiDev::transfer(req); // sync with wfe & sleep
+        logf("got sync");
+    }
+};
+
+struct SpiAsync : SpiSync {
+    using SpiSync::SpiSync;
+    using SpiSync::transfer;
+
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        SpiDev::Request req (out, in, len);
+        req.mDst = 'S'; // TODO yuck
+        sys::call(req); // async with thread suspend
+        logf("got async");
+    }
+};
+
 int main () {
     initBoard("poll"); // in defs.h
 
@@ -40,22 +86,35 @@ int main () {
     //dio3.mode("D");
     //dio5.mode("D");
 
-    nrst = 1;
-    sys::wait(10);
-    nrst = 0;
-    sys::wait(10);
+    SpiAsync spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
-    rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
-    rf.txPower(0);
-
-    while (true) {
-        uint8_t buf [60];
-        auto n = rf.receive(buf, sizeof buf);
-        if (n > 0) {
-            logf("rssi %d lna %d afc %d @ %d",
-                    rf.rssi, rf.lna, rf.afc, rtc::getSecs());
-            logDump(buf, n);
-        }
-        sys::wait(100);
+    {   
+        logf("\n>>> SpiGpio: bit-banged");
+        SpiGpio spi;
+        spi.init(SPI_PINS);
+        radioTest(spi);
+        spi.deinit();
     }
+    {   
+        logf("\n>>> SpiDev: polled h/w regs");
+        auto& spi = (SpiDev&) spi2;
+        spi.init(SPI_PINS, 10);
+        radioTest(spi);
+        spi.deinit();
+    }
+    {   
+        logf("\n>>> SpiSync: sync wfe-loop");
+        auto& spi = (SpiSync&) spi2;
+        spi.init(SPI_PINS, 10);
+        radioTest(spi);
+        spi.deinit();
+    }
+    {   
+        logf("\n>>> SpiAsync: async device");
+        auto& spi = (SpiAsync&) spi2;
+        spi.init(SPI_PINS, 10);
+        radioTest(spi);
+        spi.deinit();
+    }
+    logf("\n>>> done");
 }

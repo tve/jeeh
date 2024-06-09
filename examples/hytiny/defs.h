@@ -17,7 +17,6 @@
 
 constexpr Pin led (LED);
 inline Uart uart ('U');
-inline SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
 void initBoard (char const* app) {
     fastClock();
@@ -27,8 +26,6 @@ void initBoard (char const* app) {
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", SVDNAME, app, SystemCoreClock / 1'000'000);
-
-    spi.init(SPI_PINS, 10);
 }
 
 extern "C" int _write (int, char* ptr, int len) {

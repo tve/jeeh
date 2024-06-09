@@ -43,7 +43,6 @@ constexpr Pin red ("A7"); red.mode("P"); red = 1;
 inline Uart uart ('U');
 inline Uart uart_l ('L');
 inline Uart uart_w ('W');
-inline SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
 extern "C" int _write (int, char* ptr, int len) {
     Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
@@ -73,6 +72,4 @@ void initBoard (char const* app) {
     uart_w.init(UART_PINS, 1'200,
                 { UART_W_NAME.ADDR, ena::UART_W_NAME,
                   UART_W_FREQ, Irq::UART_W_NAME, UART_W_CONF });
-
-    spi.init(SPI_PINS, 10);
 }

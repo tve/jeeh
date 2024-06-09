@@ -80,16 +80,7 @@ struct RF69 {
                 uint16_t count = spi.transfer(0);
                 if (len > count)
                     len = count;
-#if 0
-                spi.transfer(nullptr, ptr, len); // polled h/w
-#elif 0
-                SpiDev::Request req (nullptr, ptr, len);
-                spi.transfer(req); // sync with wfe & sleep
-#else
-                SpiDev::Request req (nullptr, ptr, len);
-                req.mDst = spi.dId; // TODO yuck
-                sys::call(req); // async with thread suspend
-#endif
+                spi.transfer(nullptr, ptr, len);
                 spi.disable();
 
                 // only accept packets intended for us, or broadcasts
