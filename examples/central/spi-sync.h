@@ -105,15 +105,10 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
             dmaTX(CNDTR) = len;
             dmaTX(CCR)(0) = 1; // EN
 
-            do
+            while (dmaTX(CNDTR) != 0)
                 asm ("wfe");
-            while (dmaTX(CNDTR) != 0);
 #if STM32F1 | STM32L0 | STM32L4
             dmaTX(CCR)(0) = 0; // ~EN
-#endif
-
-#if STM32L0 // FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-logf("11"); //  leaving this out breaks SPI-DMA on L0 (UART is also using DMA!)
 #endif
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
@@ -126,9 +121,8 @@ logf("11"); //  leaving this out breaks SPI-DMA on L0 (UART is also using DMA!)
             NVIC[0x180 + 4*(n/32)] = 1 << n%32; // clear pending
         }
         if (in != nullptr) {
-            do
+            while (dmaRX(CNDTR) != 0)
                 asm ("wfe");
-            while (dmaRX(CNDTR) != 0);
 #if STM32F1 | STM32L0 | STM32L4
             dmaRX(CCR)(0) = 0; // ~EN
 #endif
