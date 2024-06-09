@@ -54,7 +54,7 @@ struct RF69 {
         writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & ~0x1F) | level);
     }
 
-    int receive (void* ptr, int len) {
+    int receive (uint8_t* ptr, int len) {
         if (mode != MODE_RECEIVE)
             setMode(MODE_RECEIVE);
         else {
@@ -78,12 +78,23 @@ struct RF69 {
                 spi.enable();
                 spi.transfer(REG_FIFO);
                 uint16_t count = spi.transfer(0);
-                spi.transfer(nullptr, (uint8_t*) ptr, count > len ? len : count);
+                if (len > count)
+                    len = count;
+#if 0
+                spi.transfer(nullptr, ptr, len); // polled h/w
+#elif 0
+                SpiSync::Request req (nullptr, ptr, len);
+                spi.transfer(req); // sync with wfe & sleep
+#else
+                SpiSync::Request req (nullptr, ptr, len);
+                req.mDst = 'S'; // TODO yuck
+                sys::call(req); // async with thread suspend
+#endif
                 spi.disable();
 
                 // only accept packets intended for us, or broadcasts
                 // ... or any packet if we're the special catch-all node
-                uint8_t dest = *(uint8_t*) ptr;
+                uint8_t dest = *ptr;
                 if ((dest & 0xC0) == parity) {
                     uint8_t destId = dest & 0x3F;
                     if (destId == myId || destId == 0 || myId == 63)
@@ -94,7 +105,7 @@ struct RF69 {
         return -1;
     }
 
-    void send (uint8_t header, const void* ptr, int len) {
+    void send (uint8_t header, uint8_t const* ptr, int len) {
         setMode(MODE_SLEEP);
 
         spi.enable();
@@ -102,7 +113,7 @@ struct RF69 {
         spi.transfer(len + 2);
         spi.transfer((header & 0x3F) | parity);
         spi.transfer((header & 0xC0) | myId);
-        spi.transfer((uint8_t const*) ptr, nullptr, len);
+        spi.transfer(ptr, nullptr, len);
         spi.disable();
 
         setMode(MODE_TRANSMIT);

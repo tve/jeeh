@@ -34,6 +34,11 @@
 //CG]
 
 constexpr Pin led (LED);  // defined in platformio.ini
+#if 0
+constexpr Pin blue ("A5"); blue.mode("P"); blue = !msgs.isEmpty();
+constexpr Pin green ("B1"); green.mode("P"); green = 1;
+constexpr Pin red ("A7"); red.mode("P"); red = 1;
+#endif
 
 Uart uart ('U');
 Uart uart_l ('L');
