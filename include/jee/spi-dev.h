@@ -1,21 +1,25 @@
-struct SpiSync : Device, SpiGpio {
+namespace jeeh {
+
+struct SpiDev : Device {
     struct Config {
         uint32_t addr;
         uint16_t ena;
         uint8_t mhz;
         Irq txIrq, rxIrq;
         uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
-    } const dev;
+    };
 
     struct Request : Message {
          uint8_t const* out;
-         bool more;
 
-         Request (uint8_t const* o, uint8_t* i, uint16_t n, bool m =false)
-             : Message { 0, 'X', n, i }, out (o), more (m) {}
+         Request (uint8_t const* o, uint8_t* i, uint16_t n, bool more =false)
+             : Message { 0, more ? 'M' : 'L', n, i }, out (o) {}
     };
 
-    SpiSync (Config const& config) : Device ('S'), dev (config) {}
+    Config const dev;
+    Pin nsel;
+
+    SpiDev (Config const& config) : Device ('S'), dev (config) {}
 
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
     auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
@@ -35,9 +39,14 @@ struct SpiSync : Device, SpiGpio {
     auto dmaTX (int off) const { return dmaReg(off+CHAN_STEP*dev.txChan); }
     auto dmaRX (int off) const { return dmaReg(off+CHAN_STEP*dev.rxChan); }
 
-    void init (char const* pins, int speed) {
-        SpiGpio::init(pins);
-        Pin::config(pins);
+    void enable () const { nsel = 0; }
+    void disable () const { nsel = 1; }
+
+    void init (char const* defs, int speed) {
+        Pin pins [4]; // mosi, miso, nclk, nsel
+        Pin::config(defs, pins, sizeof pins);
+        nsel = pins[3];
+        disable(); // start with NSEL high
 
         auto div = 0; // determine clock divider
         while ((dev.mhz >> (div+1)) > speed)
@@ -78,6 +87,11 @@ struct SpiSync : Device, SpiGpio {
         irqInstall((uint8_t) dev.rxIrq);
     }
 
+    void deinit () {
+        RCC(dev.ena, 1) = 0;
+        // RCC(ena::DMA1+dev.dma, 1) = 0; // may be shared
+    }
+
     int transfer (int v) const {
         *(volatile uint8_t*) (dev.addr+DR) = v;
         while (devReg(SR)(0) == 0) {} // RXNE
@@ -97,7 +111,7 @@ struct SpiSync : Device, SpiGpio {
         startReq(req);
         while (dmaTX(CCR)(0) != 0 || dmaRX(CCR)(0) != 0) // EN
             asm ("wfe");
-        if (!req.more)
+        if (req.mTag == 'L')
             disable();
         if (req.mPtr != nullptr)
             cache::inval(req.mPtr, req.mLen);
@@ -107,7 +121,7 @@ private:
     Chain msgs;
 
     void startReq (Message& m) const {
-        assert(m.mTag == 'X');
+        assert(m.mTag == 'M' || m.mTag == 'L');
         auto& req = (Request&) m;
         auto out = req.out;
         auto in = req.mPtr;
@@ -137,7 +151,7 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            if (!((Request*) mp)->more)
+            if (mp->mTag == 'L')
                 disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
@@ -178,3 +192,5 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
         return !msgs.isEmpty();
     }
 };
+
+} // namespace jeeh

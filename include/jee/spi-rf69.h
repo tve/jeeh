@@ -83,10 +83,10 @@ struct RF69 {
 #if 0
                 spi.transfer(nullptr, ptr, len); // polled h/w
 #elif 0
-                SpiSync::Request req (nullptr, ptr, len);
+                SpiDev::Request req (nullptr, ptr, len);
                 spi.transfer(req); // sync with wfe & sleep
 #else
-                SpiSync::Request req (nullptr, ptr, len);
+                SpiDev::Request req (nullptr, ptr, len);
                 req.mDst = 'S'; // TODO yuck
                 sys::call(req); // async with thread suspend
 #endif

@@ -5,8 +5,7 @@
 using namespace jeeh;
 #include "defs.h"
 
-#include "spi-sync.h"
-SpiSync spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
+SpiDev spi ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 
 #include <jee/spi-rf69.h>
 RF69 rf (spi);

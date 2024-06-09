@@ -5,12 +5,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-//#define RF69_SPI_BULK 1
-#include "spi-rf69-v1.h"
-
-SpiGpio spi;
-RF69 rf (spi);
-
 constexpr Pin nrst ("F11");
 constexpr Pin dio0 ("A4");
 constexpr Pin dio1 ("B0");

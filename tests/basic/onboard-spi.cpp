@@ -1,6 +1,6 @@
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/spi.h>
+#include <jee/hal.h>
+#include <jee/spi-flash.h>
 using namespace jeeh;
 #include "test.h"
 

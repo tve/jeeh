@@ -1,1 +1,0 @@
-../central/spi-sync.h
