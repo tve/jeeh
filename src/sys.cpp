@@ -314,7 +314,7 @@ inline namespace {
 
     void* processTriggers () {
         assert(irqState() == 0); // must be in PendSV
-        auto p = __atomic_exchange_n(&pending, 0, __ATOMIC_RELAXED);
+        auto p = __atomic_exchange_4(&pending, 0, __ATOMIC_RELAXED);
         while (p != 0) {
             auto i = __builtin_ctz(p); // gcc can count trailing zeros
             assert(devices[i] != nullptr);
@@ -425,6 +425,19 @@ void sys::call (Message& msg) {
     [[maybe_unused]] auto& r = recv();
     assert(&r == &msg);
     th.block = nullptr;
+}
+
+bool sys::drop (Message& msg, uint8_t id) {
+    assert(irqState() < 0); // must be in thread mode
+    auto f = +[](Message& msg, uint8_t id) {
+        if (!msg.inUse())
+            return false; // it may already have been completed
+        if (id < Thread::LIMIT)
+            return Thread::byId(id).remove(msg);
+        Device::byId(id).cancel(msg);
+        return !msg.inUse();
+    };
+    return svc((int) f, (int) &msg, id);
 }
 
 //------------------------------------------------------------------------ pool

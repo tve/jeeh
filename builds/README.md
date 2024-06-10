@@ -25,7 +25,7 @@ Test  | Name     | Description
 `t18` | rtc      | Test the `DateTime` class and the Real-Time Clock (the Nucleo-32's STM32G431KB can only run its RTC off the LSI clock).
 `t19` | dog      | Try out the watchdog, report the reset cause, and let the watchdog expire to reset the system.
 `t20` | align    | Show the sizes of several core data types and their alignment requirements.
-`t21` | nest     | A minimal example of nested tasks, used to weed out a nasty bug in sys::recv.
+`t21` | drop     | Cancel outstanding timers from either the ticker driver or a thread's input queue.
 `t22` | clock    | Use the real-time clock to enter stop mode and resume through a wakeup event (from 1 ms to 16s).
 `t23` | lowpower | Automatically switch the system into low-power stop modes for longer timeouts.
 

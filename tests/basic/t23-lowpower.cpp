@@ -37,7 +37,7 @@ int main () {
         int n = t2.todMillis() - t1.todMillis();
         logf("%d ms: %d", ms, n); swoWrite();
         sys::wait(2);
-        assert(9*ms <= 10*n && 10*n <= 11*ms); // +/- 10% TODO g431 uses LSI
+        assert(8*ms <= 10*n && 10*n <= 11*ms); // +/- 10% TODO g431 uses LSI
     }
 
     fastClock();

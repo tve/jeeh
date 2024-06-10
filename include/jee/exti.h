@@ -48,13 +48,13 @@ struct ExtIrq : Device, Chain {
             EXTI[IMR](pos) = 0;
     }
 
-    void finish () override {
-#if STM32G0 | STM32L0
-        uint32_t f; { BlockIRQ irq; f = flags; flags = 0; }
-#else
-        auto f = __atomic_exchange_n(&flags, 0, __ATOMIC_RELAXED);
-#endif
+    void cancel (Message& m) override {
+        if (remove(m))
+            EXTI[IMR](m.mLen) = 0;
+    }
 
+    void finish () override {
+        auto f = __atomic_exchange_4(&flags, 0, __ATOMIC_RELAXED);
         auto pp = &cHead;
         while (*pp != nullptr)
             if (f & (1 << (*pp)->mLen)) {

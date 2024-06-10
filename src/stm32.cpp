@@ -148,6 +148,10 @@ struct Ticker : Device, Chain {
         finish();
     }
 
+    void cancel (Message& msg) override {
+        remove(msg);
+    }
+
     void finish () override {
         while (expired())
             reply(pull());

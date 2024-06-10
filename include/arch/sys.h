@@ -83,6 +83,7 @@ namespace sys {
     void send (Message& msg);
     Message& recv ();
     void call (Message& msg);
+    bool drop (Message& msg, uint8_t id);
     void wait (uint16_t ms);
     bool coma (uint32_t sec, int mode =STOP0);
 
@@ -135,6 +136,7 @@ struct Device {
     // TODO ~Device ();
 
     virtual void start (Message&) =0;
+    virtual void cancel (Message&) {}
     virtual void finish () =0;
 
     void irqTrigger (uint8_t num);
