@@ -55,6 +55,18 @@ void radioTest (SPI& spi) {
         }
         sys::wait(100);
     }
+
+    uint8_t buf [62];
+    cycles::init();
+
+    uint32_t u = 0;
+    for (auto i = 2; i <= 62; i += 20) {
+        auto t = cycles::count();
+        spi.transfer(buf, buf, i);
+        t = cycles::count() - t;
+        logf("%4d bytes: %6d cycles, diff %5d", i, t, t - u);
+        u = t;
+    }
 }
 
 struct SpiSync : SpiDev {
@@ -64,7 +76,7 @@ struct SpiSync : SpiDev {
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         SpiDev::Request req (out, in, len);
         SpiDev::transfer(req); // sync with wfe & sleep
-        logf("got sync");
+        //logf("got sync");
     }
 };
 
@@ -76,7 +88,7 @@ struct SpiAsync : SpiSync {
         SpiDev::Request req (out, in, len);
         req.mDst = 'S'; // TODO yuck
         sys::call(req); // async with thread suspend
-        logf("got async");
+        //logf("got async");
     }
 };
 
