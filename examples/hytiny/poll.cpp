@@ -6,32 +6,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-#if STM32F1
-constexpr Pin nrst ("A8");
-// not attached:
-//constexpr Pin dio0 ("B5");
-//constexpr Pin dio1 ("B3");
-//constexpr Pin dio2 ("B4");
-//constexpr Pin dio3 ("B0");
-//constexpr Pin dio5 ("A15");
-#elif STM32L0
-constexpr Pin nrst ("B1");
-// not attached:
-//constexpr Pin dio0 ("A0");
-//constexpr Pin dio1 ("A1");
-//constexpr Pin dio2 ("A3");
-//constexpr Pin dio3 ("A8");
-//constexpr Pin dio5 ("B6");
-#else
-constexpr Pin nrst ("F11");
-// not attached:
-//constexpr Pin dio0 ("A4");
-//constexpr Pin dio1 ("B0");
-//constexpr Pin dio2 ("B11");
-//constexpr Pin dio3 ("H4");
-//constexpr Pin dio5 ("H5");
-#endif
-
 template< typename SPI >
 void radioTest (SPI& spi) {
     RF69 rf (spi);
@@ -98,13 +72,6 @@ int main () {
 #if STM32F1
     AFIO[0x04](24,3) = 2;
 #endif
-
-    nrst.mode("P");
-    //dio0.mode("D");
-    //dio1.mode("D");
-    //dio2.mode("D");
-    //dio3.mode("D");
-    //dio5.mode("D");
 
     SpiAsync spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
 

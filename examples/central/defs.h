@@ -33,6 +33,10 @@
 #define SPI_CONF  Irq::DMA1_Stream4,Irq::DMA1_Stream3,1-1,4-0,3-0,0,0
 //CG]
 
+//CG2 board rfm69
+#define RFM69_DIOS "A4:F,B0,B11,H4,H5"
+#define RFM69_NRST "F11"
+
 constexpr Pin led (LED);  // defined in platformio.ini
 #if 0
 constexpr Pin blue ("A5"); blue.mode("P"); blue = !msgs.isEmpty();
@@ -43,6 +47,9 @@ constexpr Pin red ("A7"); red.mode("P"); red = 1;
 inline Uart uart ('U');
 inline Uart uart_l ('L');
 inline Uart uart_w ('W');
+
+constexpr Pin nrst (RFM69_NRST);
+Pin dios [5];
 
 extern "C" int _write (int, char* ptr, int len) {
     Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
@@ -56,9 +63,13 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 
 void initBoard (char const* app) {
     fastClock();
+
+    Pin::config(RFM69_DIOS, dios, sizeof dios);
+    nrst.mode("P");
+    led.mode("P");  // push-pull output
+                    //
     rtc::init();
 
-    led.mode("P");       // push-pull output
     Pin::config("D3:P"); // ESP8266 CH_PD, power down
 
     uart.init(UART_PINS, 115'200,

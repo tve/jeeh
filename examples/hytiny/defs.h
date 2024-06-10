@@ -15,12 +15,23 @@
 #define SPI_CONF  Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,3-1,2-1,0,0
 //CG]
 
+//CG2 board rfm69
+#define RFM69_DIOS "B5:F,B3,B4,B0,A15"
+#define RFM69_NRST "A8"
+
 constexpr Pin led (LED);
 inline Uart uart ('U');
 
+constexpr Pin nrst (RFM69_NRST);
+Pin dios [5];
+
 void initBoard (char const* app) {
     fastClock();
-    led.mode("P");
+
+    Pin::config(RFM69_DIOS, dios, sizeof dios);
+    nrst.mode("P");
+    led.mode("P");  // push-pull output
+                    //
     rtc::init(false);
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,

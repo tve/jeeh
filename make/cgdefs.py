@@ -98,6 +98,7 @@ def BOARD(block, name, suffix=''):
     r = []
     for x in info:
         k, v = x.split(':', 1)
+        k = k.upper()
         if v[0].isdigit():
             r.append(f'#define {n}_{k} ({v})')
         else:

@@ -15,8 +15,15 @@
 #define SPI_CONF  Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,3-1,2-1,1,1
 //CG]
 
+//CG2 board rfm69
+#define RFM69_DIOS "A0:F,A1,A3,A8,B6"
+#define RFM69_NRST "B1"
+
 constexpr Pin led (LED);  // defined in platformio.ini
 inline Uart uart ('U');
+
+constexpr Pin nrst (RFM69_NRST);
+Pin dios [5];
 
 extern "C" int _write (int, char*, int) {
     fail();
@@ -28,9 +35,11 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 }
 
 void initBoard (char const* app) {
-    rtc::init();
-
+    Pin::config(RFM69_DIOS, dios, sizeof dios);
+    nrst.mode("P");
     led.mode("P");  // push-pull output
+                    //
+    rtc::init();
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
