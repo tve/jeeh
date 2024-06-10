@@ -99,6 +99,7 @@ struct SpiDev : Device {
     }
 
     // h/w version, polled
+#if 0 // unoptimised
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         for (auto i = 0; i < len; ++i) {
             auto b = transfer(out != nullptr ? out[i] : 0);
@@ -106,8 +107,32 @@ struct SpiDev : Device {
                 in[i] = b;
         }
     }
+#else
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        assert(len > 0);
+        auto oStep = out != nullptr, iStep = in != nullptr;
+        uint8_t dummy;
+        if (!oStep)
+            out = &dummy;
+        if (!iStep)
+            in = &dummy;
+        auto& dr = *(volatile uint8_t*) (dev.addr+DR);
 
-    void transfer (Request& req) const {
+        dr = *out;
+        while (true) {
+            out += oStep;
+            while (devReg(SR)(0) == 0) {} // RXNE
+            if (--len <= 0)
+                break;
+            *in = dr;
+            dr = *out;
+            in += iStep;
+        }
+        *in = dr;
+    }
+#endif
+
+    void transfer (Request const& req) const {
         startReq(req);
         while (dmaTX(CCR)(0) != 0 || dmaRX(CCR)(0) != 0) // EN
             asm ("wfe");
@@ -120,25 +145,22 @@ struct SpiDev : Device {
 private:
     Chain msgs;
 
-    void startReq (Message& m) const {
+    void startReq (Message const& m) const {
         assert(m.mTag == 'M' || m.mTag == 'L');
-        auto& req = (Request&) m;
-        auto out = req.out;
-        auto in = req.mPtr;
-        auto len = req.mLen;
+        auto out = ((Request const&) m).out;
 
-        assert(out != nullptr || in != nullptr);
-if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
+        assert(out != nullptr || m.mPtr != nullptr);
+if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
 
         enable();
-        dmaRX(CMAR) = (uint32_t) in;
-        if (in != nullptr) {
-            dmaRX(CNDTR) = len;
+        if (m.mPtr != nullptr) {
+            dmaRX(CMAR) = (uint32_t) m.mPtr;
+            dmaRX(CNDTR) = m.mLen;
             dmaRX(CCR)(0) = 1; // EN
         }
         if (out != nullptr) {
             dmaTX(CMAR) = (uint32_t) out;
-            dmaTX(CNDTR) = len;
+            dmaTX(CNDTR) = m.mLen;
             dmaTX(CCR)(0) = 1; // EN
         }
     }
@@ -159,7 +181,7 @@ if (out == nullptr) out = in; // TODO hack, don't know how to do RXONLY w/ DMA
         }
         mp = msgs.first();
         if (mp != nullptr)
-            start(*mp);
+            startReq(*mp);
     }
 
     bool interrupt (int) override {
