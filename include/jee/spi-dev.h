@@ -19,8 +19,6 @@ struct SpiDev : Device {
     Config const dev;
     Pin nsel;
 
-    SpiDev (Config const& config) : Device ('S'), dev (config) {}
-
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
     auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
 
@@ -35,9 +33,16 @@ struct SpiDev : Device {
     enum { CSELR=0xA8 };
 #endif
 
-    auto dmaReg (int off) const { return DMA1[0x400*dev.dma+off]; }
-    auto dmaTX (int off) const { return dmaReg(off+CHAN_STEP*dev.txChan); }
-    auto dmaRX (int off) const { return dmaReg(off+CHAN_STEP*dev.rxChan); }
+    SpiDev (Config const& config) : Device ('S'), dev (config) {
+        auto addrDma = DMA1.ADDR + 0x400*dev.dma;
+        regDma = (volatile uint32_t*) addrDma;
+        txDma = (volatile uint32_t*) (addrDma + CHAN_STEP*dev.txChan);
+        rxDma = (volatile uint32_t*) (addrDma + CHAN_STEP*dev.rxChan);
+    }
+
+    auto& dmaReg (int off) const { return regDma[off/4]; }
+    auto& dmaTX (int off) const { return txDma[off/4]; }
+    auto& dmaRX (int off) const { return rxDma[off/4]; }
 
     void enable () const { nsel = 0; }
     void disable () const { nsel = 1; }
@@ -99,15 +104,6 @@ struct SpiDev : Device {
     }
 
     // h/w version, polled
-#if 0 // unoptimised
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        for (auto i = 0; i < len; ++i) {
-            auto b = transfer(out != nullptr ? out[i] : 0);
-            if (in != nullptr)
-                in[i] = b;
-        }
-    }
-#else
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         assert(len > 0);
         auto oStep = out != nullptr, iStep = in != nullptr;
@@ -130,11 +126,11 @@ struct SpiDev : Device {
         while (devReg(SR)(0) == 0) {} // RXNE
         *in = dr;
     }
-#endif
 
+    // sync version, dma with wfe
     void transfer (Request const& req) const {
         startReq(req);
-        while (dmaTX(CCR)(0) != 0 || dmaRX(CCR)(0) != 0) // EN
+        while ((dmaTX(CCR) & 1) != 0 || (dmaRX(CCR) & 1) != 0) // EN
             asm ("wfe");
         if (req.mTag == 'L')
             disable();
@@ -144,6 +140,9 @@ struct SpiDev : Device {
 
 private:
     Chain msgs;
+    volatile uint32_t* regDma;
+    volatile uint32_t* txDma;
+    volatile uint32_t* rxDma;
 
     void startReq (Message const& m) const {
         assert(m.mTag == 'M' || m.mTag == 'L');
@@ -156,12 +155,13 @@ if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
         if (m.mPtr != nullptr) {
             dmaRX(CMAR) = (uint32_t) m.mPtr;
             dmaRX(CNDTR) = m.mLen;
-            dmaRX(CCR)(0) = 1; // EN
+            dmaRX(CCR) |= 1; // EN
         }
         if (out != nullptr) {
+            cache::clean(out, m.mLen);
             dmaTX(CMAR) = (uint32_t) out;
             dmaTX(CNDTR) = m.mLen;
-            dmaTX(CCR)(0) = 1; // EN
+            dmaTX(CCR) |= 1; // EN
         }
     }
 
@@ -188,24 +188,24 @@ if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
         auto t = dev.txChan;
         auto r = dev.rxChan;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        if (dmaReg(0x00)(4*t)) { // GIF
-            dmaTX(CCR)(0) = 0; // ~EN
+        if (dmaReg(0x00) & (1 << (4*t))) { // GIF
+            dmaTX(CCR) &= ~1; // ~EN
             dmaReg(IFCR) = 1<<(4*t);
-        } else if (dmaReg(0x00)(4*r)) { // GIF
-            dmaRX(CCR)(0) = 0; // ~EN
+        } else if (dmaReg(0x00) & (1 << (4*r))) { // GIF
+            dmaRX(CCR) &= ~1; // ~EN
             dmaReg(IFCR) = 1<<(4*r);
         } else
             fail();
 #else
         static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
-        if (dmaReg(t&~3)(5+ifcBits[t&3])) // TCIF
+        if (dmaReg(t&~3) & (1 << (5+ifcBits[t&3]))) // TCIF
             dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
-        else if (dmaReg(r&~3)(5+ifcBits[r&3])) // TCIF
+        else if (dmaReg(r&~3) & (1 << (5+ifcBits[r&3]))) // TCIF
             dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
         else
             fail();
 #endif
-        if (dmaTX(CCR)(0) || dmaRX(CCR)(0))
+        if ((dmaTX(CCR) & 1) || (dmaRX(CCR) & 1))
             return false; // still in progress
 
         // clear OVR flag, in case the data was never read
