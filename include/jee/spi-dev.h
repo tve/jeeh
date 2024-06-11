@@ -240,7 +240,7 @@ struct SpiDev : SpiDma {
     using SpiDma::transfer;
 
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDma::Request req (out, in, len);
+        SpiDma::Request req (out, in, len, true);
         req.mDst = 'S'; // TODO yuck
         sys::call(req); // async with thread suspend
     }
