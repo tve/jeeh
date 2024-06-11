@@ -35,6 +35,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 }
 
 void initBoard (char const* app) {
+    //fastClock(false);
     Pin::config(RFM69_DIOS, dios, sizeof dios);
     nrst.mode("P");
     led.mode("P");  // push-pull output

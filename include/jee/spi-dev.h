@@ -122,8 +122,9 @@ struct SpiDev : SpiHw, Device {
 
         RCC(ena::DMA1+dev.dma, 1) = 1;
 #if STM32L0 | STM32L4
-        dmaReg(CSELR)(4*(dev.rxChan), 4) = dev.rxReq;
-        dmaReg(CSELR)(4*(dev.txChan), 4) = dev.txReq;
+        auto t = 4* dev.txChan, r = 4* dev.rxChan;
+        dmaReg(CSELR) &= ~(0xF << t) & ~(0xF << r);
+        dmaReg(CSELR) |= (dev.txReq << t) | (dev.rxReq << r);
 #endif
         dmaTX(CPAR) = dev.addr + DR;
         dmaRX(CPAR) = dev.addr + DR;

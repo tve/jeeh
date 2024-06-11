@@ -33,12 +33,28 @@ void radioTest (SPI& spi) {
     uint8_t buf [62];
     cycles::init();
 
+#if STM32L0
+    auto units = "micros";
+    auto clock = []() {
+        return ((STK[0x4]-STK[0x8]) * 80) / (SystemCoreClock/100'000);
+    };
+
+    auto ticksPerMs = SystemCoreClock / 1000;
+    STK[0x4] = (100*ticksPerMs)/8-1; // reload value
+    STK[0x8] = 0;                    // current
+    STK[0x0] = 0b011;                // control, clk/8 mode
+
+#else
+    auto units = "cycles";
+    auto clock = cycles::count;
+#endif
+
     uint32_t u = 0;
     for (auto i = 2; i <= 62; i += 20) {
-        auto t = cycles::count();
+        auto t = clock();
         spi.transfer(buf, buf, i);
-        t = cycles::count() - t;
-        logf("%4d bytes: %6d cycles, diff %5d", i, t, t - u);
+        t = clock() - t;
+        logf("%4d bytes: %6d %s, diff %5d", i, t, units, t - u);
         u = t;
     }
 }
@@ -50,7 +66,6 @@ struct SpiSync : SpiDev {
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
         SpiDev::Request req (out, in, len);
         SpiDev::transfer(req); // sync with wfe & sleep
-        //logf("got sync");
     }
 };
 
@@ -62,7 +77,6 @@ struct SpiAsync : SpiSync {
         SpiDev::Request req (out, in, len);
         req.mDst = 'S'; // TODO yuck
         sys::call(req); // async with thread suspend
-        //logf("got async");
     }
 };
 
@@ -74,6 +88,7 @@ int main () {
 #endif
 
     SpiAsync spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
+    auto spiMhz = 10;
 
     if (1) {   
         logf("\n>>> SpiGpio: bit-banged");
@@ -83,23 +98,23 @@ int main () {
         spi.deinit();
     }
     if (1) {   
-        logf("\n>>> SpiDev: polled h/w regs");
+        logf("\n>>> SpiHw: polled h/w regs");
         auto& spi = (SpiHw&) spi2;
-        spi.init(SPI_PINS, 10);
+        spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
     if (1) {   
         logf("\n>>> SpiSync: sync wfe-loop");
         auto& spi = (SpiSync&) spi2;
-        spi.init(SPI_PINS, 10);
+        spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
     if (1) {   
         logf("\n>>> SpiAsync: async device");
         auto& spi = (SpiAsync&) spi2;
-        spi.init(SPI_PINS, 10);
+        spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
