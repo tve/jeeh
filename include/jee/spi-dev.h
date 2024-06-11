@@ -119,15 +119,15 @@ struct SpiDev : Device {
         auto& dr = *(volatile uint8_t*) (dev.addr+DR);
 
         dr = *out;
-        while (true) {
+        while (devReg(SR)(1) == 0) {} // TXE
+        while (--len > 0) {
             out += oStep;
-            while (devReg(SR)(0) == 0) {} // RXNE
-            if (--len <= 0)
-                break;
-            *in = dr;
             dr = *out;
+            while (devReg(SR)(0) == 0) {} // RXNE
+            *in = dr;
             in += iStep;
         }
+        while (devReg(SR)(0) == 0) {} // RXNE
         *in = dr;
     }
 #endif
