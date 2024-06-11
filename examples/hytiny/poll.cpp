@@ -84,7 +84,7 @@ int main () {
     }
     if (1) {   
         logf("\n>>> SpiDev: polled h/w regs");
-        auto& spi = (SpiDev&) spi2;
+        auto& spi = (SpiHw&) spi2;
         spi.init(SPI_PINS, 10);
         radioTest(spi);
         spi.deinit();
