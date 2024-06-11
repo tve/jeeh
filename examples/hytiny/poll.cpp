@@ -59,13 +59,13 @@ void radioTest (SPI& spi) {
     }
 }
 
-struct SpiSync : SpiDev {
-    using SpiDev::SpiDev;
-    using SpiDev::transfer;
+struct SpiSync : SpiDma {
+    using SpiDma::SpiDma;
+    using SpiDma::transfer;
 
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDev::Request req (out, in, len);
-        SpiDev::transfer(req); // sync with wfe & sleep
+        SpiDma::Request req (out, in, len);
+        SpiDma::transfer(req); // sync with wfe & sleep
     }
 };
 
@@ -74,7 +74,7 @@ struct SpiAsync : SpiSync {
     using SpiSync::transfer;
 
     void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDev::Request req (out, in, len);
+        SpiDma::Request req (out, in, len);
         req.mDst = 'S'; // TODO yuck
         sys::call(req); // async with thread suspend
     }

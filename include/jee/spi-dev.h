@@ -79,7 +79,7 @@ struct SpiHw {
 // - if mTag is 'L' (last), the NSEL pin is disabled on completion (high)
 // - if mTag is 'M' (more), the NSEL pin is left enabled on completion (low)
 
-struct SpiDev : SpiHw, Device {
+struct SpiDma : SpiHw, Device {
     struct Config : SpiHw::Config {
         Irq txIrq, rxIrq;
         uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
@@ -105,7 +105,7 @@ struct SpiDev : SpiHw, Device {
     enum { CSELR=0xA8 };
 #endif
 
-    SpiDev (Config const& c) : SpiHw (c), Device ('S'), dev (c) {
+    SpiDma (Config const& c) : SpiHw (c), Device ('S'), dev (c) {
         auto addrDma = DMA1.ADDR + 0x400*dev.dma;
         regDma = (volatile uint32_t*) addrDma;
         txDma = (volatile uint32_t*) (addrDma + CHAN_STEP*dev.txChan);
