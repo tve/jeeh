@@ -150,14 +150,12 @@ struct SpiDma : SpiHw, Device {
     using SpiHw::transfer;
 
     // sync version, dma with wfe
-    void transfer (Request const& req) const {
-        startReq(req);
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        startReq(out, in, len);
         while ((dmaTX(CCR) & 1) != 0 || (dmaRX(CCR) & 1) != 0) // EN
             asm ("wfe");
-        if (req.mTag == 'L')
-            disable();
-        if (req.mPtr != nullptr)
-            cache::inval(req.mPtr, req.mLen);
+        if (in != nullptr)
+            cache::inval(in, len);
     }
 
 private:
@@ -166,30 +164,30 @@ private:
     volatile uint32_t* txDma;
     volatile uint32_t* rxDma;
 
-    void startReq (Message const& m) const {
-        assert(m.mTag == 'M' || m.mTag == 'L');
-        auto out = ((Request const&) m).out;
-
-        assert(out != nullptr || m.mPtr != nullptr);
-if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
+    void startReq (uint8_t const* out, uint8_t* in, int len) const {
+        assert(out != nullptr || in != nullptr);
+if (out == nullptr) out = in; // TODO don't know how to do RXONLY w/ DMA
 
         enable();
-        if (m.mPtr != nullptr) {
-            dmaRX(CMAR) = (uint32_t) m.mPtr;
-            dmaRX(CNDTR) = m.mLen;
+        if (in != nullptr) {
+            dmaRX(CMAR) = (uint32_t) in;
+            dmaRX(CNDTR) = len;
             dmaRX(CCR) |= 1; // EN
         }
         if (out != nullptr) {
-            cache::clean(out, m.mLen);
+            cache::clean(out, len);
             dmaTX(CMAR) = (uint32_t) out;
-            dmaTX(CNDTR) = m.mLen;
+            dmaTX(CNDTR) = len;
             dmaTX(CCR) |= 1; // EN
         }
     }
 
+    // async version, started from a Request msg
     void start (Message& m) override {
-        if (!msgs.append(m))
-            startReq(m);
+        if (!msgs.append(m)) {
+            assert(m.mTag == 'M' || m.mTag == 'L');
+            startReq(((Request const&) m).out, m.mPtr, m.mLen);
+        }
     }
 
     void finish () override {
@@ -203,7 +201,7 @@ if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
         }
         mp = msgs.first();
         if (mp != nullptr)
-            startReq(*mp);
+            startReq(((Request const*) mp)->out, mp->mPtr, mp->mLen);
     }
 
     bool interrupt (int) override {
@@ -234,6 +232,17 @@ if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
         (void) +spiReg(DR);
         (void) +spiReg(SR);
         return !msgs.isEmpty();
+    }
+};
+
+struct SpiDev : SpiDma {
+    using SpiDma::SpiDma;
+    using SpiDma::transfer;
+
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        SpiDma::Request req (out, in, len);
+        req.mDst = 'S'; // TODO yuck
+        sys::call(req); // async with thread suspend
     }
 };
 

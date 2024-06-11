@@ -59,27 +59,6 @@ void radioTest (SPI& spi) {
     }
 }
 
-struct SpiSync : SpiDma {
-    using SpiDma::SpiDma;
-    using SpiDma::transfer;
-
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDma::Request req (out, in, len);
-        SpiDma::transfer(req); // sync with wfe & sleep
-    }
-};
-
-struct SpiAsync : SpiSync {
-    using SpiSync::SpiSync;
-    using SpiSync::transfer;
-
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDma::Request req (out, in, len);
-        req.mDst = 'S'; // TODO yuck
-        sys::call(req); // async with thread suspend
-    }
-};
-
 int main () {
     initBoard("poll"); // in defs.h
 
@@ -87,7 +66,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    SpiAsync spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
+    SpiDev spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
     auto spiMhz = 10;
 
     if (1) {   
@@ -105,15 +84,15 @@ int main () {
         spi.deinit();
     }
     if (1) {   
-        logf("\n>>> SpiSync: sync wfe-loop");
-        auto& spi = (SpiSync&) spi2;
+        logf("\n>>> SpiDma: sync wfe-loop");
+        auto& spi = (SpiDma&) spi2;
         spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
     if (1) {   
-        logf("\n>>> SpiAsync: async device");
-        auto& spi = (SpiAsync&) spi2;
+        logf("\n>>> SpiDev: async device");
+        auto& spi = (SpiDev&) spi2;
         spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
