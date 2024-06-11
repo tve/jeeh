@@ -23,7 +23,7 @@ struct SpiDev : Device {
     auto devReg (int off) const { IoReg<0> io; return io[dev.addr+off]; }
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
-    enum { IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
+    enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
     enum { CHAN_STEP=0x14 };
 #else
     enum { IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C }; // DMA regs
@@ -188,10 +188,10 @@ if (out == nullptr) out = m.mPtr; // TODO don't know how to do RXONLY w/ DMA
         auto t = dev.txChan;
         auto r = dev.rxChan;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        if (dmaReg(0x00) & (1 << (4*t))) { // GIF
+        if (dmaReg(ISR) & (1 << (4*t))) { // GIF
             dmaTX(CCR) &= ~1; // ~EN
             dmaReg(IFCR) = 1<<(4*t);
-        } else if (dmaReg(0x00) & (1 << (4*r))) { // GIF
+        } else if (dmaReg(ISR) & (1 << (4*r))) { // GIF
             dmaRX(CCR) &= ~1; // ~EN
             dmaReg(IFCR) = 1<<(4*r);
         } else
