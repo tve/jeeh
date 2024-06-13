@@ -17,6 +17,8 @@ int main () {
     { // SPI flash interface with optimized inlined calls to the SPI handler
         SpiGpio spi;
         SpiFlash spif (spi);
+        logf("gpio %d b, flash %d b",
+                sizeof (SpiGpio), sizeof (SpiFlash<SpiGpio>));
 
         spi.init("C9,C10,B2,B6");
         auto t = cycles::count();

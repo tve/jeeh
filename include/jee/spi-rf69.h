@@ -80,7 +80,7 @@ struct RF69 {
                 uint16_t count = spi.transfer(0);
                 if (len > count)
                     len = count;
-                spi.transfer(nullptr, ptr, len);
+                spi.transfer(len, nullptr, ptr);
                 spi.disable();
 
                 // only accept packets intended for us, or broadcasts
@@ -104,7 +104,7 @@ struct RF69 {
         spi.transfer(len + 2);
         spi.transfer((header & 0x3F) | parity);
         spi.transfer((header & 0xC0) | myId);
-        spi.transfer(ptr, nullptr, len);
+        spi.transfer((1<<31) | len, nullptr, ptr);
         spi.disable();
 
         setMode(MODE_TRANSMIT);
