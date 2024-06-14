@@ -167,12 +167,11 @@ private:
             dmaRX(CNDTR) = len;
             dmaRX(CCR) |= 1; // EN
         }
-        if (true) { // TODO always send, until RXIDLE is working
-            cache::clean(buf, len);
-            dmaTX(CMAR) = (uint32_t) buf;
-            dmaTX(CNDTR) = len;
-            dmaTX(CCR) |= 1; // EN
-        }
+        // always send (RXIDLE mode is troublesome w/ DMA)
+        cache::clean(buf, len);
+        dmaTX(CMAR) = (uint32_t) buf;
+        dmaTX(CNDTR) = len;
+        dmaTX(CCR) |= 1; // EN
     }
 
     // async version, started from a msg
@@ -208,9 +207,9 @@ private:
             fail();
 #else
         static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
-        if (dmaReg(t&~3) & (1 << (5+ifcBits[t&3]))) // TCIF
+        if (dmaReg(t&~3) & (1 << (5+ifcBits[t&3]))) // tx TCIF
             dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
-        else if (dmaReg(r&~3) & (1 << (5+ifcBits[r&3]))) // TCIF
+        else if (dmaReg(r&~3) & (1 << (5+ifcBits[r&3]))) // rx TCIF
             dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
         else
             fail();
