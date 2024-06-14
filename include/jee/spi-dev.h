@@ -17,8 +17,14 @@ struct SpiHw {
 
     SpiHw (Config const c) : dev (c), regs ((volatile uint32_t*) c.addr) {}
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
+    void enable () const {
+        nsel = 0;
+        spiReg(CR1) &= ~(1<<8); // ~SSI
+    }
+    void disable () const {
+        spiReg(CR1) |= (1<<8); // SSI
+        nsel = 1;
+    }
 
     void init (char const* defs, int speed) {
         Pin pins [4]; // mosi, miso, nclk, nsel
@@ -31,13 +37,13 @@ struct SpiHw {
             ++div;
 
         RCC(dev.ena, 1) = 1;
-        spiReg(CR1) = (div<<3) | (1<<2); // BD MSTR
+        spiReg(CR1) = (1<<9) | (div<<3) | (1<<2); // SSM BD MSTR
 #if STM32F1 | STM32L0 | STM32L4
         spiReg(CR2) = (1<<2); // SSOE
 #else
         spiReg(CR2) = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
 #endif
-        spiReg(CR1) |= 1<<6; // SPE
+        spiReg(CR1) |= (1<<6); // SPE
     }
 
     void deinit () {
@@ -162,16 +168,20 @@ private:
 
     void startReq (bool send, uint8_t* buf, uint16_t len) const {
         enable();
-        if (!send) {
-            dmaRX(CMAR) = (uint32_t) buf;
-            dmaRX(CNDTR) = len;
-            dmaRX(CCR) |= 1; // EN
-        }
-        if (true) { // TODO always send, until RXIDLE is working
+        if (send) {
             cache::clean(buf, len);
             dmaTX(CMAR) = (uint32_t) buf;
             dmaTX(CNDTR) = len;
             dmaTX(CCR) |= 1; // EN
+        } else {
+            spiReg(CR1) &= ~(1<<6); // ~SPE
+            // note: spe must be (redundantly) set AFTER rxonly, else
+            //  the spi master clock does not appear to be generated!
+            spiReg(CR1) |= (1<<10); // RXONLY
+            spiReg(CR1) |= (1<<6); // SPE (redundant, but essential)
+            dmaRX(CMAR) = (uint32_t) buf;
+            dmaRX(CNDTR) = len;
+            dmaRX(CCR) |= 1; // EN
         }
     }
 
@@ -208,9 +218,9 @@ private:
             fail();
 #else
         static uint8_t const ifcBits [] = { 0, 6, 16, 22 };
-        if (dmaReg(t&~3) & (1 << (5+ifcBits[t&3]))) // TCIF
+        if (dmaReg(t&~3) & (1 << (5+ifcBits[t&3]))) // tx TCIF
             dmaReg(IFCR+(t&~3)) = 0b111101 << ifcBits[t&3]; // clr irq
-        else if (dmaReg(r&~3) & (1 << (5+ifcBits[r&3]))) // TCIF
+        else if (dmaReg(r&~3) & (1 << (5+ifcBits[r&3]))) // rx TCIF
             dmaReg(IFCR+(r&~3)) = 0b111101 << ifcBits[r&3]; // clr irq
         else
             fail();
@@ -218,9 +228,20 @@ private:
         if ((dmaTX(CCR) & 1) || (dmaRX(CCR) & 1))
             return false; // still in progress
 
-        // clear OVR flag, in case the data was never read
-        (void) +spiReg(DR);
-        (void) +spiReg(SR);
+        if (spiReg(CR1) & (1<<10)) { // RXONLY
+            spiReg(CR1) &= ~(1<<10); // ~RXONLY
+            // note: see startReq comments, setting SPE seems to be needed
+            spiReg(CR1) |= (1<<6); // SPE (redundant, but essential)
+            while ((spiReg(SR) & (1<<7)) != 0) {} // BSY
+            // this next loop is a no-op on chips which don't have a FIFO
+            while ((spiReg(SR) & (0b11<<9)) != 0) // FRLVL
+                (void) +spiReg(DR);
+        } else {
+            // clear OVR flag, as incoming data was never read
+            while (spiReg(SR) & (1<<0)) // RXNE
+                (void) +spiReg(DR);
+            (void) +spiReg(SR); // make sure OVR flag is clear
+        }
         return !msgs.isEmpty();
     }
 };
