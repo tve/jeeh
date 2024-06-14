@@ -52,15 +52,18 @@ struct SpiHw {
 
     void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
         auto nCmd = (req >> 16) & 0x0F;
+        auto nBuf = (uint16_t) req;
+        assert(nCmd > 0 || nBuf > 0);
+        enable();
         if (nCmd > 0)
             wrBytes(cmd, nCmd);
-        auto nBuf = (uint16_t) req;
         if (nBuf > 0) {
             if (req < 0)
                 wrBytes(buf, nBuf); // write
             else
                 rdBytes(buf, nBuf); // read
         }
+        disable();
     }
 
 protected:
@@ -173,6 +176,7 @@ struct SpiDma : SpiHw, Device {
         startReq(req, cmd, buf);
         while ((dmaTX(CCR) & 1) != 0 || (dmaRX(CCR) & 1) != 0) // EN
             asm ("wfe");
+        disable();
         if (req >= 0)
             cache::inval(buf, (uint16_t) req);
     }
@@ -215,8 +219,7 @@ private:
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            if (mp->mTag == 'L')
-                disable();
+            disable();
             if ((mp->mTag & 0x80) == 0) // recv
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);

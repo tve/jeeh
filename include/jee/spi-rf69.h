@@ -74,7 +74,6 @@ struct RF69 {
             }
 
             if (readReg(REG_IRQFLAGS2) & IRQ2_PAYLOADREADY) {
-
                 spi.enable();
                 spi.transfer(REG_FIFO);
                 uint16_t count = spi.transfer(0);
