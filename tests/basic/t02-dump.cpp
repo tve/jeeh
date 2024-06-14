@@ -9,7 +9,7 @@ int main () {
     Pin led (LED);
     led.mode("P");
 
-#define W(s) swoWrite(s "\n", sizeof s); led.toggle();
+#define W(s) logWriter(s "\n", sizeof s); led.toggle();
 #include "pattern.h"
 
     led = 0;

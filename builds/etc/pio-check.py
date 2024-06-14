@@ -1,7 +1,8 @@
-import os, socket, subprocess, sys
+import os, serial, socket, subprocess, sys
 Import("env")
-#print(env.Dump(), file=sys.stderr)
 
+#print(env.Dump(), file=sys.stderr)
+#print(env.GetProjectOptions(True))
 
 def connectTo(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,7 +51,7 @@ def swoDecoder(sock):
                 #payload_src = (c & 0x4) >> 2
                 #itm_port = (c & 0xf8) >> 3
 
-def uploadAndCheck(source, **kwds):
+def checkViaSwo(source, **kwds):
     # TODO yuck: launch openocd for EACH run because of null-bytes issue :(
     p = subprocess.Popen(env['PROJECT_PACKAGES_DIR'] +
                          "/tool-openocd/bin/openocd",
@@ -104,4 +105,40 @@ def uploadAndCheck(source, **kwds):
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
-env.AddCustomTarget("check", "$PROGPATH", uploadAndCheck, always_build=False)
+def checkViaUart(source, **kwds):
+    isTest = False
+
+    opts = env.GetProjectOptions(True)
+    port = opts['monitor_port']
+    with serial.Serial(port, 115200, timeout=10) as s:
+        s.reset_input_buffer()
+        print("pending ...", file=sys.stderr)
+
+        os.makedirs(env["PROJECT_DIR"] + "-out", exist_ok=True)
+        out = env.subst("${PROJECT_DIR}-out/${PIOENV}.txt")
+        with open(out, "w") as f:
+            lines = []
+            for line in s:
+                try:
+                    line = line.decode().strip('\n')
+                except UnicodeDecodeError:
+                    continue
+                print(line, file=f)
+                if line == "TEST":
+                    isTest = True
+                if len(lines) >= 250:
+                    line = "ABORT"
+                lines.append(line)
+                if line in ["OK", "FAIL", "TIMEOUT", "ABORT"]:
+                    break
+
+    if not isTest or line != "OK":
+        for l in lines:
+            print(l, file=sys.stderr)
+        os.remove(str(source[0])) # force a rebuild next time around
+        raise SystemExit(1)
+
+if 'LOG_UARTC' in env['CPPDEFINES']:
+    env.AddCustomTarget("check", "$PROGPATH", checkViaUart, always_build=False)
+else:
+    env.AddCustomTarget("check", "$PROGPATH", checkViaSwo, always_build=False)
