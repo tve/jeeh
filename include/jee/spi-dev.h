@@ -50,27 +50,33 @@ struct SpiHw {
         return *(volatile uint8_t*) (dev.addr+DR);
     }
 
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        assert(len > 0);
-        auto oStep = out != nullptr, iStep = in != nullptr;
-        uint8_t dummy;
-        if (!oStep)
-            out = &dummy;
-        if (!iStep)
-            in = &dummy;
+    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
+        assert(len > 0U);
         auto& dr = *(volatile uint8_t*) (dev.addr+DR);
 
-        dr = *out;
-        while (--len > 0) {
-            while ((spiReg(SR) & 2) == 0) {} // TXE
-            out += oStep;
-            dr = *out;
+        enable();
+        if (send) {
+            dr = *buf++;
+            while (--len > 0U) {
+                while ((spiReg(SR) & 2) == 0) {} // TXE
+                dr = *buf++;
+                while ((spiReg(SR) & 1) == 0) {} // RXNE
+                (void) +dr;
+            }
             while ((spiReg(SR) & 1) == 0) {} // RXNE
-            *in = dr;
-            in += iStep;
+            (void) +dr;
+        } else {
+            dr = 0;
+            while (--len > 0U) {
+                while ((spiReg(SR) & 2) == 0) {} // TXE
+                dr = 0;
+                while ((spiReg(SR) & 1) == 0) {} // RXNE
+                *buf++ = dr;
+            }
+            while ((spiReg(SR) & 1) == 0) {} // RXNE
+            *buf = dr;
         }
-        while ((spiReg(SR) & 1) == 0) {} // RXNE
-        *in = dr;
+        disable();
     }
 };
 
@@ -83,13 +89,6 @@ struct SpiDma : SpiHw, Device {
     struct Config : SpiHw::Config {
         Irq txIrq, rxIrq;
         uint8_t dma :1, txChan :3, rxChan :3, txReq, rxReq; // 0-based
-    };
-
-    struct Request : Message {
-         uint8_t const* out;
-
-         Request (uint8_t const* o, uint8_t* i, uint16_t n, bool more =false)
-             : Message { 0, more ? 'M' : 'L', n, i }, out (o) {}
     };
 
     Config const dev;
@@ -139,23 +138,20 @@ struct SpiDma : SpiHw, Device {
         dmaRX(CCR) = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
-        SCB[0x10](4) = 1; // SEVONPEND
-
         irqInstall((uint8_t) dev.txIrq);
         irqInstall((uint8_t) dev.rxIrq);
     }
 
     // void deinit () // RCC(ena::DMA1+dev.dma, 1) = 0; // may be shared
 
-    using SpiHw::transfer;
-
     // sync version, dma with wfe
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        startReq(out, in, len);
+    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
+        startReq(send, buf, len);
         while ((dmaTX(CCR) & 1) != 0 || (dmaRX(CCR) & 1) != 0) // EN
             asm ("wfe");
-        if (in != nullptr)
-            cache::inval(in, len);
+        disable();
+        if (!send)
+            cache::inval(buf, len);
     }
 
 private:
@@ -164,44 +160,38 @@ private:
     volatile uint32_t* txDma;
     volatile uint32_t* rxDma;
 
-    void startReq (uint8_t const* out, uint8_t* in, int len) const {
-        assert(out != nullptr || in != nullptr);
-if (out == nullptr) out = in; // TODO don't know how to do RXONLY w/ DMA
-
+    void startReq (bool send, uint8_t* buf, uint16_t len) const {
         enable();
-        if (in != nullptr) {
-            dmaRX(CMAR) = (uint32_t) in;
+        if (!send) {
+            dmaRX(CMAR) = (uint32_t) buf;
             dmaRX(CNDTR) = len;
             dmaRX(CCR) |= 1; // EN
         }
-        if (out != nullptr) {
-            cache::clean(out, len);
-            dmaTX(CMAR) = (uint32_t) out;
+        if (true) { // TODO always send, until RXIDLE is working
+            cache::clean(buf, len);
+            dmaTX(CMAR) = (uint32_t) buf;
             dmaTX(CNDTR) = len;
             dmaTX(CCR) |= 1; // EN
         }
     }
 
-    // async version, started from a Request msg
+    // async version, started from a msg
     void start (Message& m) override {
-        if (!msgs.append(m)) {
-            assert(m.mTag == 'M' || m.mTag == 'L');
-            startReq(((Request const&) m).out, m.mPtr, m.mLen);
-        }
+        if (!msgs.append(m))
+            startReq(m.mTag == 'W', m.mPtr, m.mLen);
     }
 
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            if (mp->mTag == 'L')
-                disable();
+            disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
         }
         mp = msgs.first();
         if (mp != nullptr)
-            startReq(((Request const*) mp)->out, mp->mPtr, mp->mLen);
+            startReq(mp->mTag == 'W', mp->mPtr, mp->mLen);
     }
 
     bool interrupt (int) override {
@@ -237,12 +227,10 @@ if (out == nullptr) out = in; // TODO don't know how to do RXONLY w/ DMA
 
 struct SpiDev : SpiDma {
     using SpiDma::SpiDma;
-    using SpiDma::transfer;
 
-    void transfer (uint8_t const* out, uint8_t* in, int len) const {
-        SpiDma::Request req (out, in, len, true);
-        req.mDst = 'S'; // TODO yuck
-        sys::call(req); // async with thread suspend
+    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
+        Message m { 'S', send ? 'W' : 'R', len, buf };
+        sys::call(m); // async with thread suspend
     }
 };
 

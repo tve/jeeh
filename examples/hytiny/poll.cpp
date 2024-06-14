@@ -52,7 +52,7 @@ void radioTest (SPI& spi) {
     uint32_t u = 0;
     for (auto i = 2; i <= 62; i += 20) {
         auto t = clock();
-        spi.transfer(buf, buf, i);
+        spi.bufferIO(buf, i, false);
         t = clock() - t;
         logf("%4d bytes: %6d %s, diff %5d", i, t, units, t - u);
         u = t;
