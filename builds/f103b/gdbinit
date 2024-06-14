@@ -1,6 +1,0 @@
-# arm-none-eabi-gdb -q -x gdbinit .pio/build/.../firmware.elf
-
-tar ext /dev/cu.usbmodem80A978D61
-mon sw
-at 1
-monitor traceswo decode
