@@ -50,46 +50,24 @@ struct SpiHw {
         return *(volatile uint8_t*) (dev.addr+DR);
     }
 
-    void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
-        auto nCmd = (req >> 16) & 0x0F;
-        auto nBuf = (uint16_t) req;
-        assert(nCmd > 0 || nBuf > 0);
-        enable();
-        if (nCmd > 0)
-            wrBytes(cmd, nCmd);
-        if (nBuf > 0) {
-            if (req < 0)
-                wrBytes(buf, nBuf); // write
-            else
-                rdBytes(buf, nBuf); // read
-        }
-        disable();
-    }
-
-protected:
-    void wrBytes (uint8_t const* out, int len) const {
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        assert(len > 0);
+        auto oStep = out != nullptr, iStep = in != nullptr;
+        uint8_t dummy;
+        if (!oStep)
+            out = &dummy;
+        if (!iStep)
+            in = &dummy;
         auto& dr = *(volatile uint8_t*) (dev.addr+DR);
 
-        dr = *out++;
+        dr = *out;
         while (--len > 0) {
             while ((spiReg(SR) & 2) == 0) {} // TXE
-            dr = *out++;
+            out += oStep;
+            dr = *out;
             while ((spiReg(SR) & 1) == 0) {} // RXNE
-            (void) +dr;
-        }
-        while ((spiReg(SR) & 1) == 0) {} // RXNE
-        (void) +dr;
-    }
-
-    void rdBytes (uint8_t* in, int len) const {
-        auto& dr = *(volatile uint8_t*) (dev.addr+DR);
-
-        dr = 0;
-        while (--len > 0) {
-            while ((spiReg(SR) & 2) == 0) {} // TXE
-            dr = 0;
-            while ((spiReg(SR) & 1) == 0) {} // RXNE
-            *in++ = dr;
+            *in = dr;
+            in += iStep;
         }
         while ((spiReg(SR) & 1) == 0) {} // RXNE
         *in = dr;
@@ -108,10 +86,10 @@ struct SpiDma : SpiHw, Device {
     };
 
     struct Request : Message {
-        uint8_t const* cmd;
+         uint8_t const* out;
 
-        Request (int32_t r, uint8_t const* c, uint8_t* b)
-                : Message { 0, (uint8_t) (r>>24), (uint16_t) r, b }, cmd (c) {}
+         Request (uint8_t const* o, uint8_t* i, uint16_t n, bool more =false)
+             : Message { 0, more ? 'M' : 'L', n, i }, out (o) {}
     };
 
     Config const dev;
@@ -172,13 +150,12 @@ struct SpiDma : SpiHw, Device {
     using SpiHw::transfer;
 
     // sync version, dma with wfe
-    void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
-        startReq(req, cmd, buf);
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        startReq(out, in, len);
         while ((dmaTX(CCR) & 1) != 0 || (dmaRX(CCR) & 1) != 0) // EN
             asm ("wfe");
-        disable();
-        if (req >= 0)
-            cache::inval(buf, (uint16_t) req);
+        if (in != nullptr)
+            cache::inval(in, len);
     }
 
 private:
@@ -187,48 +164,44 @@ private:
     volatile uint32_t* txDma;
     volatile uint32_t* rxDma;
 
-    void startReq (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
-        auto nCmd = (req >> 16) & 0x0F;
-        auto nBuf = (uint16_t) req;
-        assert(nCmd > 0 || nBuf > 0);
+    void startReq (uint8_t const* out, uint8_t* in, int len) const {
+        assert(out != nullptr || in != nullptr);
+if (out == nullptr) out = in; // TODO don't know how to do RXONLY w/ DMA
+
         enable();
-        if (nBuf == 0) {
-            nBuf = nCmd;
-            buf = (uint8_t*) cmd;
-        } else if (nCmd > 0)
-            wrBytes(cmd, nCmd); // always polled
-        if (req >= 0) {
-            dmaRX(CMAR) = (uint32_t) buf;
-            dmaRX(CNDTR) = nBuf;
+        if (in != nullptr) {
+            dmaRX(CMAR) = (uint32_t) in;
+            dmaRX(CNDTR) = len;
             dmaRX(CCR) |= 1; // EN
         }
-        if (true) { // TODO always writes (until RXIDLE is working)
-            cache::clean(buf, nBuf);
-            dmaTX(CMAR) = (uint32_t) buf;
-            dmaTX(CNDTR) = nBuf;
+        if (out != nullptr) {
+            cache::clean(out, len);
+            dmaTX(CMAR) = (uint32_t) out;
+            dmaTX(CNDTR) = len;
             dmaTX(CCR) |= 1; // EN
         }
     }
 
     // async version, started from a Request msg
     void start (Message& m) override {
-        if (!msgs.append(m))
-            startReq((m.mTag<<24) | m.mLen, ((Request const&) m).cmd, m.mPtr);
+        if (!msgs.append(m)) {
+            assert(m.mTag == 'M' || m.mTag == 'L');
+            startReq(((Request const&) m).out, m.mPtr, m.mLen);
+        }
     }
 
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            disable();
-            if ((mp->mTag & 0x80) == 0) // recv
+            if (mp->mTag == 'L')
+                disable();
+            if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
         }
         mp = msgs.first();
-        if (mp != nullptr) {
-            auto rp = (Request const*) mp;
-            startReq((mp->mTag<<24) | mp->mLen, rp->cmd, mp->mPtr);
-        }
+        if (mp != nullptr)
+            startReq(((Request const*) mp)->out, mp->mPtr, mp->mLen);
     }
 
     bool interrupt (int) override {
@@ -266,10 +239,10 @@ struct SpiDev : SpiDma {
     using SpiDma::SpiDma;
     using SpiDma::transfer;
 
-    void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
-        SpiDma::Request r (req, cmd, buf);
-        r.mDst = 'S'; // TODO yuck
-        sys::call(r); // async with thread suspend
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        SpiDma::Request req (out, in, len, true);
+        req.mDst = 'S'; // TODO yuck
+        sys::call(req); // async with thread suspend
     }
 };
 

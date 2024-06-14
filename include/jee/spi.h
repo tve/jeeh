@@ -1,8 +1,6 @@
 namespace jeeh {
 
-struct Blah {};
-
-struct SpiGpio : Blah {
+struct SpiGpio {
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;
@@ -35,17 +33,12 @@ struct SpiGpio : Blah {
         return r;
     }
 
-    void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) const {
-        auto nCmd = (req >> 16) & 0x0F;
-        for (auto i = 0; i < nCmd; ++i)
-            transfer(cmd[i]);
-        auto nBuf = (uint16_t) req;
-        if (req < 0)
-            for (auto i = 0U; i < nBuf; ++i)
-                transfer(buf[i]);
-        else
-            for (auto i = 0U; i < nBuf; ++i)
-                buf[i] = transfer(0);
+    void transfer (uint8_t const* out, uint8_t* in, int len) const {
+        for (auto i = 0; i < len; ++i) {
+            auto b = transfer(out != nullptr ? out[i] : 0);
+            if (in != nullptr)
+                in[i] = b;
+        }
     }
 
 private:
@@ -58,7 +51,7 @@ struct SpiBase {
     virtual void enable () =0;
     virtual void disable () =0;
     virtual int transfer (int v) =0;
-    virtual void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) =0;
+    virtual void transfer (uint8_t const* out, uint8_t* in, int len) =0;
 };
 
 template< typename SPI >
@@ -66,8 +59,8 @@ struct SpiWrap final : SpiBase, SPI {
     void enable () override { SPI::enable(); }
     void disable () override { SPI::disable(); }
     int transfer (int v) override { return SPI::transfer(v); }
-    void transfer (int32_t req, uint8_t const* cmd, uint8_t* buf) override {
-        SPI::transfer(req, cmd, buf);
+    void transfer (uint8_t const* out, uint8_t* in, int len) override {
+        SPI::transfer(out, in, len);
     }
 };
 
