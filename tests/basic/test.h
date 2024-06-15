@@ -28,12 +28,15 @@ enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28, UE=0 };
 void start () {
     Pin::config(UARTC_PINS);
     RCC(ena::UARTC_NAME, 1) = 1;
-    UARTC_NAME[BRR] = SystemCoreClock / 115'200; // 0.5 Mbaud
+    auto n = SystemCoreClock;
+    while (n > UARTC_FREQ * 1'000'000)
+        n /= 2;
+    UARTC_NAME[BRR] = n / 115'200;
     UARTC_NAME[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<UE);  // FIFOEN TE RE UE
 
     // wait briefly for an incoming '+' byte
     for (auto i = 0; UARTC_NAME[RDR] != '+' && i < 5; ++i)
-        for (auto n = 0U; n < SystemCoreClock >> 4; ++n)
+        for (auto n = 0U; n < SystemCoreClock >> 6; ++n)
             if (UARTC_NAME[ISR](5)) // RXFNE
                 break;
 }
@@ -67,7 +70,8 @@ struct Tester {
         swoInit(SWO_FREQ); // TODO openocd didn't init ITM/SWO on STM32WL
 #endif
         auto p = rindex(file, '/');
-        logf("\nTEST %s", p != nullptr ? p + 1 : file);
+        logf("\nTEST %s @ %d MHz",
+                p != nullptr ? p + 1 : file, SystemCoreClock / 1'000'000);
     }
 
     ~Tester () {
