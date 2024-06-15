@@ -4,7 +4,7 @@
 #include "defs.h"
 using namespace jeeh;
 
-char txBuf [256] alignas (4), rxBuf [16] alignas (4);
+char txBuf [4096] alignas (4), rxBuf [16] alignas (4);
 
 struct RttTX {
     char const* name;
@@ -36,34 +36,35 @@ struct RttDesc {
 };
 
 RttDesc _SEGGER_RTT alignas (32);
+RttDesc* rttPtr;
 
 constexpr Pin led (LED);
 
 void rttWrite (char const* ptr, int len) {
     auto& tx = _SEGGER_RTT.tx[0];
     auto curr = tx.in;
+//led = 0;
     for (auto i = 0; i < len; ++i) {
         tx.buf[curr] = *ptr++;
         auto next = (curr + 1) % tx.len;
-led = 0;
-        while (next == tx.out) {} // busy loop
-led = 1;
+        //while (next == tx.out) {} // busy loop
         curr = next;
         if (curr % 64 == 0)
             tx.in = curr; // "flush" into buffer
     }
+//led = 1;
     tx.in = curr;
 }
 
 int main () {
-    fastClock();
+    //fastClock();
     _SEGGER_RTT.id[0] = 'S'; // fix the unique tag so the debugger finds it
     led.mode("P");
 
     char c = '@';
     while (true) {
-        //led.toggle();
-        //sys::wait(5);
+        led.toggle();
+        sys::wait(100);
 
         rttWrite (&c, 1);
         if (++c > '~') {
