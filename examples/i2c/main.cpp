@@ -95,6 +95,30 @@ int main () {
     oled.copyBand (102, 16, data, sizeof data);
     oled.copyBand (103, 24, data, sizeof data);
 
+    SSD1306<decltype(i2c), true, 0x3D> oled2 (i2c);
+    oled2.init();
+
+    // display a trivial pattern, just to verify that it works
+    static uint8_t data2 [] = {
+        255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
+    };
+    oled2.copyBand (  0,  0, data2, sizeof data2);
+    oled2.copyBand (  1,  8, data2, sizeof data2);
+    oled2.copyBand (  2, 16, data2, sizeof data2);
+    oled2.copyBand (  3, 24, data2, sizeof data2);
+    oled2.copyBand (  4, 32, data2, sizeof data2);
+    oled2.copyBand (  5, 40, data2, sizeof data2);
+    oled2.copyBand (  6, 48, data2, sizeof data2);
+    oled2.copyBand (  7, 56, data2, sizeof data2);
+    oled2.copyBand (100,  0, data2, sizeof data2);
+    oled2.copyBand (101,  8, data2, sizeof data2);
+    oled2.copyBand (102, 16, data2, sizeof data2);
+    oled2.copyBand (103, 24, data2, sizeof data2);
+    oled2.copyBand (104, 32, data2, sizeof data2);
+    oled2.copyBand (105, 40, data2, sizeof data2);
+    oled2.copyBand (106, 48, data2, sizeof data2);
+    oled2.copyBand (107, 56, data2, sizeof data2);
+
     while (true) {
         sys::wait(250);
         led.toggle();
