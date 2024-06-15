@@ -10,6 +10,6 @@ int main () {
 #if SWO_FREQ
     swoInit(SWO_FREQ); // TODO openocd didn't init ITM/SWO on STM32WL
 #endif
-    swoWrite("TEST\n"
-             "OK\n", 8);
+    logWriter("TEST t00\n"
+             "OK\n", 12);
 }

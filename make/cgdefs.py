@@ -91,7 +91,7 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define SPI{suffix}_CONF  ' + t)
         return r
 
-    # catch-all: "board_foo = BAR=123 BAZ=xyz" will generate:
+    # catch-all: "board_foo = bar:123 baz:xyz" will generate:
     #   #define FOO_BAR (123)
     #   #define FOO_BAZ "xyz"
     n = name.upper() + suffix

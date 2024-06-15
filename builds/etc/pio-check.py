@@ -1,8 +1,9 @@
 import os, serial, socket, subprocess, sys
 Import("env")
+projOpts = env.GetProjectOptions(True)
 
 #print(env.Dump(), file=sys.stderr)
-#print(env.GetProjectOptions(True))
+#print(projOpts)
 
 def connectTo(port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,6 +52,29 @@ def swoDecoder(sock):
                 #payload_src = (c & 0x4) >> 2
                 #itm_port = (c & 0xf8) >> 3
 
+def getResults(s):
+    isTest, line, lines = False, '', []
+    os.makedirs(env["PROJECT_DIR"] + "-out", exist_ok=True)
+    out = env.subst("${PROJECT_DIR}-out/${PIOENV}.txt")
+    with open(out, "w") as f:
+        for line in s:
+            if type(line) is bytes:
+                try:
+                    line = line.decode().strip('\n')
+                except UnicodeDecodeError:
+                    continue
+            print(line, file=f)
+            if line[:5] == "TEST ":
+                isTest = True
+            if len(lines) >= 250:
+                line = "ABORT"
+            lines.append(line)
+            if line in ["OK", "FAIL", "TIMEOUT", "ABORT"]:
+                break
+    if not isTest:
+        line = 'TIMEOUT'
+    return line, lines
+
 def checkViaSwo(source, **kwds):
     # TODO yuck: launch openocd for EACH run because of null-bytes issue :(
     p = subprocess.Popen(env['PROJECT_PACKAGES_DIR'] +
@@ -61,8 +85,6 @@ def checkViaSwo(source, **kwds):
         #print(s.decode(), end='')
         if not s or b' port 6464 ' in s:
             break
-
-    isTest = False
 
     with connectTo(6666) as t:
         if env["LDSCRIPT_PATH"][0] == "/":
@@ -79,19 +101,7 @@ def checkViaSwo(source, **kwds):
             b = t.recv(10)
             assert b == b'\x1A', b
 
-            os.makedirs(env["PROJECT_DIR"] + "-out", exist_ok=True)
-            out = env.subst("${PROJECT_DIR}-out/${PIOENV}.txt")
-            with open(out, "w") as f:
-                lines = []
-                for line in swoDecoder(s):
-                    print(line, file=f)
-                    if line == "TEST":
-                        isTest = True
-                    if len(lines) >= 250:
-                        line = "ABORT"
-                    lines.append(line)
-                    if line in ["OK", "FAIL", "TIMEOUT", "ABORT"]:
-                        break
+            last, lines = getResults(swoDecoder(s))
 
             t.sendall("shutdown\x1A".encode())
             b = t.recv(10)
@@ -99,46 +109,27 @@ def checkViaSwo(source, **kwds):
 
     p.terminate()
 
-    if not isTest or line != "OK":
+    if last != "OK":
         for l in lines:
             print(l, file=sys.stderr)
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
 def checkViaUart(source, **kwds):
-    isTest = False
-
-    opts = env.GetProjectOptions(True)
-    port = opts['monitor_port']
-    with serial.Serial(port, 115200, timeout=10) as s:
+    print(f"serial connect: {env['PIOENV']}", file=sys.stderr)
+    port = projOpts['monitor_port']
+    with serial.Serial(port, 115_200, timeout=2, exclusive=True) as s:
         s.reset_input_buffer()
-        print("pending ...", file=sys.stderr)
+        s.write(b'+')
+        last, lines = getResults(s)
 
-        os.makedirs(env["PROJECT_DIR"] + "-out", exist_ok=True)
-        out = env.subst("${PROJECT_DIR}-out/${PIOENV}.txt")
-        with open(out, "w") as f:
-            lines = []
-            for line in s:
-                try:
-                    line = line.decode().strip('\n')
-                except UnicodeDecodeError:
-                    continue
-                print(line, file=f)
-                if line == "TEST":
-                    isTest = True
-                if len(lines) >= 250:
-                    line = "ABORT"
-                lines.append(line)
-                if line in ["OK", "FAIL", "TIMEOUT", "ABORT"]:
-                    break
-
-    if not isTest or line != "OK":
+    if last != "OK":
         for l in lines:
             print(l, file=sys.stderr)
         os.remove(str(source[0])) # force a rebuild next time around
         raise SystemExit(1)
 
-if 'LOG_UARTC' in env['CPPDEFINES']:
-    env.AddCustomTarget("check", "$PROGPATH", checkViaUart, always_build=False)
+if 'board_uartc' in projOpts:
+    env.AddCustomTarget("check", "upload", checkViaUart, always_build=False)
 else:
     env.AddCustomTarget("check", "$PROGPATH", checkViaSwo, always_build=False)
