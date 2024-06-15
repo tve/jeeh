@@ -89,7 +89,7 @@ int main () {
     static uint8_t data1 [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
     };
-    auto t1 = cycles::count();
+    auto t1 = cycles::micros();
     oled1.copyBand (  0,  0, data1, sizeof data1);
     oled1.copyBand (  1,  8, data1, sizeof data1);
     oled1.copyBand (  2, 16, data1, sizeof data1);
@@ -98,8 +98,8 @@ int main () {
     oled1.copyBand (101,  8, data1, sizeof data1);
     oled1.copyBand (102, 16, data1, sizeof data1);
     oled1.copyBand (103, 24, data1, sizeof data1);
-    t1 = cycles::count() - t1;
-    printf("oled1 %d µs\n", t1 / (SystemCoreClock/1'000'000));
+    t1 = cycles::micros() - t1;
+    printf("oled1 %d µs\n", t1);
 
     SSD1306<decltype(i2c), true, 0x3D> oled2 (i2c);
     oled2.init();
@@ -108,7 +108,7 @@ int main () {
     static uint8_t data2 [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
     };
-    auto t2 = cycles::count();
+    auto t2 = cycles::micros();
     oled2.copyBand (  0,  0, data2, sizeof data2);
     oled2.copyBand (  1,  8, data2, sizeof data2);
     oled2.copyBand (  2, 16, data2, sizeof data2);
@@ -125,8 +125,8 @@ int main () {
     oled2.copyBand (105, 40, data2, sizeof data2);
     oled2.copyBand (106, 48, data2, sizeof data2);
     oled2.copyBand (107, 56, data2, sizeof data2);
-    t2 = cycles::count() - t2;
-    printf("oled2 %d µs\n", t2 / (SystemCoreClock/1'000'000));
+    t2 = cycles::micros() - t2;
+    printf("oled2 %d µs\n", t2);
 
     while (true) {
         sys::wait(250);
