@@ -34,8 +34,8 @@ struct I2cHw {
 
     void writeRegs (uint8_t a, uint32_t r, void const* p, uint8_t n) const {
         I2C[CR2] = (1<<25) | ((n+1)<<16) | (a<<1); // AUTOEND NBYTES SADD
-        I2C[TXDR] = r;
         I2C[CR2](13) = 1; // START
+        I2C[TXDR] = r;
         while (I2C[ISR](15) == 0) {} // ~BUSY
 
         auto q = (uint8_t const*) p;
