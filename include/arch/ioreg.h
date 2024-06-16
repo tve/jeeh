@@ -13,6 +13,7 @@ struct IoReg {
         uint32_t o;
         uint8_t b, w;
 
+        [[gnu::always_inline]]
         operator int () const {
             if (CAN_BIT_BAND && w == 1)
                 return *bitBandAddr();
@@ -31,6 +32,7 @@ struct IoReg {
             return v;
         }
 
+        [[gnu::always_inline]]
         int operator= (Bits const& v) const {
             return operator= ((int) v);
         }
@@ -45,36 +47,44 @@ struct IoReg {
     struct Word {
         uint32_t o;
 
+        [[gnu::always_inline]]
         constexpr auto operator() (uint8_t bit, uint8_t width =1) const {
             return Bits{ o+4*(bit/32), (uint8_t) (bit%32), width };
         }
 
+        [[gnu::always_inline]]
         operator int () const {
             return *(volatile uint32_t*) (A+o);
         }
 
+        [[gnu::always_inline]]
         int operator= (int v) const {
             *(volatile uint32_t*) (A+o) = v;
             return v;
         }
 
+        [[gnu::always_inline]]
         int operator= (Word const& v) const {
             return operator= ((int) v);
         }
     };
 
+    [[gnu::always_inline]]
     constexpr auto operator[] (uint32_t off) const {
         return Word{ off }; // this is a *byte* offset
     }
 
+    [[gnu::always_inline]]
     constexpr auto operator() (uint32_t bit, uint8_t width) const {
         return operator[](4*(bit/32))(bit%32, width);
     }
 
+    [[gnu::always_inline]]
     constexpr auto& byte (uint32_t off) const {
         return *(volatile uint8_t*) (A+off);
     }
 
+    [[gnu::always_inline]]
     constexpr auto& half (uint32_t off) const {
         return *(volatile uint16_t*) (A+off); // this is a *byte* offset
     }

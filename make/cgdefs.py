@@ -86,9 +86,10 @@ def BOARD(block, name, suffix=''):
              f'#define SPI{suffix}_PINS  "{f["P"]}"',
              f'#define SPI{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
-                         '$D-1,$T-$O,$R-$O,$C').substitute(f)
-            r.append(f'#define SPI{suffix}_CONF  ' + t)
+            t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
+            c = 'Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,$D-1,$C'
+            r.append(f'#define SPI{suffix}_TYPE  ' + Template(t).substitute(f))
+            r.append(f'#define SPI{suffix}_CONF  ' + Template(c).substitute(f))
         return r
 
     # catch-all: "board_foo = bar:123 baz:xyz" will generate:

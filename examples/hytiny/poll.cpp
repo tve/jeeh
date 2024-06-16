@@ -19,6 +19,7 @@ void radioTest (SPI& spi) {
     rf.txPower(0);
 
     while (true) {
+break;
         uint8_t buf [60];
         auto n = rf.receive(buf, sizeof buf);
         if (n > 0) {
@@ -66,7 +67,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    SpiDev spi2 ({ SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, SPI_CONF });
+    SpiDev<SPI_TYPE> spi2 ({ ena::SPI_NAME, SPI_FREQ, SPI_CONF });
     auto spiMhz = 10;
 
     if (1) {   
@@ -78,21 +79,21 @@ int main () {
     }
     if (1) {   
         logf("\n>>> SpiHw: polled h/w regs");
-        auto& spi = (SpiHw&) spi2;
+        auto& spi = (SpiHw<SPI_NAME.ADDR>&) spi2;
         spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
     if (1) {   
         logf("\n>>> SpiDma: sync wfe-loop");
-        auto& spi = (SpiDma&) spi2;
+        auto& spi = (SpiDma<SPI_TYPE>&) spi2;
         spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
     }
     if (1) {   
         logf("\n>>> SpiDev: async device");
-        auto& spi = (SpiDev&) spi2;
+        auto& spi = spi2;
         spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
         spi.deinit();
