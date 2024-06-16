@@ -19,7 +19,6 @@ void radioTest (SPI& spi) {
     rf.txPower(0);
 
     while (true) {
-break;
         uint8_t buf [60];
         auto n = rf.receive(buf, sizeof buf);
         if (n > 0) {
@@ -67,7 +66,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    SpiDev<SPI_TYPE> spi2 ({ SPI_CONF });
+    SpiDev<SPI_TYPE> spi2 (SPI_CONF);
     auto spiMhz = 10;
 
     if (1) {   

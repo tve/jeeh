@@ -14,7 +14,7 @@ struct SpiHw {
     Config const dev;
     Pin nsel;
 
-    SpiHw (Config const c) : dev (c) {}
+    SpiHw (uint16_t e, uint8_t f) : dev { e, f } {}
 
     void enable () const { nsel = 0; }
     void disable () const { nsel = 1; }
@@ -104,7 +104,7 @@ struct SpiDma : SpiHw<S>, Device {
 
     Config const dev;
 
-    SpiDma (Config const& c) : SpiHw<S> (c), Device ('S'), dev (c) {}
+    SpiDma (Config const& c) : SpiHw<S> (c.ena, c.mhz), Device ('S'), dev (c) {}
 
     void init (char const* defs, int speed) {
         SpiHw<S>::init(defs, speed);

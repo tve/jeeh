@@ -77,7 +77,6 @@ def BOARD(block, name, suffix=''):
         if not suffix:
             suffix = name[3:].upper();
         f = { 'O': '0' }
-        f = { 'O': '0' }
         for x in info:
             k, v = x.split(':', 1)
             f[k] = v
@@ -87,7 +86,7 @@ def BOARD(block, name, suffix=''):
              f'#define SPI{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
             t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
-            c = 'ena::$N,$F,Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,$D-1,$C'
+            c = '{ ena::$N,$F,Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,$D-1,$C }'
             r.append(f'#define SPI{suffix}_TYPE  ' + Template(t).substitute(f))
             r.append(f'#define SPI{suffix}_CONF  ' + Template(c).substitute(f))
         return r
