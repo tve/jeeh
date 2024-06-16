@@ -15,11 +15,16 @@ int main () {
     SSD1306<decltype(i2c), true, 0x3D> oled (i2c);
     oled.init();
 
+    auto t = cycles::micros();
+    oled.clear();
+    t = cycles::micros() - t;
+    logf("clear %d µs", t);
+
     // display a trivial pattern, just to verify that it works
     static uint8_t data [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
     };
-    auto t = cycles::micros();
+    t = cycles::micros();
     oled.copyBand (  0,  0, data, sizeof data);
     oled.copyBand (  1,  8, data, sizeof data);
     oled.copyBand (  2, 16, data, sizeof data);

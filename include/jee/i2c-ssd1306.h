@@ -1,16 +1,16 @@
 // Driver for an SSD1306-based 128x32 or 128x64 OLED display, using I2C.
 
-template< typename I2C, bool BIG =false, int ADDR =0x3C >
+template< typename I2C, bool BIG =false, uint8_t ADDR =0x3C >
 struct SSD1306 {
     I2C& i2c;
 
-    constexpr static int width = 128;
-    constexpr static int height = BIG ? 64 : 32;
+    constexpr static uint8_t width = 128;
+    constexpr static uint8_t height = BIG ? 64 : 32;
 
     SSD1306 (I2C& i) : i2c (i) {}
 
     void init () {
-        static uint8_t config [] = {
+        static const uint8_t config [] = {
             0xAE,  // DISPLAYOFF
             0xA8,  // SETMULTIPLEX
             height-1,
@@ -42,25 +42,19 @@ struct SSD1306 {
             0xAF,  // DISPLAYON
         };
 
-        for (int i = 0; i < (int) sizeof config; ++i)
-            cmd(config[i]);
-        clear();
+        for (auto e : config)
+            cmd(e);
     }
 
     void clear () {
-        cmd(0xB0);  // SET PAGE START
-        cmd(0x00);  // SETLOWCOLUMN
-        cmd(0x10);  // SETHIGHCOLUMN
-
-        i2c.start(ADDR<<1);
-        i2c.write(0x40);
-        for (int i = 0; i < width*height/8; ++i)
-            i2c.write(0);
-        i2c.stop();
+        uint8_t buf [width];
+        memset(buf, 0, sizeof buf);
+        for (auto i = 0; i < height; i += 8)
+            copyBand (0, i, buf, sizeof buf);
     }
 
     // data is written in "bands" of 8 pixels high, bit 0 is the topmost line
-    void copyBand (int x, int y, uint8_t const* ptr, int len) {
+    void copyBand (uint8_t x, uint8_t y, uint8_t const* ptr, uint16_t len) {
         cmd(0xB0 + (y>>3));   // SET PAGE START
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN

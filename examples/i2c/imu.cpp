@@ -2,7 +2,6 @@
 
 #include <jee.h>
 #include <jee/hal.h>
-#include <jee/i2c-ssd1306.h>
 using namespace jeeh;
 #include "defs.h"
 

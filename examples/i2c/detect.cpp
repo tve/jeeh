@@ -15,6 +15,7 @@ int main () {
 
     SSD1306 oled (i2c);
     oled.init();
+    oled.clear();
 
     // display a trivial pattern, just to verify that it works
     static uint8_t data [] = {
