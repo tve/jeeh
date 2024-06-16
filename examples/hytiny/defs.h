@@ -32,7 +32,7 @@ void initBoard (char const* app) {
     Pin::config(RFM69_DIOS, dios, sizeof dios);
     nrst.mode("P");
     led.mode("P");  // push-pull output
-                    //
+
     rtc::init(false);
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,

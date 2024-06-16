@@ -68,7 +68,7 @@ void initBoard (char const* app) {
     Pin::config(RFM69_DIOS, dios, sizeof dios);
     nrst.mode("P");
     led.mode("P");  // push-pull output
-                    //
+
     rtc::init();
 
     Pin::config("D3:P"); // ESP8266 CH_PD, power down
