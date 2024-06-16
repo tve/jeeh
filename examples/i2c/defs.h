@@ -10,10 +10,12 @@
 #define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
 //CG]
 
-//CG3 board i2c
+//CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B6:7,B7:3"
+#define I2C_PINS  "B7:OV4,B6"
+#define I2C_FREQ  80
 #define I2C_CONF  Irq::I2C1_EV,1-1,7-1,6-1,2,2
+//CG]
 
 constexpr Pin led (LED);
 inline Uart uart ('U');
@@ -25,7 +27,7 @@ void initBoard (char const* app) {
     rtc::init(false);
     cycles::init();
 
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+    uart.init(UART_PINS, 1000000, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", SVDNAME, app, SystemCoreClock / 1'000'000);
 }

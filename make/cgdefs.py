@@ -64,7 +64,8 @@ def BOARD(block, name, suffix=''):
             f[k] = v
         # N:I2C1 P:A2:7,A3 D:1 L:CH O:0 T:1 R:2 C:26,27
         r = [f'#define I2C{suffix}_NAME  {f["N"]}',
-             f'#define I2C{suffix}_PINS  "{f["P"]}"']
+             f'#define I2C{suffix}_PINS  "{f["P"]}"',
+             f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
             t = Template(
                     'Irq::${N}_EV,' # Irq::I2Cx_EV

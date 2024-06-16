@@ -3,6 +3,7 @@
 #include "i2c.h"
 #include "spi.h"
 
+#include "i2c-dev.h"
 #include "spi-dev.h"
 
 #if STM32F1 | STM32F3 | STM32F4 | STM32F7 | STM32G4 | STM32H7
