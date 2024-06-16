@@ -28,13 +28,34 @@ struct I2cHw {
         RCC(dev.ena, 1) = 0;
     }
 
+    uint32_t readReg (uint8_t a, uint32_t r) const {
+        uint32_t v = 0;
+        readRegs(a, r, &v, 1);
+        return v;
+    }
+
+    void readRegs (uint8_t a, uint32_t r, void* p, uint8_t n) const {
+        I2C[CR2] = (1<<16) | (1<<13) | (a<<1); // NBYTES START SADD
+        I2C[TXDR] = r;
+        while (I2C[ISR](6) == 0) {} // ~TC
+
+        I2C[CR2] = // AUTOEND NBYTES START DIR SADD
+                (1<<25) | (n<<16) | (1<<13) | (1<<10) | (a<<1);
+        while (I2C[ISR](15) == 0) {} // ~BUSY
+
+        auto q = (uint8_t*) p;
+        while (I2C[ISR](15)) // BUSY
+            if (I2C[ISR](2)) // RXNE
+                *q++ = I2C[RXDR];
+    }
+
     void writeReg (uint8_t a, uint32_t r, uint16_t v) const {
         writeRegs(a, r, &v, 1);
     }
 
     void writeRegs (uint8_t a, uint32_t r, void const* p, uint8_t n) const {
-        I2C[CR2] = (1<<25) | ((n+1)<<16) | (a<<1); // AUTOEND NBYTES SADD
-        I2C[CR2](13) = 1; // START
+        I2C[CR2] = // AUTOEND NBYTES START SADD
+                (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
         I2C[TXDR] = r;
         while (I2C[ISR](15) == 0) {} // ~BUSY
 
