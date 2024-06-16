@@ -67,7 +67,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    SpiDev<SPI_TYPE> spi2 ({ ena::SPI_NAME, SPI_FREQ, SPI_CONF });
+    SpiDev<SPI_TYPE> spi2 ({ SPI_CONF });
     auto spiMhz = 10;
 
     if (1) {   

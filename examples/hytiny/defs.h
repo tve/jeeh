@@ -13,7 +13,7 @@
 #define SPI_PINS  "A7:5,A6:F,A5:5,A4:P"
 #define SPI_FREQ  72
 #define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
-#define SPI_CONF  Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,0,0
+#define SPI_CONF  ena::SPI1,72,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,0,0
 //CG]
 
 //CG2 board rfm69
