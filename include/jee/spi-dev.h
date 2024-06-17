@@ -1,9 +1,11 @@
 namespace jeeh {
 
 // polled H/W version (see SpiGpio for bit-banged version)
-template< uint32_t S >
+template< uint32_t A >
 struct SpiHw {
-    static constexpr IoReg<S> SPI {};
+    using ID = Pin;
+
+    static constexpr IoReg<A> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
 
     struct Config {
@@ -78,9 +80,9 @@ struct SpiHw {
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
-template< uint32_t S, uint32_t D, int T, int R >
-struct SpiDma : SpiHw<S>, Device {
-    using HW = SpiHw<S>;
+template< uint32_t A, uint32_t D, int T, int R >
+struct SpiDma : SpiHw<A>, Device {
+    using HW = SpiHw<A>;
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -97,17 +99,17 @@ struct SpiDma : SpiHw<S>, Device {
     static constexpr IoReg<D+CHAN_STEP*T> DCT {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DCR {}; // DMA channel RX
 
-    struct Config : SpiHw<S>::Config {
+    struct Config : SpiHw<A>::Config {
         Irq txIrq, rxIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
     Config const dev;
 
-    SpiDma (Config const& c) : SpiHw<S> (c.ena, c.mhz), Device ('S'), dev (c) {}
+    SpiDma (Config const& c) : SpiHw<A> (c.ena, c.mhz), Device ('S'), dev (c) {}
 
     void init (char const* defs, int speed) {
-        SpiHw<S>::init(defs, speed);
+        SpiHw<A>::init(defs, speed);
         HW::SPI[HW::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
         RCC(ena::DMA1+dev.dma, 1) = 1;
@@ -115,8 +117,8 @@ struct SpiDma : SpiHw<S>, Device {
         DMA[CSELR](4*T,4) = dev.txReq;
         DMA[CSELR](4*R,4) = dev.rxReq;
 #endif
-        DCT[CPAR] = S + HW::DR;
-        DCR[CPAR] = S + HW::DR;
+        DCT[CPAR] = A + HW::DR;
+        DCR[CPAR] = A + HW::DR;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         DCT[CCR] = 0b1001'0010; // MINC DIR TCIE
         DCR[CCR] = 0b1000'0010; // MINC TCIE
@@ -139,7 +141,7 @@ struct SpiDma : SpiHw<S>, Device {
         startReq(send, buf, len);
         while (DCT[CCR](0) != 0 || DCR[CCR](0) != 0) // EN
             asm ("wfe");
-        SpiHw<S>::disable();
+        SpiHw<A>::disable();
         if (!send)
             cache::inval(buf, len);
     }
@@ -148,7 +150,7 @@ private:
     Chain msgs;
 
     void startReq (bool send, uint8_t* buf, uint16_t len) const {
-        SpiHw<S>::enable();
+        SpiHw<A>::enable();
         if (!send) {
             DCR[CMAR] = (uint32_t) buf;
             DCR[CNDTR] = len;
@@ -170,7 +172,7 @@ private:
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            SpiHw<S>::disable();
+            SpiHw<A>::disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
@@ -209,9 +211,9 @@ private:
     }
 };
 
-template< uint32_t S, uint32_t D, int T, int R >
-struct SpiDev : SpiDma<S,D,T,R> {
-    using SpiDma<S,D,T,R>::SpiDma;
+template< uint32_t A, uint32_t D, int T, int R >
+struct SpiDev : SpiDma<A,D,T,R> {
+    using SpiDma<A,D,T,R>::SpiDma;
 
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         Message m { 'S', send ? 'W' : 'R', len, buf };

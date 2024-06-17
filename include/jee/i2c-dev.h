@@ -1,9 +1,11 @@
 namespace jeeh {
 
 // polled H/W version (see I2cGpio for bit-banged version)
-template< uint32_t I >
+template< uint32_t A >
 struct I2cHw {
-    static constexpr IoReg<I> I2C {};
+    using ID = uint8_t;
+
+    static constexpr IoReg<A> I2C {};
     enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,ISR=0x18,RXDR=0x24,TXDR=0x28 };
 
     struct Config {
@@ -11,30 +13,35 @@ struct I2cHw {
         uint8_t mhz;
     };
 
-    Config const dev;
+    Config const cfg;
 
-    I2cHw (uint16_t e, uint8_t f) : dev { e, f } {}
+    I2cHw (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, uint16_t speed) {
         Pin::config(defs);
 
-        RCC(dev.ena,1) = 1;
-        assert(speed == 400); // TODO
-        I2C[TIMINGR] = 0x0070'2991; // magic!
+        RCC(cfg.ena,1) = 1;
+        assert(speed == 1000); // TODO
+        //I2C[TIMINGR] = 0x0070'2991; // magic! 400 kHz @ 80 MHz
+        I2C[TIMINGR] = 0x0030'0F33; // magic! 1 MHz @ 80 MHz
         I2C[CR1](0) = 1; // PE
     }
 
     void deinit () {
-        RCC(dev.ena, 1) = 0;
+        RCC(cfg.ena, 1) = 0;
     }
 
-    uint32_t readReg (uint8_t a, uint32_t r) const {
+    Dev<I2cHw> dev (uint8_t a) {
+        return { a, *this };
+    }
+
+    uint32_t read (uint8_t a, uint32_t r) const {
         uint32_t v = 0;
-        readRegs(a, r, &v, 1);
+        read(a, r, &v, 1);
         return v;
     }
 
-    void readRegs (uint8_t a, uint32_t r, void* p, uint8_t n) const {
+    void read (uint8_t a, uint32_t r, void* p, uint8_t n) const {
         I2C[CR2] = (1<<16) | (1<<13) | (a<<1); // NBYTES START SADD
         I2C[TXDR] = r;
         while (I2C[ISR](6) == 0) {} // ~TC
@@ -49,11 +56,11 @@ struct I2cHw {
                 *q++ = I2C[RXDR];
     }
 
-    void writeReg (uint8_t a, uint32_t r, uint16_t v) const {
-        writeRegs(a, r, &v, 1);
+    void write (uint8_t a, uint32_t r, uint16_t v) const {
+        write(a, r, &v, 1);
     }
 
-    void writeRegs (uint8_t a, uint32_t r, void const* p, uint8_t n) const {
+    void write (uint8_t a, uint32_t r, void const* p, uint8_t n) const {
         I2C[CR2] = // AUTOEND NBYTES START SADD
                 (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
         I2C[TXDR] = r;
@@ -72,9 +79,9 @@ struct I2cHw {
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
-template< uint32_t I, uint32_t D, int T, int R >
-struct I2cDma : I2cHw<I>, Device {
-    using HW = I2cHw<I>;
+template< uint32_t A, uint32_t D, int T, int R >
+struct I2cDma : I2cHw<A>, Device {
+    using HW = I2cHw<A>;
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -91,26 +98,26 @@ struct I2cDma : I2cHw<I>, Device {
     static constexpr IoReg<D+CHAN_STEP*T> DCT {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DCR {}; // DMA channel RX
 
-    struct Config : I2cHw<I>::Config {
+    struct Config : I2cHw<A>::Config {
         Irq txIrq, rxIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
-    Config const dev;
+    Config const cfg;
 
-    I2cDma (Config const& c) : I2cHw<I> (c.ena, c.mhz), Device ('I'), dev (c) {}
+    I2cDma (Config const& c) : I2cHw<A> (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        I2cHw<I>::init(defs, speed);
+        I2cHw<A>::init(defs, speed);
         HW::I2C[HW::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
-        RCC(ena::DMA1+dev.dma, 1) = 1;
+        RCC(ena::DMA1+cfg.dma, 1) = 1;
 #if STM32L0 | STM32L4
-        DMA[CSELR](4*T,4) = dev.txReq;
-        DMA[CSELR](4*R,4) = dev.rxReq;
+        DMA[CSELR](4*T,4) = cfg.txReq;
+        DMA[CSELR](4*R,4) = cfg.rxReq;
 #endif
-        DCT[CPAR] = I + HW::DR;
-        DCR[CPAR] = I + HW::DR;
+        DCT[CPAR] = A + HW::DR;
+        DCR[CPAR] = A + HW::DR;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         DCT[CCR] = 0b1001'0010; // MINC DIR TCIE
         DCR[CCR] = 0b1000'0010; // MINC TCIE
@@ -118,22 +125,22 @@ struct I2cDma : I2cHw<I>, Device {
         DCT[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
         DCR[CCR] = 0b0100'0001'0000; // MINC TCIE
 #else
-        DCT[CCR] = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DCR[CCR] = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+        DCT[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        DCR[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
-        irqInstall((uint8_t) dev.txIrq);
-        irqInstall((uint8_t) dev.rxIrq);
+        irqInstall((uint8_t) cfg.txIrq);
+        irqInstall((uint8_t) cfg.rxIrq);
     }
 
-    // void deinit () // RCC(ena::DMA1+dev.dma, 1) = 0; // may be shared
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         startReq(send, buf, len);
         while (DCT[CCR](0) != 0 || DCR[CCR](0) != 0) // EN
             asm ("wfe");
-        I2cHw<I>::disable();
+        I2cHw<A>::disable();
         if (!send)
             cache::inval(buf, len);
     }
@@ -142,7 +149,7 @@ private:
     Chain msgs;
 
     void startReq (bool send, uint8_t* buf, uint16_t len) const {
-        I2cHw<I>::enable();
+        I2cHw<A>::enable();
         if (!send) {
             DCR[CMAR] = (uint32_t) buf;
             DCR[CNDTR] = len;
@@ -164,7 +171,7 @@ private:
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            I2cHw<I>::disable();
+            I2cHw<A>::disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
@@ -203,9 +210,9 @@ private:
     }
 };
 
-template< uint32_t I, uint32_t D, int T, int R >
-struct I2cDev : I2cDma<I,D,T,R> {
-    using I2cDma<I,D,T,R>::I2cDma;
+template< uint32_t A, uint32_t D, int T, int R >
+struct I2cDev : I2cDma<A,D,T,R> {
+    using I2cDma<A,D,T,R>::I2cDma;
 
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         Message m { 'I', send ? 'W' : 'R', len, buf };

@@ -1,6 +1,6 @@
 // Driver for an SSD1306-based 128x32 or 128x64 OLED display, using I2C.
 
-template< typename I2C, bool BIG =false, uint8_t ADDR =0x3C >
+template< typename I2C, bool BIG =false >
 struct SSD1306 {
     I2C& i2c;
 
@@ -9,7 +9,7 @@ struct SSD1306 {
 
     SSD1306 (I2C& i) : i2c (i) {}
 
-    void init () {
+    void init () const {
         static const uint8_t config [] = {
             0xAE,  // DISPLAYOFF
             0xA8,  // SETMULTIPLEX
@@ -46,7 +46,7 @@ struct SSD1306 {
             cmd(e);
     }
 
-    void clear () {
+    void clear () const {
         uint8_t buf [width];
         memset(buf, 0, sizeof buf);
         for (auto i = 0; i < height; i += 8)
@@ -54,15 +54,15 @@ struct SSD1306 {
     }
 
     // data is written in "bands" of 8 pixels high, bit 0 is the topmost line
-    void copyBand (uint8_t x, uint8_t y, uint8_t const* ptr, uint16_t len) {
+    void copyBand (uint8_t x, uint8_t y, uint8_t const* ptr, uint16_t len) const {
         cmd(0xB0 + (y>>3));   // SET PAGE START
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
 
-        i2c.writeRegs(ADDR, 0x40, ptr, len);
+        i2c.write(0x40, ptr, len);
     }
 
-    void cmd (uint8_t c) {
-        i2c.writeReg(ADDR, 0x80, c);
+    void cmd (uint8_t c) const {
+        i2c.write(0x80, c);
     }
 };
