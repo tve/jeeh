@@ -67,11 +67,10 @@ def BOARD(block, name, suffix=''):
              f'#define I2C{suffix}_PINS  "{f["P"]}"',
              f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t = Template(
-                    'Irq::${N}_EV,' # Irq::I2Cx_EV
-                    '$D-1,$T-$O,$R-$O,$C' # dma dev, tx/rx chans, tx/rx req's
-                ).substitute(f)
-            r.append(f'#define I2C{suffix}_CONF  ' + t)
+            t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
+            c = '{ ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER,$D-1,$C }'
+            r.append(f'#define I2C{suffix}_TYPE  ' + Template(t).substitute(f))
+            r.append(f'#define I2C{suffix}_CONF  ' + Template(c).substitute(f))
         return r
 
     if name.startswith('spi'):

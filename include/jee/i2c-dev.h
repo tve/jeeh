@@ -6,7 +6,9 @@ struct I2cHw {
     using ID = uint8_t;
 
     static constexpr IoReg<A> I2C {};
-    enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,ISR=0x18,RXDR=0x24,TXDR=0x28 };
+    enum {
+        CR1=0x00,CR2=0x04,TIMINGR=0x10,ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28
+    };
 
     struct Config {
         uint16_t ena;
@@ -21,7 +23,7 @@ struct I2cHw {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
-        assert(speed == 1000); // TODO
+        assert(speed == 400 || speed == 1000); // TODO
         //I2C[TIMINGR] = 0x0070'2991; // magic! 400 kHz @ 80 MHz
         I2C[TIMINGR] = 0x0030'0F33; // magic! 1 MHz @ 80 MHz
         I2C[CR1](0) = 1; // PE
@@ -31,20 +33,14 @@ struct I2cHw {
         RCC(cfg.ena, 1) = 0;
     }
 
-    uint32_t read (uint8_t a, uint32_t r) const {
+    uint32_t read (uint8_t a, uint8_t r) const {
         uint32_t v = 0;
         read(a, r, &v, 1);
         return v;
     }
 
-    void read (uint8_t a, uint32_t r, void* p, uint8_t n) const {
-        I2C[CR2] = (1<<16) | (1<<13) | (a<<1); // NBYTES START SADD
-        I2C[TXDR] = r;
-        while (I2C[ISR](6) == 0) {} // ~TC
-
-        I2C[CR2] = // AUTOEND NBYTES START DIR SADD
-                (1<<25) | (n<<16) | (1<<13) | (1<<10) | (a<<1);
-        while (I2C[ISR](15) == 0) {} // ~BUSY
+    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
+        startRead(a, r, n);
 
         auto q = (uint8_t*) p;
         while (I2C[ISR](15)) // BUSY
@@ -52,15 +48,12 @@ struct I2cHw {
                 *q++ = I2C[RXDR];
     }
 
-    void write (uint8_t a, uint32_t r, uint16_t v) const {
+    void write (uint8_t a, uint8_t r, uint8_t v) const {
         write(a, r, &v, 1);
     }
 
-    void write (uint8_t a, uint32_t r, void const* p, uint8_t n) const {
-        I2C[CR2] = // AUTOEND NBYTES START SADD
-                (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
-        I2C[TXDR] = r;
-        while (I2C[ISR](15) == 0) {} // ~BUSY
+    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
+        startWrite(a, r, n);
 
         auto q = (uint8_t const*) p;
         while (I2C[ISR](15)) // BUSY
@@ -68,52 +61,65 @@ struct I2cHw {
                 I2C[TXDR] = *q++;
     }
 
-    void enable () const { fail(); }
-    void disable () const { fail(); }
-    int transfer (int) const { fail(); }
-    void bufferIO (uint8_t*, uint16_t, bool) const { fail(); }
+protected:
+    void startRead (uint8_t a, uint8_t r, uint8_t n) const {
+        I2C[CR2] = // NBYTES START SADD
+                (1<<16) | (1<<13) | (a<<1);
+        I2C[TXDR] = r;
+        while (I2C[ISR](6) == 0) {} // ~TC
+
+        I2C[CR2] = // AUTOEND NBYTES START DIR SADD
+                (1<<25) | (n<<16) | (1<<13) | (1<<10) | (a<<1);
+        while (I2C[ISR](15) == 0) {} // ~BUSY
+    }
+
+    void startWrite (uint8_t a, uint8_t r, uint8_t n) const {
+        I2C[CR2] = // AUTOEND NBYTES START SADD
+                (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
+        I2C[TXDR] = r;
+        while (I2C[ISR](15) == 0) {} // ~BUSY, takes 8 cycles on L432
+    }
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
 struct I2cDma : I2cHw<A>, Device {
     using HW = I2cHw<A>;
+    using HW::I2C;
 
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
     enum { CHAN_STEP=0x14 };
 #else
     enum { ISR=0x00, IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
     enum { CHAN_STEP=0x18 };
 #endif
-#if STM32L0 | STM32L4
-    enum { CSELR=0xA8 };
-#endif
 
     static constexpr IoReg<D> DMA {};
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    struct Config : I2cHw<A>::Config {
-        Irq txIrq, rxIrq;
+    struct Config : HW::Config {
+        Irq evIrq, erIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
     Config const cfg;
 
-    I2cDma (Config const& c) : I2cHw<A> (c.ena, c.mhz), Device ('I'), cfg (c) {}
+    I2cDma (Config const& c) : HW (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        I2cHw<A>::init(defs, speed);
-        HW::I2C[HW::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
+        HW::init(defs, speed);
+        I2C[HW::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
+        I2C[HW::CR1](5) = 1; // STOPIE
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
 #if STM32L0 | STM32L4
-        DMA[CSELR](4*T,4) = cfg.txReq;
-        DMA[CSELR](4*R,4) = cfg.rxReq;
+        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
+        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
 #endif
-        DTX[CPAR] = A + HW::DR;
-        DRX[CPAR] = A + HW::DR;
+        DTX[CPAR] = A + HW::TXDR;
+        DRX[CPAR] = A + HW::RXDR;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
         DRX[CCR] = 0b1000'0010; // MINC TCIE
@@ -125,87 +131,58 @@ struct I2cDma : I2cHw<A>, Device {
         DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
-        irqInstall((uint8_t) cfg.txIrq);
-        irqInstall((uint8_t) cfg.rxIrq);
+        irqInstall((uint8_t) cfg.evIrq);
+        //irqInstall((uint8_t) cfg.erIrq);
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
-    // sync version, dma with wfe
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-        startReq(send, buf, len);
-        while (DTX[CCR](0) != 0 || DRX[CCR](0) != 0) // EN
+    // sync versions, dma with wfe
+    using HW::read;
+    using HW::write;
+
+    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
+        HW::startRead(a, r, n);
+
+        DRX[CMAR] = (uintptr_t) p;
+        DRX[CNDTR] = n;
+        DRX[CCR](0) = 1; // EN
+
+        while (DRX[CCR](0) != 0) // EN
             asm ("wfe");
-        I2cHw<A>::disable();
-        if (!send)
-            cache::inval(buf, len);
+        cache::inval(p, n);
+    }
+
+    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
+        HW::startWrite(a, r, n);
+
+        cache::clean(p, n);
+        DTX[CMAR] = (uintptr_t) p;
+        DTX[CNDTR] = n;
+        DTX[CCR](0) = 1; // EN
+
+        while (DTX[CCR](0) != 0) // EN
+            asm ("wfe");
     }
 
 private:
     Chain msgs;
 
-    void startReq (bool send, uint8_t* buf, uint16_t len) const {
-        I2cHw<A>::enable();
-        if (!send) {
-            DRX[CMAR] = (uint32_t) buf;
-            DRX[CNDTR] = len;
-            DRX[CCR](0) = 1; // EN
-        }
-        // always send (RXIDLE mode is troublesome w/ DMA)
-        cache::clean(buf, len);
-        DTX[CMAR] = (uint32_t) buf;
-        DTX[CNDTR] = len;
-        DTX[CCR](0) = 1; // EN
-    }
-
     // async version, started from a msg
-    void start (Message& m) override {
-        if (!msgs.append(m))
-            startReq(m.mTag == 'W', m.mPtr, m.mLen);
-    }
-
-    void finish () override {
-        auto mp = msgs.pull();
-        if (mp != nullptr) {
-            I2cHw<A>::disable();
-            if (mp->mPtr != nullptr)
-                cache::inval(mp->mPtr, mp->mLen);
-            reply(mp);
-        }
-        mp = msgs.first();
-        if (mp != nullptr)
-            startReq(mp->mTag == 'W', mp->mPtr, mp->mLen);
-    }
+    void start (Message&) override { fail(); }
+    void finish () override { fail(); }
 
     bool interrupt (int) override {
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        if (DMA[ISR](4*T)) { // GIF
+        if (I2C[HW::ISR](5)) { // STOPF
+            I2C[HW::ICR] = (1<<5); // STOPCF
             DTX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*T);
-        } else if (DMA[ISR](4*R)) { // GIF
             DRX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*R);
-        } else
-            fail();
-#else
-        constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
-        if (DMA[T&~3](5+ifcBits[T&3])) // tx TCIF
-            DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
-        else if (DMA[R&~3](5+ifcBits[R&3])) // rx TCIF
-            DMA[IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
-        else
-            fail();
-#endif
-        if (DTX[CCR](0) || DRX[CCR](0)) // EN
-            return false; // still in progress
-
-        // clear OVR flag, in case the data was never read
-        (void) +HW::I2C.byte(HW::DR);
-        (void) +HW::I2C[HW::SR];
+        }
         return !msgs.isEmpty();
     }
 };
 
+#if 0 // TODO
 template< uint32_t A, uint32_t D, int T, int R >
 struct I2cDev : I2cDma<A,D,T,R> {
     using I2cDma<A,D,T,R>::I2cDma;
@@ -215,5 +192,6 @@ struct I2cDev : I2cDma<A,D,T,R> {
         sys::call(m); // async with thread suspend
     }
 };
+#endif
 
 } // namespace jeeh

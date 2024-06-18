@@ -6,7 +6,7 @@ struct BusDev {
     using ID = typename BUS::ID;
 
     ID const id;
-    BUS& bus;
+    BUS const& bus;
 
     BusDev (BUS& b, ID i) : id (i), bus (b) {}
 

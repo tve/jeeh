@@ -10,7 +10,11 @@ int main () {
     initBoard("oled");
 
     // one I2C bus, two I2C devices
+#if 0
     I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+#else
+    I2cDma<I2C_TYPE> i2c (I2C_CONF);
+#endif
     BusDev dev1 (i2c, 0x3D);
     BusDev dev2 (i2c, 0x3C);
 
@@ -27,7 +31,7 @@ int main () {
     logf("clear 1: %5d µs", t);
 
     // display a trivial pattern, just to verify that it works
-    static uint8_t data [] = {
+    static uint8_t const data [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
     };
 
