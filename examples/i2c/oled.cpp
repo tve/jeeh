@@ -11,14 +11,14 @@ int main () {
 
     // one I2C bus, two I2C devices
     I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
-    Dev dev1 { i2c, 0x3D };
-    Dev dev2 { i2c, 0x3C };
+    BusDev dev1 { i2c, 0x3D };
+    BusDev dev2 { i2c, 0x3C };
 
     i2c.init(I2C_PINS, 1000);
 
     // these types differ: one is for 128x64, the other for 128x32
-    SSD1306<decltype(dev1), true> oled1 (dev1);
-    SSD1306<decltype(dev2), false> oled2 (dev2);
+    SSD1306 oled1 (dev1, true);
+    SSD1306 oled2 (dev2, false);
 
     oled1.init();
     auto t = cycles::micros();

@@ -1,19 +1,21 @@
-// Driver for an SSD1306-based 128x32 or 128x64 OLED display, using I2C.
+// Demo of an SSD1306-based 128x32 or 128x64 OLED display, using I2C or SPI.
 
-template< typename I2C, bool BIG =false >
+template< typename DEV >
 struct SSD1306 {
-    I2C& i2c;
+    DEV& dev;
 
-    constexpr static uint8_t width = 128;
-    constexpr static uint8_t height = BIG ? 64 : 32;
+    enum { width = 128 };
+    const uint8_t height;
 
-    SSD1306 (I2C& i) : i2c (i) {}
+    SSD1306 (DEV& d, bool b =false) : dev (d), height (b ? 64 : 32) {}
 
     void init () const {
-        static const uint8_t config [] = {
+        auto big = height > 32;
+
+        const uint8_t config [] = {
             0xAE,  // DISPLAYOFF
             0xA8,  // SETMULTIPLEX
-            height-1,
+            (uint8_t) (height-1),
             0xD3,  // SETDISPLAYOFFSET
                0,
             0x40,  // SETSTARTLINE
@@ -25,9 +27,9 @@ struct SSD1306 {
             0xA1,  // SEGREMAP | 0x1
             0xC8,  // COMSCANDEC
             0xDA,  // SETCOMPINS
-            BIG ? 0x12 : 0x02,
+            (uint8_t) (big ? 0x12 : 0x02),
             0x81,  // SETCONTRAST
-            BIG ? 0xCF : 0x8F,
+            (uint8_t) (big ? 0xCF : 0x8F),
             0xD9,  // SETPRECHARGE
             0xF1,
             0xDB,  // SETVCOMDETECT
@@ -59,10 +61,10 @@ struct SSD1306 {
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
 
-        i2c.write(0x40, ptr, len);
+        dev.write(0x40, ptr, len);
     }
 
     void cmd (uint8_t c) const {
-        i2c.write(0x80, c);
+        dev.write(0x80, c);
     }
 };

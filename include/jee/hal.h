@@ -2,13 +2,13 @@
 #include "exti.h"
 
 template< typename BUS >
-struct Dev {
+struct BusDev {
     using ID = typename BUS::ID;
 
     ID const id;
     BUS& bus;
 
-    Dev (BUS& b, ID i) : id (i), bus (b) {}
+    BusDev (BUS& b, ID i) : id (i), bus (b) {}
 
     template< typename ...A >
     auto read (A... a) { return bus.read(id, a...); }

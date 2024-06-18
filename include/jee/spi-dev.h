@@ -96,8 +96,8 @@ struct SpiDma : SpiHw<A>, Device {
 #endif
 
     static constexpr IoReg<D> DMA {};
-    static constexpr IoReg<D+CHAN_STEP*T> DCT {}; // DMA channel TX
-    static constexpr IoReg<D+CHAN_STEP*R> DCR {}; // DMA channel RX
+    static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
+    static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
     struct Config : SpiHw<A>::Config {
         Irq txIrq, rxIrq;
@@ -117,17 +117,17 @@ struct SpiDma : SpiHw<A>, Device {
         DMA[CSELR](4*T,4) = dev.txReq;
         DMA[CSELR](4*R,4) = dev.rxReq;
 #endif
-        DCT[CPAR] = A + HW::DR;
-        DCR[CPAR] = A + HW::DR;
+        DTX[CPAR] = A + HW::DR;
+        DRX[CPAR] = A + HW::DR;
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        DCT[CCR] = 0b1001'0010; // MINC DIR TCIE
-        DCR[CCR] = 0b1000'0010; // MINC TCIE
+        DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
+        DRX[CCR] = 0b1000'0010; // MINC TCIE
 #elif STM32H7
-        DCT[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
-        DCR[CCR] = 0b0100'0001'0000; // MINC TCIE
+        DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
+        DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
 #else
-        DCT[CCR] = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DCR[CCR] = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+        DTX[CCR] = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        DRX[CCR] = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
         irqInstall((uint8_t) dev.txIrq);
@@ -139,7 +139,7 @@ struct SpiDma : SpiHw<A>, Device {
     // sync version, dma with wfe
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         startReq(send, buf, len);
-        while (DCT[CCR](0) != 0 || DCR[CCR](0) != 0) // EN
+        while (DTX[CCR](0) != 0 || DRX[CCR](0) != 0) // EN
             asm ("wfe");
         SpiHw<A>::disable();
         if (!send)
@@ -152,15 +152,15 @@ private:
     void startReq (bool send, uint8_t* buf, uint16_t len) const {
         SpiHw<A>::enable();
         if (!send) {
-            DCR[CMAR] = (uint32_t) buf;
-            DCR[CNDTR] = len;
-            DCR[CCR](0) = 1; // EN
+            DRX[CMAR] = (uint32_t) buf;
+            DRX[CNDTR] = len;
+            DRX[CCR](0) = 1; // EN
         }
         // always send (RXIDLE mode is troublesome w/ DMA)
         cache::clean(buf, len);
-        DCT[CMAR] = (uint32_t) buf;
-        DCT[CNDTR] = len;
-        DCT[CCR](0) = 1; // EN
+        DTX[CMAR] = (uint32_t) buf;
+        DTX[CNDTR] = len;
+        DTX[CCR](0) = 1; // EN
     }
 
     // async version, started from a msg
@@ -185,10 +185,10 @@ private:
     bool interrupt (int) override {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*T)) { // GIF
-            DCT[CCR](0) = 0; // ~EN
+            DTX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*T);
         } else if (DMA[ISR](4*R)) { // GIF
-            DCR[CCR](0) = 0; // ~EN
+            DRX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*R);
         } else
             fail();
@@ -201,7 +201,7 @@ private:
         else
             fail();
 #endif
-        if (DCT[CCR](0) || DCR[CCR](0)) // EN
+        if (DTX[CCR](0) || DRX[CCR](0)) // EN
             return false; // still in progress
 
         // clear OVR flag, in case the data was never read
