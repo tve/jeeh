@@ -73,7 +73,7 @@ struct I2cHw {
 
     void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
         transfer(a, R1, &r, 1);
-        transfer(a, R2, (void*) p, n);
+        transfer(a, R2, p, n);
     }
 
     void write (uint8_t a, uint8_t r, uint8_t v) const {
@@ -127,7 +127,6 @@ struct I2cDma : I2cHw<A>, Device {
     void init (char const* defs, int speed) {
         HW::init(defs, speed);
         I2C[HW::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
-        I2C[HW::CR1](5) = 1; // STOPIE
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
 #if STM32L0 | STM32L4
@@ -156,6 +155,7 @@ struct I2cDma : I2cHw<A>, Device {
     // sync versions, dma with wfe
     void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         HW::startReq(a, m, n);
+        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
 
         if (m != HW::R2) {
             cache::clean(p, n);
@@ -205,11 +205,9 @@ private:
     void finish () override { fail(); }
 
     bool interrupt (int) override {
-        if (1||I2C[HW::ISR](5)) { // STOPF
-            I2C[HW::ICR] = (1<<5); // STOPCF
-            DTX[CCR](0) = 0; // ~EN
-            DRX[CCR](0) = 0; // ~EN
-        }
+        I2C[HW::CR1](5,2) = 0; // TCIE STOPIE
+        DTX[CCR](0) = 0; // ~EN
+        DRX[CCR](0) = 0; // ~EN
         return !msgs.isEmpty();
     }
 };

@@ -10,7 +10,7 @@ int main () {
     initBoard("oled");
 
     // one I2C bus, two I2C devices
-#if 1
+#if 0
     I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
 #else
     I2cDma<I2C_TYPE> i2c (I2C_CONF);
