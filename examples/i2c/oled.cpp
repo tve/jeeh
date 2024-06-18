@@ -14,11 +14,11 @@ int main () {
     BusDev dev1 { i2c, 0x3D };
     BusDev dev2 { i2c, 0x3C };
 
-    i2c.init(I2C_PINS, 1000);
-
     // these types differ: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, true);
     SSD1306 oled2 (dev2, false);
+
+    i2c.init(I2C_PINS, 1000);
 
     oled1.init();
     auto t = cycles::micros();
