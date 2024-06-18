@@ -27,7 +27,7 @@ extern "C" {
 namespace jeeh {
 
 //CG1 version
-constexpr auto VERSION = "v6.0b1-148-g43869c0";
+constexpr auto VERSION = "v6.0b1-149-g6927e03";
 
 #include "arch/sys.h"
 
