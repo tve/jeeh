@@ -14,7 +14,7 @@ int main () {
     BusDev dev1 { i2c, 0x3D };
     BusDev dev2 { i2c, 0x3C };
 
-    // these types differ: one is for 128x64, the other for 128x32
+    // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, true);
     SSD1306 oled2 (dev2, false);
 
