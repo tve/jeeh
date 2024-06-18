@@ -15,8 +15,8 @@ int main () {
     BusDev dev2 { i2c, 0x3C };
 
     // same type, two instances: one is for 128x64, the other for 128x32
-    SSD1306 oled1 (dev1, true);
-    SSD1306 oled2 (dev2, false);
+    SSD1306 oled1 (dev1, 64);
+    SSD1306 oled2 (dev2, 32);
 
     i2c.init(I2C_PINS, 1000);
 

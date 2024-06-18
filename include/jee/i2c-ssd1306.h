@@ -7,7 +7,7 @@ struct SSD1306 {
     enum { width = 128 };
     const uint8_t height;
 
-    SSD1306 (DEV& d, bool b =false) : dev (d), height (b ? 64 : 32) {}
+    SSD1306 (DEV& d, uint8_t h =32) : dev (d), height (h) {}
 
     void init () const {
         auto big = height > 32;
