@@ -65,26 +65,6 @@ struct I2cHw {
         }
     }
 
-    uint32_t read (uint8_t a, uint8_t r) const {
-        uint32_t v = 0;
-        read(a, r, &v, 1);
-        return v;
-    }
-
-    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
-        transfer(a, R1, &r, 1);
-        transfer(a, R2, p, n);
-    }
-
-    void write (uint8_t a, uint8_t r, uint8_t v) const {
-        write(a, r, &v, 1);
-    }
-
-    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
-        transfer(a, W1, &r, 1);
-        transfer(a, W2, (void*) p, n);
-    }
-
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
         I2C[ICR] = (1<<5); // STOPCF
@@ -163,27 +143,6 @@ struct I2cDma : I2cHw<A>, Device {
             cache::inval(p, n);
     }
 
-    uint32_t read (uint8_t a, uint8_t r) const {
-        uint32_t v = 0;
-        read(a, r, &v, 1);
-        return v;
-    }
-
-    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
-        transfer(a, HW::R1, &r, 1);
-        transfer(a, HW::R2, (void*) p, n);
-
-    }
-
-    void write (uint8_t a, uint8_t r, uint8_t v) const {
-        write(a, r, &v, 1);
-    }
-
-    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
-        transfer(a, HW::W1, &r, 1);
-        transfer(a, HW::W2, (void*) p, n);
-    }
-
 protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         HW::startReq(a, m, n);
@@ -243,27 +202,6 @@ struct I2cDev : I2cDma<A,D,T,R> {
         uint16_t len = (m<<8) | n;
         Message msg { 'I', a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
-    }
-
-    uint32_t read (uint8_t a, uint8_t r) const {
-        uint32_t v = 0;
-        read(a, r, &v, 1);
-        return v;
-    }
-
-    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
-        transfer(a, HW::R1, &r, 1);
-        transfer(a, HW::R2, (void*) p, n);
-
-    }
-
-    void write (uint8_t a, uint8_t r, uint8_t v) const {
-        write(a, r, &v, 1);
-    }
-
-    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
-        transfer(a, HW::W1, &r, 1);
-        transfer(a, HW::W2, (void*) p, n);
     }
 };
 

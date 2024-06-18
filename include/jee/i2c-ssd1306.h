@@ -1,5 +1,7 @@
 // Demo of an SSD1306-based 128x32 or 128x64 OLED display, using I2C or SPI.
 
+namespace jeeh {
+
 template< typename DEV >
 struct SSD1306 {
     DEV& dev;
@@ -61,10 +63,12 @@ struct SSD1306 {
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
 
-        dev.write(0x40, ptr, len);
+        writeRegs(dev, 0x40, ptr, len);
     }
 
     void cmd (uint8_t c) const {
-        dev.write(0x80, c);
+        writeReg(dev, 0x80, c);
     }
 };
+
+} // namespace jeeh
