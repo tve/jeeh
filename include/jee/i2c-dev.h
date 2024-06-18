@@ -4,6 +4,7 @@ namespace jeeh {
 template< uint32_t A >
 struct I2cHw {
     using ID = uint8_t;
+    enum { AE = 1, RL = 2, ST = 4, RD = 8 }; // used as flag bits in Mode
 
     static constexpr IoReg<A> I2C {};
     enum {
@@ -33,6 +34,37 @@ struct I2cHw {
         RCC(cfg.ena, 1) = 0;
     }
 
+    enum { R1 = ST|RD, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
+
+    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        startReq(a, m, n);
+
+        auto q = (uint8_t*) p;
+        switch (m) {
+            case R1:
+                while (!I2C[ISR](6)) // ~TC
+                    if (I2C[ISR](1)) // TXIS
+                        I2C[TXDR] = *q++;
+                break;
+            case W1:
+                while (!I2C[ISR](7)) // ~TCR
+                    if (I2C[ISR](1)) // TXIS
+                        I2C[TXDR] = *q++;
+                break;
+            case W2:
+                while (!I2C[ISR](5)) // ~STOPF
+                    if (I2C[ISR](1)) // TXIS
+                        I2C[TXDR] = *q++;
+                break;
+            case R2:
+                while (!I2C[ISR](5)) // ~STOPF
+                    if (I2C[ISR](2)) // RXNE
+                        *q++ = I2C[RXDR];
+                break;
+            default: fail();
+        }
+    }
+
     uint32_t read (uint8_t a, uint8_t r) const {
         uint32_t v = 0;
         read(a, r, &v, 1);
@@ -40,12 +72,8 @@ struct I2cHw {
     }
 
     void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
-        startRead(a, r, n);
-
-        auto q = (uint8_t*) p;
-        while (I2C[ISR](15)) // BUSY
-            if (I2C[ISR](2)) // RXNE
-                *q++ = I2C[RXDR];
+        transfer(a, R1, &r, 1);
+        transfer(a, R2, (void*) p, n);
     }
 
     void write (uint8_t a, uint8_t r, uint8_t v) const {
@@ -53,31 +81,19 @@ struct I2cHw {
     }
 
     void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
-        startWrite(a, r, n);
-
-        auto q = (uint8_t const*) p;
-        while (I2C[ISR](15)) // BUSY
-            if (I2C[ISR](1)) // TXIS
-                I2C[TXDR] = *q++;
+        transfer(a, W1, &r, 1);
+        transfer(a, W2, (void*) p, n);
     }
 
 protected:
-    void startRead (uint8_t a, uint8_t r, uint8_t n) const {
-        I2C[CR2] = // NBYTES START SADD
-                (1<<16) | (1<<13) | (a<<1);
-        I2C[TXDR] = r;
-        while (!I2C[ISR](6)) {} // ~TC
-
-        I2C[CR2] = // AUTOEND NBYTES START DIR SADD
-                (1<<25) | (n<<16) | (1<<13) | (1<<10) | (a<<1);
-        while (!I2C[ISR](15)) {} // ~BUSY
-    }
-
-    void startWrite (uint8_t a, uint8_t r, uint8_t n) const {
-        I2C[CR2] = // AUTOEND NBYTES START SADD
-                (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
-        I2C[TXDR] = r;
-        while (!I2C[ISR](15)) {} // ~BUSY, takes 8 cycles on L432
+    void startReq (uint8_t a, uint8_t m, uint8_t n) const {
+        I2C[ICR] = (1<<5); // STOPCF
+        I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
+                 | (((m&RL) != 0) << 24) // RELOAD
+                 |             (n << 16) // NBYTES
+                 | (((m&ST) != 0) << 13) // START
+                 | (((m&RD) != 0) << 10) // RD_WRN
+                 |             (a << 1); // SADD
     }
 };
 
@@ -138,31 +154,47 @@ struct I2cDma : I2cHw<A>, Device {
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync versions, dma with wfe
-    using HW::read;
-    using HW::write;
+    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        HW::startReq(a, m, n);
+
+        if (m != HW::R2) {
+            cache::clean(p, n);
+            DTX[CMAR] = (uintptr_t) p;
+            DTX[CNDTR] = n;
+            DTX[CCR](0) = 1; // EN
+
+            while (DTX[CCR](0)) // EN
+                asm ("wfe");
+        } else {
+            DRX[CMAR] = (uintptr_t) p;
+            DRX[CNDTR] = n;
+            DRX[CCR](0) = 1; // EN
+
+            while (DRX[CCR](0)) // EN
+                asm ("wfe");
+            cache::inval(p, n);
+        }
+    }
+
+    uint32_t read (uint8_t a, uint8_t r) const {
+        uint32_t v = 0;
+        read(a, r, &v, 1);
+        return v;
+    }
 
     void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
-        HW::startRead(a, r, n);
+        transfer(a, HW::R1, &r, 1);
+        transfer(a, HW::R2, (void*) p, n);
 
-        DRX[CMAR] = (uintptr_t) p;
-        DRX[CNDTR] = n;
-        DRX[CCR](0) = 1; // EN
+    }
 
-        while (DRX[CCR](0)) // EN
-            asm ("wfe");
-        cache::inval(p, n);
+    void write (uint8_t a, uint8_t r, uint8_t v) const {
+        write(a, r, &v, 1);
     }
 
     void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
-        HW::startWrite(a, r, n);
-
-        cache::clean(p, n);
-        DTX[CMAR] = (uintptr_t) p;
-        DTX[CNDTR] = n;
-        DTX[CCR](0) = 1; // EN
-
-        while (DTX[CCR](0)) // EN
-            asm ("wfe");
+        transfer(a, HW::W1, &r, 1);
+        transfer(a, HW::W2, (void*) p, n);
     }
 
 private:
@@ -173,7 +205,7 @@ private:
     void finish () override { fail(); }
 
     bool interrupt (int) override {
-        if (I2C[HW::ISR](5)) { // STOPF
+        if (1||I2C[HW::ISR](5)) { // STOPF
             I2C[HW::ICR] = (1<<5); // STOPCF
             DTX[CCR](0) = 0; // ~EN
             DRX[CCR](0) = 0; // ~EN

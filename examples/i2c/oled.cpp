@@ -10,7 +10,7 @@ int main () {
     initBoard("oled");
 
     // one I2C bus, two I2C devices
-#if 0
+#if 1
     I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
 #else
     I2cDma<I2C_TYPE> i2c (I2C_CONF);
@@ -24,16 +24,16 @@ int main () {
 
     i2c.init(I2C_PINS, 1000);
 
+    // display a trivial pattern, just to verify that it works
+    static uint8_t const data [] = {
+        255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
+    };
+
     oled1.init();
     auto t = cycles::micros();
     oled1.clear();
     t = cycles::micros() - t;
     logf("clear 1: %5d µs", t);
-
-    // display a trivial pattern, just to verify that it works
-    static uint8_t const data [] = {
-        255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
-    };
 
     t = cycles::micros();
     oled1.copyBand (  0,  0, data, sizeof data);
