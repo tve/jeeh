@@ -66,18 +66,18 @@ protected:
         I2C[CR2] = // NBYTES START SADD
                 (1<<16) | (1<<13) | (a<<1);
         I2C[TXDR] = r;
-        while (I2C[ISR](6) == 0) {} // ~TC
+        while (!I2C[ISR](6)) {} // ~TC
 
         I2C[CR2] = // AUTOEND NBYTES START DIR SADD
                 (1<<25) | (n<<16) | (1<<13) | (1<<10) | (a<<1);
-        while (I2C[ISR](15) == 0) {} // ~BUSY
+        while (!I2C[ISR](15)) {} // ~BUSY
     }
 
     void startWrite (uint8_t a, uint8_t r, uint8_t n) const {
         I2C[CR2] = // AUTOEND NBYTES START SADD
                 (1<<25) | ((n+1)<<16) | (1<<13) | (a<<1);
         I2C[TXDR] = r;
-        while (I2C[ISR](15) == 0) {} // ~BUSY, takes 8 cycles on L432
+        while (!I2C[ISR](15)) {} // ~BUSY, takes 8 cycles on L432
     }
 };
 
@@ -85,7 +85,6 @@ protected:
 template< uint32_t A, uint32_t D, int T, int R >
 struct I2cDma : I2cHw<A>, Device {
     using HW = I2cHw<A>;
-    using HW::I2C;
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -95,7 +94,8 @@ struct I2cDma : I2cHw<A>, Device {
     enum { CHAN_STEP=0x18 };
 #endif
 
-    static constexpr IoReg<D> DMA {};
+    static constexpr IoReg<A>             I2C {};
+    static constexpr IoReg<D>             DMA {};
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
@@ -148,7 +148,7 @@ struct I2cDma : I2cHw<A>, Device {
         DRX[CNDTR] = n;
         DRX[CCR](0) = 1; // EN
 
-        while (DRX[CCR](0) != 0) // EN
+        while (DRX[CCR](0)) // EN
             asm ("wfe");
         cache::inval(p, n);
     }
@@ -161,7 +161,7 @@ struct I2cDma : I2cHw<A>, Device {
         DTX[CNDTR] = n;
         DTX[CCR](0) = 1; // EN
 
-        while (DTX[CCR](0) != 0) // EN
+        while (DTX[CCR](0)) // EN
             asm ("wfe");
     }
 

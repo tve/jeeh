@@ -47,7 +47,7 @@ struct SpiHw {
 
     int transfer (int v) const {
         SPI.byte(DR) = v;
-        while (SPI[SR](0) == 0) {} // RXNE
+        while (!SPI[SR](0)) {} // ~RXNE
         return SPI.byte(DR);
     }
 
@@ -57,22 +57,22 @@ struct SpiHw {
         if (send) {
             SPI.byte(DR) = *buf++;
             while (--len > 0U) {
-                while (SPI[SR](1) == 0) {} // TXE
+                while (!SPI[SR](1)) {} // ~TXE
                 SPI.byte(DR) = *buf++;
-                while (SPI[SR](0) == 0) {} // RXNE
+                while (!SPI[SR](0)) {} // ~RXNE
                 (void) +SPI.byte(DR);
             }
-            while (SPI[SR](0) == 0) {} // RXNE
+            while (!SPI[SR](0)) {} // ~RXNE
             (void) +SPI.byte(DR);
         } else {
             SPI.byte(DR) = 0;
             while (--len > 0U) {
-                while (SPI[SR](1) == 0) {} // TXE
+                while (SPI[SR](1)) {} // ~TXE
                 SPI.byte(DR) = 0;
-                while (SPI[SR](0) == 0) {} // RXNE
+                while (SPI[SR](0)) {} // ~RXNE
                 *buf++ = SPI.byte(DR);
             }
-            while (SPI[SR](0) == 0) {} // RXNE
+            while (SPI[SR](0)) {} // ~RXNE
             *buf = SPI.byte(DR);
         }
         disable();
@@ -139,7 +139,7 @@ struct SpiDma : SpiHw<A>, Device {
     // sync version, dma with wfe
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         startReq(send, buf, len);
-        while (DTX[CCR](0) != 0 || DRX[CCR](0) != 0) // EN
+        while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
         SpiHw<A>::disable();
         if (!send)
