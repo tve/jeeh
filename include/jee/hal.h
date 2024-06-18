@@ -10,11 +10,28 @@ struct BusDev {
 
     BusDev (BUS& b, ID i) : id (i), bus (b) {}
 
-    template< typename ...A >
-    auto read (A... a) { return bus.read(id, a...); }
+    // general forwarding definitions, any arguments and return type
 
     template< typename ...A >
-    auto write (A... a) { return bus.write(id, a...); }
+    void transfer (A... a) const { return bus.transfer(id, a...); }
+
+    template< typename ...A >
+    void read (A... a) { bus.read(id, a...); }
+
+    template< typename ...A >
+    void write (A... a) { bus.write(id, a...); }
+
+    // r/w access of a single-byte "register"
+
+    uint32_t read (uint8_t r) const {
+        uint32_t v = 0;
+        read(r, &v, 1);
+        return v;
+    }
+
+    void write (uint8_t r, uint8_t v) const {
+        write(r, &v, 1);
+    }
 };
 
 #include "i2c.h"

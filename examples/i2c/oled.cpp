@@ -12,8 +12,10 @@ int main () {
     // one I2C bus, two I2C devices
 #if 0
     I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
-#else
+#elif 1
     I2cDma<I2C_TYPE> i2c (I2C_CONF);
+#else
+    I2cDev<I2C_TYPE> i2c (I2C_CONF);
 #endif
     BusDev dev1 (i2c, 0x3D);
     BusDev dev2 (i2c, 0x3C);

@@ -154,26 +154,13 @@ struct I2cDma : I2cHw<A>, Device {
 
     // sync versions, dma with wfe
     void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-        HW::startReq(a, m, n);
-        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
+        startReq(a, m, p, n);
 
-        if (m != HW::R2) {
-            cache::clean(p, n);
-            DTX[CMAR] = (uintptr_t) p;
-            DTX[CNDTR] = n;
-            DTX[CCR](0) = 1; // EN
+        while (DTX[CCR](0) || DRX[CCR](0)) // EN
+            asm ("wfe");
 
-            while (DTX[CCR](0)) // EN
-                asm ("wfe");
-        } else {
-            DRX[CMAR] = (uintptr_t) p;
-            DRX[CNDTR] = n;
-            DRX[CCR](0) = 1; // EN
-
-            while (DRX[CCR](0)) // EN
-                asm ("wfe");
+        if (m == HW::R2)
             cache::inval(p, n);
-        }
     }
 
     uint32_t read (uint8_t a, uint8_t r) const {
@@ -197,12 +184,47 @@ struct I2cDma : I2cHw<A>, Device {
         transfer(a, HW::W2, (void*) p, n);
     }
 
+protected:
+    void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        HW::startReq(a, m, n);
+        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
+
+        if (m != HW::R2) {
+            cache::clean(p, n);
+            DTX[CMAR] = (uintptr_t) p;
+            DTX[CNDTR] = n;
+            DTX[CCR](0) = 1; // EN
+        } else {
+            DRX[CMAR] = (uintptr_t) p;
+            DRX[CNDTR] = n;
+            DRX[CCR](0) = 1; // EN
+        }
+    }
+
 private:
     Chain msgs;
 
+    void startAsync (Message& m) {
+        uint8_t mode = m.mLen >> 8, len = m.mLen;
+        startReq(m.mTag, mode, m.mPtr, len);
+    }
+
     // async version, started from a msg
-    void start (Message&) override { fail(); }
-    void finish () override { fail(); }
+    void start (Message& m) override {
+        if (!msgs.append(m))
+            startAsync(m);
+    }
+    void finish () override {
+        auto mp = msgs.pull();
+        if (mp != nullptr) {
+            if (mp->mPtr != nullptr)
+                cache::inval(mp->mPtr, mp->mLen);
+            reply(mp);
+        }
+        mp = msgs.first();
+        if (mp != nullptr)
+            startAsync(*mp);
+    }
 
     bool interrupt (int) override {
         I2C[HW::CR1](5,2) = 0; // TCIE STOPIE
@@ -212,16 +234,37 @@ private:
     }
 };
 
-#if 0 // TODO
 template< uint32_t A, uint32_t D, int T, int R >
 struct I2cDev : I2cDma<A,D,T,R> {
     using I2cDma<A,D,T,R>::I2cDma;
+    using HW = I2cHw<A>;
 
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-        Message m { 'I', send ? 'W' : 'R', len, buf };
-        sys::call(m); // async with thread suspend
+    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        uint16_t len = (m<<8) | n;
+        Message msg { 'I', a, len, (uint8_t*) p };
+        sys::call(msg); // async with thread suspend
+    }
+
+    uint32_t read (uint8_t a, uint8_t r) const {
+        uint32_t v = 0;
+        read(a, r, &v, 1);
+        return v;
+    }
+
+    void read (uint8_t a, uint8_t r, void* p, uint8_t n) const {
+        transfer(a, HW::R1, &r, 1);
+        transfer(a, HW::R2, (void*) p, n);
+
+    }
+
+    void write (uint8_t a, uint8_t r, uint8_t v) const {
+        write(a, r, &v, 1);
+    }
+
+    void write (uint8_t a, uint8_t r, void const* p, uint8_t n) const {
+        transfer(a, HW::W1, &r, 1);
+        transfer(a, HW::W2, (void*) p, n);
     }
 };
-#endif
 
 } // namespace jeeh
