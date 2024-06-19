@@ -7,38 +7,34 @@ template< typename BUS >
 struct BusDev {
     using ID = typename BUS::ID;
 
-    ID const id;
-    BUS const& bus;
+    BUS& bus;
+    ID id;
 
-    BusDev (BUS& b, ID i) : id (i), bus (b) {}
+    BusDev (BUS& b, ID i) : bus (b), id (i) {}
 
     template< typename ...A >
     void transfer (A... a) const { return bus.transfer(id, a...); }
+
+    uint32_t readReg (uint8_t r) const {
+        uint32_t v = 0;
+        readRegs(r, &v, 1);
+        return v;
+    }
+
+    void readRegs (uint8_t r, void* p, uint8_t n) const {
+        transfer(bus.R1, &r, 1);
+        transfer(bus.R2, p, n);
+    }
+
+    void writeReg (uint8_t r, uint8_t v) const {
+        writeRegs(r, &v, 1);
+    }
+
+    void writeRegs (uint8_t r, void const* p, uint8_t n) const {
+        transfer(bus.W1, &r, 1);
+        transfer(bus.W2, (void*) p, n);
+    }
 };
-
-template< typename DEV >
-uint32_t readReg (DEV const& d, uint8_t r) {
-    uint32_t v = 0;
-    readRegs(d, r, &v, 1);
-    return v;
-}
-
-template< typename DEV >
-void readRegs (DEV const& d, uint8_t r, void* p, uint8_t n) {
-    d.transfer(d.bus.R1, &r, 1);
-    d.transfer(d.bus.R2, p, n);
-}
-
-template< typename DEV >
-void writeReg (DEV const& d, uint8_t r, uint8_t v) {
-    writeRegs(d, r, &v, 1);
-}
-
-template< typename DEV >
-void writeRegs (DEV const& d, uint8_t r, void const* p, uint8_t n) {
-    d.transfer(d.bus.W1, &r, 1);
-    d.transfer(d.bus.W2, (void*) p, n);
-}
 
 } // namespace jeeh
 

@@ -14,8 +14,8 @@ int main () {
     I2cDma<I2C_TYPE> i2c (I2C_CONF);
     //I2cDev<I2C_TYPE> i2c (I2C_CONF);
 
-    BusDev dev1 (i2c, 0x3D);
-    BusDev dev2 (i2c, 0x3C);
+    BusDev dev1 {i2c, 0x3D};
+    BusDev dev2 {i2c, 0x3C};
 
     // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, 64);

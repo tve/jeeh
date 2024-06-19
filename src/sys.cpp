@@ -184,6 +184,8 @@ inline namespace {
 
 [[gnu::weak]] void jeeh::resumePower () {}
 
+namespace jeeh {
+
 struct Thread : Message, Chain {
     enum { LIMIT = 20 };
     static_assert(LIMIT < (int) Device::BASE); // must not overlap device id's
@@ -262,6 +264,8 @@ static Thread mainThread; // this self-installs as thread #0 TODO yuck ...
 static Thread& context () {
     return Thread::byId(current);
 }
+
+} // namespace jeeh
 
 //----------------------------------------------------------------------- Fixer
 
