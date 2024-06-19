@@ -85,7 +85,8 @@ protected:
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
 struct I2cSync : I2cDev<A>, Device {
-    using DEV = I2cDev<A>;
+    using BASE = I2cDev<A>;
+    using BASE::I2cDev; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -100,18 +101,18 @@ struct I2cSync : I2cDev<A>, Device {
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    struct Config : DEV::Config {
+    struct Config : BASE::Config {
         Irq evIrq, erIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
     Config const cfg;
 
-    I2cSync (Config const& c) : DEV (c.ena, c.mhz), Device ('I'), cfg (c) {}
+    I2cSync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        DEV::init(defs, speed);
-        I2C[DEV::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
+        BASE::init(defs, speed);
+        I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
 
@@ -142,8 +143,8 @@ struct I2cSync : I2cDev<A>, Device {
 #endif
 
         // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + DEV::TXDR;
-        DRX[CPAR] = A + DEV::RXDR;
+        DTX[CPAR] = A + BASE::TXDR;
+        DRX[CPAR] = A + BASE::RXDR;
 
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
@@ -156,7 +157,7 @@ struct I2cSync : I2cDev<A>, Device {
         startReq(a, m, p, n);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
-        if (m == DEV::R2)
+        if (m == BASE::R2)
             cache::inval(p, n);
         return true; // TODO
     }
@@ -166,7 +167,7 @@ protected:
         // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
         // (although it seems to work just as well the other way around?)
 
-        if (m != DEV::R2) {
+        if (m != BASE::R2) {
             cache::clean(p, n);
 
             DTX[CMAR] = (uintptr_t) p;
@@ -178,8 +179,8 @@ protected:
             DRX[CCR](0) = 1; // EN
         }
 
-        DEV::startReq(a, m, n);
-        I2C[DEV::CR1](5,2) = 0b11; // TCIE STOPIE
+        BASE::startReq(a, m, n);
+        I2C[BASE::CR1](5,2) = 0b11; // TCIE STOPIE
     }
 
 private:
@@ -208,7 +209,7 @@ private:
     }
 
     bool interrupt (int) override {
-        I2C[DEV::CR1](5,2) = 0; // TCIE STOPIE
+        I2C[BASE::CR1](5,2) = 0; // TCIE STOPIE
         DTX[CCR](0) = 0; // ~EN
         DRX[CCR](0) = 0; // ~EN
         return !msgs.isEmpty();
@@ -217,9 +218,12 @@ private:
 
 template< uint32_t A, uint32_t D, int T, int R >
 struct i2cAsync : I2cSync<A,D,T,R> {
+    using BASE = I2cSync<A,D,T,R>;
+    using BASE::I2cSync; // constructor
+
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         uint16_t len = (m<<8) | n;
-        Message msg { 'I', a, len, (uint8_t*) p };
+        Message msg { BASE::dId, a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
         return true; // TODO
     }
