@@ -5,10 +5,10 @@ namespace jeeh {
 
 void I2cGpio::init (char const* desc, int r) {
     Pin::config(desc, &sda, 2);
-    Pin::config(":OU,", &sda, 2);
     sda = 1;
     scl = 1;
-    rate = r;
+    Pin::config(":OU,", &sda, 2);
+    rate = r < 100 ? r : 2;
 }
 
 void I2cGpio::detect () const {
@@ -31,7 +31,7 @@ bool I2cGpio::start (uint8_t addr) const {
     sclLo();
     sclHi();
     sda = 0;
-    return write(addr);
+    return wrByte(addr);
 }
 
 void I2cGpio::stop () const {
@@ -41,7 +41,7 @@ void I2cGpio::stop () const {
     hold();
 }
 
-int I2cGpio::read (bool last) const {
+int I2cGpio::rdByte (bool last) const {
     uint8_t data = 0;
     for (auto mask = 0x80; mask != 0; mask >>= 1) {
         sclHi();
@@ -58,7 +58,7 @@ int I2cGpio::read (bool last) const {
     return data;
 }
 
-bool I2cGpio::write (uint8_t data) const {
+bool I2cGpio::wrByte (uint8_t data) const {
     sclLo();
     for (auto mask = 0x80; mask != 0; mask >>= 1) {
         sda = (data & mask) != 0;
@@ -70,45 +70,6 @@ bool I2cGpio::write (uint8_t data) const {
     hold();
     bool ack = !sda;
     sclLo();
-    return ack;
-}
-
-int I2cGpio::readReg (int addr, int reg) const {
-    uint8_t val;
-    if (!readRegs(addr, reg, &val, sizeof val))
-        return -1;
-    return val;
-}
-
-bool I2cGpio::writeReg (int addr, int reg, int val) const {
-    start(2*addr);
-    auto ack = write(reg);
-    if (ack)
-        ack = write(val);
-    stop();
-    return ack;
-}
-
-bool I2cGpio::readRegs (int addr, int reg, void* ptr, int len) const {
-    start(2*addr);
-    if (!write(reg)) {
-        stop();
-        return false;
-    }
-    start(2*addr+1);
-    auto buf = (uint8_t*) ptr;
-    for (auto i = 0; i < len; ++i)
-        buf[i] = read(i == len-1);
-    return true;
-}
-
-bool I2cGpio::writeRegs (int addr, int reg, void const* ptr, int len) const {
-    start(2*addr);
-    bool ack = write(reg);
-    auto buf = (uint8_t const*) ptr;
-    for (auto i = 0; ack && i < len; ++i)
-        ack = write(buf[i]);
-    stop();
     return ack;
 }
 

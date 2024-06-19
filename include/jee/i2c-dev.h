@@ -24,9 +24,12 @@ struct I2cHw {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
-        assert(speed == 400 || speed == 1000); // TODO
-        //I2C[TIMINGR] = 0x0070'2991; // magic! 400 kHz @ 80 MHz
-        I2C[TIMINGR] = 0x0030'0F33; // magic! 1 MHz @ 80 MHz
+        switch (speed) { // TODO magic! L432 @ 80 MHz
+            case 100:  I2C[TIMINGR] = 0x1090'9CEC; break;
+            case 400:  I2C[TIMINGR] = 0x0070'2991; break;
+            case 1000: I2C[TIMINGR] = 0x0030'0F33; break;
+            default:   fail();
+        }
         I2C[CR1](0) = 1; // PE
     }
 
@@ -36,7 +39,7 @@ struct I2cHw {
 
     enum { R1 = ST|RD, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
 
-    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
@@ -63,6 +66,8 @@ struct I2cHw {
                 break;
             default: fail();
         }
+
+        return true; // TODO
     }
 
 protected:
@@ -147,14 +152,13 @@ struct I2cDma : I2cHw<A>, Device {
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync versions, dma with wfe
-    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, p, n);
-
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
-
         if (m == HW::R2)
             cache::inval(p, n);
+        return true; // TODO
     }
 
 protected:
@@ -216,10 +220,11 @@ struct I2cDev : I2cDma<A,D,T,R> {
     using I2cDma<A,D,T,R>::I2cDma;
     using HW = I2cHw<A>;
 
-    void transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         uint16_t len = (m<<8) | n;
         Message msg { 'I', a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
+        return true; // TODO
     }
 };
 

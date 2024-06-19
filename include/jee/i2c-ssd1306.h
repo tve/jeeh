@@ -1,14 +1,13 @@
 // Demo of an SSD1306-based 128x32 or 128x64 OLED display, using I2C or SPI.
 
 template< typename DEV >
-struct SSD1306 : DEV {
-    using DEV::writeReg;
-    using DEV::writeRegs;
+struct SSD1306 {
+    DEV dev;
 
     enum { width = 128 };
     const uint8_t height;
 
-    SSD1306 (DEV const& d, uint8_t h =32) : DEV {d}, height (h) {}
+    SSD1306 (DEV const& d, uint8_t h =32) : dev {d}, height (h) {}
 
     void init () const {
         auto big = height > 32;
@@ -62,10 +61,10 @@ struct SSD1306 : DEV {
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
 
-        writeRegs(0x40, ptr, len);
+        dev.write(0x40, ptr, len);
     }
 
     void cmd (uint8_t c) const {
-        writeReg(0x80, c);
+        dev.write(0x80, c);
     }
 };
