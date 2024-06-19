@@ -145,11 +145,12 @@ struct I2cDma : I2cHw<A>, Device {
 
 protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-        HW::startReq(a, m, n);
-        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
+        // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
+        // (although it seems to work just as well the other way around?)
 
         if (m != HW::R2) {
             cache::clean(p, n);
+
             DTX[CMAR] = (uintptr_t) p;
             DTX[CNDTR] = n;
             DTX[CCR](0) = 1; // EN
@@ -158,6 +159,9 @@ protected:
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
         }
+
+        HW::startReq(a, m, n);
+        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
     }
 
 private:
