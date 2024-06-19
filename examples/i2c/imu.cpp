@@ -9,8 +9,8 @@ int main () {
     initBoard("imu");
 
     // one I2C bus, several implementations
-    I2cGpio i2c;
-    //I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+    //I2cGpio i2c;
+    I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
     //I2cDma<I2C_TYPE> i2c (I2C_CONF);
     //I2cDev<I2C_TYPE> i2c (I2C_CONF);
 
@@ -19,7 +19,7 @@ int main () {
     BusDev adxl345 {i2c, 0x53};
     BusDev itg3200 {i2c, 0x68};
 
-    i2c.init(I2C_PINS, 100);
+    i2c.init(I2C_PINS, 400);
     uint8_t buf [6];
 
     hmc5883.write(0, 0x18); // 75 Hz

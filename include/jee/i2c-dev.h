@@ -37,7 +37,7 @@ struct I2cHw {
         RCC(cfg.ena, 1) = 0;
     }
 
-    enum { R1 = ST|RD, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
+    enum { R1 = ST, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
 
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
@@ -49,6 +49,11 @@ struct I2cHw {
                     if (I2C[ISR](1)) // TXIS
                         I2C[TXDR] = *q++;
                 break;
+            case R2:
+                while (!I2C[ISR](5)) // ~STOPF
+                    if (I2C[ISR](2)) // RXNE
+                        *q++ = I2C[RXDR];
+                break;
             case W1:
                 while (!I2C[ISR](7)) // ~TCR
                     if (I2C[ISR](1)) // TXIS
@@ -58,11 +63,6 @@ struct I2cHw {
                 while (!I2C[ISR](5)) // ~STOPF
                     if (I2C[ISR](1)) // TXIS
                         I2C[TXDR] = *q++;
-                break;
-            case R2:
-                while (!I2C[ISR](5)) // ~STOPF
-                    if (I2C[ISR](2)) // RXNE
-                        *q++ = I2C[RXDR];
                 break;
             default: fail();
         }
