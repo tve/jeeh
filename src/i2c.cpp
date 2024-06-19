@@ -1,13 +1,15 @@
 #include "jee.h"
-#include "jee/hal.h"
+#include "jee/i2c.h"
 
 namespace jeeh {
 
 void I2cGpio::init (char const* desc, uint16_t khz) {
     Pin::config(desc, &sda, 2);
     Pin::config(":OU,", &sda, 2);
-    sda = 1;
+
     scl = 1;
+    sda = 1;
+
     // this is merely a wild estimate for the countdown needed in hold()
     // values < 100 will override to define a specific countdown instead
     rate = khz < 100 ? khz : SystemCoreClock/khz/200'000 + 1;

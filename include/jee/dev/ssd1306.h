@@ -1,4 +1,4 @@
-// Demo of an SSD1306-based 128x32 or 128x64 OLED display, using I2C or SPI.
+// Demo of an SSD1306-based 128x32 or 128x64 OLED display using I2C or SPI.
 
 template< typename DEV >
 struct SSD1306 {
