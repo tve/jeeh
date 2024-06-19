@@ -7,9 +7,8 @@ struct I2cPoll {
     enum { AE = 1, RL = 2, ST = 4, RD = 8 }; // used as flag bits in Mode
 
     static constexpr IoReg<A> I2C {};
-    enum {
-        CR1=0x00,CR2=0x04,TIMINGR=0x10,ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28
-    };
+    enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,
+           ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28 };
 
     struct Config {
         uint16_t ena;
@@ -39,7 +38,7 @@ struct I2cPoll {
 
     enum { R1 = ST, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
 
-    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (ID a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
@@ -114,37 +113,7 @@ struct I2cSync : I2cPoll<A>, Device {
         BASE::init(defs, khz);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
-        RCC(ena::DMA1+cfg.dma, 1) = 1;
-
-        // channel/stream/request setup (confusing naming differences!)
-#if STM32G4
-        RCC(ena::DMAMUX, 1) = 1;
-#elif STM32H7
-#define DMAMUX DMAMUX1
-#endif
-#if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
-        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
-#elif STM32L0 | STM32L4
-        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
-        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
-#endif
-
-        // channel configuration
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
-        DRX[CCR] = 0b1000'0010; // MINC TCIE
-#elif STM32H7
-        DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
-        DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
-#else
-        DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
-#endif
-
-        // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + BASE::TXDR;
-        DRX[CPAR] = A + BASE::RXDR;
+        initDma();
 
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
@@ -186,9 +155,39 @@ protected:
 private:
     Chain msgs;
 
-    void startAsync (Message& m) {
-        uint8_t mode = m.mLen >> 8, len = m.mLen;
-        startReq(m.mTag, mode, m.mPtr, len);
+    // TODO this is the same code in I2C and SPI
+    void initDma () const {
+        RCC(ena::DMA1+cfg.dma, 1) = 1;
+
+        // channel/stream/request setup (confusing naming differences!)
+#if STM32G4
+        RCC(ena::DMAMUX, 1) = 1;
+#elif STM32H7
+#define DMAMUX DMAMUX1
+#endif
+#if STM32G4 | STM32H7
+        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
+        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
+#elif STM32L0 | STM32L4
+        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
+        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
+#endif
+
+        // channel configuration
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+        DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
+        DRX[CCR] = 0b1000'0010; // MINC TCIE
+#elif STM32H7
+        DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
+        DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
+#else
+        DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+#endif
+
+        // peripheral address config and interrupt vector setup
+        DTX[CPAR] = A + BASE::TXDR;
+        DRX[CPAR] = A + BASE::RXDR;
     }
 
     // async version, started from a msg
@@ -196,6 +195,7 @@ private:
         if (!msgs.append(m))
             startAsync(m);
     }
+
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
@@ -206,6 +206,11 @@ private:
         mp = msgs.first();
         if (mp != nullptr)
             startAsync(*mp);
+    }
+
+    void startAsync (Message& m) {
+        uint8_t mode = m.mLen >> 8, len = m.mLen;
+        startReq(m.mTag, mode, m.mPtr, len);
     }
 
     bool interrupt (int) override {

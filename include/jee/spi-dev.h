@@ -91,43 +91,101 @@ div = 3;
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
 struct SpiSync : SpiPoll<A>, Device {
-    using HW = SpiPoll<A>;
+    using BASE = SpiPoll<A>;
+    using BASE::SpiPoll; // constructor
 
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
     enum { CHAN_STEP=0x14 };
 #else
     enum { ISR=0x00, IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
     enum { CHAN_STEP=0x18 };
 #endif
-#if STM32L0 | STM32L4
-    enum { CSELR=0xA8 };
-#endif
 
-    static constexpr IoReg<D> DMA {};
+    static constexpr IoReg<A>             SPI {};
+    static constexpr IoReg<D>             DMA {};
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    struct Config : SpiPoll<A>::Config {
+    struct Config : BASE::Config {
         Irq txIrq, rxIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
     Config const cfg;
 
-    SpiSync (Config const& c) : SpiPoll<A> (c.ena, c.mhz), Device ('S'), cfg (c) {}
+    SpiSync (Config const& c) : BASE (c.ena, c.mhz), Device ('S'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        SpiPoll<A>::init(defs, speed);
-        HW::SPI[HW::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
+        BASE::init(defs, speed);
+        SPI[BASE::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
+        initDma();
+
+        irqInstall((uint8_t) cfg.txIrq);
+        irqInstall((uint8_t) cfg.rxIrq);
+    }
+
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+
+    // sync version, dma with wfe
+    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
+        uint8_t r = 0;
+        if (m <= BASE::W1)
+            BASE::enable();
+
+        while (DTX[CCR](0) || DRX[CCR](0)) // EN
+            asm ("wfe");
+
+        if (m >= BASE::R2)
+            BASE::disable();
+        if (m == BASE::R2)
+            cache::inval(p, n);
+        return r;
+    }
+
+private:
+    Chain msgs;
+
+    void startReq (Pin a, uint8_t m, void* p, uint8_t n) const {
+        // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
+        // (although it seems to work just as well the other way around?)
+
+        BASE::startReq(a, m, n);
+        SPI[BASE::CR1](5,2) = 0b11; // TCIE STOPIE
+
+        if (m != BASE::R2) {
+            cache::clean(p, n);
+
+            DTX[CMAR] = (uintptr_t) p;
+            DTX[CNDTR] = n;
+            DTX[CCR](0) = 1; // EN
+        } else {
+            DRX[CMAR] = (uintptr_t) p;
+            DRX[CNDTR] = n;
+            DRX[CCR](0) = 1; // EN
+        }
+    }
+
+    // TODO this is the same code in I2C and SPI
+    void initDma () const {
         RCC(ena::DMA1+cfg.dma, 1) = 1;
-#if STM32L0 | STM32L4
-        DMA[CSELR](4*T,4) = cfg.txReq;
-        DMA[CSELR](4*R,4) = cfg.rxReq;
+
+        // channel/stream/request setup (confusing naming differences!)
+#if STM32G4
+        RCC(ena::DMAMUX, 1) = 1;
+#elif STM32H7
+#define DMAMUX DMAMUX1
 #endif
-        DTX[CPAR] = A + HW::DR;
-        DRX[CPAR] = A + HW::DR;
+#if STM32G4 | STM32H7
+        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
+        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
+#elif STM32L0 | STM32L4
+        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
+        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
+#endif
+
+        // channel configuration
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
         DRX[CCR] = 0b1000'0010; // MINC TCIE
@@ -139,37 +197,9 @@ struct SpiSync : SpiPoll<A>, Device {
         DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
-        irqInstall((uint8_t) cfg.txIrq);
-        irqInstall((uint8_t) cfg.rxIrq);
-    }
-
-    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
-
-    // sync version, dma with wfe
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-        startReq(send, buf, len);
-        while (DTX[CCR](0) || DRX[CCR](0)) // EN
-            asm ("wfe");
-        SpiPoll<A>::disable();
-        if (!send)
-            cache::inval(buf, len);
-    }
-
-private:
-    Chain msgs;
-
-    void startReq (bool send, uint8_t* buf, uint16_t len) const {
-        SpiPoll<A>::enable();
-        if (!send) {
-            DRX[CMAR] = (uint32_t) buf;
-            DRX[CNDTR] = len;
-            DRX[CCR](0) = 1; // EN
-        }
-        // always send (RXIDLE mode is troublesome w/ DMA)
-        cache::clean(buf, len);
-        DTX[CMAR] = (uint32_t) buf;
-        DTX[CNDTR] = len;
-        DTX[CCR](0) = 1; // EN
+        // peripheral address config and interrupt vector setup
+        DTX[CPAR] = A + BASE::DR;
+        DRX[CPAR] = A + BASE::DR;
     }
 
     // async version, started from a msg
@@ -181,7 +211,7 @@ private:
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            SpiPoll<A>::disable();
+            BASE::disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
@@ -189,6 +219,11 @@ private:
         mp = msgs.first();
         if (mp != nullptr)
             startReq(mp->mTag == 'W', mp->mPtr, mp->mLen);
+    }
+
+    void startAsync (Message& m) {
+        uint8_t mode = m.mLen >> 13, len = m.mLen & ((1<<14)-1);
+        startReq(m.mTag, mode, m.mPtr, len);
     }
 
     bool interrupt (int) override {
@@ -214,19 +249,23 @@ private:
             return false; // still in progress
 
         // clear OVR flag, in case the data was never read
-        (void) +HW::SPI.byte(HW::DR);
-        (void) +HW::SPI[HW::SR];
+        (void) +SPI.byte(BASE::DR);
+        (void) +SPI[BASE::SR];
         return !msgs.isEmpty();
     }
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
 struct SpiAsync : SpiSync<A,D,T,R> {
-    using SpiSync<A,D,T,R>::SpiSync;
+    using BASE = SpiSync<A,D,T,R>;
+    using BASE::SpiSync; // constructor
 
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-        Message m { 'S', send ? 'W' : 'R', len, buf };
-        sys::call(m); // async with thread suspend
+    bool transfer (Pin a, uint8_t m, void* p, uint8_t n) const {
+        assert((n >> 13) == 0);
+        uint16_t len = (m<<13) | n;
+        Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
+        sys::call(msg); // async with thread suspend
+        return true; // TODO
     }
 };
 
