@@ -42,29 +42,24 @@ struct I2cPoll {
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
-        switch (m) {
-            case R1:
-                while (!I2C[ISR](6)) // ~TC
-                    if (I2C[ISR](1)) // TXIS
-                        I2C[TXDR] = *q++;
-                break;
-            case R2:
-                while (!I2C[ISR](5)) // ~STOPF
-                    if (I2C[ISR](2)) // RXNE
-                        *q++ = I2C[RXDR];
-                break;
-            case W1:
-                while (!I2C[ISR](7)) // ~TCR
-                    if (I2C[ISR](1)) // TXIS
-                        I2C[TXDR] = *q++;
-                break;
-            case W2:
-                while (!I2C[ISR](5)) // ~STOPF
-                    if (I2C[ISR](1)) // TXIS
-                        I2C[TXDR] = *q++;
-                break;
-            default: fail();
-        }
+        if (m == R1) {
+            while (!I2C[ISR](6)) // ~TC
+                if (I2C[ISR](1)) // TXIS
+                    I2C[TXDR] = *q++;
+        } else if (m == R2) {
+            while (!I2C[ISR](5)) // ~STOPF
+                if (I2C[ISR](2)) // RXNE
+                    *q++ = I2C[RXDR];
+        } else if (m == W1) {
+            while (!I2C[ISR](7)) // ~TCR
+                if (I2C[ISR](1)) // TXIS
+                    I2C[TXDR] = *q++;
+        } else if (m == W2) {
+            while (!I2C[ISR](5)) // ~STOPF
+                if (I2C[ISR](1)) // TXIS
+                    I2C[TXDR] = *q++;
+        } else
+            fail();
 
         return true; // TODO
     }
@@ -203,9 +198,8 @@ private:
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
         }
-        mp = msgs.first();
-        if (mp != nullptr)
-            startAsync(*mp);
+        if (!msgs.isEmpty())
+            startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {

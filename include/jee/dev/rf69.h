@@ -24,18 +24,15 @@ struct RF69 {
         parity = group ^ (group << 4);
         parity = (parity ^ (parity << 2)) & 0xC0;
 
-jeeh::logf("10");
         do
             writeReg(REG_SYNCVALUE1, 0xAA);
         while (readReg(REG_SYNCVALUE1) != 0xAA);
         do
             writeReg(REG_SYNCVALUE1, 0x55);
         while (readReg(REG_SYNCVALUE1) != 0x55);
-jeeh::logf("11");
 
         configure(configRegs);
         setFrequency(freq);
-jeeh::logf("12");
 
         writeReg(REG_SYNCVALUE2, group);
     }
@@ -67,23 +64,31 @@ jeeh::logf("12");
                 if (lastFlag) { // flag just went from 0 to 1
                     rssi = readReg(REG_RSSIVALUE);
                     lna = (readReg(REG_LNAVALUE) >> 3) & 0x7;
-
+#if 0
                     uint8_t cmd = REG_AFCMSB;
                     dev.transfer(dev.R1, &cmd, sizeof cmd);
                     uint8_t in [2];
                     dev.transfer(dev.R2, in, sizeof in);
                     afc = (in[0] << 8) | in[1];
+#endif
                 }
             }
 
             if (readReg(REG_IRQFLAGS2) & IRQ2_PAYLOADREADY) {
-jeeh::logf("13");
+#if 1
                 uint8_t cmd [] = { REG_FIFO, 0 };
                 auto count = dev.transfer(dev.R1, cmd, sizeof cmd);
-jeeh::logf("14 %d", count);
+#else
+jeeh::logf("10");
+                // can't use DMA for this part, start off polled instead
+                dev.enable();
+                dev.ioByte(REG_FIFO);
+                auto count = dev.ioByte(0);
+jeeh::logf("11 %d %d", len, count);
+#endif
                 if (len > count)
                     len = count;
-                dev.transfer(dev.R2, ptr, len);
+                dev.transfer(dev.R2, ptr, len); // this is fine with DMA
 
                 // only accept packets intended for us, or broadcasts
                 // ... or any packet if we're the special catch-all node

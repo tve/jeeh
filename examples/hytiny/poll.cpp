@@ -71,7 +71,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    //SpiCall<SPI_TYPE> spi2 (SPI_CONF);
+    SpiCall<SPI_TYPE> spi2 (SPI_CONF);
 
     if (0) {
         logf("\n>>> SpiGpio: bit-banged");
@@ -84,16 +84,14 @@ int main () {
         SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
         radioTest(spi);
     }
-#if 0
-    if (1) {
+    if (0) {
         logf("\n>>> SpiSync: sync wfe loop");
         auto& spi = (SpiSync<SPI_TYPE>&) spi2;
         radioTest(spi);
     }
-    if (1) {
+    if (0) {
         logf("\n>>> SpiCall: async msg call");
         radioTest(spi2);
     }
-#endif
     logf("\n>>> done");
 }

@@ -73,7 +73,7 @@ void initBoard (char const* app) {
 
     Pin::config("D3:P"); // ESP8266 CH_PD, power down
 
-    uart.init(UART_PINS, 115'200,
+    uart.init(UART_PINS, 1'000'000,
                 { UART_NAME.ADDR, ena::UART_NAME,
                   UART_FREQ, Irq::UART_NAME, UART_CONF });
     printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);

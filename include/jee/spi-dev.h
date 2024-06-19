@@ -27,7 +27,6 @@ struct SpiPoll {
         auto div = 0; // determine clock divider
         while ((1000*cfg.mhz >> (div+1)) > khz)
             ++div;
-div = 3;
 
         RCC(cfg.ena, 1) = 1;
         SPI[CR1] = (div<<3) | (1<<2); // BD MSTR
@@ -53,9 +52,13 @@ div = 3;
     enum { R1, W1, R2, W2 };
 
     uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
+        return transfer(nsel, m, p, n);
+    }
+
+    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
         if (m <= W1)
-            enable();
+            a = 0; // enable
 
         if (n > 0) {
             auto q = (uint8_t*) p;
@@ -65,16 +68,16 @@ div = 3;
                     while (!SPI[SR](1)) {} // ~TXE
                     SPI.byte(DR) = *q++;
                     while (!SPI[SR](0)) {} // ~RXNE
-                    (void) +SPI.byte(DR);
+                    r = SPI.byte(DR);
                 }
                 while (!SPI[SR](0)) {} // ~RXNE
                 r = SPI.byte(DR);
             } else {
                 SPI.byte(DR) = 0;
                 while (--n != 0) {
-                    while (SPI[SR](1)) {} // ~TXE
+                    while (!SPI[SR](1)) {} // ~TXE
                     SPI.byte(DR) = 0;
-                    while (SPI[SR](0)) {} // ~RXNE
+                    while (!SPI[SR](0)) {} // ~RXNE
                     *q++ = SPI.byte(DR);
                 }
                 while (SPI[SR](0)) {} // ~RXNE
@@ -83,7 +86,7 @@ div = 3;
         }
 
         if (m >= R2)
-            disable();
+            a = 1; // disable
         return r;
     }
 };
@@ -130,29 +133,29 @@ struct SpiSync : SpiPoll<A>, Device {
 
     // sync version, dma with wfe
     uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
-        uint8_t r = 0;
-        if (m <= BASE::W1)
-            BASE::enable();
+        return transfer(BASE::nsel, m, p, n);
+    }
+
+    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
+        startReq(a, m, p, n);
 
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
 
         if (m >= BASE::R2)
-            BASE::disable();
+            a = 1; // disable
         if (m == BASE::R2)
             cache::inval(p, n);
-        return r;
+
+        return 0; // TODO?
     }
 
 private:
     Chain msgs;
 
     void startReq (Pin a, uint8_t m, void* p, uint8_t n) const {
-        // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
-        // (although it seems to work just as well the other way around?)
-
-        BASE::startReq(a, m, n);
-        SPI[BASE::CR1](5,2) = 0b11; // TCIE STOPIE
+        if (m <= BASE::W1)
+            a = 0; // enable
 
         if (m != BASE::R2) {
             cache::clean(p, n);
@@ -205,25 +208,26 @@ private:
     // async version, started from a msg
     void start (Message& m) override {
         if (!msgs.append(m))
-            startReq(m.mTag == 'W', m.mPtr, m.mLen);
+            startAsync(m);
     }
 
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            BASE::disable();
-            if (mp->mPtr != nullptr)
+            auto m = mp->mLen >> 13;
+            if (m >= BASE::R2)
+                (Pin&) mp->mTag = 1; // disable
+            if (m == BASE::R2)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
         }
-        mp = msgs.first();
-        if (mp != nullptr)
-            startReq(mp->mTag == 'W', mp->mPtr, mp->mLen);
+        if (!msgs.isEmpty())
+            startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {
         uint8_t mode = m.mLen >> 13, len = m.mLen & ((1<<14)-1);
-        startReq(m.mTag, mode, m.mPtr, len);
+        startReq((Pin&) m.mTag, mode, m.mPtr, len);
     }
 
     bool interrupt (int) override {
@@ -256,16 +260,20 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct SpiAsync : SpiSync<A,D,T,R> {
+struct SpiCall : SpiSync<A,D,T,R> {
     using BASE = SpiSync<A,D,T,R>;
     using BASE::SpiSync; // constructor
 
-    bool transfer (Pin a, uint8_t m, void* p, uint8_t n) const {
+    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
+        return transfer(BASE::nsel, m, p, n);
+    }
+
+    uint8_t transfer (Pin a, uint8_t m, void* p, uint8_t n) const {
         assert((n >> 13) == 0);
         uint16_t len = (m<<13) | n;
         Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
-        return true; // TODO
+        return 0; // TODO?
     }
 };
 
