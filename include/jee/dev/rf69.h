@@ -11,11 +11,11 @@
 #define Yield()
 #endif
 
-template< typename SPI >
+template< typename DEV >
 struct RF69 {
-    SPI& spi;
+    DEV dev;
 
-    RF69 (SPI& s) : spi (s) {}
+    RF69 (DEV const& s) : dev (s) {}
 
     void init (uint8_t id, uint8_t group, int freq) {
         myId = id;
@@ -24,15 +24,18 @@ struct RF69 {
         parity = group ^ (group << 4);
         parity = (parity ^ (parity << 2)) & 0xC0;
 
+jeeh::logf("10");
         do
             writeReg(REG_SYNCVALUE1, 0xAA);
         while (readReg(REG_SYNCVALUE1) != 0xAA);
         do
             writeReg(REG_SYNCVALUE1, 0x55);
         while (readReg(REG_SYNCVALUE1) != 0x55);
+jeeh::logf("11");
 
         configure(configRegs);
         setFrequency(freq);
+jeeh::logf("12");
 
         writeReg(REG_SYNCVALUE2, group);
     }
@@ -54,7 +57,7 @@ struct RF69 {
         writeReg(REG_PALEVEL, (readReg(REG_PALEVEL) & ~0x1F) | level);
     }
 
-    int receive (uint8_t* ptr, int len) {
+    int receive (uint8_t* ptr, uint8_t len) {
         if (mode != MODE_RECEIVE)
             setMode(MODE_RECEIVE);
         else {
@@ -65,21 +68,22 @@ struct RF69 {
                     rssi = readReg(REG_RSSIVALUE);
                     lna = (readReg(REG_LNAVALUE) >> 3) & 0x7;
 
-                    spi.enable();
-                    spi.transfer(REG_AFCMSB);
-                    afc = spi.transfer(0) << 8;
-                    afc |= spi.transfer(0);
-                    spi.disable();
+                    uint8_t cmd = REG_AFCMSB;
+                    dev.transfer(dev.R1, &cmd, sizeof cmd);
+                    uint8_t in [2];
+                    dev.transfer(dev.R2, in, sizeof in);
+                    afc = (in[0] << 8) | in[1];
                 }
             }
 
             if (readReg(REG_IRQFLAGS2) & IRQ2_PAYLOADREADY) {
-                spi.enable();
-                spi.transfer(REG_FIFO);
-                uint16_t count = spi.transfer(0);
+jeeh::logf("13");
+                uint8_t cmd [] = { REG_FIFO, 0 };
+                auto count = dev.transfer(dev.R1, cmd, sizeof cmd);
+jeeh::logf("14 %d", count);
                 if (len > count)
                     len = count;
-                spi.bufferIO(ptr, len, false);
+                dev.transfer(dev.R2, ptr, len);
 
                 // only accept packets intended for us, or broadcasts
                 // ... or any packet if we're the special catch-all node
@@ -97,12 +101,12 @@ struct RF69 {
     void send (uint8_t header, uint8_t const* ptr, int len) {
         setMode(MODE_SLEEP);
 
-        spi.enable();
-        spi.transfer(REG_FIFO | 0x80);
-        spi.transfer(len + 2);
-        spi.transfer((header & 0x3F) | parity);
-        spi.transfer((header & 0xC0) | myId);
-        spi.bufferIO(ptr, len, true);
+        uint8_t out [] = { REG_FIFO | 0x80,
+                           len + 2,
+                           (header & 0x3F) | parity,
+                           (header & 0xC0) | myId };
+        dev.transfer(dev.W1, out, sizeof out);
+        dev.transfer(dev.W2, ptr, len);
 
         setMode(MODE_TRANSMIT);
         while ((readReg(REG_IRQFLAGS2) & IRQ2_PACKETSENT) == 0)
@@ -128,10 +132,9 @@ struct RF69 {
         rwReg(addr | 0x80, val);
     }
     uint8_t rwReg (uint8_t cmd, uint8_t val) {
-        spi.enable();
-        spi.transfer(cmd);
-        uint8_t r = spi.transfer(val);
-        spi.disable();
+        uint8_t out [] = { cmd, val };
+        auto r = dev.transfer(dev.W1, out, sizeof out);
+        dev.transfer(dev.W2, nullptr, 0);
         return r;
     }
 

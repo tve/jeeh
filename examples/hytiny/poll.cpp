@@ -2,12 +2,14 @@
 
 #include <jee.h>
 #include <jee/hal.h>
-#include <jee/spi-rf69.h>
+#include <jee/dev/rf69.h>
 using namespace jeeh;
 #include "defs.h"
 
 template< typename SPI >
 void radioTest (SPI& spi) {
+    auto khz = 10'000;
+    spi.init(SPI_PINS, khz);
     RF69 rf (spi);
 
     nrst = 1;
@@ -52,11 +54,14 @@ void radioTest (SPI& spi) {
     uint32_t u = 0;
     for (auto i = 2; i <= 62; i += 20) {
         auto t = clock();
-        spi.bufferIO(buf, i, false);
+        spi.transfer(spi.R1, nullptr, 0);
+        spi.transfer(spi.R2, buf, i);
         t = clock() - t;
         logf("%4d bytes: %6d %s, diff %5d", i, t, units, t - u);
         u = t;
     }
+
+    spi.deinit();
 }
 
 int main () {
@@ -66,36 +71,30 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-    SpiDev<SPI_TYPE> spi2 (SPI_CONF);
-    auto spiMhz = 10;
+    //SpiCall<SPI_TYPE> spi2 (SPI_CONF);
 
-    if (1) {   
+    if (0) {
         logf("\n>>> SpiGpio: bit-banged");
         SpiGpio spi;
-        spi.init(SPI_PINS);
         radioTest(spi);
-        spi.deinit();
     }
-    if (1) {   
-        logf("\n>>> SpiHw: polled h/w regs");
-        auto& spi = (SpiHw<SPI_NAME.ADDR>&) spi2;
-        spi.init(SPI_PINS, spiMhz);
+    if (1) {
+        logf("\n>>> SpiPoll: polled h/w regs");
+        //auto& spi = (SpiPoll<SPI_NAME.ADDR>&) spi2;
+        SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
         radioTest(spi);
-        spi.deinit();
     }
-    if (1) {   
-        logf("\n>>> SpiDma: sync wfe-loop");
-        auto& spi = (SpiDma<SPI_TYPE>&) spi2;
-        spi.init(SPI_PINS, spiMhz);
+#if 0
+    if (1) {
+        logf("\n>>> SpiSync: sync wfe loop");
+        auto& spi = (SpiSync<SPI_TYPE>&) spi2;
         radioTest(spi);
-        spi.deinit();
     }
-    if (1) {   
-        logf("\n>>> SpiDev: async device");
+    if (1) {
+        logf("\n>>> SpiCall: async msg call");
         auto& spi = spi2;
-        spi.init(SPI_PINS, spiMhz);
         radioTest(spi);
-        spi.deinit();
     }
+#endif
     logf("\n>>> done");
 }

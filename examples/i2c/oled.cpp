@@ -11,9 +11,9 @@ int main () {
 
     // one I2C bus, several implementations
     I2cGpio i2c;
-    //I2cDev<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+    //I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
     //I2cSync<I2C_TYPE> i2c (I2C_CONF);
-    //i2cAsync<I2C_TYPE> i2c (I2C_CONF);
+    //i2cCall<I2C_TYPE> i2c (I2C_CONF);
 
     // two I2C devices
     BusDev dev1 {i2c, 0x3D};
@@ -24,9 +24,9 @@ int main () {
     SSD1306 oled2 (dev2, 32);
 
     logf("  sizeof I2cGpio      = %2d b", sizeof (I2cGpio));
-    logf("  sizeof I2cDev       = %2d b", sizeof (I2cDev<I2C_NAME.ADDR>));
+    logf("  sizeof I2cPoll      = %2d b", sizeof (I2cPoll<I2C_NAME.ADDR>));
     logf("  sizeof I2cSync      = %2d b", sizeof (I2cSync<I2C_TYPE>));
-    logf("  sizeof I2cAsync     = %2d b", sizeof (i2cAsync<I2C_TYPE>));
+    logf("  sizeof I2cCall      = %2d b", sizeof (i2cCall<I2C_TYPE>));
     logf("  sizeof BusDev<...>  = %2d b", sizeof (BusDev<I2cGpio>));
     logf("  sizeof SSD1306<...> = %2d b", sizeof (SSD1306<BusDev<I2cGpio>>));
 

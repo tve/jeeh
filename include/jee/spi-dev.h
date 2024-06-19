@@ -2,7 +2,7 @@ namespace jeeh {
 
 // polled H/W version (see SpiGpio for bit-banged version)
 template< uint32_t A >
-struct SpiHw {
+struct SpiPoll {
     using ID = Pin;
 
     static constexpr IoReg<A> SPI {};
@@ -13,25 +13,23 @@ struct SpiHw {
         uint8_t mhz;
     };
 
-    Config const dev;
+    Config const cfg;
     Pin nsel;
 
-    SpiHw (uint16_t e, uint8_t f) : dev { e, f } {}
+    SpiPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
-
-    void init (char const* defs, int speed) {
+    void init (char const* defs, int khz) {
         Pin pins [4]; // mosi, miso, nclk, nsel
         Pin::config(defs, pins, sizeof pins);
         nsel = pins[3];
         disable(); // start with NSEL high
 
         auto div = 0; // determine clock divider
-        while ((dev.mhz >> (div+1)) > speed)
+        while ((1000*cfg.mhz >> (div+1)) > khz)
             ++div;
+div = 3;
 
-        RCC(dev.ena, 1) = 1;
+        RCC(cfg.ena, 1) = 1;
         SPI[CR1] = (div<<3) | (1<<2); // BD MSTR
 #if STM32F1 | STM32L0 | STM32L4
         SPI[CR2] = (1<<2); // SSOE
@@ -42,7 +40,19 @@ struct SpiHw {
     }
 
     void deinit () {
-        RCC(dev.ena, 1) = 0;
+        RCC(cfg.ena, 1) = 0;
+    }
+
+    void enable () const {
+        for (volatile int i = 10; --i >= 0; ) {}
+        nsel = 0;
+        for (volatile int i = 10; --i >= 0; ) {}
+    }
+
+    void disable () const {
+        for (volatile int i = 10; --i >= 0; ) {}
+        nsel = 1;
+        for (volatile int i = 10; --i >= 0; ) {}
     }
 
     int transfer (int v) const {
@@ -51,38 +61,52 @@ struct SpiHw {
         return SPI.byte(DR);
     }
 
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-        assert(len > 0U);
-        enable();
-        if (send) {
-            SPI.byte(DR) = *buf++;
-            while (--len > 0U) {
-                while (!SPI[SR](1)) {} // ~TXE
-                SPI.byte(DR) = *buf++;
+    enum { R1, W1, R2, W2 };
+
+    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
+        uint8_t r = 0;
+        if (m <= W1)
+            enable();
+
+        if (n > 0) {
+            auto q = (uint8_t*) p;
+            if (m != R2) {
+                SPI.byte(DR) = *q++;
+                while (--n != 0) {
+                    while (!SPI[SR](1)) {} // ~TXE
+                    SPI.byte(DR) = *q++;
+                    while (!SPI[SR](0)) {} // ~RXNE
+                    (void) +SPI.byte(DR);
+                }
                 while (!SPI[SR](0)) {} // ~RXNE
-                (void) +SPI.byte(DR);
-            }
-            while (!SPI[SR](0)) {} // ~RXNE
-            (void) +SPI.byte(DR);
-        } else {
-            SPI.byte(DR) = 0;
-            while (--len > 0U) {
-                while (SPI[SR](1)) {} // ~TXE
+                r = SPI.byte(DR);
+            } else {
                 SPI.byte(DR) = 0;
+                while (--n != 0) {
+                    while (SPI[SR](1)) {} // ~TXE
+                    SPI.byte(DR) = 0;
+                    while (SPI[SR](0)) {} // ~RXNE
+                    *q++ = SPI.byte(DR);
+                }
                 while (SPI[SR](0)) {} // ~RXNE
-                *buf++ = SPI.byte(DR);
+                *q = SPI.byte(DR);
             }
-            while (SPI[SR](0)) {} // ~RXNE
-            *buf = SPI.byte(DR);
         }
-        disable();
+
+        if (m >= R2)
+            disable();
+        return r;
+    }
+
+    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
+fail();
     }
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct SpiDma : SpiHw<A>, Device {
-    using HW = SpiHw<A>;
+struct SpiSync : SpiPoll<A>, Device {
+    using HW = SpiPoll<A>;
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STL32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -99,23 +123,23 @@ struct SpiDma : SpiHw<A>, Device {
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    struct Config : SpiHw<A>::Config {
+    struct Config : SpiPoll<A>::Config {
         Irq txIrq, rxIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
-    Config const dev;
+    Config const cfg;
 
-    SpiDma (Config const& c) : SpiHw<A> (c.ena, c.mhz), Device ('S'), dev (c) {}
+    SpiSync (Config const& c) : SpiPoll<A> (c.ena, c.mhz), Device ('S'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        SpiHw<A>::init(defs, speed);
+        SpiPoll<A>::init(defs, speed);
         HW::SPI[HW::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
-        RCC(ena::DMA1+dev.dma, 1) = 1;
+        RCC(ena::DMA1+cfg.dma, 1) = 1;
 #if STM32L0 | STM32L4
-        DMA[CSELR](4*T,4) = dev.txReq;
-        DMA[CSELR](4*R,4) = dev.rxReq;
+        DMA[CSELR](4*T,4) = cfg.txReq;
+        DMA[CSELR](4*R,4) = cfg.rxReq;
 #endif
         DTX[CPAR] = A + HW::DR;
         DRX[CPAR] = A + HW::DR;
@@ -126,22 +150,22 @@ struct SpiDma : SpiHw<A>, Device {
         DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
         DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
 #else
-        DTX[CCR] = (dev.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DRX[CCR] = (dev.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+        DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
-        irqInstall((uint8_t) dev.txIrq);
-        irqInstall((uint8_t) dev.rxIrq);
+        irqInstall((uint8_t) cfg.txIrq);
+        irqInstall((uint8_t) cfg.rxIrq);
     }
 
-    // void deinit () // RCC(ena::DMA1+dev.dma, 1) = 0; // may be shared
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         startReq(send, buf, len);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
-        SpiHw<A>::disable();
+        SpiPoll<A>::disable();
         if (!send)
             cache::inval(buf, len);
     }
@@ -150,7 +174,7 @@ private:
     Chain msgs;
 
     void startReq (bool send, uint8_t* buf, uint16_t len) const {
-        SpiHw<A>::enable();
+        SpiPoll<A>::enable();
         if (!send) {
             DRX[CMAR] = (uint32_t) buf;
             DRX[CNDTR] = len;
@@ -172,7 +196,7 @@ private:
     void finish () override {
         auto mp = msgs.pull();
         if (mp != nullptr) {
-            SpiHw<A>::disable();
+            SpiPoll<A>::disable();
             if (mp->mPtr != nullptr)
                 cache::inval(mp->mPtr, mp->mLen);
             reply(mp);
@@ -212,8 +236,8 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct SpiDev : SpiDma<A,D,T,R> {
-    using SpiDma<A,D,T,R>::SpiDma;
+struct SpiAsync : SpiSync<A,D,T,R> {
+    using SpiSync<A,D,T,R>::SpiSync;
 
     void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
         Message m { 'S', send ? 'W' : 'R', len, buf };

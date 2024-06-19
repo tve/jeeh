@@ -2,7 +2,7 @@ namespace jeeh {
 
 // polled H/W version (see I2cGpio for bit-banged version)
 template< uint32_t A >
-struct I2cDev {
+struct I2cPoll {
     using ID = uint8_t;
     enum { AE = 1, RL = 2, ST = 4, RD = 8 }; // used as flag bits in Mode
 
@@ -18,7 +18,7 @@ struct I2cDev {
 
     Config const cfg;
 
-    I2cDev (uint16_t e, uint8_t f) : cfg { e, f } {}
+    I2cPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, uint16_t khz =400) {
         Pin::config(defs);
@@ -84,9 +84,9 @@ protected:
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct I2cSync : I2cDev<A>, Device {
-    using BASE = I2cDev<A>;
-    using BASE::I2cDev; // constructor
+struct I2cSync : I2cPoll<A>, Device {
+    using BASE = I2cPoll<A>;
+    using BASE::I2cPoll; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -217,7 +217,7 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct i2cAsync : I2cSync<A,D,T,R> {
+struct i2cCall : I2cSync<A,D,T,R> {
     using BASE = I2cSync<A,D,T,R>;
     using BASE::I2cSync; // constructor
 
