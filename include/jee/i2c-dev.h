@@ -109,12 +109,22 @@ struct I2cDma : I2cHw<A>, Device {
         I2C[HW::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
-#if STM32L0 | STM32L4
+
+        // channel/stream/request setup (confusing naming differences!)
+#if STM32G4
+        RCC(ena::DMAMUX, 1) = 1;
+#elif STM32H7
+#define DMAMUX DMAMUX1
+#endif
+#if STM32G4 | STM32H7
+        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
+        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
+#elif STM32L0 | STM32L4
         DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
         DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
 #endif
-        DTX[CPAR] = A + HW::TXDR;
-        DRX[CPAR] = A + HW::RXDR;
+
+        // channel configuration
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
         DRX[CCR] = 0b1000'0010; // MINC TCIE
@@ -125,6 +135,10 @@ struct I2cDma : I2cHw<A>, Device {
         DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
         DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
+
+        // peripheral address config and interrupt vector setup
+        DTX[CPAR] = A + HW::TXDR;
+        DRX[CPAR] = A + HW::RXDR;
 
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
