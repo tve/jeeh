@@ -2,7 +2,7 @@ namespace jeeh {
 
 // polled H/W version (see I2cGpio for bit-banged version)
 template< uint32_t A >
-struct I2cHw {
+struct I2cDev {
     using ID = uint8_t;
     enum { AE = 1, RL = 2, ST = 4, RD = 8 }; // used as flag bits in Mode
 
@@ -18,7 +18,7 @@ struct I2cHw {
 
     Config const cfg;
 
-    I2cHw (uint16_t e, uint8_t f) : cfg { e, f } {}
+    I2cDev (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, uint16_t speed) {
         Pin::config(defs);
@@ -84,8 +84,8 @@ protected:
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct I2cDma : I2cHw<A>, Device {
-    using HW = I2cHw<A>;
+struct I2cSync : I2cDev<A>, Device {
+    using DEV = I2cDev<A>;
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -100,18 +100,18 @@ struct I2cDma : I2cHw<A>, Device {
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    struct Config : HW::Config {
+    struct Config : DEV::Config {
         Irq evIrq, erIrq;
         uint8_t dma, txReq, rxReq; // 0-based
     };
 
     Config const cfg;
 
-    I2cDma (Config const& c) : HW (c.ena, c.mhz), Device ('I'), cfg (c) {}
+    I2cSync (Config const& c) : DEV (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
     void init (char const* defs, int speed) {
-        HW::init(defs, speed);
-        I2C[HW::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
+        DEV::init(defs, speed);
+        I2C[DEV::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
 
@@ -142,8 +142,8 @@ struct I2cDma : I2cHw<A>, Device {
 #endif
 
         // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + HW::TXDR;
-        DRX[CPAR] = A + HW::RXDR;
+        DTX[CPAR] = A + DEV::TXDR;
+        DRX[CPAR] = A + DEV::RXDR;
 
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
@@ -156,7 +156,7 @@ struct I2cDma : I2cHw<A>, Device {
         startReq(a, m, p, n);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
-        if (m == HW::R2)
+        if (m == DEV::R2)
             cache::inval(p, n);
         return true; // TODO
     }
@@ -166,7 +166,7 @@ protected:
         // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
         // (although it seems to work just as well the other way around?)
 
-        if (m != HW::R2) {
+        if (m != DEV::R2) {
             cache::clean(p, n);
 
             DTX[CMAR] = (uintptr_t) p;
@@ -178,8 +178,8 @@ protected:
             DRX[CCR](0) = 1; // EN
         }
 
-        HW::startReq(a, m, n);
-        I2C[HW::CR1](5,2) = 0b11; // TCIE STOPIE
+        DEV::startReq(a, m, n);
+        I2C[DEV::CR1](5,2) = 0b11; // TCIE STOPIE
     }
 
 private:
@@ -208,7 +208,7 @@ private:
     }
 
     bool interrupt (int) override {
-        I2C[HW::CR1](5,2) = 0; // TCIE STOPIE
+        I2C[DEV::CR1](5,2) = 0; // TCIE STOPIE
         DTX[CCR](0) = 0; // ~EN
         DRX[CCR](0) = 0; // ~EN
         return !msgs.isEmpty();
@@ -216,10 +216,7 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct I2cDev : I2cDma<A,D,T,R> {
-    using I2cDma<A,D,T,R>::I2cDma;
-    using HW = I2cHw<A>;
-
+struct i2cAsync : I2cSync<A,D,T,R> {
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         uint16_t len = (m<<8) | n;
         Message msg { 'I', a, len, (uint8_t*) p };

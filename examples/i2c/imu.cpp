@@ -10,9 +10,9 @@ int main () {
 
     // one I2C bus, several implementations
     //I2cGpio i2c;
-    I2cHw<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
-    //I2cDma<I2C_TYPE> i2c (I2C_CONF);
-    //I2cDev<I2C_TYPE> i2c (I2C_CONF);
+    I2cDev<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+    //I2cSync<I2C_TYPE> i2c (I2C_CONF);
+    //i2cAsync<I2C_TYPE> i2c (I2C_CONF);
 
     // three I2C devices
     BusDev hmc5883 {i2c, 0x1E};
