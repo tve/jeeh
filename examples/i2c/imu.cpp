@@ -19,7 +19,7 @@ int main () {
     BusDev adxl345 {i2c, 0x53};
     BusDev itg3200 {i2c, 0x68};
 
-    i2c.init(I2C_PINS, 400);
+    i2c.init(I2C_PINS);
     uint8_t buf [6];
 
     hmc5883.write(0, 0x18); // 75 Hz

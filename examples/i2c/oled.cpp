@@ -10,10 +10,10 @@ int main () {
     initBoard("oled");
 
     // one I2C bus, several implementations
-    //I2cGpio i2c;
+    I2cGpio i2c;
     //I2cDev<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
     //I2cSync<I2C_TYPE> i2c (I2C_CONF);
-    i2cAsync<I2C_TYPE> i2c (I2C_CONF);
+    //i2cAsync<I2C_TYPE> i2c (I2C_CONF);
 
     // two I2C devices
     BusDev dev1 {i2c, 0x3D};

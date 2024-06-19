@@ -6,7 +6,7 @@ struct I2cGpio {
     Pin sda, scl; // pin definitions must be kept in this order
     uint16_t rate;
 
-    void init (char const* desc, int r =20);
+    void init (char const* desc, uint16_t khz =400);
 
     void deinit () {
         Pin::config(":F,:U", &sda, 2); // keep SCL pulled up

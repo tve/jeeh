@@ -20,11 +20,11 @@ struct I2cDev {
 
     I2cDev (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, uint16_t speed) {
+    void init (char const* defs, uint16_t khz =400) {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
-        switch (speed) { // TODO magic! L432 @ 80 MHz
+        switch (khz) { // TODO magic! L432 @ 80 MHz
             case 100:  I2C[TIMINGR] = 0x1090'9CEC; break;
             case 400:  I2C[TIMINGR] = 0x0070'2991; break;
             case 1000: I2C[TIMINGR] = 0x0030'0F33; break;
@@ -110,8 +110,8 @@ struct I2cSync : I2cDev<A>, Device {
 
     I2cSync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
-    void init (char const* defs, int speed) {
-        BASE::init(defs, speed);
+    void init (char const* defs, int khz =400) {
+        BASE::init(defs, khz);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         RCC(ena::DMA1+cfg.dma, 1) = 1;
