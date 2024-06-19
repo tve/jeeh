@@ -133,8 +133,8 @@ jeeh::logf("14 %d", count);
     }
     uint8_t rwReg (uint8_t cmd, uint8_t val) {
         uint8_t out [] = { cmd, val };
-        auto r = dev.transfer(dev.W1, out, sizeof out);
-        dev.transfer(dev.W2, nullptr, 0);
+        auto r = dev.transfer(dev.R1, out, sizeof out);
+        dev.transfer(dev.R2, nullptr, 0);
         return r;
     }
 

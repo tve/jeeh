@@ -39,23 +39,12 @@ div = 3;
         SPI[CR1](6) = 1; // SPE
     }
 
-    void deinit () {
-        RCC(cfg.ena, 1) = 0;
-    }
+    void deinit () { RCC(cfg.ena, 1) = 0; }
 
-    void enable () const {
-        for (volatile int i = 10; --i >= 0; ) {}
-        nsel = 0;
-        for (volatile int i = 10; --i >= 0; ) {}
-    }
+    void enable () const { nsel = 0; }
+    void disable () const { nsel = 1; }
 
-    void disable () const {
-        for (volatile int i = 10; --i >= 0; ) {}
-        nsel = 1;
-        for (volatile int i = 10; --i >= 0; ) {}
-    }
-
-    int transfer (int v) const {
+    int ioByte (int v) const {
         SPI.byte(DR) = v;
         while (!SPI[SR](0)) {} // ~RXNE
         return SPI.byte(DR);
@@ -96,10 +85,6 @@ div = 3;
         if (m >= R2)
             disable();
         return r;
-    }
-
-    void bufferIO (uint8_t* buf, uint16_t len, bool send) const {
-fail();
     }
 };
 

@@ -92,8 +92,7 @@ int main () {
     }
     if (1) {
         logf("\n>>> SpiCall: async msg call");
-        auto& spi = spi2;
-        radioTest(spi);
+        radioTest(spi2);
     }
 #endif
     logf("\n>>> done");
