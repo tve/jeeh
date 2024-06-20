@@ -10,29 +10,31 @@ template< typename SPI >
 void radioTest (SPI& spi) {
     auto khz = 10'000;
     spi.init(SPI_PINS, khz);
-    RF69 rf (spi);
 
     nrst = 1;
     sys::wait(10);
     nrst = 0;
     sys::wait(10);
 
+#if 0
+    RF69 rf (spi);
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);
 
     while (true) {
-        uint8_t buf [60];
-        auto n = rf.receive(buf, sizeof buf);
+        uint8_t rxBuf [64];
+        auto n = rf.receive(rxBuf, sizeof rxBuf);
         if (n > 0) {
             logf("rssi %d lna %d afc %d @ %d",
                     rf.rssi, rf.lna, rf.afc, rtc::getSecs());
-            logDump(buf, n);
+            logDump(rxBuf, n);
             break;
         }
-        sys::wait(100);
+        sys::wait(1000);
     }
+#endif
 
-    uint8_t buf [62];
+    uint8_t buf [202];
     cycles::init();
 
 #if STM32L0
@@ -52,12 +54,12 @@ void radioTest (SPI& spi) {
 #endif
 
     uint32_t u = 0;
-    for (auto i = 2; i <= 62; i += 20) {
+    for (auto i = 2U; i <= sizeof buf; i += 100) {
         auto t = clock();
         spi.transfer(spi.R1, nullptr, 0);
         spi.transfer(spi.R2, buf, i);
         t = clock() - t;
-        logf("%4d bytes: %6d %s, diff %5d", i, t, units, t - u);
+        logf("%4d bytes: %6d %s, diff %6d", i, t, units, t - u);
         u = t;
     }
 
@@ -73,7 +75,7 @@ int main () {
 
     SpiCall<SPI_TYPE> spi2 (SPI_CONF);
 
-    if (0) {
+    if (1) {
         logf("\n>>> SpiGpio: bit-banged");
         SpiGpio spi;
         radioTest(spi);
@@ -84,12 +86,12 @@ int main () {
         SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
         radioTest(spi);
     }
-    if (0) {
+    if (1) {
         logf("\n>>> SpiSync: sync wfe loop");
         auto& spi = (SpiSync<SPI_TYPE>&) spi2;
         radioTest(spi);
     }
-    if (0) {
+    if (1) {
         logf("\n>>> SpiCall: async msg call");
         radioTest(spi2);
     }

@@ -57,10 +57,8 @@ struct SpiPoll {
 
     uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
-for (volatile auto i = 10; --i >= 0; ) {}
         if (m <= W1)
             a = 0; // enable
-for (volatile auto i = 10; --i >= 0; ) {}
 
         if (n > 0) {
             auto q = (uint8_t*) p;
@@ -87,10 +85,8 @@ for (volatile auto i = 10; --i >= 0; ) {}
             }
         }
 
-for (volatile auto i = 10; --i >= 0; ) {}
         if (m >= R2)
             a = 1; // disable
-for (volatile auto i = 10; --i >= 0; ) {}
         return r;
     }
 };
@@ -149,10 +145,8 @@ struct SpiSync : SpiPoll<A>, Device {
         if (n > 0)
             while (DTX[CCR](0) || DRX[CCR](0)) // EN
                 asm ("wfe");
-for (volatile auto i = 10; --i >= 0; ) {}
         if (m >= BASE::R2)
             a = 1; // disable
-for (volatile auto i = 10; --i >= 0; ) {}
         if (m == BASE::R2)
             cache::inval(p, n);
         return SPI.byte(BASE::DR);
@@ -162,10 +156,8 @@ private:
     Chain msgs;
 
     void startReq (Pin a, uint8_t m, void* p, uint8_t n) const {
-for (volatile auto i = 10; --i >= 0; ) {}
         if (m <= BASE::W1)
             a = 0; // enable
-for (volatile auto i = 10; --i >= 0; ) {}
         if (n == 0)
             return;
 
