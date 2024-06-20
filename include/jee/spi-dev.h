@@ -57,8 +57,10 @@ struct SpiPoll {
 
     uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
+for (volatile auto i = 10; --i >= 0; ) {}
         if (m <= W1)
             a = 0; // enable
+for (volatile auto i = 10; --i >= 0; ) {}
 
         if (n > 0) {
             auto q = (uint8_t*) p;
@@ -68,7 +70,7 @@ struct SpiPoll {
                     while (!SPI[SR](1)) {} // ~TXE
                     SPI.byte(DR) = *q++;
                     while (!SPI[SR](0)) {} // ~RXNE
-                    r = SPI.byte(DR);
+                    (void) +SPI.byte(DR);
                 }
                 while (!SPI[SR](0)) {} // ~RXNE
                 r = SPI.byte(DR);
@@ -85,8 +87,10 @@ struct SpiPoll {
             }
         }
 
+for (volatile auto i = 10; --i >= 0; ) {}
         if (m >= R2)
             a = 1; // disable
+for (volatile auto i = 10; --i >= 0; ) {}
         return r;
     }
 };
@@ -119,11 +123,15 @@ struct SpiSync : SpiPoll<A>, Device {
 
     SpiSync (Config const& c) : BASE (c.ena, c.mhz), Device ('S'), cfg (c) {}
 
-    void init (char const* defs, int speed) {
-        BASE::init(defs, speed);
+    void init (char const* defs, int khz) {
+        BASE::init(defs, khz);
         SPI[BASE::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
         initDma();
+
+        // peripheral address config and interrupt vector setup
+        DTX[CPAR] = A + BASE::DR;
+        DRX[CPAR] = A + BASE::DR;
 
         irqInstall((uint8_t) cfg.txIrq);
         irqInstall((uint8_t) cfg.rxIrq);
@@ -138,32 +146,35 @@ struct SpiSync : SpiPoll<A>, Device {
 
     uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
         startReq(a, m, p, n);
-
-        while (DTX[CCR](0) || DRX[CCR](0)) // EN
-            asm ("wfe");
-
+        if (n > 0)
+            while (DTX[CCR](0) || DRX[CCR](0)) // EN
+                asm ("wfe");
+for (volatile auto i = 10; --i >= 0; ) {}
         if (m >= BASE::R2)
             a = 1; // disable
+for (volatile auto i = 10; --i >= 0; ) {}
         if (m == BASE::R2)
             cache::inval(p, n);
-
-        return 0; // TODO?
+        return SPI.byte(BASE::DR);
     }
 
 private:
     Chain msgs;
 
     void startReq (Pin a, uint8_t m, void* p, uint8_t n) const {
+for (volatile auto i = 10; --i >= 0; ) {}
         if (m <= BASE::W1)
             a = 0; // enable
+for (volatile auto i = 10; --i >= 0; ) {}
+        if (n == 0)
+            return;
 
-        if (m != BASE::R2) {
-            cache::clean(p, n);
-
-            DTX[CMAR] = (uintptr_t) p;
-            DTX[CNDTR] = n;
-            DTX[CCR](0) = 1; // EN
-        } else {
+        cache::clean(p, n);
+        DTX[CMAR] = (uintptr_t) p;
+        DTX[CNDTR] = n;
+        DTX[CCR](0) = 1; // EN
+                             //
+        if (m == BASE::R2) {
             DRX[CMAR] = (uintptr_t) p;
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
@@ -199,10 +210,6 @@ private:
         DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
         DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
-
-        // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + BASE::DR;
-        DRX[CPAR] = A + BASE::DR;
     }
 
     // async version, started from a msg
@@ -219,6 +226,7 @@ private:
                 (Pin&) mp->mTag = 1; // disable
             if (m == BASE::R2)
                 cache::inval(mp->mPtr, mp->mLen);
+            mp->mLen = SPI.byte(BASE::DR);
             reply(mp);
         }
         if (!msgs.isEmpty())
@@ -228,6 +236,8 @@ private:
     void startAsync (Message& m) {
         uint8_t mode = m.mLen >> 13, len = m.mLen & ((1<<14)-1);
         startReq((Pin&) m.mTag, mode, m.mPtr, len);
+        if (len == 0)
+            finish(); // this may be recursive
     }
 
     bool interrupt (int) override {
@@ -273,7 +283,7 @@ struct SpiCall : SpiSync<A,D,T,R> {
         uint16_t len = (m<<13) | n;
         Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
-        return 0; // TODO?
+        return msg.mLen;
     }
 };
 
