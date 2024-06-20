@@ -110,6 +110,10 @@ struct I2cSync : I2cPoll<A>, Device {
 
         initDma();
 
+        // peripheral address config and interrupt vector setup
+        DTX[CPAR] = A + BASE::TXDR;
+        DRX[CPAR] = A + BASE::RXDR;
+
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
     }
@@ -179,10 +183,6 @@ private:
         DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
         DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
-
-        // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + BASE::TXDR;
-        DRX[CPAR] = A + BASE::RXDR;
     }
 
     // async version, started from a msg

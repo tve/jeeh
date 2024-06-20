@@ -64,27 +64,21 @@ struct RF69 {
                 if (lastFlag) { // flag just went from 0 to 1
                     rssi = readReg(REG_RSSIVALUE);
                     lna = (readReg(REG_LNAVALUE) >> 3) & 0x7;
-#if 0
-                    uint8_t cmd = REG_AFCMSB;
-                    dev.transfer(dev.R1, &cmd, sizeof cmd);
-                    uint8_t in [2];
-                    dev.transfer(dev.R2, in, sizeof in);
-                    afc = (in[0] << 8) | in[1];
-#endif
+                    afc = readReg(REG_AFCMSB) << 8;
+                    afc |= readReg(REG_AFCLSB);
                 }
             }
 
             if (readReg(REG_IRQFLAGS2) & IRQ2_PAYLOADREADY) {
 #if 1
+                // does work, the last byte can still be read from SPI[DR]
                 uint8_t cmd [] = { REG_FIFO, 0 };
                 auto count = dev.transfer(dev.R1, cmd, sizeof cmd);
 #else
-jeeh::logf("10");
-                // can't use DMA for this part, start off polled instead
+                // if we can't use DMA to read during send, switch to polled
                 dev.enable();
                 dev.ioByte(REG_FIFO);
                 auto count = dev.ioByte(0);
-jeeh::logf("11 %d %d", len, count);
 #endif
                 if (len > count)
                     len = count;
