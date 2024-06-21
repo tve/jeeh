@@ -73,8 +73,8 @@ private:
         wait();
         spi.rwCmd("\x01\x06");
     }
-    uint8_t cmdAddr (uint8_t cmd, uint32_t addr) {
-        static uint32_t buf [6]; // len, cmd, 3x addr, 1 spare
+    uint8_t* cmdAddr (uint8_t cmd, uint32_t addr) const {
+        static uint8_t buf [6]; // len, cmd, 3x addr, 1 spare
         buf[0] = 0x04;
         buf[1] = cmd;
         buf[2] = addr >> 16;
