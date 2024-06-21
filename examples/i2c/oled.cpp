@@ -9,15 +9,24 @@ using namespace jeeh;
 int main () {
     initBoard("oled");
 
+#if 1
     // one I2C bus, several implementations
     //I2cGpio i2c;
     //I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
     I2cSync<I2C_TYPE> i2c (I2C_CONF);
     //i2cCall<I2C_TYPE> i2c (I2C_CONF);
+    i2c.init(I2C_PINS, 1000);
+#else // TODO
+    I2cWrap<I2cGpio> vi2c;
+    auto& i2c = (I2cBase&) vi2c;
+    vi2c.init(I2C_PINS, 1000);
+#endif
 
     // two I2C devices
     BusDev dev1 {i2c, 0x3D};
     BusDev dev2 {i2c, 0x3C};
+    vi2c.init(I2C_PINS, 1000);
+
 
     // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, 64);
@@ -29,8 +38,6 @@ int main () {
     logf("  sizeof I2cCall      = %2d b", sizeof (i2cCall<I2C_TYPE>));
     logf("  sizeof BusDev<...>  = %2d b", sizeof (BusDev<I2cGpio>));
     logf("  sizeof SSD1306<...> = %2d b", sizeof (SSD1306<BusDev<I2cGpio>>));
-
-    i2c.init(I2C_PINS, 1000);
 
     // display a trivial pattern, just to verify that it works
     static uint8_t const data [] = {

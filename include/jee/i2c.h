@@ -74,7 +74,7 @@ struct I2cBase {
 template< typename I2C >
 struct I2cWrap final : I2cBase, I2C {
     bool start (uint8_t a) override { return I2C::start(a); }
-    void stop () override { I2C::stop ; }
+    void stop () override { I2C::stop(); }
     int rdByte (bool l) override { return I2C::rdByte(l); }
     bool wrByte (uint8_t d) override { return I2C::wrByte(d); }
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const override {
