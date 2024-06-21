@@ -62,6 +62,8 @@ private:
 };
 
 struct I2cBase {
+    using ID = uint8_t;
+
     virtual bool start (uint8_t addr) =0;
     virtual void stop () =0;
     virtual int rdByte (bool last) =0;
