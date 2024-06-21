@@ -15,9 +15,9 @@ struct SpiFlash {
 
     int devId () const {
         cmd(0x9F);
-        int r = spi.transfer(0) << 16;
-        r |= spi.transfer(0) << 8;
-        r |= spi.transfer(0);
+        int r = spi.ioByte(0) << 16;
+        r |= spi.ioByte(0) << 8;
+        r |= spi.ioByte(0);
         spi.disable();
         return r;
     }
@@ -45,8 +45,8 @@ struct SpiFlash {
     void read (int offset, uint8_t* buf, int cnt) const {
         cmd(0x0B);
         w24b(offset);
-        spi.transfer(0);
-        spi.transfer(nullptr, buf, cnt);
+        spi.ioByte(0);
+        spi.ioByte(nullptr, buf, cnt);
         spi.disable();
     }
 
@@ -57,19 +57,19 @@ struct SpiFlash {
     void write (int offset, const uint8_t* buf, int cnt) const {
         wcmd(0x02);
         w24b(offset);
-        spi.transfer(buf, nullptr, cnt);
+        spi.ioByte(buf, nullptr, cnt);
         wait();
     }
 
 private:
     void cmd (int arg) const {
         spi.enable();
-        spi.transfer(arg);
+        spi.ioByte(arg);
     }
     void wait () const {
         spi.disable();
         cmd(0x05);
-        while (spi.transfer(0) & 1) {}
+        while (spi.ioByte(0) & 1) {}
         spi.disable();
     }
     void wcmd (int arg) const {
@@ -79,9 +79,9 @@ private:
         cmd(arg);
     }
     void w24b (int offset) const {
-        spi.transfer(offset >> 16);
-        spi.transfer(offset >> 8);
-        spi.transfer(offset);
+        spi.ioByte(offset >> 16);
+        spi.ioByte(offset >> 8);
+        spi.ioByte(offset);
     }
 };
 

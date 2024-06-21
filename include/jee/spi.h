@@ -8,7 +8,7 @@ struct SpiGpio {
     uint8_t cpol =0;
     BusDev<SpiGpio> dev {*this, Pin{}};
 
-    void init (char const* desc, uint16_t khz =10'000) {
+    void init (char const* desc, int khz =10'000) {
         Pin::config(desc, &mosi, 4);
         disable(); // start with NSEL high
         Pin::config(":P,:U,:P,", &mosi, 4);
@@ -21,8 +21,8 @@ struct SpiGpio {
         Pin::config(":F,,,:U", &mosi, 4); // keep NSEL pulled up
     }
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
+    void enable () const { hold(); nsel = 0; hold(); }
+    void disable () const { hold(); nsel = 1; hold(); }
 
     int ioByte (int v) const {
         auto r = 0;
