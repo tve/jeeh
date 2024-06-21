@@ -7,19 +7,14 @@ struct SpiFlash {
     SpiFlash (SPI& s) : spi (s) {}
 
     void reset () const {
-        cmd(0x66);
-        spi.disable();
-        cmd(0x99);
-        spi.disable();
+        spi.rwCmd("\x01\x66");
+        spi.rwCmd("\x01\x99");
     }
 
     int devId () const {
-        cmd(0x9F);
-        int r = spi.ioByte(0) << 16;
-        r |= spi.ioByte(0) << 8;
-        r |= spi.ioByte(0);
-        spi.disable();
-        return r;
+        uint8_t buf [3];
+        spi.rwCmd("\x01\x9F", buf, sizeof buf);
+        return (buf[0] << 16) | (buf[1] << 8) | buf[2];
     }
 
     int size () const {
@@ -27,14 +22,17 @@ struct SpiFlash {
         return 1 << ((devId() & 0xFF) - 10);
     }
 
+    void serNum (uint8_t* buf) {
+        spi.rwCmd("\x05\x4B....", buf, 8);
+    }
+
     void wipe () const {
-        wcmd(0xC7); // 0x60 doesn't work on Micron Tech (N25Q)
+        spi.rwCmd("\x01\xC7"); // 0x60 doesn't work on Micron Tech (N25Q)
         wait();
     }
 
     void erase (int page) const {
-        wcmd(0x20);
-        w24b(page<<8);
+        spi.rwCmd(cmdAddr(0x20, page<<8));
         wait();
     }
 
@@ -42,46 +40,47 @@ struct SpiFlash {
         read(page<<8, buf, 256);
     }
 
-    void read (int offset, uint8_t* buf, int cnt) const {
-        cmd(0x0B);
-        w24b(offset);
-        spi.ioByte(0);
-        spi.ioByte(nullptr, buf, cnt);
-        spi.disable();
+    void read (int offset, uint8_t* buf, int len) const {
+        auto p = cmdAddr(0x20, offset);
+        *p += 1; // add dummy byte
+        spi.rwCmd(p, buf, len);
     }
 
     void write256 (int page, const uint8_t* buf) const {
         write(page<<8, buf, 256);
     }
 
-    void write (int offset, const uint8_t* buf, int cnt) const {
-        wcmd(0x02);
-        w24b(offset);
-        spi.ioByte(buf, nullptr, cnt);
+    void write (int offset, const uint8_t* buf, int len) const {
+        auto p = cmdAddr(0x20, offset);
+        *p |= 0x80; // write
+        spi.rwCmd(p, (uint8_t*) buf, len);
         wait();
     }
 
 private:
     void cmd (int arg) const {
-        spi.enable();
-        spi.ioByte(arg);
     }
     void wait () const {
+#if 0 // TODO how?
         spi.disable();
-        cmd(0x05);
-        while (spi.ioByte(0) & 1) {}
+        spi.enable();
+        spi.rwByte(0x05);
+        while (spi.rwByte(0) & 1) {}
         spi.disable();
+#endif
     }
     void wcmd (int arg) const {
         wait();
-        cmd(0x06);
-        spi.disable();
-        cmd(arg);
+        spi.rwCmd("\x01\x06");
     }
-    void w24b (int offset) const {
-        spi.ioByte(offset >> 16);
-        spi.ioByte(offset >> 8);
-        spi.ioByte(offset);
+    uint8_t cmdAddr (uint8_t cmd, uint32_t addr) {
+        static uint32_t buf [6]; // len, cmd, 3x addr, 1 spare
+        buf[0] = 0x04;
+        buf[1] = cmd;
+        buf[2] = addr >> 16;
+        buf[3] = addr >> 8;
+        buf[4] = addr;
+        return buf;
     }
 };
 

@@ -5,6 +5,8 @@ template< uint32_t A >
 struct SpiPoll {
     using ID = Pin;
 
+    enum { R1, W1, R2, W2 };
+
     static constexpr IoReg<A> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
 
@@ -43,13 +45,23 @@ struct SpiPoll {
     void enable () const { nsel = 0; }
     void disable () const { nsel = 1; }
 
-    int ioByte (int v) const {
+    int rwByte (int v) const {
         SPI.byte(DR) = v;
         while (!SPI[SR](0)) {} // ~RXNE
         return SPI.byte(DR);
     }
 
-    enum { R1, W1, R2, W2 };
+    // TODO yuck: code duplicated from SpiGpio
+
+    // cmd = pfxLen byte + prefix data, buf & len = bytes to read or write
+    // write buf if pfxLen bit 7 is set, else read
+    uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
+        auto p = (uint8_t const*) cmd;
+        int8_t n = *p++;
+        auto r = transfer(n < 0 ? W1 : R1, (uint8_t*) p, n & 0x7F);
+        transfer(n < 0 ? W2 : R2, buf, len);
+        return r;
+    }
 
     uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
         return transfer(nsel, m, p, n);
@@ -184,8 +196,8 @@ private:
 #define DMAMUX DMAMUX1
 #endif
 #if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
-        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
+        DMAMUX[32*cfg.dma+4*T] = cfg.txReq;
+        DMAMUX[32*cfg.dma+4*R] = cfg.rxReq;
 #elif STM32L0 | STM32L4
         DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
         DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR

@@ -77,8 +77,8 @@ struct RF69 {
 #else
                 // if we can't use DMA to read during send, switch to polled
                 dev.enable();
-                dev.ioByte(REG_FIFO);
-                auto count = dev.ioByte(0);
+                dev.rwByte(REG_FIFO);
+                auto count = dev.rwByte(0);
 #endif
                 if (len > count)
                     len = count;

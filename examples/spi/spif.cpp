@@ -1,4 +1,4 @@
-// Serial port output test.
+// SPI Flash test.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -24,6 +24,11 @@ int main () {
         auto t = cycles::count();
 
         logf("spi: id %06x %6d kB %6d cy #%d", id, spif.size(), t, ++seq);
+
+        uint8_t buf [8];
+        spif.serNum(buf);
+        logDump(buf, sizeof buf);
+
         sys::wait(500);
     }
 }
