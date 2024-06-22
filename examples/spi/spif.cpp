@@ -1,4 +1,4 @@
-// SPI Flash test.
+// SPI Flash smoke test.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -20,8 +20,8 @@ int main () {
     uint8_t buf [512];
 
     cycles::clear();
-    spif.erase(0);
-    logf("erased in %d ms", cycles::millis());
+    spif.wipe();
+    logf("wiped in %d ms", cycles::millis());
 
     for (auto i = 0U; i < sizeof buf; ++i)
         buf[i] = ~i;
