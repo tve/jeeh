@@ -8,7 +8,7 @@ using namespace jeeh;
 #include <jee/util/memtest.h>
 
 int main () {
-    initBoard("mem"); // in defs.h
+    initBoard("psram"); // in defs.h
     initFsmcPins();
 
     constexpr uint32_t addr = 0x6000'0000, size = 512; // kB

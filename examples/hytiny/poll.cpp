@@ -16,7 +16,7 @@ void radioTest (SPI& spi) {
     nrst = 0;
     sys::wait(10);
 
-#if 0
+#if 1
     RF69 rf (spi);
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);

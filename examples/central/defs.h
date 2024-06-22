@@ -60,6 +60,18 @@ void jeeh::logWriter (void const* ptr, size_t len) {
     _write(1, (char*) ptr, len);
 }
 
+void espPower (bool on) {
+#if 0
+    constexpr Pin power ("G14");
+    power.mode("P");
+    power = on;
+#else
+    // ESP8266 CH_PD, power down
+    //Pin::config(on ? "G14:F" : "G14:P");
+    Pin::config(on ? "D3:F" : "D3:P");
+#endif
+}
+
 void initBoard (char const* app) {
     fastClock();
 
@@ -72,17 +84,21 @@ void initBoard (char const* app) {
 
     rtc::init();
 
-    Pin::config("D3:P"); // ESP8266 CH_PD, power down
+    espPower(false);
 
+    // console uart
     uart.init(UART_PINS, 1'000'000,
                 { UART_NAME.ADDR, ena::UART_NAME,
                   UART_FREQ, Irq::UART_NAME, UART_CONF });
     printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
 
-    uart_l.init(UART_PINS, SystemCoreClock / 32,
+    // loopback uart
+    uart_l.init(UART_L_PINS, SystemCoreClock / 32,
                 { UART_L_NAME.ADDR, ena::UART_L_NAME,
                   UART_L_FREQ, Irq::UART_L_NAME, UART_L_CONF });
-    uart_w.init(UART_PINS, 1'200,
+
+    // wifi/esp uart
+    uart_w.init(UART_W_PINS, 1'200,
                 { UART_W_NAME.ADDR, ena::UART_W_NAME,
                   UART_W_FREQ, Irq::UART_W_NAME, UART_W_CONF });
 }
