@@ -1,23 +1,56 @@
 // Hardware random number generator.
 
 namespace jeeh::rng {
-    enum { CRRCR=0x98 };
+
+enum { CRRCR=0x98 };
+
+void init () {
+    RCC[CRRCR](0) = 1;        // HSI48ON
+    while (!RCC[CRRCR](1)) {} // ~HSI48RDY
+
+    RCC(ena::RNG,1) = 1;
+    RNG[0x00](2) = 1; // RNGEN
+}
+
+// return a 32-bit random number (but never zero)
+uint32_t rand () {
+    uint32_t r;
+    do
+        r = RNG[0x08];
+    while (r == 0);
+    return r;
+}
+
+// see https://en.wikipedia.org/wiki/Fisher–Yates_shuffle
+template< int N >
+struct Permutation {
+    static_assert(1 <= N && N <= 256);
+    uint8_t choice [N], limit;
 
     void init () {
-        RCC[CRRCR](0) = 1;        // HSI48ON
-        while (!RCC[CRRCR](1)) {} // ~HSI48RDY
-
-        RCC(ena::RNG,1) = 1;
-        RNG[0x00](2) = 1; // RNGEN
+        rng::init();
+        for (auto i = 0; i < N; ++i)
+            choice[i] = i;
+        limit = N;
     }
 
-    // return a 32-bit random number (but never zero)
-    uint32_t rand () {
-        uint32_t r;
-        do
-            r = RNG[0x08];
-        while (r == 0);
+    int next () {
+        if (limit <= 0)
+            return -1;
+        auto i = rand() % limit;
+        auto r = choice[i];
+        choice[i] = choice[--limit];
         return r;
     }
+
+    void shuffle () {
+        limit = N;
+        for (auto i = 0; i < N; ++i) {
+            auto r = next(); // decrements limit
+            choice[limit] = r;
+        }
+        assert(limit == 0);
+    }
+};
 
 } // namespace jeeh::rng
