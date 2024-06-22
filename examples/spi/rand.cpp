@@ -17,6 +17,7 @@ int main () {
     rng::Permutation<25> perm;
 
     while (true) {
+        // random values
         for (auto n = 0; n < 5; ++n) {
             cycles::clear();
             for (auto i = 0; i < N; ++i)
@@ -27,13 +28,31 @@ int main () {
                     buf[0], buf[1], buf[2], buf[3], t/mhz, N);
         }
 
+        // random pick
         for (auto n = 0; n < 5; ++n) {
             perm.init();
+
             char buf [80], *p = buf;
-            for (auto i = 0; i < 26; ++i)
-                p += snprintf(p, 4, " %d", perm.next());
-            assert(p < buf + sizeof buf);
-            *p = 0;
+            int r;
+            do {
+                r = perm.next();
+                p += snprintf(p, 4, " %d", r);
+            } while (r >= 0);
+            assert(p <= buf + sizeof buf);
+
+            logf("%s", buf);
+        }
+
+        // random shuffle
+        perm.init();
+        for (auto n = 0; n < 5; ++n) {
+            perm.shuffle();
+
+            char buf [80], *p = buf;
+            for (auto e : perm.choice)
+                p += snprintf(p, 4, " %d", e);
+            assert(p <= buf + sizeof buf);
+
             logf("%s", buf);
         }
 
