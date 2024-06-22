@@ -19,18 +19,16 @@ int main () {
     Message wMsg { uart_w.dId, 'R' };
     sys::send(wMsg); // start read from uart_w
 
+    // there are always two pending read requests
     while (true) {
-        // there are always two outstanding uart requests at this point:
-        //  - either a pending read request for each uart
-        //  - or a write of the received data to the other uart
-
         auto& m = sys::recv();
-        assert(m.mTag == 'R' || m.mTag == 'W');
+        assert(m.mTag == 'R');
         assert(m.mDst == uart.dId || m.mDst == uart_w.dId);
 
-        m.mTag ^= 'R' ^ 'W'; // switch from reading to writing and vice versa
-        m.mDst ^= uart.dId ^ uart_w.dId; // set destination to the other uart
-
+        uint8_t other = m.mDst ^ uart.dId ^ uart_w.dId;
+        Message out { other, 'W', m.mLen, m.mPtr };
+        sys::call(out);
+ 
         sys::send(m);
     }
 }

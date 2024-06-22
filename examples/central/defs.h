@@ -61,15 +61,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 }
 
 void espPower (bool on) {
-#if 0
-    constexpr Pin power ("G14");
-    power.mode("P");
-    power = on;
-#else
-    // ESP8266 CH_PD, power down
-    //Pin::config(on ? "G14:F" : "G14:P");
-    Pin::config(on ? "D3:F" : "D3:P");
-#endif
+    Pin::config(on ? "D3:F" : "D3:P"); // ESP8266 CH_PD, power down
 }
 
 void initBoard (char const* app) {
