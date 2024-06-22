@@ -15,6 +15,8 @@ int main () {
     printf("%d kB @ 0x%08x\n", size, addr);
     initPsram();
 
-    while (true)
+    while (true) {
+        led.toggle();
         printf(" %d errors\n", util::memTests(addr, size * 1024));
+    }
 }
