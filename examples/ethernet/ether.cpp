@@ -1,7 +1,7 @@
 #include <jee.h>
 #include <jee/hal.h>
 #include <jee/eth.h>
-#include <jee/net.h>
+#include <jee/util/net.h>
 using namespace jeeh;
 using namespace jeeh::net;
 #include "defs.h"
