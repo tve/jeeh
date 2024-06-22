@@ -12,6 +12,10 @@ void init () {
     RNG[0x00](2) = 1; // RNGEN
 }
 
+void deinit () {
+    RCC(ena::RNG,1) = 0;
+}
+
 // return a 32-bit random number (but never zero)
 uint32_t rand () {
     uint32_t r;

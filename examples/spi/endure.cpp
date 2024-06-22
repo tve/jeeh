@@ -32,6 +32,12 @@ int main () {
     spif.wipe();
     logf("  %d kB wiped   in %6d ms", CHIP>>10, cycles::millis());
 
+    crc::init();
+    for (auto i = 0; i < BLOCK; ++i)
+        crc::update8(0xFF);
+    auto crcEmpty = crc::get();
+    logf("empty CRC = %08x", crcEmpty);
+
     uint8_t buf [PAGE] alignas(4);
     int seq = 0;
 
@@ -48,7 +54,7 @@ int main () {
             auto b = bPerm.next();
             printf("  block %5d\r", b);
             spif.erase(b * PPB);
-            bSums[b] = PAGE * PPB * 0xFF;
+            bSums[b] = crcEmpty;
         }
         logf("  %d kB erased  in %6d ms", CHIP>>10, cycles::millis());
 
@@ -56,14 +62,14 @@ int main () {
         cycles::clear();
         for (auto b = 0; b < BPC; ++b) {
             printf("  block %5d\r", b);
-            uint32_t s = 0;
+            crc::init();
             for (auto p = 0; p < PPB; ++p) {
                 buf[PAGE-1] = 0;
                 spif.read256(b * PPB + p, buf);
                 for (auto i = 0; i < PAGE; ++i)
-                    s += buf[i];
+                    crc::update8(buf[i]);
             }
-            assert(s == bSums[b]);
+            assert(crc::get() == bSums[b]);
         }
         logf("  %d kB empty   in %6d ms", CHIP>>10, cycles::millis());
 
@@ -73,16 +79,17 @@ int main () {
         for (auto i = 0; i < BPC; ++i) {
             auto b = bPerm.next();
             printf("  block %5d\r", b);
-            bSums[b] = 0;
+            crc::init();
             for (auto p = 0; p < PPB; ++p) {
                 auto wp = (uint32_t*) buf;
                 auto wn = PAGE/4;
                 for (auto i = 0; i < wn; ++i)
                     wp[i] = rng::rand();
                 for (auto i = 0; i < PAGE; ++i)
-                    bSums[b] += buf[i];
+                    crc::update8(buf[i]);
                 spif.write256(b * PPB + p, buf);
             }
+            bSums[b] = crc::get();
         }
         logf("  %d kB written in %6d ms", CHIP>>10, cycles::millis());
 
@@ -90,14 +97,14 @@ int main () {
         cycles::clear();
         for (auto b = 0; b < BPC; ++b) {
             printf("  block %5d\r", b);
-            uint32_t s = 0;
+            crc::init();
             for (auto p = 0; p < PPB; ++p) {
                 buf[PAGE-1] = 0;
                 spif.read256(b * PPB + p, buf);
                 for (auto i = 0; i < PAGE; ++i)
-                    s += buf[i];
+                    crc::update8(buf[i]);
             }
-            assert(s == bSums[b]);
+            assert(crc::get() == bSums[b]);
         }
         logf("  %d kB matched in %6d ms", CHIP>>10, cycles::millis());
         logDump(bSums, 64, "bSums");
