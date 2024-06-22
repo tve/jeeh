@@ -9,6 +9,7 @@
 - **`i2c`** - some tests for I2C devices connected to a Nucleo-32 L432KC
 - **`rtt`** - explore Real Time Transfer with Blackmagic's BMDA app
 - **`sleep`** - measuring low-power consumption with a Nucleo-32 L432KC
+- **`spi`** - some tests for SPI devices connected to a Nucleo-32 G431KB
 - **`trace`** - SPI + logic analyzer trace setup for a Nucleo-32 G431KB
 - **`wsn`** - a low-power Wireless Sensor Node using a Nucleo-32 L031K6
 - **`z474`** - various apps for the Nucleo-G474RE or WeAct-G474CE board

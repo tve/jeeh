@@ -38,12 +38,10 @@
 #define RFM69_DIOS "A4:F,B0,B11,H4,H5"
 #define RFM69_NRST "F11"
 
-constexpr Pin led (LED);  // defined in platformio.ini
-#if 0
-constexpr Pin blue ("A5"); blue.mode("P"); blue = !msgs.isEmpty();
-constexpr Pin green ("B1"); green.mode("P"); green = 1;
-constexpr Pin red ("A7"); red.mode("P"); red = 1;
-#endif
+constexpr Pin led      (LED); // redundant, same as blue
+constexpr Pin blueLed  (LED1);
+constexpr Pin redLed   (LED2);
+constexpr Pin greenLed (LED3);
 
 inline Uart uart ('U');
 inline Uart uart_l ('L');
@@ -67,7 +65,10 @@ void initBoard (char const* app) {
 
     Pin::config(RFM69_DIOS, dios, sizeof dios);
     nrst.mode("P");
-    led.mode("P");  // push-pull output
+    //led.mode("P"); // redundant
+    blueLed.mode("P");
+    redLed.mode("P");
+    greenLed.mode("P");
 
     rtc::init();
 
@@ -84,4 +85,21 @@ void initBoard (char const* app) {
     uart_w.init(UART_PINS, 1'200,
                 { UART_W_NAME.ADDR, ena::UART_W_NAME,
                   UART_W_FREQ, Irq::UART_W_NAME, UART_W_CONF });
+}
+
+void initFsmcPins () {
+    RCC(ena::FMC, 1) = 1;
+    Pin::config("D0:V12,D1,D4,D5,D7,D8,D9,D10,D11,D12,D14,D15,"
+                "E0,E1,E7,E8,E9,E10,E11,E12,E13,E14,E15,"
+                "F0,F1,F2,F3,F4,F5,F12,F13,F14,F15,"
+                "G0,G1,G2,G3,G4,G5,G9");
+}
+
+void initPsram () {
+    enum { BCR1=0x00, BTR1=0x04 };
+
+    FMC[BCR1] = (1<<20) | (1<<19) | (1<<12) | (1<<8) | (1<<7) | (1<<4);
+//  FMC[BTR1] = (1<<20) | (6<<8) | (2<<4) | (9<<0);
+    FMC[BTR1] = (4<<8) | (9<<0);
+    FMC[BCR1](0) = 1; // MBKEN
 }
