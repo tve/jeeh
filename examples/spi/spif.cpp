@@ -19,13 +19,15 @@ int main () {
 
     uint8_t buf [512];
 
-#if 0
+    cycles::clear();
     spif.erase(0);
+    logf("erased in %d ms", cycles::millis());
+
     for (auto i = 0U; i < sizeof buf; ++i)
         buf[i] = ~i;
+    cycles::clear();
     spif.write(0, buf, sizeof buf);
-sys::wait(100);
-#endif
+    logf("written in %d us", cycles::micros());
 
     uint32_t seq = 0;
     while (true) {
@@ -40,6 +42,6 @@ sys::wait(100);
         logf("\t\t\t id %06x, %6d kB, %6d cy, #%d",
                 spif.devId(), spif.size(), t, ++seq);
 
-        sys::wait(1000);
+        sys::wait(10'000);
     }
 }

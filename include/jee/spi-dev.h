@@ -177,7 +177,7 @@ private:
         DTX[CMAR] = (uintptr_t) p;
         DTX[CNDTR] = n;
         DTX[CCR](0) = 1; // EN
-                             //
+
         if (m == BASE::R2) {
             DRX[CMAR] = (uintptr_t) p;
             DRX[CNDTR] = n;

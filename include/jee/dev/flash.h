@@ -27,11 +27,13 @@ struct SpiFlash {
     }
 
     void wipe () const {
+        unlock();
         spi.rwCmd("\x01\xC7"); // 0x60 doesn't work on Micron Tech (N25Q)
         wait();
     }
 
     void erase (int page) const {
+        unlock();
         spi.rwCmd(cmdAddr(0x20, page<<8));
         wait();
     }
@@ -41,7 +43,7 @@ struct SpiFlash {
     }
 
     void read (int offset, uint8_t* buf, int len) const {
-        auto p = cmdAddr(0x20, offset);
+        auto p = cmdAddr(0x0B, offset);
         *p += 1; // add dummy byte
         spi.rwCmd(p, buf, len);
     }
@@ -51,30 +53,25 @@ struct SpiFlash {
     }
 
     void write (int offset, const uint8_t* buf, int len) const {
-        auto p = cmdAddr(0x20, offset);
+        unlock();
+        auto p = cmdAddr(0x02, offset);
         *p |= 0x80; // write
         spi.rwCmd(p, (uint8_t*) buf, len);
         wait();
     }
 
 private:
-    void cmd (int arg) const {
-    }
-    void wait () const {
-#if 0 // TODO how?
-        spi.disable();
-        spi.enable();
-        spi.rwByte(0x05);
-        while (spi.rwByte(0) & 1) {}
-        spi.disable();
-#endif
-    }
-    void wcmd (int arg) const {
-        wait();
+    mutable uint8_t buf [6]; // len, cmd, 3x addr, 1 spare
+
+    void unlock () const {
         spi.rwCmd("\x01\x06");
     }
+
+    void wait () const {
+        while (spi.rwCmd("\x02\x05.") & 1) {}
+    }
+
     uint8_t* cmdAddr (uint8_t cmd, uint32_t addr) const {
-        static uint8_t buf [6]; // len, cmd, 3x addr, 1 spare
         buf[0] = 0x04;
         buf[1] = cmd;
         buf[2] = addr >> 16;

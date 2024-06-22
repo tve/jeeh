@@ -257,7 +257,7 @@ namespace dog {
     int resetCause (); // power: 2, nrst: 1, other: 0, watchdog: -1
 
     void init (int rate =6);   // max timeout, 0 ≈ 500 ms, 6 ≈ 32 s
-                               //
+
     void reload (int n =4095); // 0..4095 x 125 µs (0) .. 8 ms (6)
     void kick ();
 }
