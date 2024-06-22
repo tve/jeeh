@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("spi");
+    initBoard("endure");
 
     //SpiGpio spi;
     SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
@@ -28,14 +28,15 @@ int main () {
 
     logf("\nFlash: %d kB, %d blocks of %d kB", CHIP>>10, BPC, BLOCK>>10);
 
-    uint8_t buf [PAGE] alignas(4);
+    cycles::clear();
+    spif.wipe();
+    logf("  %d kB wiped   in %6d ms", CHIP>>10, cycles::millis());
 
+    uint8_t buf [PAGE] alignas(4);
     int seq = 0;
+
     while (true) {
         logf("\nRound #%d:", ++seq);
-        cycles::clear();
-        spif.wipe();
-        logf("  %d kB wiped   in %6d ms", CHIP>>10, cycles::millis());
 
         rng::Permutation<BPC> bPerm;
         uint32_t bSums [BPC];
