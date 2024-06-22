@@ -1,4 +1,4 @@
-// Test external PSRAM memory.
+// Create a UART <=> WiFi bridge (with the ESP8266 running Zimodem).
 
 #include <jee.h>
 #include <jee/hal.h>
