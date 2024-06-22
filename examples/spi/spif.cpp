@@ -40,6 +40,6 @@ sys::wait(100);
         logf("\t\t\t id %06x, %6d kB, %6d cy, #%d",
                 spif.devId(), spif.size(), t, ++seq);
 
-        sys::wait(500);
+        sys::wait(1000);
     }
 }

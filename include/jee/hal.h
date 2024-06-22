@@ -1,5 +1,6 @@
 #include "cycles.h"
 #include "exti.h"
+#include "rng.h"
 
 namespace jeeh {
 

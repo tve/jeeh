@@ -1,3 +1,5 @@
+// Hardware cycle counter (not present on M0+).
+
 namespace jeeh::cycles {
 
 constexpr IoReg<0xE000'1000> DWT {};
