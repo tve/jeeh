@@ -2,7 +2,7 @@
 
 #include <jee.h>
 #include <jee/hal.h>
-#include <jee/spi-flash.h>
+#include <jee/dev/flash.h>
 using namespace jeeh;
 #include "defs.h"
 

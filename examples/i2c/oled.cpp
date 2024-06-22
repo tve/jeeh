@@ -25,8 +25,6 @@ int main () {
     // two I2C devices
     BusDev dev1 {i2c, 0x3D};
     BusDev dev2 {i2c, 0x3C};
-    vi2c.init(I2C_PINS, 1000);
-
 
     // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, 64);
