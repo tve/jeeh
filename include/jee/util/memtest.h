@@ -49,13 +49,10 @@ void checkLfsr (uint32_t seed) {
                 *p = pattern;
             else if (auto actual = *p; actual != pattern)
                 return fail(p, actual, pattern);
-            // note: this never sets pattern's bit 31 !
-            for (int i = 0; i < 3; i++) {
-                auto b = pattern & 1;
-                pattern >>= 1;
-                if (b)
-                    pattern ^= 0x7A5BC2E3;
-            }
+            // see https://en.wikipedia.org/wiki/Xorshift
+            pattern ^= pattern << 13;
+            pattern ^= pattern >> 17;
+            pattern ^= pattern << 5;
         }
     }
     printf("*");
