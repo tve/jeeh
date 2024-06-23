@@ -11,7 +11,7 @@ struct SpiFlash {
         spi.rwCmd("\x01\x99");
     }
 
-    int devId () const {
+    int info () const {
         uint8_t buf [3];
         spi.rwCmd("\x01\x9F", buf, sizeof buf);
         return (buf[0] << 16) | (buf[1] << 8) | buf[2];
@@ -19,7 +19,7 @@ struct SpiFlash {
 
     int size () const {
         // works for WinBond W25Qxx, e.g. W25Q64 => 0xC84017 => 8192 KB
-        return 1 << ((devId() & 0xFF) - 10);
+        return 1 << ((info() & 0xFF) - 10);
     }
 
     void serNum (uint8_t* buf) {

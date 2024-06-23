@@ -56,9 +56,9 @@ struct SpiPoll {
     // cmd = pfxLen byte + prefix data, buf & len = bytes to read or write
     // write buf if pfxLen bit 7 is set, else read
     uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
-        auto p = (uint8_t const*) cmd;
+        auto p = (uint8_t*) cmd;
         int8_t n = *p++;
-        auto r = transfer(n < 0 ? W1 : R1, (uint8_t*) p, n & 0x7F);
+        auto r = transfer(n < 0 ? W1 : R1, p, n & 0x7F);
         transfer(n < 0 ? W2 : R2, buf, len);
         return r;
     }
@@ -148,9 +148,9 @@ struct SpiSync : SpiPoll<A,P>, Device {
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
-        auto p = (uint8_t const*) cmd;
+        auto p = (uint8_t*) cmd;
         int8_t n = *p++;
-        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, (uint8_t*) p, n & 0x7F);
+        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, p, n & 0x7F);
         transfer(n < 0 ? BASE::W2 : BASE::R2, buf, len);
         return r;
     }
@@ -298,9 +298,9 @@ struct SpiCall : SpiSync<A,D,T,R,P> {
     using BASE::SpiSync; // constructor
 
     uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
-        auto p = (uint8_t const*) cmd;
+        auto p = (uint8_t*) cmd;
         int8_t n = *p++;
-        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, (uint8_t*) p, n & 0x7F);
+        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, p, n & 0x7F);
         transfer(n < 0 ? BASE::W2 : BASE::R2, buf, len);
         return r;
     }

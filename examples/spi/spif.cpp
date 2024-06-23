@@ -45,7 +45,7 @@ int main () {
         logDump(buf, 16);
 
         logf("\t\t\t\t\t id %06x, %6d kB, %6d cy, #%d",
-                spif.devId(), spif.size(), t, ++seq);
+                spif.info(), spif.size(), t, ++seq);
 
         sys::wait(5'000);
     }
