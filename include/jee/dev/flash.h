@@ -4,11 +4,14 @@ namespace jeeh {
 // write buf if pfxLen bit 7 is set, else read
 template< typename SPI >
 uint8_t rwCmd (SPI& spi, void const* cmd, uint8_t* buf =0, uint16_t len =0) {
+    auto ptr = (uint8_t*) cmd;
+    auto send = *ptr >> 7;
+    int8_t nCmd = *ptr++ & 0x7F;
+
     spi.enable();
-    auto p = (uint8_t*) cmd;
-    int8_t n = *p++;
-    auto r = spi.transfer(n < 0 ? spi.W1 : spi.R1, p, n & 0x7F);
-    spi.transfer(n < 0 ? spi.W2 : spi.R2, buf, len);
+    auto r = nCmd > 0 ? spi.transfer(send ? spi.W1 : spi.R1, ptr, nCmd) : 0;
+    if (len > 0)
+        spi.transfer(send ? spi.W2 : spi.R2, buf, len);
     spi.disable();
     return r;
 }

@@ -57,7 +57,7 @@ struct SpiPoll {
         return transfer(nsel, m, p, n);
     }
 
-    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
+    virtual uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
         if (n > 0) {
             auto q = (uint8_t*) p;
@@ -131,12 +131,10 @@ struct SpiSync : SpiPoll<A,P>, Device {
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
-    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
-        return transfer(BASE::nsel, m, p, n);
-    }
-
     // sync version, dma with wfe
-    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
+    using BASE::transfer;
+
+    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const override {
         if (n == 0)
             return 0;
 
@@ -270,12 +268,10 @@ struct SpiCall : SpiSync<A,D,T,R,P> {
     using BASE = SpiSync<A,D,T,R,P>;
     using BASE::SpiSync; // constructor
 
-    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
-        return transfer(BASE::nsel, m, p, n);
-    }
-
     // async version, dma with sys::call
-    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
+    using BASE::transfer;
+
+    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const override {
         assert((n >> BASE::LEN_BITS) == 0);
         uint16_t len = (m << BASE::LEN_BITS) | n;
         Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
