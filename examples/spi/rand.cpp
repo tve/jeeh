@@ -1,4 +1,4 @@
-// SPI Flash test.
+// Random Number Generator test.
 
 #include <jee.h>
 #include <jee/hal.h>
