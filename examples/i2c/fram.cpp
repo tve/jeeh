@@ -17,7 +17,7 @@ I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #error "no USE_<TYPE> defined"
 #endif
 
-BusDev fram { i2c, 0x50 };
+I2cDev fram { i2c, 0x50 };
 
 void read32 (uint16_t addr, void* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian

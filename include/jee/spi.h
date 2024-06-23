@@ -6,7 +6,6 @@ struct SpiGpio {
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;
-    BusDev<SpiGpio> dev {*this, Pin{}};
 
     void init (char const* desc, int khz =10'000) {
         Pin::config(desc, &mosi, 4);

@@ -225,7 +225,7 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct i2cCall : I2cSync<A,D,T,R> {
+struct I2cCall : I2cSync<A,D,T,R> {
     using BASE = I2cSync<A,D,T,R>;
     using BASE::I2cSync; // constructor
 

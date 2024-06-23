@@ -15,9 +15,9 @@ int main () {
     //i2cCall<I2C_TYPE> i2c (I2C_CONF);
 
     // three I2C devices
-    BusDev hmc5883 {i2c, 0x1E};
-    BusDev adxl345 {i2c, 0x53};
-    BusDev itg3200 {i2c, 0x68};
+    I2cDev hmc5883 {i2c, 0x1E};
+    I2cDev adxl345 {i2c, 0x53};
+    I2cDev itg3200 {i2c, 0x68};
 
     i2c.init(I2C_PINS);
     uint8_t buf [6];

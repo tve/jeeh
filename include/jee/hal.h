@@ -5,17 +5,15 @@
 
 namespace jeeh {
 
-template< typename BUS >
-struct BusDev {
-    using ID = typename BUS::ID;
+template< typename I2C >
+struct I2cDev {
+    I2C& i2c;
+    uint8_t id;
 
-    BUS& bus;
-    ID id;
-
-    BusDev (BUS& b, ID i) : bus (b), id (i) {}
+    I2cDev (I2C& b, uint8_t i) : i2c (b), id (i) {}
 
     template< typename ...A >
-    auto transfer (A... a) const { return bus.transfer(id, a...); }
+    auto transfer (A... a) const { return i2c.transfer(id, a...); }
 
     template< typename T >
     int32_t read (T r) const {
@@ -26,8 +24,8 @@ struct BusDev {
 
     template< typename T >
     bool read (T r, void* p, uint8_t n) const {
-        return transfer(bus.R1, &r, sizeof (T))
-            && transfer(bus.R2, p, n);
+        return transfer(i2c.R1, &r, sizeof (T))
+            && transfer(i2c.R2, p, n);
     }
 
     template< typename T >
@@ -37,8 +35,8 @@ struct BusDev {
 
     template< typename T >
     bool write (T r, void const* p, uint8_t n) const {
-        return transfer(bus.W1, &r, sizeof (T))
-            && transfer(bus.W2, (void*) p, n);
+        return transfer(i2c.W1, &r, sizeof (T))
+            && transfer(i2c.W2, (void*) p, n);
     }
 };
 

@@ -23,8 +23,8 @@ int main () {
 #endif
 
     // two I2C devices
-    BusDev dev1 {i2c, 0x3D};
-    BusDev dev2 {i2c, 0x3C};
+    I2cDev dev1 {i2c, 0x3D};
+    I2cDev dev2 {i2c, 0x3C};
 
     // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, 64);
@@ -33,9 +33,9 @@ int main () {
     logf("  sizeof I2cGpio      = %2d b", sizeof (I2cGpio));
     logf("  sizeof I2cPoll      = %2d b", sizeof (I2cPoll<I2C_NAME.ADDR>));
     logf("  sizeof I2cSync      = %2d b", sizeof (I2cSync<I2C_TYPE>));
-    logf("  sizeof I2cCall      = %2d b", sizeof (i2cCall<I2C_TYPE>));
-    logf("  sizeof BusDev<...>  = %2d b", sizeof (BusDev<I2cGpio>));
-    logf("  sizeof SSD1306<...> = %2d b", sizeof (SSD1306<BusDev<I2cGpio>>));
+    logf("  sizeof I2cCall      = %2d b", sizeof (I2cCall<I2C_TYPE>));
+    logf("  sizeof I2cDev<...>  = %2d b", sizeof (I2cDev<I2cGpio>));
+    logf("  sizeof SSD1306<...> = %2d b", sizeof (SSD1306<I2cDev<I2cGpio>>));
 
     // display a trivial pattern, just to verify that it works
     static uint8_t const data [] = {
