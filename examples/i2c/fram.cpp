@@ -1,4 +1,4 @@
-// Simple I2C bus scan.
+// FRAM memory, connected via I2C.
 
 #include <jee.h>
 #include <jee/hal.h>
