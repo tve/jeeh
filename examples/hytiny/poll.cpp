@@ -82,8 +82,7 @@ int main () {
     }
     if (1) {
         logf("\n>>> SpiPoll: polled h/w regs");
-        //auto& spi = (SpiPoll<SPI_NAME.ADDR>&) spi2;
-        SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
+        auto& spi = (SpiPoll<SPI_NAME.ADDR>&) spi2;
         radioTest(spi);
     }
     if (1) {

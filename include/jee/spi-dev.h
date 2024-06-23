@@ -92,7 +92,7 @@ struct SpiPoll {
                     while (!SPI[SR](0)) {} // ~RXNE
                     *q++ = SPI.byte(DR);
                 }
-                while (SPI[SR](0)) {} // ~RXNE
+                while (!SPI[SR](0)) {} // ~RXNE
                 *q = SPI.byte(DR);
             }
         }
@@ -147,27 +147,34 @@ struct SpiSync : SpiPoll<A>, Device {
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
-    // sync version, dma with wfe
+    uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
+        auto p = (uint8_t const*) cmd;
+        int8_t n = *p++;
+        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, (uint8_t*) p, n & 0x7F);
+        transfer(n < 0 ? BASE::W2 : BASE::R2, buf, len);
+        return r;
+    }
+
     uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
         return transfer(BASE::nsel, m, p, n);
     }
 
+    // sync version, dma with wfe
     uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
         startReq(a, m, p, n);
         if (n > 0)
             while (DTX[CCR](0) || DRX[CCR](0)) // EN
                 asm ("wfe");
-        if (m >= BASE::R2)
-            a = 1; // disable
-        if (m == BASE::R2)
-            cache::inval(p, n);
-        return SPI.byte(BASE::DR);
+        return finishReq(a, m, p, n);
     }
+
+protected:
+    constexpr static auto LEN_BITS = 13, LEN_MASK = (1<<(LEN_BITS+1)) - 1;
 
 private:
     Chain msgs;
 
-    void startReq (Pin a, uint8_t m, void* p, uint8_t n) const {
+    void startReq (Pin a, uint8_t m, void* p, uint16_t n) const {
         if (m <= BASE::W1)
             a = 0; // enable
         if (n == 0)
@@ -183,6 +190,18 @@ private:
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
         }
+    }
+
+    uint8_t finishReq (Pin a, uint8_t m, void* p, uint16_t n) const {
+        if (m >= BASE::R2)
+            a = 1; // disable
+        if (m == BASE::R2)
+            cache::inval(p, n);
+        uint8_t r;
+        do
+            r = SPI.byte(BASE::DR);
+        while (SPI[BASE::SR](0)); // RXNE
+        return r;
     }
 
     // TODO this is the same code in I2C and SPI
@@ -224,24 +243,24 @@ private:
 
     void finish () override {
         auto mp = msgs.pull();
-        if (mp != nullptr) {
-            auto m = mp->mLen >> 13;
-            if (m >= BASE::R2)
-                (Pin&) mp->mTag = 1; // disable
-            if (m == BASE::R2)
-                cache::inval(mp->mPtr, mp->mLen);
-            mp->mLen = SPI.byte(BASE::DR);
-            reply(mp);
-        }
+        if (mp == nullptr)
+            return;
+        finishAsync(*mp);
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {
-        uint8_t mode = m.mLen >> 13, len = m.mLen & ((1<<14)-1);
+        uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
         startReq((Pin&) m.mTag, mode, m.mPtr, len);
         if (len == 0)
             finish(); // this may be recursive
+    }
+
+    void finishAsync (Message& m) {
+        uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
+        m.mLen = finishReq((Pin&) m.mTag, mode, m.mPtr, len);
+        reply(&m);
     }
 
     bool interrupt (int) override {
@@ -278,13 +297,22 @@ struct SpiCall : SpiSync<A,D,T,R> {
     using BASE = SpiSync<A,D,T,R>;
     using BASE::SpiSync; // constructor
 
+    uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
+        auto p = (uint8_t const*) cmd;
+        int8_t n = *p++;
+        auto r = transfer(n < 0 ? BASE::W1 : BASE::R1, (uint8_t*) p, n & 0x7F);
+        transfer(n < 0 ? BASE::W2 : BASE::R2, buf, len);
+        return r;
+    }
+
     uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
         return transfer(BASE::nsel, m, p, n);
     }
 
-    uint8_t transfer (Pin a, uint8_t m, void* p, uint8_t n) const {
-        assert((n >> 13) == 0);
-        uint16_t len = (m<<13) | n;
+    // async version, dma with sys::call
+    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
+        assert((n >> BASE::LEN_BITS) == 0);
+        uint16_t len = (m << BASE::LEN_BITS) | n;
         Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
         return msg.mLen;

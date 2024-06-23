@@ -10,8 +10,8 @@ int main () {
     initBoard("spi");
 
     //SpiGpio spi;
-    SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
-    //SpiSync<SPI_TYPE> spi (SPI_CONF);
+    //SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
+    SpiSync<SPI_TYPE> spi (SPI_CONF);
     //SpiCall<SPI_TYPE> spi (SPI_CONF);
 
     spi.init(SPI_PINS, 85'000);
@@ -20,8 +20,12 @@ int main () {
     uint8_t buf [512];
 
     cycles::clear();
-    spif.wipe();
-    logf("wiped in %d ms", cycles::millis());
+    spif.erase(0);
+    logf("erased in %d ms", cycles::millis());
+
+    memset(buf, 0x55, sizeof buf);
+    spif.read(0, buf, sizeof buf);
+    logDump(buf, 16, "read");
 
     for (auto i = 0U; i < sizeof buf; ++i)
         buf[i] = ~i;
@@ -34,14 +38,15 @@ int main () {
         //spif.serNum(buf);
         //logDump(buf, 8);
 
+        memset(buf, 0xAA, sizeof buf);
         cycles::clear();
         spif.read(seq, buf, sizeof buf);
         auto t = cycles::count();
-        logDump(buf, 16, "read");
+        logDump(buf, 16);
 
-        logf("\t\t\t id %06x, %6d kB, %6d cy, #%d",
+        logf("\t\t\t\t\t id %06x, %6d kB, %6d cy, #%d",
                 spif.devId(), spif.size(), t, ++seq);
 
-        sys::wait(10'000);
+        sys::wait(5'000);
     }
 }
