@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("spi");
+    initBoard("spif");
 
     //SpiGpio spi;
     //SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);

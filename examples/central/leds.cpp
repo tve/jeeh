@@ -5,7 +5,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-constexpr Pin nrst ("F11");
 constexpr Pin dio0 ("A4");
 constexpr Pin dio1 ("B0");
 constexpr Pin dio2 ("B11");

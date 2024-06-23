@@ -1,5 +1,6 @@
 // Hardware random number generator.
 
+#if !(STM32F1 | STM32L0)
 namespace jeeh::rng {
 
 enum { CRRCR=0x98 };
@@ -58,3 +59,4 @@ struct Permutation {
 };
 
 } // namespace jeeh::rng
+#endif // !(STM32F1 | STM32L0)

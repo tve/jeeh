@@ -6,10 +6,24 @@
 using namespace jeeh;
 #include "defs.h"
 
-template< typename SPI >
-void radioTest (SPI& spi) {
-    auto khz = 10'000;
-    spi.init(SPI_PINS, khz);
+int main () {
+    initBoard("poll"); // in defs.h
+
+#if STM32F1
+    AFIO[0x04](24,3) = 2;
+#endif
+
+#if USE_GPIO
+    SpiGpio spi;
+#elif USE_POLL
+    SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
+#elif USE_SYNC
+    SpiSync<SPI_TYPE> spi (SPI_CONF);
+#elif USE_CALL
+    SpiCall<SPI_TYPE> spi (SPI_CONF);
+#endif
+
+    spi.init(SPI_PINS, 10'000);
 
     nrst = 1;
     sys::wait(10);
@@ -63,36 +77,5 @@ void radioTest (SPI& spi) {
         u = t;
     }
 
-    spi.deinit();
-}
-
-int main () {
-    initBoard("poll"); // in defs.h
-
-#if STM32F1
-    AFIO[0x04](24,3) = 2;
-#endif
-
-    SpiCall<SPI_TYPE> spi2 (SPI_CONF);
-
-    if (1) {
-        logf("\n>>> SpiGpio: bit-banged");
-        SpiGpio spi;
-        radioTest(spi);
-    }
-    if (1) {
-        logf("\n>>> SpiPoll: polled h/w regs");
-        auto& spi = (SpiPoll<SPI_NAME.ADDR>&) spi2;
-        radioTest(spi);
-    }
-    if (1) {
-        logf("\n>>> SpiSync: sync wfe loop");
-        auto& spi = (SpiSync<SPI_TYPE>&) spi2;
-        radioTest(spi);
-    }
-    if (1) {
-        logf("\n>>> SpiCall: async msg call");
-        radioTest(spi2);
-    }
     logf("\n>>> done");
 }
