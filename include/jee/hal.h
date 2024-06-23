@@ -17,22 +17,28 @@ struct BusDev {
     template< typename ...A >
     auto transfer (A... a) const { return bus.transfer(id, a...); }
 
-    int32_t read (uint8_t r) const {
+    template< typename T >
+    int32_t read (T r) const {
         uint32_t v = 0;
-        return read(r, &v, 1) ? v : -1;
+        return read(r, &v, sizeof (T)) ? v : -1;
         return v;
     }
 
-    bool read (uint8_t r, void* p, uint8_t n) const {
-        return transfer(bus.R1, &r, 1) && transfer(bus.R2, p, n);
+    template< typename T >
+    bool read (T r, void* p, uint8_t n) const {
+        return transfer(bus.R1, &r, sizeof (T))
+            && transfer(bus.R2, p, n);
     }
 
-    bool write (uint8_t r, uint8_t v) const {
-        return write(r, &v, 1);
+    template< typename T >
+    bool write (T r, uint8_t v) const {
+        return write(r, &v, sizeof (T));
     }
 
-    bool write (uint8_t r, void const* p, uint8_t n) const {
-        return transfer(bus.W1, &r, 1) && transfer(bus.W2, (void*) p, n);
+    template< typename T >
+    bool write (T r, void const* p, uint8_t n) const {
+        return transfer(bus.W1, &r, sizeof (T))
+            && transfer(bus.W2, (void*) p, n);
     }
 };
 

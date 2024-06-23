@@ -14,7 +14,7 @@ int main () {
     //I2cGpio i2c;
     //I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
     I2cSync<I2C_TYPE> i2c (I2C_CONF);
-    //i2cCall<I2C_TYPE> i2c (I2C_CONF);
+    //I2cCall<I2C_TYPE> i2c (I2C_CONF);
     i2c.init(I2C_PINS, 1000);
 #else // TODO
     I2cWrap<I2cGpio> vi2c;

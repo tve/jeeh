@@ -1,3 +1,5 @@
+// see examples/i2c/fram.cpp
+
 namespace jeeh {
 
 // polled H/W version (see I2cGpio for bit-banged version)
@@ -23,10 +25,17 @@ struct I2cPoll {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
-        switch (khz) { // TODO magic! L432 @ 80 MHz
+        switch (khz) {
+#if STM32G4 // TODO magic! G431 @ 170 MHz
+            case 100:  I2C[TIMINGR] = 0x30A0'A7FB; break;
+            case 400:  I2C[TIMINGR] = 0x1080'2D9B; break;
+            case 1000: I2C[TIMINGR] = 0x0080'2172; break;
+#endif
+#if STM32L4 // TODO magic! L432 @ 80 MHz
             case 100:  I2C[TIMINGR] = 0x1090'9CEC; break;
             case 400:  I2C[TIMINGR] = 0x0070'2991; break;
             case 1000: I2C[TIMINGR] = 0x0030'0F33; break;
+#endif
             default:   fail();
         }
         I2C[CR1](0) = 1; // PE
@@ -165,8 +174,8 @@ private:
 #define DMAMUX DMAMUX1
 #endif
 #if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*cfg.rxChan] = cfg.rxReq;
-        DMAMUX[32*cfg.dma+4*cfg.txChan] = cfg.txReq;
+        DMAMUX[32*cfg.dma+4*T] = cfg.rxReq;
+        DMAMUX[32*cfg.dma+4*R] = cfg.txReq;
 #elif STM32L0 | STM32L4
         DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
         DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
