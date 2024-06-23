@@ -1,9 +1,9 @@
 namespace jeeh {
 
 // polled H/W version (see SpiGpio for bit-banged version)
-template< uint32_t A >
+template< uint32_t A, typename P =Pin >
 struct SpiPoll {
-    using ID = Pin;
+    using ID = P;
 
     enum { R1, W1, R2, W2 };
 
@@ -16,7 +16,7 @@ struct SpiPoll {
     };
 
     Config const cfg;
-    Pin nsel;
+    P nsel;
 
     SpiPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
@@ -42,8 +42,8 @@ struct SpiPoll {
 
     void deinit () { RCC(cfg.ena, 1) = 0; }
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
+    void enable () const { nsel.clear(); }
+    void disable () const { nsel.set(); }
 
     int rwByte (int v) const {
         SPI.byte(DR) = v;
@@ -67,10 +67,10 @@ struct SpiPoll {
         return transfer(nsel, m, p, n);
     }
 
-    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
+    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
         if (m <= W1)
-            a = 0; // enable
+            a.clear(); // enable
 
         if (n > 0) {
             auto q = (uint8_t*) p;
@@ -98,15 +98,15 @@ struct SpiPoll {
         }
 
         if (m >= R2)
-            a = 1; // disable
+            a.set(); // disable
         return r;
     }
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
-template< uint32_t A, uint32_t D, int T, int R >
-struct SpiSync : SpiPoll<A>, Device {
-    using BASE = SpiPoll<A>;
+template< uint32_t A, uint32_t D, int T, int R, typename P =Pin >
+struct SpiSync : SpiPoll<A,P>, Device {
+    using BASE = SpiPoll<A,P>;
     using BASE::SpiPoll; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
@@ -160,7 +160,7 @@ struct SpiSync : SpiPoll<A>, Device {
     }
 
     // sync version, dma with wfe
-    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
+    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
         startReq(a, m, p, n);
         if (n > 0)
             while (DTX[CCR](0) || DRX[CCR](0)) // EN
@@ -174,9 +174,9 @@ protected:
 private:
     Chain msgs;
 
-    void startReq (Pin a, uint8_t m, void* p, uint16_t n) const {
+    void startReq (P a, uint8_t m, void* p, uint16_t n) const {
         if (m <= BASE::W1)
-            a = 0; // enable
+            a.clear(); // enable
         if (n == 0)
             return;
 
@@ -192,9 +192,9 @@ private:
         }
     }
 
-    uint8_t finishReq (Pin a, uint8_t m, void* p, uint16_t n) const {
+    uint8_t finishReq (P a, uint8_t m, void* p, uint16_t n) const {
         if (m >= BASE::R2)
-            a = 1; // disable
+            a.set(); // disable
         if (m == BASE::R2)
             cache::inval(p, n);
         uint8_t r;
@@ -252,14 +252,14 @@ private:
 
     void startAsync (Message& m) {
         uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
-        startReq((Pin&) m.mTag, mode, m.mPtr, len);
+        startReq((P&) m.mTag, mode, m.mPtr, len);
         if (len == 0)
             finish(); // this may be recursive
     }
 
     void finishAsync (Message& m) {
         uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
-        m.mLen = finishReq((Pin&) m.mTag, mode, m.mPtr, len);
+        m.mLen = finishReq((P&) m.mTag, mode, m.mPtr, len);
         reply(&m);
     }
 
@@ -292,9 +292,9 @@ private:
     }
 };
 
-template< uint32_t A, uint32_t D, int T, int R >
-struct SpiCall : SpiSync<A,D,T,R> {
-    using BASE = SpiSync<A,D,T,R>;
+template< uint32_t A, uint32_t D, int T, int R, typename P =Pin >
+struct SpiCall : SpiSync<A,D,T,R,P> {
+    using BASE = SpiSync<A,D,T,R,P>;
     using BASE::SpiSync; // constructor
 
     uint8_t rwCmd (void const* cmd, uint8_t* buf =0, uint16_t len =0) {
@@ -310,7 +310,7 @@ struct SpiCall : SpiSync<A,D,T,R> {
     }
 
     // async version, dma with sys::call
-    uint8_t transfer (Pin a, uint8_t m, uint8_t* p, uint16_t n) const {
+    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
         assert((n >> BASE::LEN_BITS) == 0);
         uint16_t len = (m << BASE::LEN_BITS) | n;
         Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };

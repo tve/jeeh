@@ -11,13 +11,14 @@ struct Pin {
     constexpr auto reg (int off) const { return GPIOA[0x400*port()+off]; }
 
     auto read () const { return reg(IDR)(pin()); }
-
     void write (int v) const {
         if constexpr (GPIOA.CAN_BIT_BAND)
             reg(ODR)(pin()) = v;
         else
             reg(BSRR) = ((1<<16) | (v&1)) << pin();
     }
+    void set () const { write(1); }
+    void clear () const { write(0); }
 
     // shorthand
     [[gnu::always_inline]]
