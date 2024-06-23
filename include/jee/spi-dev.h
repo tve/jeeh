@@ -3,11 +3,9 @@
 namespace jeeh {
 
 // polled H/W version (see SpiGpio for bit-banged version)
-template< uint32_t A, typename P =Pin >
+template< uint32_t A >
 struct SpiPoll {
-    using ID = P;
-
-    enum { R1, W1, R2, W2 };
+    using ID = Pin;
 
     static constexpr IoReg<A> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
@@ -18,7 +16,7 @@ struct SpiPoll {
     };
 
     Config const cfg;
-    P nsel;
+    Pin nsel;
 
     SpiPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
@@ -53,15 +51,11 @@ struct SpiPoll {
         return SPI.byte(DR);
     }
 
-    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
-        return transfer(nsel, m, p, n);
-    }
-
-    virtual uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const {
+    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
         if (n > 0) {
             auto q = (uint8_t*) p;
-            if (m != R2) {
+            if (w) {
                 SPI.byte(DR) = *q++;
                 while (--n != 0) {
                     while (!SPI[SR](1)) {} // ~TXE
@@ -88,9 +82,9 @@ struct SpiPoll {
 };
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
-template< uint32_t A, uint32_t D, int T, int R, typename P =Pin >
-struct SpiSync : SpiPoll<A,P>, Device {
-    using BASE = SpiPoll<A,P>;
+template< uint32_t A, uint32_t D, int T, int R >
+struct SpiSync : SpiPoll<A>, Device {
+    using BASE = SpiPoll<A>;
     using BASE::SpiPoll; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
@@ -132,25 +126,23 @@ struct SpiSync : SpiPoll<A,P>, Device {
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
-    using BASE::transfer;
-
-    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const override {
+    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
         if (n == 0)
             return 0;
 
-        startReq(a, m, p, n);
+        startReq(w, p, n);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
             asm ("wfe");
-        return finishReq(a, m, p, n);
+        return finishReq(w, p, n);
     }
 
 protected:
-    constexpr static auto LEN_BITS = 13, LEN_MASK = (1<<(LEN_BITS+1)) - 1;
+    constexpr static auto LEN_BITS = 14, LEN_MASK = (1<<(LEN_BITS+1)) - 1;
 
 private:
     Chain msgs;
 
-    void startReq (P a, uint8_t m, void* p, uint16_t n) const {
+    void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
         cache::clean(p, n);
@@ -158,15 +150,15 @@ private:
         DTX[CNDTR] = n;
         DTX[CCR](0) = 1; // EN
 
-        if (m == BASE::R2) {
+        if (!w) {
             DRX[CMAR] = (uintptr_t) p;
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
         }
     }
 
-    uint8_t finishReq (P a, uint8_t m, void* p, uint16_t n) const {
-        if (m == BASE::R2)
+    uint8_t finishReq (bool w, void* p, uint16_t n) const {
+        if (!w)
             cache::inval(p, n);
         uint8_t r;
         do
@@ -208,7 +200,6 @@ private:
 
     // async version, started from a msg
     void start (Message& m) override {
-        static_assert(sizeof (P) == 1); // P must fit in mTag
         if (!msgs.append(m))
             startAsync(m);
     }
@@ -217,24 +208,18 @@ private:
         auto mp = msgs.pull();
         if (mp == nullptr)
             return;
-        finishAsync(*mp);
+        mp->mLen = finishReq(mp->mTag, mp->mPtr, mp->mLen);
+        reply(mp);
 assert(msgs.isEmpty()); // TODO
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {
-        uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
-        if (len > 0)
-            startReq((P&) m.mTag, mode, m.mPtr, len);
+        if (m.mLen > 0)
+            startReq(m.mTag, m.mPtr, m.mLen);
         else
             finish(); // this may be recursive
-    }
-
-    void finishAsync (Message& m) {
-        uint8_t mode = m.mLen >> LEN_BITS, len = m.mLen & LEN_MASK;
-        m.mLen = finishReq((P&) m.mTag, mode, m.mPtr, len);
-        reply(&m);
     }
 
     bool interrupt (int) override {
@@ -263,20 +248,14 @@ assert(msgs.isEmpty()); // TODO
     }
 };
 
-template< uint32_t A, uint32_t D, int T, int R, typename P =Pin >
-struct SpiCall : SpiSync<A,D,T,R,P> {
-    using BASE = SpiSync<A,D,T,R,P>;
+template< uint32_t A, uint32_t D, int T, int R >
+struct SpiCall : SpiSync<A,D,T,R> {
+    using BASE = SpiSync<A,D,T,R>;
     using BASE::SpiSync; // constructor
 
     // async version, dma with sys::call
-    using BASE::transfer;
-
-    uint8_t transfer (P a, uint8_t m, uint8_t* p, uint16_t n) const override {
-        assert((n >> BASE::LEN_BITS) == 0);
-        uint16_t len = (m << BASE::LEN_BITS) | n;
-        Message msg { BASE::dId, (uint8_t&) a, len, (uint8_t*) p };
-logf("SA t%02x m%d n%d p%p", msg.mTag, m, n, p);
-if (m == BASE::R1) logDump(p, n > 0 && n < 8 ? n : 8);
+    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
+        Message msg { BASE::dId, w, n, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
         return msg.mLen;
     }

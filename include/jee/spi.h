@@ -8,8 +8,6 @@ struct SpiGpio {
     uint8_t cpol =0;
     BusDev<SpiGpio> dev {*this, Pin{}};
 
-    enum { R1, W1, R2, W2 };
-
     void init (char const* desc, int khz =10'000) {
         Pin::config(desc, &mosi, 4);
         disable(); // start with NSEL high
@@ -40,21 +38,15 @@ struct SpiGpio {
         return r;
     }
 
-    uint8_t transfer (uint8_t m, uint8_t* p, uint16_t n) const {
+    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
-        if (m <= W1)
-            enable();
-
         auto q = (uint8_t*) p;
-        if (m != R2)
+        if (w)
             for (auto i = 0U; i < n; ++i)
                 r = rwByte(*q++); // return last byte from reply
         else
             for (auto i = 0U; i < n; ++i)
                 *q++ = rwByte(0);
-
-        if (m >= R2)
-            disable();
         return r;
     }
 

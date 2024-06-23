@@ -9,9 +9,9 @@ uint8_t rwCmd (SPI& spi, void const* cmd, uint8_t* buf =0, uint16_t len =0) {
     int8_t nCmd = *ptr++ & 0x7F;
 
     spi.enable();
-    auto r = nCmd > 0 ? spi.transfer(send ? spi.W1 : spi.R1, ptr, nCmd) : 0;
+    auto r = nCmd > 0 ? spi.transfer(true, ptr, nCmd) : 0;
     if (len > 0)
-        spi.transfer(send ? spi.W2 : spi.R2, buf, len);
+        spi.transfer(send, buf, len);
     spi.disable();
     return r;
 }
