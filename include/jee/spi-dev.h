@@ -210,7 +210,6 @@ private:
             return;
         mp->mLen = finishReq(mp->mTag, mp->mPtr, mp->mLen);
         reply(mp);
-assert(msgs.isEmpty()); // TODO
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }

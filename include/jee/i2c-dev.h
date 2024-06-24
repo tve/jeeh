@@ -202,11 +202,11 @@ private:
 
     void finish () override {
         auto mp = msgs.pull();
-        if (mp != nullptr) {
-            if (mp->mPtr != nullptr)
-                cache::inval(mp->mPtr, mp->mLen);
-            reply(mp);
-        }
+        if (mp == nullptr)
+            return;
+        if (mp->mPtr != nullptr)
+            cache::inval(mp->mPtr, mp->mLen);
+        reply(mp);
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }

@@ -7,19 +7,13 @@ using namespace jeeh;
 
 int main () {
     initBoard("imu");
-
-    // one I2C bus, several implementations
-    I2cGpio i2c;
-    //I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
-    //I2cSync<I2C_TYPE> i2c (I2C_CONF);
-    //i2cCall<I2C_TYPE> i2c (I2C_CONF);
+    i2c.init(I2C_PINS, 400);
 
     // three I2C devices
     I2cDev hmc5883 {i2c, 0x1E};
     I2cDev adxl345 {i2c, 0x53};
     I2cDev itg3200 {i2c, 0x68};
 
-    i2c.init(I2C_PINS);
     uint8_t buf [6];
 
     hmc5883.write(0, 0x18); // 75 Hz

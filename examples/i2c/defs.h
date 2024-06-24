@@ -36,13 +36,15 @@ I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #endif
 
 void initBoard (char const* app) {
-    //fastClock();
+#if !STM32G4 // FIXME
+    fastClock();
+#endif
     led.mode("P");  // push-pull output
 
     rtc::init(false);
     cycles::init();
 
-    uart.init(UART_PINS, 1000000, { UART_NAME.ADDR, ena::UART_NAME,
+    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", SVDNAME, app, SystemCoreClock / 1'000'000);
 }

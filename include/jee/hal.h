@@ -15,27 +15,33 @@ struct I2cDev {
     template< typename ...A >
     auto transfer (A... a) const { return i2c.transfer(id, a...); }
 
-    template< typename T >
-    int32_t read (T r) const {
+    // one byte address, single-byte data
+    int32_t read (uint8_t r) const {
         uint32_t v = 0;
-        return read(r, &v, sizeof (T)) ? v : -1;
+        return read(r, &v, 1) ? v : -1;
         return v;
     }
+    bool write (uint8_t r, uint8_t v) const {
+        return write(r, &v, 1);
+    }
 
-    template< typename T >
-    bool read (T r, void* p, uint8_t n) const {
-        return transfer(i2c.R1, &r, sizeof (T))
+    // one byte address, to/from buffer
+    bool read (uint8_t r, void* p, uint8_t n) const {
+        return transfer(i2c.R1, &r, 1)
             && transfer(i2c.R2, p, n);
     }
-
-    template< typename T >
-    bool write (T r, uint8_t v) const {
-        return write(r, &v, sizeof (T));
+    bool write (uint8_t r, void const* p, uint8_t n) const {
+        return transfer(i2c.W1, &r, 1)
+            && transfer(i2c.W2, (void*) p, n);
     }
 
-    template< typename T >
-    bool write (T r, void const* p, uint8_t n) const {
-        return transfer(i2c.W1, &r, sizeof (T))
+    // two byte address, to/from buffer
+    bool read16 (uint16_t r, void* p, uint8_t n) const {
+        return transfer(i2c.R1, &r, 2)
+            && transfer(i2c.R2, p, n);
+    }
+    bool write16 (uint16_t r, void const* p, uint8_t n) const {
+        return transfer(i2c.W1, &r, 2)
             && transfer(i2c.W2, (void*) p, n);
     }
 };

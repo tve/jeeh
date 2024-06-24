@@ -9,12 +9,12 @@ I2cDev fram { i2c, 0x50 };
 
 void read32 (uint16_t addr, void* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian
-    fram.read(addr, ptr, 32);
+    fram.read16(addr, ptr, 32);
 }
 
 void write32 (uint16_t addr, void const* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian
-    fram.write(addr, ptr, 32);
+    fram.write16(addr, ptr, 32);
 }
 
 int main () {
@@ -22,7 +22,7 @@ int main () {
 
     i2c.init(I2C_PINS, 1000);
 
-#if USE_GPIO
+#if MODE_GPIO
     i2c.detect();
 
     // read FRAM's device ID, MB85RC256V.pdf p10
