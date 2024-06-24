@@ -23,7 +23,7 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_CALL (1)
+#define MODE_CALL 1
 
 #if MODE_GPIO
 SpiGpio spi;

@@ -178,8 +178,7 @@ def parseSvd():
 
     svdInfo['defines'] = [f'#define STM32   1',
                           f'#define {svdName[:7]} 1',
-                          f'#define SVDNAME "{svdName}"',
-                          f'#define PIOENV  "{projEnv}"']
+                          f'#define SVDNAME "{svdName}"']
     svdInfo['ioregs'] = sorted(ioregs, key=lambda s: natsort(s[28:]))
     svdInfo['irqs'] = ['%-22s = %3s,' % (t, irqs[t]) \
                             for t in sorted(irqs, key=natsort)] + \
@@ -192,5 +191,8 @@ def SVD(block, name):
     if name not in svdInfo:
         parseSvd()
     return svdInfo[name]
+
+def PIO(block):
+    return [f'#define PIOENV  "{projEnv}"']
 
 #-----------------------------------------------------------------------------
