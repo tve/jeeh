@@ -9,7 +9,6 @@ using namespace jeeh;
 int main () {
     initBoard();
     auto mhz = SystemCoreClock / 1'000'000;
-    printf("%s: lcd @ %d MHz\n", SVDNAME, mhz);
 
     initFmcPins();
     auto sdRam = initSdRam();

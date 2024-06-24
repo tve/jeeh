@@ -12,7 +12,6 @@ static uint8_t font [95][16] = {
 
 int main () {
     initBoard();
-    printf("%s: lcd @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 
     initFmcPins();
     auto sdRam = initSdRam();

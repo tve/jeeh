@@ -64,7 +64,7 @@ void espPower (bool on) {
     Pin::config(on ? "D3:F" : "D3:P"); // ESP8266 CH_PD, power down
 }
 
-void initBoard (char const* app) {
+void initBoard () {
     fastClock();
 
     Pin::config(RFM69_DIOS, dios, sizeof dios);
@@ -82,7 +82,7 @@ void initBoard (char const* app) {
     uart.init(UART_PINS, 1'000'000,
                 { UART_NAME.ADDR, ena::UART_NAME,
                   UART_FREQ, Irq::UART_NAME, UART_CONF });
-    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 
     // loopback uart
     uart_l.init(UART_L_PINS, SystemCoreClock / 32,

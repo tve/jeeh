@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("oled");
+    initBoard();
     i2c.init(I2C_PINS, 1000);
 
 #if 0 // TODO

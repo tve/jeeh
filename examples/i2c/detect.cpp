@@ -6,7 +6,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("detect");
+    initBoard();
 
     I2cGpio i2c;
     i2c.init(I2C_PINS, 1);

@@ -8,7 +8,7 @@ using namespace jeeh;
 #include <jee/util/memtest.h>
 
 int main () {
-    initBoard("wifi"); // in defs.h
+    initBoard(); // in defs.h
     espPower(true); // this generates a greeting after a few seconds
 
     logf("Connected ...");

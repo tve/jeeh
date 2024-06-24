@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("spif");
+    initBoard();
 
     spi.init(SPI_PINS, 85'000);
     SpiFlash spif (spi);

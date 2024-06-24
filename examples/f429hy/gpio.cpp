@@ -8,7 +8,6 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    printf("%s @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
 
     { // I2C bus PH5+PH4
         I2cGpio i2c;

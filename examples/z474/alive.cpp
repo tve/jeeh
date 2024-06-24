@@ -23,7 +23,7 @@ struct Kicker {
 };
 
 int main () {
-    initBoard("alive");
+    initBoard();
 
     logf("reset %d", dog::resetCause());
 

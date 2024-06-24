@@ -37,7 +37,7 @@ void lcdCmd () {
 }    
 
 int main () {
-    initBoard("lcd"); // in defs.h
+    initBoard(); // in defs.h
     initFsmcPins();
 
     initLcd();

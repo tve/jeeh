@@ -21,7 +21,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
     _write(1, (char*) ptr, len);
 }
 
-void initBoard (char const* app) {
+void initBoard () {
     fastClock();
     led.mode("P");
     rtc::init();
@@ -29,5 +29,5 @@ void initBoard (char const* app) {
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
 
-    printf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }

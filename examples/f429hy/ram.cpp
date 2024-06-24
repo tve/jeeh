@@ -8,7 +8,6 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    logf("%s: ram @ %d MHz", SVDNAME, SystemCoreClock / 1'000'000);
 
     initFmcPins();
     auto psRam = initPsRam();

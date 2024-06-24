@@ -35,7 +35,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
     sys::call(m);
 }
 
-void initBoard (char const* app) {
+void initBoard () {
     //fastClock(false);
     Pin::config(RFM69_DIOS, dios, sizeof dios);
     nrst.mode("P");
@@ -45,5 +45,5 @@ void initBoard (char const* app) {
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
-    logf("\n%s: %s @ %d MHz\n", SVDNAME, app, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }

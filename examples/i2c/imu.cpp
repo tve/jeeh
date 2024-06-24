@@ -6,7 +6,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("imu");
+    initBoard();
     i2c.init(I2C_PINS, 400);
 
     // three I2C devices

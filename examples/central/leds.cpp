@@ -12,7 +12,7 @@ constexpr Pin dio3 ("H4");
 constexpr Pin dio5 ("H5");
 
 int main () {
-    initBoard("leds"); // in defs.h
+    initBoard(); // in defs.h
 
     Pin pins [12];
     Pin::config("A4:P,F11,I0,I1,C2,C3,"

@@ -178,7 +178,8 @@ def parseSvd():
 
     svdInfo['defines'] = [f'#define STM32   1',
                           f'#define {svdName[:7]} 1',
-                          f'#define SVDNAME "{svdName}"']
+                          f'#define SVDNAME "{svdName}"',
+                          f'#define PIOENV  "{projEnv}"']
     svdInfo['ioregs'] = sorted(ioregs, key=lambda s: natsort(s[28:]))
     svdInfo['irqs'] = ['%-22s = %3s,' % (t, irqs[t]) \
                             for t in sorted(irqs, key=natsort)] + \

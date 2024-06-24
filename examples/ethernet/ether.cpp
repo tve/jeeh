@@ -23,7 +23,7 @@ int main () {
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
     consoleWriter = uartWriter<'U'>;
 
-    printf("%s: ether @ %u MHz\n", SVDNAME, SystemCoreClock/1'000'000);
+    printf("%s: %s @ %u MHz\n", PIOENV, SVDNAME, SystemCoreClock/1'000'000);
 
     const auto MHZ = SystemCoreClock/1'000'000;
 

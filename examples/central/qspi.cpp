@@ -8,7 +8,7 @@ using namespace jeeh;
 #include "qspi.h"
 
 int main () {
-    initBoard("qspi"); // in defs.h
+    initBoard(); // in defs.h
 
     printf("%d kB @ 0x%08x\n", 1<<(qspi::fsize-10), qspi::addr);
 

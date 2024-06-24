@@ -6,7 +6,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("blink");
+    initBoard();
 
     while (true) {
         logf("%d", rtc::getSecs());

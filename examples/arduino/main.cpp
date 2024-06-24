@@ -21,7 +21,7 @@ void setup() {
 #if ARDUINO
     Serial.begin(115'200);
 #endif
-    printf("???\r%s @ %d MHz\n", SVDNAME, SystemCoreClock / 1'000'000);
+    printf("\n%s: %s @ %d MHz\n", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
     led.mode("P"); // push-pull output
 }
 

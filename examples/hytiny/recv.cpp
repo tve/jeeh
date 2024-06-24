@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard("poll"); // in defs.h
+    initBoard(); // in defs.h
 
 #if STM32F1
     AFIO[0x04](24,3) = 2;

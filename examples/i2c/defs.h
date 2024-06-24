@@ -23,7 +23,7 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_SYNC 1
+#define MODE_GPIO 1
 
 #if MODE_GPIO
 I2cGpio i2c;
@@ -35,7 +35,7 @@ I2cSync<I2C_TYPE> i2c (I2C_CONF);
 I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #endif
 
-void initBoard (char const* app) {
+void initBoard () {
     fastClock();
     led.mode("P");
     cycles::init();
@@ -43,7 +43,7 @@ void initBoard (char const* app) {
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });
-    logf("\n%s: %s @ %d MHz", SVDNAME, app, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
 extern "C" int _write (int, char* ptr, int len) {
