@@ -10,6 +10,9 @@
 #define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
 //CG]
 
+constexpr Pin led (LED);
+inline Uart uart ('U');
+
 //CG[ board spi
 #define SPI_NAME  SPI1
 #define SPI_PINS  "B5:H5,B4,B3,A11:HP"
@@ -18,8 +21,18 @@
 #define SPI_CONF  { ena::SPI1,170,Irq::DMA1_CH3,Irq::DMA1_CH4,1-1,11,10 }
 //CG]
 
-constexpr Pin led (LED);
-inline Uart uart ('U');
+//CG1 board mode
+#define MODE_CALL (1)
+
+#if MODE_GPIO
+SpiGpio spi;
+#elif MODE_POLL
+SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
+#elif MODE_SYNC
+SpiSync<SPI_TYPE> spi (SPI_CONF);
+#elif MODE_CALL
+SpiCall<SPI_TYPE> spi (SPI_CONF);
+#endif
 
 void initBoard (char const* app) {
     fastClock();

@@ -5,18 +5,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-#if USE_GPIO
-I2cGpio i2c;
-#elif USE_POLL
-I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
-#elif USE_SYNC
-I2cSync<I2C_TYPE> i2c (I2C_CONF);
-#elif USE_CALL
-I2cCall<I2C_TYPE> i2c (I2C_CONF);
-#else
-#error "no USE_<TYPE> defined"
-#endif
-
 I2cDev fram { i2c, 0x50 };
 
 void read32 (uint16_t addr, void* ptr) {

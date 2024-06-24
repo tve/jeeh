@@ -10,6 +10,9 @@
 #define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
 //CG]
 
+constexpr Pin led (LED);
+inline Uart uart ('U');
+
 //CG[ board i2c
 #define I2C_NAME  I2C1
 #define I2C_PINS  "B7:OH4,A15"
@@ -18,8 +21,18 @@
 #define I2C_CONF  { ena::I2C1,170,Irq::I2C1_EV,Irq::I2C1_ER,1-1,17,16 }
 //CG]
 
-constexpr Pin led (LED);
-inline Uart uart ('U');
+//CG1 board mode
+#define MODE_CALL (1)
+
+#if MODE_GPIO
+I2cGpio i2c;
+#elif MODE_POLL
+I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+#elif MODE_SYNC
+I2cSync<I2C_TYPE> i2c (I2C_CONF);
+#elif MODE_CALL
+I2cCall<I2C_TYPE> i2c (I2C_CONF);
+#endif
 
 void initBoard (char const* app) {
     //fastClock();

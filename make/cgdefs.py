@@ -97,6 +97,8 @@ def BOARD(block, name, suffix=''):
     n = name.upper() + suffix
     r = []
     for x in info:
+        if ':' not in x:
+            x += ':1'
         k, v = x.split(':', 1)
         k = k.upper()
         if v[0].isdigit():

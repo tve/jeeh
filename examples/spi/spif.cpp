@@ -9,16 +9,6 @@ using namespace jeeh;
 int main () {
     initBoard("spif");
 
-#if USE_GPIO
-    SpiGpio spi;
-#elif USE_POLL
-    SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
-#elif USE_SYNC
-    SpiSync<SPI_TYPE> spi (SPI_CONF);
-#elif USE_CALL
-    SpiCall<SPI_TYPE> spi (SPI_CONF);
-#endif
-
     spi.init(SPI_PINS, 85'000);
     SpiFlash spif (spi);
 

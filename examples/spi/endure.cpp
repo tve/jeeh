@@ -9,11 +9,6 @@ using namespace jeeh;
 int main () {
     initBoard("endure");
 
-    //SpiGpio spi;
-    SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
-    //SpiSync<SPI_TYPE> spi (SPI_CONF);
-    //SpiCall<SPI_TYPE> spi (SPI_CONF);
-
     spi.init(SPI_PINS, 85'000);
     SpiFlash spif (spi);
 
