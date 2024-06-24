@@ -23,7 +23,7 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_CALL (1)
+#define MODE_SYNC 1
 
 #if MODE_GPIO
 I2cGpio i2c;
@@ -36,13 +36,10 @@ I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #endif
 
 void initBoard (char const* app) {
-#if !STM32G4 // FIXME
     fastClock();
-#endif
-    led.mode("P");  // push-pull output
-
-    rtc::init(false);
+    led.mode("P");
     cycles::init();
+    rtc::init(false);
 
     uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                     UART_FREQ, Irq::UART_NAME, UART_CONF });

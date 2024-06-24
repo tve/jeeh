@@ -98,13 +98,13 @@ def BOARD(block, name, suffix=''):
     r = []
     for x in info:
         if ':' not in x:
-            x += ':1'
-        k, v = x.split(':', 1)
-        k = k.upper()
-        if v[0].isdigit():
-            r.append(f'#define {n}_{k} ({v})')
+            r.append(f'#define {n}_{x.upper()} 1')
         else:
-            r.append(f'#define {n}_{k} "{v}"')
+            k, v = x.split(':', 1)
+            if v[0].isdigit():
+                r.append(f'#define {n}_{k.upper()} ({v})')
+            else:
+                r.append(f'#define {n}_{k.upper()} "{v}"')
     return r
 
 #-------------------------------------------------------------- Parse SVD file

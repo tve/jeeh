@@ -19,7 +19,6 @@ void write32 (uint16_t addr, void const* ptr) {
 
 int main () {
     initBoard("fram");
-
     i2c.init(I2C_PINS, 1000);
 
 #if MODE_GPIO
