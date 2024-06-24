@@ -24,13 +24,6 @@ int main () {
     SSD1306 oled1 (dev1, 64);
     SSD1306 oled2 (dev2, 32);
 
-    logf("  sizeof I2cGpio      = %2d b", sizeof (I2cGpio));
-    logf("  sizeof I2cPoll      = %2d b", sizeof (I2cPoll<I2C_NAME.ADDR>));
-    logf("  sizeof I2cSync      = %2d b", sizeof (I2cSync<I2C_TYPE>));
-    logf("  sizeof I2cCall      = %2d b", sizeof (I2cCall<I2C_TYPE>));
-    logf("  sizeof I2cDev<...>  = %2d b", sizeof (I2cDev<I2cGpio>));
-    logf("  sizeof SSD1306<...> = %2d b", sizeof (SSD1306<I2cDev<I2cGpio>>));
-
     // display a trivial pattern, just to verify that it works
     static uint8_t const data [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255

@@ -1,32 +1,31 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "fram-call"
+#define PIOENV  "detect"
 
 //CG1 board leds
-#define LED  "B8"
+#define LED  "B3"
 
 constexpr Pin led (LED);
 
 //CG[ board uart
 #define UART_NAME  USART2
-#define UART_PINS  "A2:UH7,A3"
-#define UART_FREQ  170
-#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
+#define UART_PINS  "A2:7,A15:3"
+#define UART_FREQ  80
+#define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
 //CG]
 
 inline Uart uart ('U');
 
 //CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B7:OH4,A15"
-#define I2C_FREQ  170
-#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,3-1,4-1
-#define I2C_CONF  { ena::I2C1,170,Irq::I2C1_EV,Irq::I2C1_ER,1-1,17,16 }
+#define I2C_PINS  "B7:OH4,B6"
+#define I2C_FREQ  80
+#define I2C_TYPE  I2C1.ADDR,DMA2.ADDR,7-1,6-1
+#define I2C_CONF  { ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER,2-1,5,5 }
 //CG]
 
-//CG1 board mode
-#define MODE_CALL 1
+//CG: board mode
 
 #if MODE_GPIO
 I2cGpio i2c;
