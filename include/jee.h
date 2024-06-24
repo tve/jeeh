@@ -6,8 +6,6 @@
 #include <cstdlib>
 #include <cstring>
 
-//CG: pio
-
 //CG: svd defines
 
 #ifdef NASSERT

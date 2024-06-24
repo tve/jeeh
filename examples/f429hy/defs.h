@@ -1,5 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
+//CG pio
+
 //CG[ board leds
 #define LED  "B0"
 #define LED1 "B0"

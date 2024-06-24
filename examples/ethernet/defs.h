@@ -1,3 +1,8 @@
+// Lines with "CG" control the code-generated parts of this file.
+
+//CG1 pio
+#define PIOENV  "f429hy"
+
 //CG1 board ether
 #define ETHER_PINS "A1:PH11,A2,A7,C1,C4,C5,G11,G13,G14,A8:PV0"
 

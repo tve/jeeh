@@ -1,5 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
+//CG pio
+
 //CG[ board uart
 #define UART_NAME  USART2
 #define UART_PINS  "A2:7,A15:3"
