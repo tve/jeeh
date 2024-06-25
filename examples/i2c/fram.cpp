@@ -22,7 +22,7 @@ int main () {
     i2c.init(I2C_PINS, i2cTiming(1000));
 
 #if MODE_GPIO
-    i2c.detect();
+    detect(i2c);
 
     // read FRAM's device ID, MB85RC256V.pdf p10
     i2c.start(0xF8);

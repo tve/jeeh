@@ -1,5 +1,63 @@
 namespace jeeh {
 
+template< typename I2C >
+inline void detect (I2C& i2c) {
+    for (auto i = 0; i < 128; i += 16) {
+        printf("%02x:", i);
+        for (auto j = 0; j < 16; ++j) {
+            int addr = i + j;
+            if (0x08 <= addr && addr <= 0x77) {
+                bool ack = i2c.transfer(addr, i2c.W1, nullptr, 0) &&
+                           i2c.transfer(addr, i2c.W2, nullptr, 0);
+                printf(ack ? " %02x" : " --", addr);
+            } else
+                printf("   ");
+        }
+        printf("\n");
+    }
+}
+
+template< typename I2C >
+struct I2cDev {
+    I2C& i2c;
+    uint8_t id;
+
+    I2cDev (I2C& b, uint8_t i) : i2c (b), id (i) {}
+
+    template< typename ...A >
+    auto transfer (A... a) const { return i2c.transfer(id, a...); }
+
+    // one byte address, single-byte data
+    int32_t read (uint8_t r) const {
+        uint32_t v = 0;
+        return read(r, &v, 1) ? v : -1;
+        return v;
+    }
+    bool write (uint8_t r, uint8_t v) const {
+        return write(r, &v, 1);
+    }
+
+    // one byte address, to/from buffer
+    bool read (uint8_t r, void* p, uint8_t n) const {
+        return transfer(i2c.R1, &r, 1)
+            && transfer(i2c.R2, p, n);
+    }
+    bool write (uint8_t r, void const* p, uint8_t n) const {
+        return transfer(i2c.W1, &r, 1)
+            && transfer(i2c.W2, (void*) p, n);
+    }
+
+    // two byte address, to/from buffer
+    bool read16 (uint16_t r, void* p, uint8_t n) const {
+        return transfer(i2c.R1, &r, 2)
+            && transfer(i2c.R2, p, n);
+    }
+    bool write16 (uint16_t r, void const* p, uint8_t n) const {
+        return transfer(i2c.W1, &r, 2)
+            && transfer(i2c.W2, (void*) p, n);
+    }
+};
+
 struct I2cGpio {
     using ID = uint8_t;
 
@@ -11,8 +69,6 @@ struct I2cGpio {
     void deinit () {
         Pin::config(":F,:U", &sda, 2); // keep SCL pulled up
     }
-
-    void detect () const;
 
     enum { R1, R2, W1, W2 };
 

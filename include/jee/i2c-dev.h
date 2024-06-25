@@ -9,7 +9,7 @@ struct I2cPoll {
     enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
 
     static constexpr IoReg<A> I2C {};
-    enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,
+    enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,TIMOUTR=0x14,
            ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28 };
 
     struct Config {
@@ -26,6 +26,15 @@ struct I2cPoll {
 
         RCC(cfg.ena,1) = 1;
         I2C[TIMINGR] = timing;
+
+#if 0
+        // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
+        // see table 394, p.1909 in RM0440 r8 for some suggested values
+        auto t = 12 * ((SystemCoreClock/1'000'000) / ((timing>>28) + 1));
+        assert(t < 4096);
+        I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
+#endif
+
         I2C[CR1](0) = 1; // PE
     }
 
@@ -39,24 +48,21 @@ struct I2cPoll {
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
-        if (m == R1) {
-            while (!I2C[ISR](6)) // ~TC
+        if (m != R2)
+            while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TC or ~TCR or ~STOPF
+                if (I2C[ISR](4)) { // NACKF
+                    I2C[ICR] = I2C[ISR];
+                    return false;
+                }
+                if (!I2C[ISR](15) || I2C[ISR](5)) // ~BUSY or STOPF
+                    break;
                 if (I2C[ISR](1)) // TXIS
                     I2C[TXDR] = *q++;
-        } else if (m == R2) {
+            }
+        else // R2
             while (!I2C[ISR](5)) // ~STOPF
                 if (I2C[ISR](2)) // RXNE
                     *q++ = I2C[RXDR];
-        } else if (m == W1) {
-            while (!I2C[ISR](7)) // ~TCR
-                if (I2C[ISR](1)) // TXIS
-                    I2C[TXDR] = *q++;
-        } else if (m == W2) {
-            while (!I2C[ISR](5)) // ~STOPF
-                if (I2C[ISR](1)) // TXIS
-                    I2C[TXDR] = *q++;
-        } else
-            fail();
 
         return true; // TODO
     }
@@ -64,6 +70,8 @@ struct I2cPoll {
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
         I2C[ICR] = (1<<5); // STOPCF
+        if (n == 0)
+            m |= AE;
         I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
                  | (((m&RL) != 0) << 24) // RELOAD
                  |             (n << 16) // NBYTES

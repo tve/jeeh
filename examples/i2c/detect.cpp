@@ -8,9 +8,8 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    I2cGpio i2c;
-    i2c.init(I2C_PINS, 1);
-    i2c.detect();
+    i2c.init(I2C_PINS, i2cTiming(100));
+    detect(i2c);
 
     logf("  sizeof I2cGpio      = %2d b", sizeof (I2cGpio));
     logf("  sizeof I2cPoll      = %2d b", sizeof (I2cPoll<I2C_NAME.ADDR>));

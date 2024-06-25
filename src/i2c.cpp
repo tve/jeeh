@@ -15,27 +15,6 @@ void I2cGpio::init (char const* desc, uint16_t khz) {
     rate = khz < 100 ? khz : SystemCoreClock/khz/200'000 + 1;
 }
 
-void I2cGpio::detect () const {
-    for (auto i = 0; i < 128; i += 16) {
-        printf("%02x:", i);
-        for (auto j = 0; j < 16; ++j) {
-            int addr = i + j;
-            if (0x08 <= addr && addr <= 0x77) {
-#if 0
-                bool ack = start(2*addr);
-                stop();
-#else
-                bool ack = transfer(addr, W1, nullptr, 0) &&
-                           transfer(addr, W2, nullptr, 0);
-#endif
-                printf(ack ? " %02x" : " --", addr);
-            } else
-                printf("   ");
-        }
-        printf("\n");
-    }
-}
-
 bool I2cGpio::start (uint8_t addr) const {
     sclLo();
     sclHi();
