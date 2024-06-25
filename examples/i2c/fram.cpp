@@ -19,7 +19,7 @@ void write32 (uint16_t addr, void const* ptr) {
 
 int main () {
     initBoard();
-    i2c.init(I2C_PINS, 1000);
+    i2c.init(I2C_PINS, i2cTiming(1000));
 
 #if MODE_GPIO
     i2c.detect();
@@ -35,13 +35,23 @@ int main () {
 #endif
 
     uint16_t buf [32];
+    memset(buf, 0xEE, sizeof buf);
+    for (auto i = 0; i < 3; ++i)
+        write32(32*i, buf);
 
-    for (auto i = 0; i < 5; ++i) {
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, 0x55, sizeof buf);
+        read32(32*i, buf);
+        logDump(buf, 16);
+    }
+
+    for (auto i = 0; i < 3; ++i) {
         memset(buf, i+128, sizeof buf);
         write32(32*i, buf);
     }
 
-    for (auto i = 0; i < 5; ++i) {
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, 0xAA, sizeof buf);
         read32(32*i, buf);
         logDump(buf, 16);
     }

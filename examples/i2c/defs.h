@@ -38,10 +38,13 @@ I2cSync<I2C_TYPE> i2c (I2C_CONF);
 I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #endif
 
-uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
-    switch (mhzSys) {
+uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
+#if MODE_GPIO
+    return khz; // I2cGpio estimates the delays from given khz
+#else
+    switch (mhz) {
       case 16: // MHz
-        switch (khzBus) {
+        switch (khz) {
           //CG[ i2c timing 16
           // 16 Mhz: (remove this line to re-generate)
           case  100: return 0x00504F49; // prs 0 tcd 5 tdd 0 scll 73 sclh 79
@@ -51,7 +54,7 @@ uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
         }
         break;
       case 80: // MHz
-        switch (khzBus) {
+        switch (khz) {
           //CG[ i2c timing 80
           // 80 Mhz: (remove this line to re-generate)
           case  100: return 0x10E0D4C0; // prs 1 tcd 14 tdd 0 scll 192 sclh 212
@@ -61,7 +64,7 @@ uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
         }
         break;
       case 170: // MHz
-        switch (khzBus) {
+        switch (khz) {
           //CG[ i2c timing 170
           // 170 Mhz: (remove this line to re-generate)
           case  100: return 0x3010D4C1; // prs 3 tcd 1 tdd 0 scll 193 sclh 212
@@ -72,6 +75,7 @@ uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
         break;
     }
     fail();
+#endif
 }
 
 void initBoard () {

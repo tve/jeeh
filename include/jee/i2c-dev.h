@@ -6,7 +6,7 @@ namespace jeeh {
 template< uint32_t A >
 struct I2cPoll {
     using ID = uint8_t;
-    enum { AE = 1, RL = 2, ST = 4, RD = 8 }; // used as flag bits in Mode
+    enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
 
     static constexpr IoReg<A> I2C {};
     enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,
@@ -21,23 +21,11 @@ struct I2cPoll {
 
     I2cPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, uint16_t khz =400) {
+    void init (char const* defs, uint32_t timing) {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
-        switch (khz) {
-#if STM32G4 // TODO magic! G431 @ 170 MHz
-            case 100:  I2C[TIMINGR] = 0x30A0'A7FB; break;
-            case 400:  I2C[TIMINGR] = 0x1080'2D9B; break;
-            case 1000: I2C[TIMINGR] = 0x0080'2172; break;
-#endif
-#if STM32L4 // TODO magic! L432 @ 80 MHz
-            case 100:  I2C[TIMINGR] = 0x1090'9CEC; break;
-            case 400:  I2C[TIMINGR] = 0x0070'2991; break;
-            case 1000: I2C[TIMINGR] = 0x0030'0F33; break;
-#endif
-            default:   fail();
-        }
+        I2C[TIMINGR] = timing;
         I2C[CR1](0) = 1; // PE
     }
 
@@ -47,7 +35,7 @@ struct I2cPoll {
 
     enum { R1 = ST, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
 
-    bool transfer (ID a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
@@ -75,6 +63,8 @@ struct I2cPoll {
 
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
+logf("st a%02x m%s%s%s%s n%d",
+    a, m&AE ? ".AE":"", m&RL ? ".RL":"", m&ST ? ".ST":"", m&RD ? ".RD":"", n);
         I2C[ICR] = (1<<5); // STOPCF
         I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
                  | (((m&RL) != 0) << 24) // RELOAD
@@ -113,8 +103,8 @@ struct I2cSync : I2cPoll<A>, Device {
 
     I2cSync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
-    void init (char const* defs, int khz =400) {
-        BASE::init(defs, khz);
+    void init (char const* defs, uint32_t timing) {
+        BASE::init(defs, timing);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         initDma();
@@ -131,9 +121,14 @@ struct I2cSync : I2cPoll<A>, Device {
 
     // sync versions, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+//if (n == 0) return 0;
+
         startReq(a, m, p, n);
+logf("sr %08x %08x", +I2C[BASE::ISR], +DTX[CCR]);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
+        //while (I2C[BASE::CR1](5,2)) // TCIE STOPIE
             asm ("wfe");
+logf("er");
         if (m == BASE::R2)
             cache::inval(p, n);
         return true; // TODO
@@ -144,13 +139,16 @@ protected:
         // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
         // (although it seems to work just as well the other way around?)
 
+assert(n > 0);
         if (m != BASE::R2) {
+logf("tx");
             cache::clean(p, n);
 
             DTX[CMAR] = (uintptr_t) p;
             DTX[CNDTR] = n;
             DTX[CCR](0) = 1; // EN
         } else {
+logf("rx");
             DRX[CMAR] = (uintptr_t) p;
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
@@ -158,6 +156,7 @@ protected:
 
         BASE::startReq(a, m, n);
         I2C[BASE::CR1](5,2) = 0b11; // TCIE STOPIE
+assert(DTX[CCR](0) || DRX[CCR](0));
     }
 
 private:
@@ -165,7 +164,7 @@ private:
 
     // TODO this is the same code in I2C and SPI
     void initDma () const {
-        RCC(ena::DMA1+cfg.dma, 1) = 1;
+        RCC(ena::DMA1+cfg.dma,1) = 1;
 
         // channel/stream/request setup (confusing naming differences!)
 #if STM32G4
@@ -204,19 +203,19 @@ private:
         auto mp = msgs.pull();
         if (mp == nullptr)
             return;
-        if (mp->mPtr != nullptr)
-            cache::inval(mp->mPtr, mp->mLen);
+        if ((mp->mLen >> 8) == BASE::R2)
+            cache::inval(mp->mPtr, (uint8_t) mp->mLen);
         reply(mp);
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {
-        uint8_t mode = m.mLen >> 8, len = m.mLen;
-        startReq(m.mTag, mode, m.mPtr, len);
+        startReq(m.mTag, m.mLen >> 8, m.mPtr, (uint8_t) m.mLen);
     }
 
     bool interrupt (int) override {
+{ Pin("B8") = 1; }
         I2C[BASE::CR1](5,2) = 0; // TCIE STOPIE
         DTX[CCR](0) = 0; // ~EN
         DRX[CCR](0) = 0; // ~EN

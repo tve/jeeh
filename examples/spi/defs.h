@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "endure-call"
+#define PIOENV  "spif-sync"
 
 //CG1 board leds
 #define LED  "B8"
@@ -26,7 +26,7 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_CALL 1
+#define MODE_SYNC 1
 
 #if MODE_GPIO
 SpiGpio spi;
@@ -44,8 +44,8 @@ void initBoard () {
     cycles::init();
     rtc::init(false);
 
-    uart.init(UART_PINS, 1'000'000, { UART_NAME.ADDR, ena::UART_NAME,
-                                      UART_FREQ, Irq::UART_NAME, UART_CONF });
+    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 

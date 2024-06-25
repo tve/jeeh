@@ -145,7 +145,9 @@ private:
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
-        cache::clean(p, n);
+        if (w)
+            cache::clean(p, n);
+
         DTX[CMAR] = (uintptr_t) p;
         DTX[CNDTR] = n;
         DTX[CCR](0) = 1; // EN
@@ -169,7 +171,7 @@ private:
 
     // TODO this is the same code in I2C and SPI
     void initDma () const {
-        RCC(ena::DMA1+cfg.dma, 1) = 1;
+        RCC(ena::DMA1+cfg.dma,1) = 1;
 
         // channel/stream/request setup (confusing naming differences!)
 #if STM32G4
