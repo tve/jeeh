@@ -64,7 +64,7 @@ struct I2cPoll {
                 if (I2C[ISR](2)) // RXNE
                     *q++ = I2C[RXDR];
 
-        return true; // TODO
+        return true;
     }
 
 protected:
