@@ -63,8 +63,6 @@ struct I2cPoll {
 
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
-logf("st a%02x m%s%s%s%s n%d",
-    a, m&AE ? ".AE":"", m&RL ? ".RL":"", m&ST ? ".ST":"", m&RD ? ".RD":"", n);
         I2C[ICR] = (1<<5); // STOPCF
         I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
                  | (((m&RL) != 0) << 24) // RELOAD
@@ -124,11 +122,9 @@ struct I2cSync : I2cPoll<A>, Device {
 //if (n == 0) return 0;
 
         startReq(a, m, p, n);
-logf("sr %08x %08x", +I2C[BASE::ISR], +DTX[CCR]);
         while (DTX[CCR](0) || DRX[CCR](0)) // EN
         //while (I2C[BASE::CR1](5,2)) // TCIE STOPIE
             asm ("wfe");
-logf("er");
         if (m == BASE::R2)
             cache::inval(p, n);
         return true; // TODO
@@ -139,16 +135,13 @@ protected:
         // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
         // (although it seems to work just as well the other way around?)
 
-assert(n > 0);
         if (m != BASE::R2) {
-logf("tx");
             cache::clean(p, n);
 
             DTX[CMAR] = (uintptr_t) p;
             DTX[CNDTR] = n;
             DTX[CCR](0) = 1; // EN
         } else {
-logf("rx");
             DRX[CMAR] = (uintptr_t) p;
             DRX[CNDTR] = n;
             DRX[CCR](0) = 1; // EN
