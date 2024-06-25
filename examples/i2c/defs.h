@@ -50,6 +50,16 @@ uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
           //CG]
         }
         break;
+      case 80: // MHz
+        switch (khzBus) {
+          //CG[ i2c timing 80
+          // 80 Mhz: (remove this line to re-generate)
+          case  100: return 0x10E0D4C0; // prs 1 tcd 14 tdd 0 scll 192 sclh 212
+          case  400: return 0xA0200609; // prs 10 tcd 2 tdd 0 scll 9 sclh 6
+          case 1000: return 0x10E00E11; // prs 1 tcd 14 tdd 0 scll 17 sclh 14
+          //CG]
+        }
+        break;
       case 170: // MHz
         switch (khzBus) {
           //CG[ i2c timing 170
