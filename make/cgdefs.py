@@ -195,10 +195,13 @@ def SVD(block, name):
 def PIO(block):
     return [f'#define PIOENV  "{projEnv}"']
 
-def I2C(block, khz):
-    if block and ' %s ' % khz in block[0]:
+def I2C(block, cmd, mhz):
+    assert(cmd == 'timing')
+    if block and f' {mhz} ' in block[0]:
         return [x.lstrip() for x in block]
     import i2c_timing as i2c
-    return i2c.genTimings(int(khz))
+    r = [f'// {mhz} Mhz: (remove this line to re-generate)']
+    r.extend(i2c.genTimings(int(mhz)))
+    return r
 
 #-----------------------------------------------------------------------------

@@ -1,31 +1,32 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "detect"
+#define PIOENV  "fram-poll"
 
 //CG1 board leds
-#define LED  "B3"
+#define LED  "B8"
 
 constexpr Pin led (LED);
 
 //CG[ board uart
 #define UART_NAME  USART2
-#define UART_PINS  "A2:7,A15:3"
-#define UART_FREQ  80
-#define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
+#define UART_PINS  "A2:UH7,A3"
+#define UART_FREQ  170
+#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
 //CG]
 
 inline Uart uart ('U');
 
 //CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B7:OH4,B6"
-#define I2C_FREQ  80
-#define I2C_TYPE  I2C1.ADDR,DMA2.ADDR,7-1,6-1
-#define I2C_CONF  { ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER,2-1,5,5 }
+#define I2C_PINS  "B7:OH4,A15"
+#define I2C_FREQ  170
+#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,3-1,4-1
+#define I2C_CONF  { ena::I2C1,170,Irq::I2C1_EV,Irq::I2C1_ER,1-1,17,16 }
 //CG]
 
-//CG: board mode
+//CG1 board mode
+#define MODE_POLL 1
 
 #if MODE_GPIO
 I2cGpio i2c;
@@ -36,6 +37,32 @@ I2cSync<I2C_TYPE> i2c (I2C_CONF);
 #elif MODE_CALL
 I2cCall<I2C_TYPE> i2c (I2C_CONF);
 #endif
+
+uint32_t i2cTiming (uint16_t mhzSys, uint16_t khzBus) {
+    switch (mhzSys) {
+      case 16: // MHz
+        switch (khzBus) {
+          //CG[ i2c timing 16
+          // 16 Mhz: (remove this line to re-generate)
+          case  100: return 0x00504F49; // prs 0 tcd 5 tdd 0 scll 73 sclh 79
+          case  400: return 0x00500D12; // prs 0 tcd 5 tdd 0 scll 18 sclh 13
+          case 1000: return 0x00500205; // prs 0 tcd 5 tdd 0 scll 5 sclh 2
+          //CG]
+        }
+        break;
+      case 170: // MHz
+        switch (khzBus) {
+          //CG[ i2c timing 170
+          // 170 Mhz: (remove this line to re-generate)
+          case  100: return 0x3010D4C1; // prs 3 tcd 1 tdd 0 scll 193 sclh 212
+          case  400: return 0x0050AACE; // prs 0 tcd 5 tdd 0 scll 206 sclh 170
+          case 1000: return 0x00503C49; // prs 0 tcd 5 tdd 0 scll 73 sclh 60
+          //CG]
+        }
+        break;
+    }
+    fail();
+}
 
 void initBoard () {
     fastClock();

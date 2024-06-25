@@ -21,8 +21,8 @@ characs = [ # freq fMin fMax dhMin dvMax suMin lcMin hcMin tRise tFall dnf
 valids = []
 
 def compute_presc(tClk, charac):
-    tddMin = max(charac.tFall + charac.dhMin - tdMin - ((charac.dnf+3) * tClk), 0)
-    tddMax = max(charac.dvMax - charac.tRise - tdMax - ((charac.dnf+4) * tClk), 0)
+    tddMin = max(0, charac.tFall + charac.dhMin - tdMin - (charac.dnf+3) * tClk)
+    tddMax = max(0, charac.dvMax - charac.tRise - tdMax - (charac.dnf+4) * tClk)
     tcdMin = charac.tRise + charac.suMin
 
     psPrev = 16
@@ -31,7 +31,7 @@ def compute_presc(tClk, charac):
             tcd = (scld + 1) * (ps + 1) * tClk
             if tcd >= tcdMin:
                 for sdad in range(16):
-                    tdd = (sdad * (ps + 1)) * tClk
+                    tdd = sdad * (ps + 1) * tClk
                     if tdd >= tddMin and tdd <= tddMax:
                         if ps != psPrev:
                             v = Timings()
@@ -43,9 +43,9 @@ def compute_presc(tClk, charac):
 
 def compute_scllh (tClk, charac):
     tBus = round(SEC2NSEC / charac.freq)
-    cMax = round(SEC2NSEC / charac.fMin)
-    cMin = round(SEC2NSEC / charac.fMax)
     dnfd = charac.dnf * tClk
+    cMax = SEC2NSEC // charac.fMin
+    cMin = SEC2NSEC // charac.fMax
     errPrev = tBus
 
     ret = None
@@ -72,10 +72,11 @@ def getTiming(sysHz, busHz):
     for charac in characs:
         if busHz >= charac.fMin and busHz <= charac.fMax:
             compute_presc(tClk, charac)
+            #print(len(valids), "valid candidates")
             return compute_scllh(tClk, charac)
 
 def genTimings(mhz):
-    r = [f'// {mhz} Mhz:']
+    r = []
     for khzBus in (100, 400, 1000):
         t = getTiming(mhz * 1000000, khzBus * 1000)
         if t:
