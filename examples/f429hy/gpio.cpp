@@ -10,16 +10,16 @@ int main () {
     initBoard();
 
     { // I2C bus PH5+PH4
-        I2cGpio i2c;
+        i2c::Gpio i2cBus;
         printf("SCL=PH5, SDA=PH4\n");
-        i2c.init("H5,H4");
-        i2c.detect(); // look for audio codec
+        i2cBus.init("H5,H4");
+        i2c::detect(i2cBus); // look for audio codec
     }
     { // I2C bus PH8+PH7
-        I2cGpio i2c;
+        i2c::Gpio i2cBus;
         printf("SCL=PH8, SDA=PH7\n");
-        i2c.init("H8,H7");
-        i2c.detect(); // look for audio codec
+        i2cBus.init("H8,H7");
+        i2c::detect(i2cBus); // look for audio codec
     }
     { // SPI flash memory
         SpiGpio spi;
@@ -27,7 +27,7 @@ int main () {
 
         spi.init("B15,B14,B13,B12");
         auto t = cycles::count();
-        int id = spif.devId();
+        int id = spif.info();
         t = cycles::count() - t;
         printf("spi: id %06x, %d kB, %d cycles\n", id, spif.size(), t);
         spi.deinit();

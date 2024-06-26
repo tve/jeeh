@@ -70,8 +70,9 @@ int main () {
     uint32_t u = 0;
     for (auto i = 2U; i <= sizeof buf; i += 100) {
         auto t = clock();
-        spi.transfer(spi.R1, nullptr, 0);
-        spi.transfer(spi.R2, buf, i);
+        spi.enable();
+        spi.transfer(false, buf, i);
+        spi.disable();
         t = clock() - t;
         logf("%4d bytes: %6d %s, diff %6d", i, t, units, t - u);
         u = t;

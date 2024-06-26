@@ -42,7 +42,7 @@ struct Dev {
 };
 
 template< typename I2C >
-inline void detect (I2C& bus) {
+void detect (I2C& bus) {
     for (auto i = 0; i < 128; i += 16) {
         printf("%02x:", i);
         for (auto j = 0; j < 16; ++j) {
