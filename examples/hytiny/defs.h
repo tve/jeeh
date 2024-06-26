@@ -1,10 +1,12 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "gpio"
+#define PIOENV  "recv-call"
 
 //CG1 board leds
 #define LED  "A1"
+
+constexpr Pin led (LED);
 
 //CG[ board uart
 #define UART_NAME  USART1
@@ -12,6 +14,8 @@
 #define UART_FREQ  72
 #define UART_CONF  Irq::DMA1_Channel4,Irq::DMA1_Channel5,1-1,4-1,5-1,0,0
 //CG]
+
+inline Uart uart ('U');
 
 //CG[ board spi
 #define SPI_NAME  SPI1
@@ -21,12 +25,22 @@
 #define SPI_CONF  { ena::SPI1,72,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,0,0 }
 //CG]
 
+//CG1 board mode
+#define MODE_CALL 1
+
+#if MODE_GPIO
+spi::Gpio spiBus;
+#elif MODE_POLL
+spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
+#elif MODE_SYNC
+spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
+#elif MODE_CALL
+spi::Call<SPI_TYPE> spiBus (SPI_CONF);
+#endif
+
 //CG2 board rfm69
 #define RFM69_DIOS "B5:F,B3,B4,B0,A15"
 #define RFM69_NRST "A8"
-
-constexpr Pin led (LED);
-inline Uart uart ('U');
 
 constexpr Pin nrst (RFM69_NRST);
 Pin dios [5];
