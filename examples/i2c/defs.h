@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "detect"
+#define PIOENV  "oled-call"
 
 //CG1 board leds
 #define LED  "B3"
@@ -26,21 +26,21 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_POLL 1
+#define MODE_CALL 1
 
 #if MODE_GPIO
-I2cGpio i2c;
+i2c::Gpio i2cBus;
 #elif MODE_POLL
-I2cPoll<I2C_NAME.ADDR> i2c (ena::I2C_NAME, I2C_FREQ);
+i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
 #elif MODE_SYNC
-I2cSync<I2C_TYPE> i2c (I2C_CONF);
+i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 #elif MODE_CALL
-I2cCall<I2C_TYPE> i2c (I2C_CONF);
+i2c::Call<I2C_TYPE> i2cBus (I2C_CONF);
 #endif
 
 uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
 #if MODE_GPIO
-    return khz; // I2cGpio estimates the delays from given khz
+    return khz; // i2c::Gpio estimates the delays from given khz
 #else
     switch (mhz) {
       case 16: // MHz

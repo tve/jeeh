@@ -5,7 +5,7 @@
 using namespace jeeh;
 #include "defs.h"
 
-I2cDev fram { i2c, 0x50 };
+i2c::Dev fram { i2cBus, 0x50 };
 
 void read32 (uint16_t addr, void* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian
@@ -19,18 +19,18 @@ void write32 (uint16_t addr, void const* ptr) {
 
 int main () {
     initBoard();
-    i2c.init(I2C_PINS, i2cTiming(1000));
+    i2cBus.init(I2C_PINS, i2cTiming(1000));
 
 #if MODE_GPIO
-    detect(i2c);
+    i2c::detect(i2cBus);
 
     // read FRAM's device ID, MB85RC256V.pdf p10
-    i2c.start(0xF8);
-    i2c.wrByte(fram.id<<1);
-    i2c.start(0xF9);
-    auto x = i2c.rdByte(false);
-    auto y = i2c.rdByte(false);
-    auto z = i2c.rdByte(true);
+    i2cBus.start(0xF8);
+    i2cBus.wrByte(fram.id<<1);
+    i2cBus.start(0xF9);
+    auto x = i2cBus.rdByte(false);
+    auto y = i2cBus.rdByte(false);
+    auto z = i2cBus.rdByte(true);
     logf("id: %02x %02x %02x", x, y, z); // should be: 00 A5 10
 #endif
 

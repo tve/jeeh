@@ -1,10 +1,10 @@
 // see examples/i2c/fram.cpp
 
-namespace jeeh {
+namespace jeeh::i2c {
 
-// polled H/W version (see I2cGpio for bit-banged version)
+// polled H/W version (see Gpio for bit-banged version)
 template< uint32_t A >
-struct I2cPoll {
+struct Poll {
     using ID = uint8_t;
     enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
 
@@ -19,7 +19,7 @@ struct I2cPoll {
 
     Config const cfg;
 
-    I2cPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
+    Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, uint32_t timing) {
         Pin::config(defs);
@@ -83,9 +83,9 @@ protected:
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct I2cSync : I2cPoll<A>, Device {
-    using BASE = I2cPoll<A>;
-    using BASE::I2cPoll; // constructor
+struct Sync : Poll<A>, Device {
+    using BASE = Poll<A>;
+    using BASE::Poll; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -107,7 +107,7 @@ struct I2cSync : I2cPoll<A>, Device {
 
     Config const cfg;
 
-    I2cSync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
+    Sync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
 
     void init (char const* defs, uint32_t timing) {
         BASE::init(defs, timing);
@@ -225,9 +225,9 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct I2cCall : I2cSync<A,D,T,R> {
-    using BASE = I2cSync<A,D,T,R>;
-    using BASE::I2cSync; // constructor
+struct Call : Sync<A,D,T,R> {
+    using BASE = Sync<A,D,T,R>;
+    using BASE::Sync; // constructor
 
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         uint16_t len = (m<<8) | n;

@@ -8,17 +8,17 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    i2c.init(I2C_PINS, 1000);
+    i2cBus.init(I2C_PINS, 1000);
 
 #if 0 // TODO
-    I2cWrap<decltype(i2c)> vi2c;
-    auto& i2c = (I2cBase&) vi2c;
-    vi2c.init(I2C_PINS, 1000);
+    i2c::Wrap<decltype(i2cBus)> vi2cBus;
+    auto& i2cBus = (i2c::Base&) vi2cBus;
+    vi2cBus.init(I2C_PINS, 1000);
 #endif
 
     // two I2C devices
-    I2cDev dev1 {i2c, 0x3D};
-    I2cDev dev2 {i2c, 0x3C};
+    i2c::Dev dev1 {i2cBus, 0x3D};
+    i2c::Dev dev2 {i2cBus, 0x3C};
 
     // same type, two instances: one is for 128x64, the other for 128x32
     SSD1306 oled1 (dev1, 64);

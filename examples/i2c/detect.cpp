@@ -8,14 +8,14 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    i2c.init(I2C_PINS, i2cTiming(100));
-    detect(i2c);
+    i2cBus.init(I2C_PINS, i2cTiming(100));
+    i2c::detect(i2cBus);
 
-    logf("  sizeof I2cGpio      = %2d b", sizeof (I2cGpio));
-    logf("  sizeof I2cPoll      = %2d b", sizeof (I2cPoll<I2C_NAME.ADDR>));
-    logf("  sizeof I2cSync      = %2d b", sizeof (I2cSync<I2C_TYPE>));
-    logf("  sizeof I2cCall      = %2d b", sizeof (I2cCall<I2C_TYPE>));
-    logf("  sizeof I2cDev<...>  = %2d b", sizeof (I2cDev<I2cGpio>));
+    logf("  sizeof i2c::Gpio      = %2d b", sizeof (i2c::Gpio));
+    logf("  sizeof i2c::Poll      = %2d b", sizeof (i2c::Poll<I2C_NAME.ADDR>));
+    logf("  sizeof i2c::Sync      = %2d b", sizeof (i2c::Sync<I2C_TYPE>));
+    logf("  sizeof i2c::Call      = %2d b", sizeof (i2c::Call<I2C_TYPE>));
+    logf("  sizeof i2c::Dev<...>  = %2d b", sizeof (i2c::Dev<i2c::Gpio>));
 
     while (true) {
         sys::wait(500);

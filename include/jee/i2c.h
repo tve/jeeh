@@ -1,4 +1,4 @@
-namespace jeeh {
+namespace jeeh::i2c {
 
 template< typename I2C >
 inline void detect (I2C& i2c) {
@@ -18,11 +18,11 @@ inline void detect (I2C& i2c) {
 }
 
 template< typename I2C >
-struct I2cDev {
+struct Dev {
     I2C& i2c;
     uint8_t id;
 
-    I2cDev (I2C& b, uint8_t i) : i2c (b), id (i) {}
+    Dev (I2C& b, uint8_t i) : i2c (b), id (i) {}
 
     template< typename ...A >
     auto transfer (A... a) const { return i2c.transfer(id, a...); }
@@ -58,7 +58,7 @@ struct I2cDev {
     }
 };
 
-struct I2cGpio {
+struct Gpio {
     using ID = uint8_t;
 
     Pin sda, scl; // pin definitions must be kept in this order
@@ -117,7 +117,7 @@ private:
     }
 };
 
-struct I2cBase {
+struct Base {
     using ID = uint8_t;
 
     virtual bool start (uint8_t addr) =0;
@@ -128,7 +128,7 @@ struct I2cBase {
 };
 
 template< typename I2C >
-struct I2cWrap final : I2cBase, I2C {
+struct Wrap final : Base, I2C {
     bool start (uint8_t a) override { return I2C::start(a); }
     void stop () override { I2C::stop(); }
     int rdByte (bool l) override { return I2C::rdByte(l); }

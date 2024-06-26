@@ -7,12 +7,12 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    i2c.init(I2C_PINS, 400);
+    i2cBus.init(I2C_PINS, 400);
 
     // three I2C devices
-    I2cDev hmc5883 {i2c, 0x1E};
-    I2cDev adxl345 {i2c, 0x53};
-    I2cDev itg3200 {i2c, 0x68};
+    i2c::Dev hmc5883 {i2cBus, 0x1E};
+    i2c::Dev adxl345 {i2cBus, 0x53};
+    i2c::Dev itg3200 {i2cBus, 0x68};
 
     uint8_t buf [6];
 
