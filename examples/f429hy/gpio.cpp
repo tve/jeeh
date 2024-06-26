@@ -22,15 +22,15 @@ int main () {
         i2c::detect(i2cBus); // look for audio codec
     }
     { // SPI flash memory
-        SpiGpio spi;
-        SpiFlash spif (spi);
+        spi::Gpio spiBus;
+        SpiFlash spif (spiBus);
 
-        spi.init("B15,B14,B13,B12");
+        spiBus.init("B15,B14,B13,B12");
         auto t = cycles::count();
         int id = spif.info();
         t = cycles::count() - t;
         printf("spi: id %06x, %d kB, %d cycles\n", id, spif.size(), t);
-        spi.deinit();
+        spiBus.deinit();
     }
 
     while (true) {
