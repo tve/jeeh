@@ -1,31 +1,14 @@
 namespace jeeh::i2c {
 
 template< typename I2C >
-inline void detect (I2C& i2c) {
-    for (auto i = 0; i < 128; i += 16) {
-        printf("%02x:", i);
-        for (auto j = 0; j < 16; ++j) {
-            int addr = i + j;
-            if (0x08 <= addr && addr <= 0x77) {
-                bool ack = i2c.transfer(addr, i2c.W1, nullptr, 0) &&
-                           i2c.transfer(addr, i2c.W2, nullptr, 0);
-                printf(ack ? " %02x" : " --", addr);
-            } else
-                printf("   ");
-        }
-        printf("\n");
-    }
-}
-
-template< typename I2C >
 struct Dev {
-    I2C& i2c;
+    I2C& bus;
     uint8_t id;
 
-    Dev (I2C& b, uint8_t i) : i2c (b), id (i) {}
+    Dev (I2C& b, uint8_t i) : bus (b), id (i) {}
 
     template< typename ...A >
-    auto transfer (A... a) const { return i2c.transfer(id, a...); }
+    auto transfer (A... a) const { return bus.transfer(id, a...); }
 
     // one byte address, single-byte data
     int32_t read (uint8_t r) const {
@@ -39,24 +22,42 @@ struct Dev {
 
     // one byte address, to/from buffer
     bool read (uint8_t r, void* p, uint8_t n) const {
-        return transfer(i2c.R1, &r, 1)
-            && transfer(i2c.R2, p, n);
+        return transfer(bus.R1, &r, 1)
+            && transfer(bus.R2, p, n);
     }
     bool write (uint8_t r, void const* p, uint8_t n) const {
-        return transfer(i2c.W1, &r, 1)
-            && transfer(i2c.W2, (void*) p, n);
+        return transfer(bus.W1, &r, 1)
+            && transfer(bus.W2, (void*) p, n);
     }
 
     // two byte address, to/from buffer
     bool read16 (uint16_t r, void* p, uint8_t n) const {
-        return transfer(i2c.R1, &r, 2)
-            && transfer(i2c.R2, p, n);
+        return transfer(bus.R1, &r, 2)
+            && transfer(bus.R2, p, n);
     }
     bool write16 (uint16_t r, void const* p, uint8_t n) const {
-        return transfer(i2c.W1, &r, 2)
-            && transfer(i2c.W2, (void*) p, n);
+        return transfer(bus.W1, &r, 2)
+            && transfer(bus.W2, (void*) p, n);
     }
 };
+
+template< typename I2C >
+inline void detect (I2C& bus) {
+    for (auto i = 0; i < 128; i += 16) {
+        printf("%02x:", i);
+        for (auto j = 0; j < 16; ++j) {
+            uint8_t addr = i + j;
+            if (0x08 <= addr && addr <= 0x77) {
+                Dev dev { bus, addr };
+                bool ack = dev.transfer(bus.W1, nullptr, 0) &&
+                           dev.transfer(bus.W2, nullptr, 0);
+                printf(ack ? " %02x" : " --", addr);
+            } else
+                printf("   ");
+        }
+        printf("\n");
+    }
+}
 
 struct Gpio {
     using ID = uint8_t;
