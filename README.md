@@ -5,7 +5,7 @@ to the ones included with the Arduino IDE, STM32CubeMX, and others.
 
 **Features**
 
-- Based on messages for synchronisarion and (optionally) multi-threaded.
+- Based on messages for synchronisation and (optionally) multi-threaded.
 - Written in C++17 with limited use of templates and not dependent on STL.
 - The build environment is PlatformIO, for either command-line or IDE use.
 - Compiled code relies on the CMSIS framework's startup and linker files.
