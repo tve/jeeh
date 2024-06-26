@@ -1,6 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
-//CG pio
+//CG1 pio
+#define PIOENV  "wifi"
 
 //CG[ board leds
 #define LED  "A5"
@@ -9,12 +10,19 @@
 #define LED3 "B1"
 //CG]
 
+constexpr Pin led      (LED); // redundant, same as blue
+constexpr Pin blueLed  (LED1);
+constexpr Pin redLed   (LED2);
+constexpr Pin greenLed (LED3);
+
 //CG[ board uart
 #define UART_NAME  USART6
 #define UART_PINS  "C6:8,C7"
 #define UART_FREQ  108
 #define UART_CONF  Irq::DMA2_Stream6,Irq::DMA2_Stream2,2-1,6-0,2-0,5,5
 //CG]
+
+inline Uart uart ('U');
 
 //CG[ board uart_l
 #define UART_L_NAME  USART2
@@ -23,12 +31,16 @@
 #define UART_L_CONF  Irq::DMA1_Stream6,Irq::DMA1_Stream5,1-1,6-0,5-0,4,4
 //CG]
 
+inline Uart uart_l ('L');
+
 //CG[ board uart_w
 #define UART_W_NAME  UART5
 #define UART_W_PINS  "C12:8,D2"
 #define UART_W_FREQ  54
 #define UART_W_CONF  Irq::DMA1_Stream7,Irq::DMA1_Stream0,1-1,7-0,0-0,4,4
 //CG]
+
+inline Uart uart_w ('W');
 
 //CG[ board spi
 #define SPI_NAME  SPI2
@@ -42,27 +54,20 @@
 #define RFM69_DIOS "A4:F,B0,B11,H4,H5"
 #define RFM69_NRST "F11"
 
-constexpr Pin led      (LED); // redundant, same as blue
-constexpr Pin blueLed  (LED1);
-constexpr Pin redLed   (LED2);
-constexpr Pin greenLed (LED3);
+//CG: board mode
 
-inline Uart uart ('U');
-inline Uart uart_l ('L');
-inline Uart uart_w ('W');
+#if MODE_GPIO
+spi::Gpio spiBus;
+#elif MODE_POLL
+spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
+#elif MODE_SYNC
+spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
+#elif MODE_CALL
+spi::Call<SPI_TYPE> spiBus (SPI_CONF);
+#endif
 
 constexpr Pin nrst (RFM69_NRST);
 Pin dios [5];
-
-extern "C" int _write (int, char* ptr, int len) {
-    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
-    sys::call(m);
-    return len;
-}
-
-void jeeh::logWriter (void const* ptr, size_t len) {
-    _write(1, (char*) ptr, len);
-}
 
 void espPower (bool on) {
     Pin::config(on ? "D3:F" : "D3:P"); // ESP8266 CH_PD, power down
@@ -105,6 +110,16 @@ void initFsmcPins () {
                 "E0,E1,E7,E8,E9,E10,E11,E12,E13,E14,E15,"
                 "F0,F1,F2,F3,F4,F5,F12,F13,F14,F15,"
                 "G0,G1,G2,G3,G4,G5,G9");
+}
+
+extern "C" int _write (int, char* ptr, int len) {
+    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
+    sys::call(m);
+    return len;
+}
+
+void jeeh::logWriter (void const* ptr, size_t len) {
+    _write(1, (char*) ptr, len);
 }
 
 void initPsram () {

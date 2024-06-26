@@ -10,7 +10,7 @@ using namespace jeeh;
 int main () {
     initBoard(); // in defs.h
 
-    printf("%d kB @ 0x%08x\n", 1<<(qspi::fsize-10), qspi::addr);
+    logf("%d kB @ 0x%08x", 1<<(qspi::fsize-10), qspi::addr);
 
     qspi::init();
 
@@ -29,20 +29,20 @@ int main () {
     cycles::init();
     auto t = cycles::count();
     qspi::write(4*1024, buf, 64);
-    printf("write 256 B = %d us\n", (cycles::count() - t) / MHz);
+    logf("write 256 B = %d us", (cycles::count() - t) / MHz);
 
     logDump(qmem + 1024, 64);
 
     t = cycles::count();
     qspi::erase(4*1024);
-    printf("erase 4 kB = %d us\n", (cycles::count() - t) / MHz);
+    logf("erase 4 kB = %d us", (cycles::count() - t) / MHz);
 
     logDump(qmem + 1024, 64);
 
     t = cycles::count();
     for (auto i = 0; i < 40; ++i)
         duffs(buf, qmem, 64);
-    printf("read 10 kB = %d us\n", (cycles::count() - t) / MHz);
+    logf("read 10 kB = %d us", (cycles::count() - t) / MHz);
 
     qspi::deinit();
 

@@ -12,11 +12,11 @@ int main () {
     initFsmcPins();
 
     constexpr uint32_t addr = 0x6000'0000, size = 512; // kB
-    printf("%d kB @ 0x%08x\n", size, addr);
+    logf("%d kB @ 0x%08x", size, addr);
     initPsram();
 
     while (true) {
         led.toggle();
-        printf(" %d errors\n", util::memTests(addr, size * 1024));
+        logf(" %d errors", util::memTests(addr, size * 1024));
     }
 }
