@@ -7,8 +7,9 @@ struct Dev {
 
     Dev (I2C& b, uint8_t i) : bus (b), id (i) {}
 
-    template< typename ...A >
-    auto transfer (A... a) const { return bus.transfer(id, a...); }
+    bool transfer (uint8_t m, void* p =nullptr, uint8_t n =0) const {
+        return bus.transfer(id, m, p, n);
+    }
 
     // one byte address, single-byte data
     int32_t read (uint8_t r) const {
@@ -49,8 +50,7 @@ void detect (I2C& bus) {
             uint8_t addr = i + j;
             if (0x08 <= addr && addr <= 0x77) {
                 Dev dev { bus, addr };
-                bool ack = dev.transfer(bus.W1, nullptr, 0) &&
-                           dev.transfer(bus.W2, nullptr, 0);
+                bool ack = dev.transfer(bus.W1) && dev.transfer(bus.W2);
                 printf(ack ? " %02x" : " --", addr);
             } else
                 printf("   ");
