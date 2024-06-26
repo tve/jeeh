@@ -1,6 +1,23 @@
 {
+    "name": "JeeH",
+    "version": "6.0.0",
+    "description": "Hardware abstraction and multi-tasker for ARM Cortex µCs",
+    "keywords": "experimental",
+    "authors": {
+        "name": "Jean-Claude Wippler",
+        "email": "jc@wippler.nl"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://git.sr.ht/~jcw/jeeh"
+    },
+    "license": "Unlicense",
     "headers": "jee.h",
     "build": {
         "extraScript": "make/pio-extra.py"
+    },
+    "export": {
+        "exclude": [ ".DS_Store", ".git*", "builds", "tests",
+                     "NOCOMMIT", "Session.vim", "tags" ]
     }
 }
