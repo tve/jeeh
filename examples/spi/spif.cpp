@@ -9,8 +9,8 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    spi.init(SPI_PINS, 85'000);
-    SpiFlash spif (spi);
+    spiBus.init(SPI_PINS, 85'000);
+    SpiFlash spif (spiBus);
 
     uint8_t buf [512];
 

@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "spif-call"
+#define PIOENV  "spif-sync"
 
 //CG1 board leds
 #define LED  "B8"
@@ -26,16 +26,16 @@ inline Uart uart ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_CALL 1
+#define MODE_SYNC 1
 
 #if MODE_GPIO
-SpiGpio spi;
+spi::Gpio spiBus;
 #elif MODE_POLL
-SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
+spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
 #elif MODE_SYNC
-SpiSync<SPI_TYPE> spi (SPI_CONF);
+spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
 #elif MODE_CALL
-SpiCall<SPI_TYPE> spi (SPI_CONF);
+spi::Call<SPI_TYPE> spiBus (SPI_CONF);
 #endif
 
 void initBoard () {

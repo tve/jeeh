@@ -1,10 +1,10 @@
 // see examples/spi/{endure,spif}.cpp
 
-namespace jeeh {
+namespace jeeh::spi {
 
-// polled H/W version (see SpiGpio for bit-banged version)
+// polled H/W version (see spi::Gpio for bit-banged version)
 template< uint32_t A >
-struct SpiPoll {
+struct Poll {
     using ID = Pin;
 
     static constexpr IoReg<A> SPI {};
@@ -18,7 +18,7 @@ struct SpiPoll {
     Config const cfg;
     Pin nsel;
 
-    SpiPoll (uint16_t e, uint8_t f) : cfg { e, f } {}
+    Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, int khz) {
         Pin pins [4]; // mosi, miso, nclk, nsel
@@ -83,9 +83,9 @@ struct SpiPoll {
 
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct SpiSync : SpiPoll<A>, Device {
-    using BASE = SpiPoll<A>;
-    using BASE::SpiPoll; // constructor
+struct Sync : Poll<A>, Device {
+    using BASE = Poll<A>;
+    using BASE::Poll; // constructor
 
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -107,7 +107,7 @@ struct SpiSync : SpiPoll<A>, Device {
 
     Config const cfg;
 
-    SpiSync (Config const& c) : BASE (c.ena, c.mhz), Device ('S'), cfg (c) {}
+    Sync (Config const& c) : BASE (c.ena, c.mhz), Device ('S'), cfg (c) {}
 
     void init (char const* defs, int khz) {
         BASE::init(defs, khz);
@@ -250,9 +250,9 @@ private:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct SpiCall : SpiSync<A,D,T,R> {
-    using BASE = SpiSync<A,D,T,R>;
-    using BASE::SpiSync; // constructor
+struct Call : Sync<A,D,T,R> {
+    using BASE = Sync<A,D,T,R>;
+    using BASE::Sync; // constructor
 
     // async version, dma with sys::call
     uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {

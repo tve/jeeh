@@ -1,6 +1,6 @@
-namespace jeeh {
+namespace jeeh::spi {
 
-struct SpiGpio {
+struct Gpio {
     using ID = Pin;
 
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
@@ -55,7 +55,7 @@ private:
     }
 };
 
-struct SpiBase {
+struct Base {
     virtual void enable () =0;
     virtual void disable () =0;
     virtual int rwByte (int v) =0;
@@ -63,7 +63,7 @@ struct SpiBase {
 };
 
 template< typename SPI >
-struct SpiWrap final : SpiBase, SPI {
+struct Wrap final : Base, SPI {
     void enable () override { SPI::enable(); }
     void disable () override { SPI::disable(); }
     int rwByte (int v) override { return SPI::rwByte(v); }

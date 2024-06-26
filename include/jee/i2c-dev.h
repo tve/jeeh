@@ -2,7 +2,7 @@
 
 namespace jeeh::i2c {
 
-// polled H/W version (see Gpio for bit-banged version)
+// polled H/W version (see i2c::Gpio for bit-banged version)
 template< uint32_t A >
 struct Poll {
     using ID = uint8_t;

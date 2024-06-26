@@ -9,8 +9,8 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    spi.init(SPI_PINS, 85'000);
-    SpiFlash spif (spi);
+    spiBus.init(SPI_PINS, 85'000);
+    SpiFlash spif (spiBus);
 
     constexpr auto CHIP  = 512*1024;
     constexpr auto BLOCK = 4*1024;
@@ -21,17 +21,17 @@ int main () {
     assert(BPC == 128);
     assert(PPB == 16);
 
-    logf("\nFlash: %d kB, %d blocks of %d kB", CHIP>>10, BPC, BLOCK>>10);
+    logf("wipe: %d kB (%d blocks of %d kB)", CHIP>>10, BPC, BLOCK>>10);
 
     cycles::clear();
     spif.wipe();
-    logf("  %d kB wiped   in %6d ms", CHIP>>10, cycles::millis());
+    logf("      chip erased in %d ms", cycles::millis());
 
     crc::init();
     for (auto i = 0; i < BLOCK; ++i)
         crc::update8(0xFF);
     auto crcEmpty = crc::get();
-    logf("empty CRC = %08x", crcEmpty);
+    logf("      empty CRC = %08x", crcEmpty);
 
     uint8_t buf [PAGE] alignas(4);
     int seq = 0;
