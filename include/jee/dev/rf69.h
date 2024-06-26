@@ -73,7 +73,8 @@ struct RF69 {
 #if 1
                 // does work, the last byte can still be read from SPI[DR]
                 uint8_t cmd [] = { REG_FIFO, 0 };
-                auto count = dev.transfer(dev.R1, cmd, sizeof cmd);
+                dev.enable();
+                auto count = dev.transfer(true, cmd, sizeof cmd);
 #else
                 // if we can't use DMA to read during send, switch to polled
                 dev.enable();
@@ -82,7 +83,8 @@ struct RF69 {
 #endif
                 if (len > count)
                     len = count;
-                dev.transfer(dev.R2, ptr, len); // this is fine with DMA
+                dev.transfer(false, ptr, len); // this is fine with DMA
+                dev.disable();
 
                 // only accept packets intended for us, or broadcasts
                 // ... or any packet if we're the special catch-all node
@@ -104,8 +106,10 @@ struct RF69 {
                            len + 2,
                            (header & 0x3F) | parity,
                            (header & 0xC0) | myId };
-        dev.transfer(dev.W1, out, sizeof out);
-        dev.transfer(dev.W2, ptr, len);
+        dev.enable();
+        dev.transfer(true, out, sizeof out);
+        dev.transfer(true, ptr, len);
+        dev.disable();
 
         setMode(MODE_TRANSMIT);
         while ((readReg(REG_IRQFLAGS2) & IRQ2_PACKETSENT) == 0)
@@ -132,8 +136,10 @@ struct RF69 {
     }
     uint8_t rwReg (uint8_t cmd, uint8_t val) {
         uint8_t out [] = { cmd, val };
-        auto r = dev.transfer(dev.R1, out, sizeof out);
-        dev.transfer(dev.R2, nullptr, 0);
+        dev.enable();
+        auto r = dev.transfer(true, out, sizeof out);
+        dev.transfer(false, nullptr, 0);
+        dev.disable();
         return r;
     }
 

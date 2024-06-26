@@ -13,17 +13,7 @@ int main () {
     AFIO[0x04](24,3) = 2;
 #endif
 
-#if USE_GPIO
-    SpiGpio spi;
-#elif USE_POLL
-    SpiPoll<SPI_NAME.ADDR> spi (ena::SPI_NAME, SPI_FREQ);
-#elif USE_SYNC
-    SpiSync<SPI_TYPE> spi (SPI_CONF);
-#elif USE_CALL
-    SpiCall<SPI_TYPE> spi (SPI_CONF);
-#endif
-
-    spi.init(SPI_PINS, 10'000);
+    spiBus.init(SPI_PINS, 10'000);
 
     nrst = 1;
     sys::wait(10);
@@ -31,7 +21,7 @@ int main () {
     sys::wait(10);
 
 #if 1
-    RF69 rf (spi);
+    RF69 rf (spiBus);
     rf.init(63, 42, 8686);  // node 63, group 42, 868.6 MHz
     rf.txPower(0);
 
@@ -70,9 +60,9 @@ int main () {
     uint32_t u = 0;
     for (auto i = 2U; i <= sizeof buf; i += 100) {
         auto t = clock();
-        spi.enable();
-        spi.transfer(false, buf, i);
-        spi.disable();
+        spiBus.enable();
+        spiBus.transfer(false, buf, i);
+        spiBus.disable();
         t = clock() - t;
         logf("%4d bytes: %6d %s, diff %6d", i, t, units, t - u);
         u = t;
