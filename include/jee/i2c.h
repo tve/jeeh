@@ -114,7 +114,8 @@ private:
     void sclHi () const {
         hold();
         scl = 1;
-        for (auto i = 10'000; scl == 0 && i >= 0; --i) {}
+        // wait a limited amount of time in case of clock stretching
+        for (auto i = SystemCoreClock>>15; scl == 0 && i > 0; --i) {}
     }
 };
 

@@ -27,13 +27,11 @@ struct Poll {
         RCC(cfg.ena,1) = 1;
         I2C[TIMINGR] = timing;
 
-#if 0
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values
-        auto t = 12 * ((SystemCoreClock/1'000'000) / ((timing>>28) + 1));
+        auto t = 12 * ((SystemCoreClock>>20) / ((timing>>28) + 1));
         assert(t < 4096);
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
-#endif
 
         I2C[CR1](0) = 1; // PE
     }
@@ -50,7 +48,7 @@ struct Poll {
         auto q = (uint8_t*) p;
         if (m != R2)
             while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TCR ~TC ~STOPF
-                if (I2C[ISR](4)) { // NACKF
+                if (I2C[ISR](12) || I2C[ISR](4)) { // TIMEOUT NACKF
                     I2C[ICR] = I2C[ISR];
                     return false;
                 }
@@ -164,7 +162,7 @@ struct Sync : Poll<A>, Device {
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
-    // sync versions, dma with wfe
+    // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, p, n);
         while (I2C[BASE::ISR](15) && // BUSY
@@ -230,7 +228,7 @@ private:
     }
 
     bool interrupt (int) override {
-        I2C[BASE::CR1](4,3) = 0; // TCIE STOPIE NACKIE
+        I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
         return !msgs.isEmpty();
     }
 };
