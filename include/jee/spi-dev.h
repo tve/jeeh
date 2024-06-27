@@ -120,7 +120,7 @@ struct Sync : Poll<A>, Device {
             return 0;
 
         startReq(w, p, n);
-        while (dma.isRunningDma())
+        while (dma.isRunning())
             asm ("wfe");
         return finishReq(w, p, n);
     }
@@ -134,9 +134,9 @@ private:
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
-        dma.txStartDma(p, n);
+        dma.txStart(p, n);
         if (!w)
-            dma.rxStartDma(p, n);
+            dma.rxStart(p, n);
     }
 
     uint8_t finishReq (bool w, void* p, uint16_t n) const {
@@ -173,26 +173,10 @@ private:
     }
 
     bool interrupt (int) override {
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        if (dma.DMA[dma.ISR](4*T)) { // GIF
-            dma.DTX[dma.CCR](0) = 0; // ~EN
-            dma.DMA[dma.IFCR] = 1<<(4*T);
-        } else if (dma.DMA[dma.ISR](4*R)) { // GIF
-            dma.DRX[dma.CCR](0) = 0; // ~EN
-            dma.DMA[dma.IFCR] = 1<<(4*R);
-        } else
+        if (!dma.completed())
             fail();
-#else
-        constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
-        if (dma.DMA[T&~3](5+ifcBits[T&3])) // tx TCIF
-            dma.DMA[dma.IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
-        else if (dma.DMA[R&~3](5+ifcBits[R&3])) // rx TCIF
-            dma.DMA[dma.IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
-        else
-            fail();
-#endif
-        if (dma.isRunningDma())
-            return false; // still in progress
+        if (dma.isRunning())
+            return false; // other channel still in progress
 
         return !msgs.isEmpty();
     }

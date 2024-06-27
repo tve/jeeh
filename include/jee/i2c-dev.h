@@ -125,16 +125,16 @@ protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
         if (m != BASE::R2)
-            dma.txStartDma(p, n);
+            dma.txStart(p, n);
         else
-            dma.rxStartDma(p, n);
+            dma.rxStart(p, n);
 
         BASE::startReq(a, m, n);
         I2C[BASE::CR1](4,3) = 0b111; // TCIE STOPIE NACKIE
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        dma.finishDma();
+        dma.done();
         if (m == BASE::R2)
             cache::inval(p, n);
         if (I2C[BASE::ISR](4)) { // NACKF
