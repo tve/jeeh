@@ -49,7 +49,7 @@ struct Poll {
 
         auto q = (uint8_t*) p;
         if (m != R2)
-            while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TC or ~TCR or ~STOPF
+            while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TCR ~TC ~STOPF
                 if (I2C[ISR](4)) { // NACKF
                     I2C[ICR] = I2C[ISR];
                     return false;
@@ -103,6 +103,45 @@ struct Sync : Poll<A>, Device {
     struct Config : BASE::Config {
         Irq evIrq, erIrq;
         uint8_t dma, txReq, rxReq; // 0-based
+
+        // TODO this is the same code in I2C and SPI
+        void initDma () const {
+            RCC(ena::DMA1+dma,1) = 1;
+
+            // channel/stream/request setup (confusing naming differences!)
+#if STM32G4 | STM32H7 | STM32WB | STM32WL
+    #if STM32G4
+            RCC(ena::DMAMUX, 1) = 1;
+        #if STM32G431xx | STM32G441xx
+            constexpr auto CHMAP = 6;
+        #else
+            constexpr auto CHMAP = 8;
+        #endif
+    #elif STM32WB | STM32WL
+            constexpr auto CHMAP = 7;
+    #elif STM32H7
+        #define DMAMUX DMAMUX1
+            constexpr auto CHMAP = 8;
+    #endif
+            DMAMUX[4*(CHMAP*dma+T)] = txReq;
+            DMAMUX[4*(CHMAP*dma+R)] = rxReq;
+#elif STM32L0 | STM32L4
+            DMA[0xA8](4*T,4) = txReq; // CSELR
+            DMA[0xA8](4*R,4) = rxReq; // CSELR
+#endif
+
+            // channel configuration
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+            DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
+            DRX[CCR] = 0b1000'0010; // MINC TCIE
+#elif STM32H7
+            DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
+            DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
+#else
+            DTX[CCR] = (txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+            DRX[CCR] = (rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+#endif
+        }
     };
 
     Config const cfg;
@@ -113,7 +152,7 @@ struct Sync : Poll<A>, Device {
         BASE::init(defs, timing);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
-        initDma();
+        cfg.initDma();
 
         // peripheral address config and interrupt vector setup
         DTX[CPAR] = A + BASE::TXDR;
@@ -127,25 +166,18 @@ struct Sync : Poll<A>, Device {
 
     // sync versions, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-//if (n == 0) return 0;
-
         startReq(a, m, p, n);
-        while (DTX[CCR](0) || DRX[CCR](0)) // EN
-        //while (I2C[BASE::CR1](5,2)) // TCIE STOPIE
+        while (I2C[BASE::ISR](15) && // BUSY
+                I2C[BASE::CR1](4,3)) // TCIE STOPIE NACKIE
             asm ("wfe");
-        if (m == BASE::R2)
-            cache::inval(p, n);
-        return true; // TODO
+        return finishReq(m, p, n);
     }
 
 protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
-        // (although it seems to work just as well the other way around?)
-
         if (m != BASE::R2) {
             cache::clean(p, n);
-
             DTX[CMAR] = (uintptr_t) p;
             DTX[CNDTR] = n;
             DTX[CCR](0) = 1; // EN
@@ -156,43 +188,23 @@ protected:
         }
 
         BASE::startReq(a, m, n);
-        I2C[BASE::CR1](5,2) = 0b11; // TCIE STOPIE
-assert(DTX[CCR](0) || DRX[CCR](0));
+        I2C[BASE::CR1](4,3) = 0b111; // TCIE STOPIE NACKIE
+    }
+
+    bool finishReq (uint8_t m, void* p, uint8_t n) const {
+        DTX[CCR](0) = 0; // ~EN
+        DRX[CCR](0) = 0; // ~EN
+        if (m == BASE::R2)
+            cache::inval(p, n);
+        if (I2C[BASE::ISR](4)) { // NACKF
+            I2C[BASE::ICR] = I2C[BASE::ISR];
+            return false;
+        }
+        return true;
     }
 
 private:
     Chain msgs;
-
-    // TODO this is the same code in I2C and SPI
-    void initDma () const {
-        RCC(ena::DMA1+cfg.dma,1) = 1;
-
-        // channel/stream/request setup (confusing naming differences!)
-#if STM32G4
-        RCC(ena::DMAMUX, 1) = 1;
-#elif STM32H7
-#define DMAMUX DMAMUX1
-#endif
-#if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*T] = cfg.txReq;
-        DMAMUX[32*cfg.dma+4*R] = cfg.rxReq;
-#elif STM32L0 | STM32L4
-        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
-        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
-#endif
-
-        // channel configuration
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
-        DRX[CCR] = 0b1000'0010; // MINC TCIE
-#elif STM32H7
-        DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
-        DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
-#else
-        DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
-#endif
-    }
 
     // async version, started from a msg
     void start (Message& m) override {
@@ -204,22 +216,21 @@ private:
         auto mp = msgs.pull();
         if (mp == nullptr)
             return;
-        if ((mp->mLen >> 8) == BASE::R2)
-            cache::inval(mp->mPtr, (uint8_t) mp->mLen);
+        mp->mLen = finishReq(mp->mLen >> 8, mp->mPtr, (uint8_t) mp->mLen);
         reply(mp);
         if (!msgs.isEmpty())
             startAsync(*msgs.first());
     }
 
     void startAsync (Message& m) {
-        startReq(m.mTag, m.mLen >> 8, m.mPtr, (uint8_t) m.mLen);
+        uint8_t mode = m.mLen >> 8, len = m.mLen;
+        startReq(m.mTag, mode, m.mPtr, len);
+        if (mode == BASE::W1 && len == 0)
+            finish(); // this may be recursive
     }
 
     bool interrupt (int) override {
-{ Pin("B8") = 1; }
-        I2C[BASE::CR1](5,2) = 0; // TCIE STOPIE
-        DTX[CCR](0) = 0; // ~EN
-        DRX[CCR](0) = 0; // ~EN
+        I2C[BASE::CR1](4,3) = 0; // TCIE STOPIE NACKIE
         return !msgs.isEmpty();
     }
 };
@@ -233,7 +244,7 @@ struct Call : Sync<A,D,T,R> {
         uint16_t len = (m<<8) | n;
         Message msg { BASE::dId, a, len, (uint8_t*) p };
         sys::call(msg); // async with thread suspend
-        return true; // TODO
+        return msg.mLen;
     }
 };
 

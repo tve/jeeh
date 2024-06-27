@@ -103,6 +103,45 @@ struct Sync : Poll<A>, Device {
     struct Config : BASE::Config {
         Irq txIrq, rxIrq;
         uint8_t dma, txReq, rxReq; // 0-based
+
+        // TODO this is the same code in I2C and SPI
+        void initDma () const {
+            RCC(ena::DMA1+dma,1) = 1;
+
+            // channel/stream/request setup (confusing naming differences!)
+#if STM32G4 | STM32H7 | STM32WB | STM32WL
+    #if STM32G4
+            RCC(ena::DMAMUX, 1) = 1;
+        #if STM32G431xx | STM32G441xx
+            constexpr auto CHMAP = 6;
+        #else
+            constexpr auto CHMAP = 8;
+        #endif
+    #elif STM32WB | STM32WL
+            constexpr auto CHMAP = 7;
+    #elif STM32H7
+        #define DMAMUX DMAMUX1
+            constexpr auto CHMAP = 8;
+    #endif
+            DMAMUX[4*(CHMAP*dma+T)] = txReq;
+            DMAMUX[4*(CHMAP*dma+R)] = rxReq;
+#elif STM32L0 | STM32L4
+            DMA[0xA8](4*T,4) = txReq; // CSELR
+            DMA[0xA8](4*R,4) = rxReq; // CSELR
+#endif
+
+            // channel configuration
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+            DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
+            DRX[CCR] = 0b1000'0010; // MINC TCIE
+#elif STM32H7
+            DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
+            DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
+#else
+            DTX[CCR] = (txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+            DRX[CCR] = (rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+#endif
+        }
     };
 
     Config const cfg;
@@ -113,7 +152,7 @@ struct Sync : Poll<A>, Device {
         BASE::init(defs, khz);
         SPI[BASE::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
 
-        initDma();
+        cfg.initDma();
 
         // peripheral address config and interrupt vector setup
         DTX[CPAR] = A + BASE::DR;
@@ -167,37 +206,6 @@ private:
             r = SPI.byte(BASE::DR);
         while (SPI[BASE::SR](0)); // RXNE
         return r;
-    }
-
-    // TODO this is the same code in I2C and SPI
-    void initDma () const {
-        RCC(ena::DMA1+cfg.dma,1) = 1;
-
-        // channel/stream/request setup (confusing naming differences!)
-#if STM32G4
-        RCC(ena::DMAMUX, 1) = 1;
-#elif STM32H7
-#define DMAMUX DMAMUX1
-#endif
-#if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*T] = cfg.txReq;
-        DMAMUX[32*cfg.dma+4*R] = cfg.rxReq;
-#elif STM32L0 | STM32L4
-        DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
-        DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
-#endif
-
-        // channel configuration
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
-        DRX[CCR] = 0b1000'0010; // MINC TCIE
-#elif STM32H7
-        DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
-        DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
-#else
-        DTX[CCR] = (cfg.txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DRX[CCR] = (cfg.rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
-#endif
     }
 
     // async version, started from a msg
