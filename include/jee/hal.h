@@ -1,5 +1,6 @@
 #include "crc.h"
 #include "cycles.h"
+#include "dma.h"
 #include "exti.h"
 #include "rng.h"
 

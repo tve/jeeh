@@ -85,76 +85,26 @@ struct Sync : Poll<A>, Device {
     using BASE = Poll<A>;
     using BASE::Poll; // constructor
 
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-    enum { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
-    enum { CHAN_STEP=0x14 };
-#else
-    enum { ISR=0x00, IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
-    enum { CHAN_STEP=0x18 };
-#endif
-
-    static constexpr IoReg<A>             I2C {};
-    static constexpr IoReg<D>             DMA {};
-    static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
-    static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
+    static constexpr IoReg<A> I2C {};
 
     struct Config : BASE::Config {
         Irq evIrq, erIrq;
-        uint8_t dma, txReq, rxReq; // 0-based
-
-        // TODO this is the same code in I2C and SPI
-        void initDma () const {
-            RCC(ena::DMA1+dma,1) = 1;
-
-            // channel/stream/request setup (confusing naming differences!)
-#if STM32G4 | STM32H7 | STM32WB | STM32WL
-    #if STM32G4
-            RCC(ena::DMAMUX, 1) = 1;
-        #if STM32G431xx | STM32G441xx
-            constexpr auto CHMAP = 6;
-        #else
-            constexpr auto CHMAP = 8;
-        #endif
-    #elif STM32WB | STM32WL
-            constexpr auto CHMAP = 7;
-    #elif STM32H7
-            #define DMAMUX DMAMUX1
-            constexpr auto CHMAP = 8;
-    #endif
-            DMAMUX[4*(CHMAP*dma+T)] = txReq;
-            DMAMUX[4*(CHMAP*dma+R)] = rxReq;
-#elif STM32L0 | STM32L4
-            DMA[0xA8](4*T,4) = txReq; // CSELR
-            DMA[0xA8](4*R,4) = rxReq; // CSELR
-#endif
-
-            // channel configuration
-#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-            DTX[CCR] = 0b1001'0010; // MINC DIR TCIE
-            DRX[CCR] = 0b1000'0010; // MINC TCIE
-#elif STM32H7
-            DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
-            DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
-#else
-            DTX[CCR] = (txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-            DRX[CCR] = (rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
-#endif
-        }
+        uint8_t Xdma, XtxReq, XrxReq; // 0-based
     };
 
+    DmaConfig<D,T,R> dma;
     Config const cfg;
 
-    Sync (Config const& c) : BASE (c.ena, c.mhz), Device ('I'), cfg (c) {}
+    Sync (Config const& c)
+        : BASE (c.ena, c.mhz), Device ('I'),
+          dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
 
     void init (char const* defs, uint32_t timing) {
         BASE::init(defs, timing);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
-        cfg.initDma();
-
         // peripheral address config and interrupt vector setup
-        DTX[CPAR] = A + BASE::TXDR;
-        DRX[CPAR] = A + BASE::RXDR;
+        dma.init(A + BASE::TXDR, A + BASE::RXDR);
 
         irqInstall((uint8_t) cfg.evIrq);
         //irqInstall((uint8_t) cfg.erIrq);
@@ -174,24 +124,17 @@ struct Sync : Poll<A>, Device {
 protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
-        if (m != BASE::R2) {
-            cache::clean(p, n);
-            DTX[CMAR] = (uintptr_t) p;
-            DTX[CNDTR] = n;
-            DTX[CCR](0) = 1; // EN
-        } else {
-            DRX[CMAR] = (uintptr_t) p;
-            DRX[CNDTR] = n;
-            DRX[CCR](0) = 1; // EN
-        }
+        if (m != BASE::R2)
+            dma.txStartDma(p, n);
+        else
+            dma.rxStartDma(p, n);
 
         BASE::startReq(a, m, n);
         I2C[BASE::CR1](4,3) = 0b111; // TCIE STOPIE NACKIE
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        DTX[CCR](0) = 0; // ~EN
-        DRX[CCR](0) = 0; // ~EN
+        dma.finishDma();
         if (m == BASE::R2)
             cache::inval(p, n);
         if (I2C[BASE::ISR](4)) { // NACKF
