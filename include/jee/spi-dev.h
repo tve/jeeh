@@ -120,7 +120,7 @@ struct Sync : Poll<A>, Device {
     #elif STM32WB | STM32WL
             constexpr auto CHMAP = 7;
     #elif STM32H7
-        #define DMAMUX DMAMUX1
+            #define DMAMUX DMAMUX1
             constexpr auto CHMAP = 8;
     #endif
             DMAMUX[4*(CHMAP*dma+T)] = txReq;

@@ -118,7 +118,7 @@ struct Sync : Poll<A>, Device {
     #elif STM32WB | STM32WL
             constexpr auto CHMAP = 7;
     #elif STM32H7
-        #define DMAMUX DMAMUX1
+            #define DMAMUX DMAMUX1
             constexpr auto CHMAP = 8;
     #endif
             DMAMUX[4*(CHMAP*dma+T)] = txReq;
@@ -173,7 +173,7 @@ struct Sync : Poll<A>, Device {
 
 protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-        // must set op DMA before START, see 33.4.16, p.1003 in RM0393 v2
+        // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
         if (m != BASE::R2) {
             cache::clean(p, n);
             DTX[CMAR] = (uintptr_t) p;
