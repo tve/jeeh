@@ -73,8 +73,5 @@ int main () {
     t2 = cycles::micros() - t2;
     logf(" oled 2: %5d µs", t2);
 
-    while (true) {
-        sys::wait(250);
-        led.toggle();
-    }
+    while (true) { sys::wait(250); led.toggle(); }
 }

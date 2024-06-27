@@ -87,7 +87,7 @@ struct Sync : Poll<A>, Device {
     using BASE = Poll<A>;
     using BASE::Poll; // constructor
 
-    static constexpr IoReg<A>             SPI {};
+    static constexpr IoReg<A> SPI {};
 
     struct Config : BASE::Config {
         Irq txIrq, rxIrq;
