@@ -174,8 +174,8 @@ private:
 #define DMAMUX DMAMUX1
 #endif
 #if STM32G4 | STM32H7
-        DMAMUX[32*cfg.dma+4*T] = cfg.rxReq;
-        DMAMUX[32*cfg.dma+4*R] = cfg.txReq;
+        DMAMUX[32*cfg.dma+4*T] = cfg.txReq;
+        DMAMUX[32*cfg.dma+4*R] = cfg.rxReq;
 #elif STM32L0 | STM32L4
         DMA[0xA8](4*T,4) = cfg.txReq; // CSELR
         DMA[0xA8](4*R,4) = cfg.rxReq; // CSELR
