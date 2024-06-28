@@ -22,7 +22,7 @@ constexpr Pin greenLed (LED3);
 #define UART_CONF  Irq::DMA2_Stream6,Irq::DMA2_Stream2,2-1,6-0,2-0,5,5
 //CG]
 
-inline Uart uart ('U');
+inline Uart console ('U');
 
 //CG[ board uart_l
 #define UART_L_NAME  USART2
@@ -88,7 +88,7 @@ void initBoard () {
     espPower(false);
 
     // console uart
-    uart.init(UART_PINS, 1'000'000,
+    console.init(UART_PINS, 1'000'000,
                 { UART_NAME.ADDR, ena::UART_NAME,
                   UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
@@ -113,7 +113,7 @@ void initFsmcPins () {
 }
 
 extern "C" int _write (int, char* ptr, int len) {
-    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
     return len;
 }

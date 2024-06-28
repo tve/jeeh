@@ -85,7 +85,6 @@ struct Poll {
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A>, Device {
     using BASE = Poll<A>;
-    using BASE::Poll; // constructor
 
     static constexpr IoReg<A> SPI {};
 

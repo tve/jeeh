@@ -15,7 +15,7 @@ constexpr Pin led (LED);
 #define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
 //CG]
 
-inline Uart uart ('U');
+inline Uart console ('U');
 
 //CG[ board spi
 #define SPI_NAME  SPI1
@@ -44,13 +44,13 @@ void initBoard () {
     cycles::init();
     rtc::init(false);
 
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
-                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
+    console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+                                       UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
 extern "C" int _write (int, char* ptr, int len) {
-    Message m { uart.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
     return len;
 }

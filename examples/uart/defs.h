@@ -18,7 +18,6 @@ constexpr Pin led (LED);
 #define UART_TYPE  USART2.ADDR,DMA1.ADDR,1-1,2-1
 #define UART_OCONF  { ena::USART2,170,Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,27,26 }
 
-
 //CG1 board mode
 #define MODE_CALL 1
 

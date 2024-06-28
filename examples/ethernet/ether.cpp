@@ -18,9 +18,9 @@ int main () {
     uint32_t stack [300];
     sys::init(stack); // enable multi-threading
 
-    Uart uart ('U');
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
-                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
+    Uart console ('U');
+    console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+                                       UART_FREQ, Irq::UART_NAME, UART_CONF });
     consoleWriter = uartWriter<'U'>;
 
     printf("%s: %s @ %u MHz\n", PIOENV, SVDNAME, SystemCoreClock/1'000'000);
