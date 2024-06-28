@@ -21,7 +21,7 @@ struct Poll {
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, uint32_t timing) {
+    void init (char const* defs, uint32_t timing) const {
         Pin::config(defs);
 
         RCC(cfg.ena,1) = 1;
@@ -36,7 +36,7 @@ struct Poll {
         I2C[CR1](0) = 1; // PE
     }
 
-    void deinit () {
+    void deinit () const {
         RCC(cfg.ena, 1) = 0;
     }
 
@@ -83,7 +83,6 @@ protected:
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A>, Device {
     using BASE = Poll<A>;
-    using BASE::Poll; // constructor
 
     static constexpr IoReg<A> I2C {};
 
@@ -92,7 +91,7 @@ struct Sync : Poll<A>, Device {
         uint8_t Xdma, XtxReq, XrxReq; // 0-based
     };
 
-    DmaConfig<D,T,R> dma;
+    DmaConfig<D,T,R> const dma;
     Config const cfg;
 
     Sync (Config const& c)
