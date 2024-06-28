@@ -17,7 +17,7 @@ namespace jeeh {
 #ifdef UARTC_NAME
 
 
-namespace console {
+namespace tty {
 
 #if STM32F1 | STM32F4
 enum { ISR=0x00, RDR=0x04, TDR=0x04, BRR=0x08, CR1=0x0C, UE=13 };
@@ -41,10 +41,10 @@ void start () {
                 break;
 }
 
-} // namespace console
+} // namespace tty
 
 void logWriter (void const* ptr, size_t len) {
-    using namespace console;
+    using namespace tty;
     for (auto i = 0U; i < len; ++i) {
         while (!UARTC_NAME[ISR](7)) {} // TXFNF
         UARTC_NAME[TDR] = ((uint8_t const*) ptr)[i];
@@ -52,7 +52,7 @@ void logWriter (void const* ptr, size_t len) {
 }
 
 #else
-namespace console {
+namespace tty {
 void start () {}
 }
 #endif // UARTC_NAME
@@ -65,7 +65,7 @@ struct Tester {
         *(uint32_t**) 0xE000'ED08 = g_pfnVectors; // fix SCB->VTOR if in RAM
 
         fastClock();
-        console::start();
+        tty::start();
 #if SWO_FREQ
         swoInit(SWO_FREQ); // TODO openocd didn't init ITM/SWO on STM32WL
 #endif

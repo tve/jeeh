@@ -4,7 +4,7 @@ using namespace jeeh;
 #include "defs.h"
 #include "test.h"
 
-Uart uart ('U');
+Uart console ('U');
 
 void uartWrite (void const* ptr, size_t len) {
     Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
@@ -14,7 +14,7 @@ void uartWrite (void const* ptr, size_t len) {
 int myThread (Message&) {
     logf("20");
     auto n = 0;
-    Message m { uart.dId, 'R' };
+    Message m { console.dId, 'R' };
     do {
         sys::call(m);
         n += m.mLen;
@@ -35,8 +35,8 @@ int main () {
     auto baud = SystemCoreClock / 32; // i.e. 4'687'500 baud @ 150 MHz
 #endif
     logf("10 %d", baud); swoWrite();
-    uart.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
-                                 UART_FREQ, Irq::UART_NAME, UART_CONF });
+    console.init(UART_PINS, baud, { UART_NAME.ADDR, ena::UART_NAME,
+                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
 
     uint32_t myStack [200];
     [[maybe_unused]] auto& my = sys::fork(myStack, myThread);
