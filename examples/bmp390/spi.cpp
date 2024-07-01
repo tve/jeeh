@@ -9,8 +9,8 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    spi::Gpio bmp390;
-    bmp390.init(SPI_PINS, 100);
+    auto& bmp390 = spiBus;
+    bmp390.init(SPI_PINS, 10'000);
 
     bmp390.enable();
     bmp390.transfer(true, config, sizeof config);
@@ -21,7 +21,7 @@ int main () {
     bmp390.transfer(true, (uint8_t*) "\xB1.", 2);
     bmp390.transfer(false, (uint8_t*) &tc, sizeof tc);
     bmp390.disable();
-    loadParams(tc);
+    fp.load(tc);
 
     while (true) {
         sys::wait(1000);

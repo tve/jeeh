@@ -9,7 +9,6 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    i2c::Gpio i2cBus;
     i2c::Dev bmp390 { i2cBus, 0x77 };
 
     i2cBus.init(I2C_PINS, i2cTiming(1000));
@@ -20,7 +19,7 @@ int main () {
 
     TrimCoeffs tc;
     bmp390.read(0x31, &tc, sizeof tc); // TRIM_PARAMS
-    loadParams(tc);
+    fp.load(tc);
 
     while (true) {
         sys::wait(1000);

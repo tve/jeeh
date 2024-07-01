@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "i2c"
+#define PIOENV  "spi-poll"
 
 //CG1 board leds
 #define LED  "B3"
@@ -32,6 +32,29 @@ inline Uart console ('U');
 #define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
 #define SPI_CONF  { ena::SPI1,80,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,1,1 }
 //CG]
+
+//CG1 board mode
+#define MODE_POLL 1
+
+#if MODE_GPIO
+i2c::Gpio i2cBus;
+#elif MODE_POLL
+i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+#elif MODE_SYNC
+i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
+#elif MODE_CALL
+i2c::Call<I2C_TYPE> i2cBus (I2C_CONF);
+#endif
+
+#if MODE_GPIO
+spi::Gpio spiBus;
+#elif MODE_POLL
+spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
+#elif MODE_SYNC
+spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
+#elif MODE_CALL
+spi::Call<SPI_TYPE> spiBus (SPI_CONF);
+#endif
 
 void initBoard () {
     fastClock();
