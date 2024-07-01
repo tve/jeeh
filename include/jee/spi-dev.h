@@ -15,15 +15,13 @@ struct Poll {
         uint8_t mhz;
     };
 
+    Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     Config const cfg;
-    Pin nsel;
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, int khz) const {
-        Pin pins [4]; // mosi, miso, nclk, nsel
-        Pin::config(defs, pins, sizeof pins);
-        nsel = pins[3];
+    void init (char const* defs, int khz) {
+        Pin::config(defs, &miso, 4);
         disable(); // start with NSEL high
 
         auto div = 0; // determine clock divider
@@ -41,7 +39,10 @@ struct Poll {
         SPI[CR1](6) = 1; // SPE
     }
 
-    void deinit () { RCC(cfg.ena, 1) = 0; }
+    void deinit () {
+        Pin::config(":F,,,", &mosi, 4);
+        RCC(cfg.ena, 1) = 0;
+    }
 
     void enable () const { nsel.clear(); }
     void disable () const { nsel.set(); }

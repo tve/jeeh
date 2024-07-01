@@ -68,7 +68,7 @@ struct Gpio {
     void init (char const* desc, uint16_t khz =400);
 
     void deinit () {
-        Pin::config(":F,:U", &sda, 2); // keep SCL pulled up
+        Pin::config(":F,", &sda, 2);
     }
 
     enum { R1, R2, W1, W2 };

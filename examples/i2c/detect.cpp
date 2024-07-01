@@ -19,6 +19,7 @@ int main () {
 
     while (true) {
         sys::wait(500);
-        led.toggle();
+        if constexpr (strcmp(LED, "B3") != 0)
+            led.toggle();
     }
 }

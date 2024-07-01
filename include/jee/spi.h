@@ -17,7 +17,7 @@ struct Gpio {
     }
 
     void deinit () {
-        Pin::config(":F,,,:U", &mosi, 4); // keep NSEL pulled up
+        Pin::config(":F,,,", &mosi, 4);
     }
 
     void enable () const { hold(); nsel.clear(); hold(); }

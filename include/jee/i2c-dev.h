@@ -17,7 +17,7 @@ struct Poll {
         uint8_t mhz;
     };
 
-    Pin sda {}, scl {}; // pin definitions must be kept in this order
+    Pin sda, scl; // pin definitions must be kept in this order
     Config const cfg;
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
@@ -38,7 +38,7 @@ struct Poll {
     }
 
     void deinit () {
-        Pin::config(":U,", &sda, 2); // keep SDA and SCL pulled-up
+        Pin::config(":F,", &sda, 2);
         RCC(cfg.ena, 1) = 0;
     }
 
