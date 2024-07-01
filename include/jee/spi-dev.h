@@ -20,7 +20,7 @@ struct Poll {
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, int khz) {
+    void init (char const* defs, int khz) const {
         Pin pins [4]; // mosi, miso, nclk, nsel
         Pin::config(defs, pins, sizeof pins);
         nsel = pins[3];
@@ -29,6 +29,7 @@ struct Poll {
         auto div = 0; // determine clock divider
         while ((1000*cfg.mhz >> (div+1)) > khz)
             ++div;
+        assert(div <= 7);
 
         RCC(cfg.ena, 1) = 1;
         SPI[CR1] = (div<<3) | (1<<2); // BD MSTR
@@ -93,7 +94,7 @@ struct Sync : Poll<A>, Device {
         uint8_t Xdma, XtxReq, XrxReq; // 0-based
     };
 
-    DmaConfig<D,T,R> dma;
+    DmaConfig<D,T,R> const dma;
     Config const cfg;
 
     Sync (Config const& c)
@@ -102,7 +103,7 @@ struct Sync : Poll<A>, Device {
 
     void init (char const* defs, int khz) {
         BASE::init(defs, khz);
-        SPI[BASE::CR2](0,2) = 0b11; // RXDMAEN TXDMAEN
+        SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
 
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::DR, A + BASE::DR);
