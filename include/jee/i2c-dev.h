@@ -17,12 +17,13 @@ struct Poll {
         uint8_t mhz;
     };
 
+    Pin sda {}, scl {}; // pin definitions must be kept in this order
     Config const cfg;
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, uint32_t timing) const {
-        Pin::config(defs);
+    void init (char const* defs, uint32_t timing) {
+        Pin::config(defs, &sda, 2);
 
         RCC(cfg.ena,1) = 1;
         I2C[TIMINGR] = timing;
@@ -36,7 +37,8 @@ struct Poll {
         I2C[CR1](0) = 1; // PE
     }
 
-    void deinit () const {
+    void deinit () {
+        Pin::config(":U,", &sda, 2); // keep SDA and SCL pulled-up
         RCC(cfg.ena, 1) = 0;
     }
 

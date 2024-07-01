@@ -31,7 +31,7 @@ inline Uart console ('U');
 #if MODE_GPIO
 i2c::Gpio i2cBus;
 #elif MODE_POLL
-const i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
 #elif MODE_SYNC
 i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 #elif MODE_CALL
