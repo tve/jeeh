@@ -2,6 +2,7 @@
 
 - **`arduino`** - using je JeeH library alongside the Arduino runtime
 - **`blink`** - a very simple LED blinker for a wide variety of boards
+- **`bmp390`** - read out the BMP390 sensor using either I2C or SPI
 - **`central`** - a WSN "central node" using the F723IE Discovery board
 - **`ethernet`** - driver for the F4/F7 built-in ethernet peripheral
 - **`f429hy`** - HAOYU's STM32F429GI board with RAM/NOR/NAND and 5" LCD
