@@ -5,6 +5,9 @@
 
 enum struct Irq : uint8_t {
     //CG: svd irqs
+#if STM32G4
+    LPUART1 = LPUART,
+#endif
 #if STM32L0
     DMA1_Channel2 = DMA1_Channel2_3,
     DMA1_Channel3 = DMA1_Channel2_3,
