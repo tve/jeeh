@@ -13,7 +13,7 @@ int main () {
 
     logf("Connected ...");
 
-    Message uMsg { uart.dId, 'R' };
+    Message uMsg { console.dId, 'R' };
     sys::send(uMsg); // start read from console
 
     Message wMsg { uart_w.dId, 'R' };
@@ -23,9 +23,9 @@ int main () {
     while (true) {
         auto& m = sys::recv();
         assert(m.mTag == 'R');
-        assert(m.mDst == uart.dId || m.mDst == uart_w.dId);
+        assert(m.mDst == console.dId || m.mDst == uart_w.dId);
 
-        uint8_t other = m.mDst ^ uart.dId ^ uart_w.dId;
+        uint8_t other = m.mDst ^ console.dId ^ uart_w.dId;
         Message out { other, 'W', m.mLen, m.mPtr };
         sys::call(out);
  
