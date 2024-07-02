@@ -21,7 +21,7 @@ struct Poll {
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, int khz) {
-        Pin::config(defs, &miso, 4);
+        Pin::config(defs, &mosi, 4);
         disable(); // start with NSEL high
 
         auto div = 0; // determine clock divider
