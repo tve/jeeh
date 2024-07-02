@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "oled-call"
+#define PIOENV  "detect-l412k"
 
 //CG1 board leds
 #define LED  "B3"
@@ -12,21 +12,21 @@ constexpr Pin led (LED);
 #define UART_NAME  USART2
 #define UART_PINS  "A2:7,A15:3"
 #define UART_FREQ  80
-#define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
+#define UART_CONF  Irq::DMA1_Channel7,Irq::DMA1_Channel6,1-1,7-1,6-1,2,2
 //CG]
 
 inline Uart console ('U');
 
 //CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B7:O4,B6"
+#define I2C_PINS  "B7:OH4,B6"
 #define I2C_FREQ  80
 #define I2C_TYPE  I2C1.ADDR,DMA2.ADDR,7-1,6-1
 #define I2C_CONF  { ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER,2-1,5,5 }
 //CG]
 
 //CG1 board mode
-#define MODE_CALL 1
+#define MODE_POLL 1
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;
