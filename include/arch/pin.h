@@ -17,8 +17,6 @@ struct Pin {
         else
             reg(BSRR) = ((1<<16) | (v&1)) << pin();
     }
-    void set () const { write(1); }
-    void clear () const { write(0); }
 
     // shorthand
     [[gnu::always_inline]]
