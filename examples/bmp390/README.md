@@ -24,16 +24,22 @@ i2c-poll: STM32L412 @ 80 MHz
 20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 30: -- -- -- -- -- -- -- -- -- -- -- -- 3C 3D -- --
 40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-50: -- -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
+50: -- -- -- 53 -- -- -- 57 -- -- -- -- -- -- -- 5F
 60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
 70: -- -- -- -- -- -- -- 77
 ```
 
-- `0x1E` = HMC5883 - compass
+I2C modules present on the board:
 - `0x3C` - SSD1306 - 128x32 OLED
 - `0x3D` - SSD1306 - 128x64 OLED
+- `0x57` - AT24C32 - 4 kB EEPROM 1/2
+- `0x5F` - AT24C32 - 4 kB EEPROM 2/2
+- `0x68` - DS3231 - RTC
+- `0x77` - BMP390 - temperature and pressure
+
+The "9DOF Stick" is normally disconnected, due to a conflict with the DS3231:
+- `0x1E` = HMC5883 - compass
 - `0x53` - ADXL345 - accelerometer
 - `0x68` - ITG3200 - gyroscope
-- `0x77` - BMP390 - temperature and pressure
 
 ![](board.jpg)

@@ -44,8 +44,8 @@ struct Poll {
         RCC(cfg.ena, 1) = 0;
     }
 
-    void enable () const { nsel.clear(); }
-    void disable () const { nsel.set(); }
+    void enable () const { nsel = 0; }
+    void disable () const { nsel = 1; }
 
     int rwByte (int v) const {
         SPI.byte(DR) = v;

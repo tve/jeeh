@@ -20,8 +20,8 @@ struct Gpio {
         Pin::config(":F,,,", &mosi, 4);
     }
 
-    void enable () const { hold(); nsel.clear(); hold(); }
-    void disable () const { hold(); nsel.set(); hold(); }
+    void enable () const { hold(); nsel = 0; hold(); }
+    void disable () const { hold(); nsel = 1; hold(); }
 
     int rwByte (int v) const {
         auto r = 0;
