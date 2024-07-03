@@ -1,4 +1,4 @@
-// Read out the BME280 sensor via I2C.
+// Read out the BME280 sensor via SPI.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -14,10 +14,10 @@ int main () {
     sensor = 1;
     sys::wait(10);
 
-    i2cBus.init(I2C_PINS, i2cTiming(400));
-    i2c::detect(i2cBus);
+    constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:HP";
+    spiBus.init(ALT_PINS, 10'000);
 
-    i2c::Dev dev { i2cBus, 0x76 };
+    spi::Dev dev { spiBus };
     BME280 bme280 (dev);
     bme280.init();
     //logDump(&bme280.tc, sizeof bme280.tc);

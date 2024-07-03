@@ -1,5 +1,58 @@
 namespace jeeh::spi {
 
+template< typename SPI >
+struct Dev {
+    SPI& bus;
+
+    Dev (SPI& b) : bus (b) {}
+
+    bool transfer (bool w, void* p =nullptr, uint8_t n =0) const {
+        return bus.transfer(w, (uint8_t*) p, n);
+    }
+
+    // one byte address, single-byte data
+    int32_t read (uint8_t r) const {
+        uint32_t v = 0;
+        return read(r, &v, 1) ? v : -1;
+        return v;
+    }
+    bool write (uint8_t r, uint8_t v) const {
+        return write(r, &v, 1);
+    }
+
+    // one byte address, to/from buffer
+    bool read (uint8_t r, void* p, uint8_t n) const {
+        bus.enable();
+        transfer(true, &r, 1);
+        transfer(false, p, n);
+        bus.disable();
+        return true;
+    }
+    bool write (uint8_t r, void const* p, uint8_t n) const {
+        bus.enable();
+        transfer(true, &r, 1);
+        transfer(true, (void*) p, n);
+        bus.disable();
+        return true;
+    }
+
+    // two byte address, to/from buffer
+    bool read16 (uint16_t r, void* p, uint8_t n) const {
+        bus.enable();
+        transfer(true, &r, 2);
+        transfer(true, p, n);
+        bus.disable();
+        return true;
+    }
+    bool write16 (uint16_t r, void const* p, uint8_t n) const {
+        bus.enable();
+        transfer(true, &r, 2);
+        transfer(true, (void*) p, n);
+        bus.disable();
+        return true;
+    }
+};
+
 struct Gpio {
     using ID = Pin;
 

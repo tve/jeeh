@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "i2c-gpio"
+#define PIOENV  "spi-poll"
 
 //CG1 board leds
 #define LED  "A8"
@@ -25,8 +25,16 @@ inline Uart console ('U');
 #define I2C_CONF  { ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER,1-1,5,5 }
 //CG]
 
+//CG[ board spi
+#define SPI_NAME  SPI1
+#define SPI_PINS  "B5:0,B4,B3,A15:P"
+#define SPI_FREQ  32
+#define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
+#define SPI_CONF  { ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,1,1 }
+//CG]
+
 //CG1 board mode
-#define MODE_GPIO 1
+#define MODE_POLL 1
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;
@@ -36,6 +44,16 @@ i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
 i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 #elif MODE_CALL
 i2c::Call<I2C_TYPE> i2cBus (I2C_CONF);
+#endif
+
+#if MODE_GPIO
+spi::Gpio spiBus;
+#elif MODE_POLL
+spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
+#elif MODE_SYNC
+spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
+#elif MODE_CALL
+spi::Call<SPI_TYPE> spiBus (SPI_CONF);
 #endif
 
 uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
