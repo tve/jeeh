@@ -15,6 +15,8 @@ enum struct Irq : uint8_t {
     DMA1_Channel5 = DMA1_Channel4_7,
     DMA1_Channel6 = DMA1_Channel4_7,
     DMA1_Channel7 = DMA1_Channel4_7,
+    I2C1_EV = I2C1,
+    I2C1_ER = I2C1,
 #endif
 };
 

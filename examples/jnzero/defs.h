@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "rtc"
+#define PIOENV  "i2c-gpio"
 
 //CG1 board leds
 #define LED  "A8"
@@ -16,6 +16,14 @@ constexpr Pin led (LED);
 //CG]
 
 inline Uart console ('U');
+
+//CG[ board i2c
+#define I2C_NAME  I2C1
+#define I2C_PINS  "B7:O4,B6"
+#define I2C_FREQ  32
+#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,7-1,6-1
+#define I2C_CONF  { ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER,1-1,5,5 }
+//CG]
 
 //CG1 board mode
 #define MODE_GPIO 1
@@ -35,6 +43,16 @@ uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
     return khz; // i2c::Gpio estimates the delays from given khz
 #else
     switch (mhz) {
+      case 2: // MHz
+        switch (khz) {
+          //CG[ i2c timing 2
+          // 2 Mhz: (remove this line to re-generate)
+          case  100: return 0x00000707; // prs 0 tcd 0 tdd 0 scll 7 sclh 7
+          // no valid solution for 400 kHz @ 2 MHz
+          // no valid solution for 1000 kHz @ 2 MHz
+          //CG]
+        }
+        break;
       case 4: // MHz
         switch (khz) {
           //CG[ i2c timing 4
@@ -57,11 +75,11 @@ uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
         break;
       case 32: // MHz
         switch (khz) {
-          //CG[ i2c timing 80
-          // 80 Mhz: (remove this line to re-generate)
-          case  100: return 0x1000D4C0; // prs 1 tcd 0 tdd 0 scll 192 sclh 212
-          case  400: return 0x00105366; // prs 0 tcd 1 tdd 0 scll 102 sclh 83
-          case 1000: return 0x00101C23; // prs 0 tcd 1 tdd 0 scll 35 sclh 28
+          //CG[ i2c timing 32
+          // 32 Mhz: (remove this line to re-generate)
+          case  100: return 0x00B0A294; // prs 0 tcd 11 tdd 0 scll 148 sclh 162
+          case  400: return 0x00B01E26; // prs 0 tcd 11 tdd 0 scll 38 sclh 30
+          case 1000: return 0x00B0090C; // prs 0 tcd 11 tdd 0 scll 12 sclh 9
           //CG]
         }
         break;
