@@ -6,6 +6,34 @@ struct BME280 {
 
     BME280 (DEV const& d) : dev {d} {}
 
+    void init () {
+        dev.write(0xF2, 1);
+        dev.write(0xF4, (1<<5) | (1<<2) | 3);
+        dev.write(0xF5, (3<<5) | (0<<2) | 0);
+
+        dev.read(0x88, &tc.T1, 24);
+        dev.read(0xA1, &tc.H1, 1);
+        dev.read(0xE1, &tc.H2, 7);
+        // unpack last few params
+        tc.H6 = tc.H5 >> 8;
+        tc.H5 = ((int8_t) tc.H5 << 4) | ((tc.H4 >> 12) & 0x0F);
+        tc.H4 = ((int8_t) tc.H4 << 4) | ((tc.H4 >> 8) & 0x0F);
+    }
+
+    void deinit () const {
+        dev.write(0xE0, 0xB6); // reset
+    }
+
+    auto getReading (int32_t& t, uint32_t& p, uint32_t& h) const {
+        uint8_t buf [8];
+        dev.read(0xF7, buf, sizeof buf);
+        auto r = tc.convert(buf);
+        t = r.t;
+        p = r.p;
+        h = r.h;
+    }
+
+private:
     struct [[gnu::packed]] TrimCoeffs {                                                    
         uint16_t T1;
         int16_t T2, T3;
@@ -76,23 +104,4 @@ struct BME280 {
 
     TrimCoeffs tc;
 
-    void init () {
-        dev.write(0xF2, 1);
-        dev.write(0xF4, (1<<5) | (1<<2) | 3);
-        dev.write(0xF5, (3<<5) | (0<<2) | 0);
-
-        dev.read(0x88, &tc.T1, 24);
-        dev.read(0xA1, &tc.H1, 1);
-        dev.read(0xE1, &tc.H2, 7);
-        // unpack last few params
-        tc.H6 = tc.H5 >> 8;
-        tc.H5 = ((int8_t) tc.H5 << 4) | ((tc.H4 >> 12) & 0x0F);
-        tc.H4 = ((int8_t) tc.H4 << 4) | ((tc.H4 >> 8) & 0x0F);
-    }
-
-    auto getReading () const {
-        uint8_t buf [8];
-        dev.read(0xF7, buf, sizeof buf);
-        return tc.convert(buf);
-    }
 };

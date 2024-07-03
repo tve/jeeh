@@ -20,10 +20,13 @@ int main () {
     i2c::Dev dev { i2cBus, 0x76 };
     BME280 bme280 (dev);
     bme280.init();
+    sys::wait(10);
     //logDump(&bme280.tc, sizeof bme280.tc);
 
     while (true) {
-        auto [t, p, h] = bme280.getReading();
+        int32_t t;
+        uint32_t p, h;
+        bme280.getReading(t, p, h);
 
         logf("%d.%02d °C, %d.%04d hPa, %d.%03d %%",
              t / 100, t % 100, p / 10000, p % 10000, h / 1000, h % 1000);

@@ -15,15 +15,18 @@ int main () {
     sys::wait(10);
 
     constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:HP";
-    spiBus.init(ALT_PINS, 10'000);
+    spiBus.init(ALT_PINS, 1'000);
 
     spi::Dev dev { spiBus };
     BME280 bme280 (dev);
     bme280.init();
+    sys::wait(10);
     //logDump(&bme280.tc, sizeof bme280.tc);
 
     while (true) {
-        auto [t, p, h] = bme280.getReading();
+        int32_t t;
+        uint32_t p, h;
+        bme280.getReading(t, p, h);
 
         logf("%d.%02d °C, %d.%04d hPa, %d.%03d %%",
              t / 100, t % 100, p / 10000, p % 10000, h / 1000, h % 1000);
