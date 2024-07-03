@@ -30,6 +30,7 @@ i2c-poll: STM32L412 @ 80 MHz
 ```
 
 I2C modules present on the board:
+
 - `0x3C` - SSD1306 - 128x32 OLED
 - `0x3D` - SSD1306 - 128x64 OLED
 - `0x57` - AT24C32 - 4 kB EEPROM 1/2
@@ -37,7 +38,8 @@ I2C modules present on the board:
 - `0x68` - DS3231 - RTC
 - `0x77` - BMP390 - temperature and pressure
 
-The "9DOF Stick" is normally disconnected, due to a conflict with the DS3231:
+The "9DOF Stick" is not normally connected, due to a conflict with the DS3231:
+
 - `0x1E` = HMC5883 - compass
 - `0x53` - ADXL345 - accelerometer
 - `0x68` - ITG3200 - gyroscope
