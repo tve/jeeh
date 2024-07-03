@@ -65,8 +65,8 @@ struct BME280 {
             auto cp = pComp(p, tFine);
             auto ch = hComp(h, tFine);
 
-            cp = (cp>>8)*100 + (((cp&0xFF)*100) >> 8);      // Q24.8 -> x100
-            ch = (ch>>10)*1000 + (((ch&0x3FF)*1000) >> 10); // Q22.10 -> x1000
+            cp = (cp * 100 + 128) >> 8;   // Q24.8 -> x100
+            ch = (ch * 1000 + 512) >> 10; // Q22.10 -> x1000
 
             struct Result { int32_t t; uint32_t p, h; };
             return Result{ ct, cp, ch };
