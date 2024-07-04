@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "spi-sync"
+#define PIOENV  "recv-poll"
 
 //CG1 board leds
 #define LED  "A8"
@@ -34,7 +34,7 @@ inline Uart console ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_SYNC 1
+#define MODE_POLL 1
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;
