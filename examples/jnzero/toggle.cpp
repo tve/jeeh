@@ -6,53 +6,57 @@
 using namespace jeeh;
 #include "defs.h"
 
+template< typename T >
+void readSensor (T& bme, bool f, int32_t* tph) {
+    bme.init(f);
+    bme.start();
+    sys::wait(10);
+    bme.getReading(tph);
+    //bme.deinit();
+};
+
 int main () {
     initBoard();
+
+    i2c::Dev dev1 { i2cBus, 0x76 };
+    BME280 bme1 (dev1);
+
+    constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:PV";
+    spi::Dev dev2 { spiBus };
+    BME280 bme2 (dev2);
 
     Pin power ("A1");
     power.mode("P");
 
-    i2c::Dev dev1 { i2cBus, 0x76 };
-
-    constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:HP";
-    spi::Dev dev2 { spiBus };
-    spiBus.rate = 100;
-
-    bool useI2c = true;
+    bool useSpi = false;
     while (true) {
-useI2c = true;
-        int32_t t;
-        uint32_t p, h;
-
-        auto readSensor = [&](auto dev) {
-            BME280 bme280 (dev);
-            bme280.init();
-            sys::wait(5);
-            bme280.getReading(t, p, h);
-            bme280.deinit();
-        };
+        int32_t tph [3];
 
         power = 1;
-        sys::wait(3);
-        if (useI2c) {
-            i2cBus.init(I2C_PINS, i2cTiming(400));
-            readSensor(dev1);
-            i2cBus.deinit();
-        } else {
+        sys::wait(5);
+
+        if (useSpi) {
             spiBus.init(ALT_PINS, 10'000);
-            readSensor(dev2);
+            readSensor(bme2, useSpi, tph);
             spiBus.deinit();
+        } else {
+            i2cBus.init(I2C_PINS, i2cTiming(1000));
+            readSensor(bme1, useSpi, tph);
+            i2cBus.deinit();
         }
+
         power = 0;
 
-        logf("%s: %d.%02d °C, %d.%04d hPa, %d.%03d %%", useI2c ? "I2C" : "SPI",
-                t / 100, t % 100, p / 10000, p % 10000, h / 1000, h % 1000);
+        logf("%s: %d.%02d °C, %d.%04d hPa, %d.%03d %%", useSpi ? "SPI" : "I2C",
+             tph[0] / 100, tph[0] % 100,
+             tph[1] / 10000, tph[1] % 10000,
+             tph[2] / 1000, tph[2] % 1000);
 
         led = 0; // on
         sys::wait(100);
         led = 1;
         sys::wait(400);
 
-        useI2c = !useI2c;
+        useSpi = !useSpi;
     }
 }

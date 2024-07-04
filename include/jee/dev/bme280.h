@@ -3,34 +3,38 @@
 template< typename DEV >
 struct BME280 {
     DEV dev;
+    uint8_t wMask;
 
     BME280 (DEV const& d) : dev {d} {}
 
-    void init () {
-        dev.write(0xF2, 1);
-        dev.write(0xF4, (1<<5) | (1<<2) | 3);
-        dev.write(0xF5, (3<<5) | (0<<2) | 0);
+    void init (bool useSpi) {
+        wMask = useSpi ? 0x7F : 0xFF;
 
         dev.read(0x88, &tc.T1, 24);
         dev.read(0xA1, &tc.H1, 1);
         dev.read(0xE1, &tc.H2, 7);
+
         // unpack last few params
         tc.H6 = tc.H5 >> 8;
         tc.H5 = ((int8_t) tc.H5 << 4) | ((tc.H4 >> 12) & 0x0F);
         tc.H4 = ((int8_t) tc.H4 << 4) | ((tc.H4 >> 8) & 0x0F);
+        //logDump(&tc, sizeof tc);
     }
 
     void deinit () const {
-        dev.write(0xE0, 0xB6); // reset
+        dev.write(0xE0 & wMask, 0xB6); // reset
     }
 
-    auto getReading (int32_t& t, uint32_t& p, uint32_t& h) const {
+    void start () const {
+        dev.write(0xF2 & wMask, 1);
+        dev.write(0xF4 & wMask, (1<<5) | (1<<2) | 1);
+        dev.write(0xF5 & wMask, (3<<5) | (0<<2) | 0);
+    }
+
+    void getReading (int32_t* tph) const {
         uint8_t buf [8];
         dev.read(0xF7, buf, sizeof buf);
-        auto r = tc.convert(buf);
-        t = r.t;
-        p = r.p;
-        h = r.h;
+        tc.convert(buf, tph);
     }
 
 private:
@@ -82,7 +86,7 @@ private:
         }
 
         // Return compensated results from 8-byte input buffer.
-        auto convert (uint8_t const* buf) const {
+        void convert (uint8_t const* buf, int32_t* tph) const {
             auto t = (buf[3]<<12) | (buf[4]<<4) | (buf[5]>>4);
             auto p = (buf[0]<<12) | (buf[1]<<4) | (buf[2]>>4);
             auto h = (buf[6]<<8) | buf[7];
@@ -96,12 +100,12 @@ private:
             cp = (cp * 100 + 128) >> 8;   // Q24.8 -> x100
             ch = (ch * 1000 + 512) >> 10; // Q22.10 -> x1000
 
-            struct Result { int32_t t; uint32_t p, h; };
-            return Result{ ct, cp, ch };
+            tph[0] = ct;
+            tph[1] = cp;
+            tph[2] = ch;
         }
     };
     static_assert(sizeof (TrimCoeffs) == 33);
 
     TrimCoeffs tc;
-
 };

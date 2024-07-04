@@ -51,7 +51,7 @@ struct Poll {
         if (m != R2)
             while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TCR ~TC ~STOPF
                 if (I2C[ISR](12) || I2C[ISR](4)) { // TIMEOUT NACKF
-                    I2C[ICR] = I2C[ISR];
+                    I2C[ICR] = I2C[ISR] & 0x3F38;
                     return false;
                 }
                 if (!I2C[ISR](15) || I2C[ISR](5)) // ~BUSY or STOPF
@@ -139,7 +139,7 @@ protected:
         if (m == BASE::R2)
             cache::inval(p, n);
         if (I2C[BASE::ISR](4)) { // NACKF
-            I2C[BASE::ICR] = I2C[BASE::ISR];
+            I2C[BASE::ICR] = I2C[BASE::ISR] & 0x3F38;
             return false;
         }
         return true;
