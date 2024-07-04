@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "spi-gpio"
+#define PIOENV  "spi-sync"
 
 //CG1 board leds
 #define LED  "A8"
@@ -19,10 +19,10 @@ inline Uart console ('U');
 
 //CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B7:O4,B6"
+#define I2C_PINS  "B7:OH1,B6"
 #define I2C_FREQ  32
-#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,7-1,6-1
-#define I2C_CONF  { ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER,1-1,5,5 }
+#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,6-1,7-1
+#define I2C_CONF  { ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER,1-1,6,6 }
 //CG]
 
 //CG[ board spi
@@ -34,7 +34,7 @@ inline Uart console ('U');
 //CG]
 
 //CG1 board mode
-#define MODE_GPIO 1
+#define MODE_SYNC 1
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;
@@ -111,14 +111,26 @@ void initBoard () {
     rtc::init(true);
     led.mode("P");
 
+#if 0
     console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
+#endif
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
 extern "C" int _write (int, char* ptr, int len) {
+#if 0
     Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
+#else
+    static uart::Poll<UART_NAME.ADDR> tty (ena::UART_NAME, UART_FREQ);
+    static bool inited;
+    if (!inited) {
+        tty.init(UART_PINS, 115'200);
+        inited = true;
+    }
+    tty.transfer(1, (uint8_t*) ptr, len);
+#endif
     return len;
 }
 
