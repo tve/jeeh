@@ -26,7 +26,7 @@ int main () {
         bme280.start();
         sys::wait(10);
         int32_t tph [3];
-        bme280.getReading(tph);
+        bme280.getReadings(tph);
 
         logf("%d.%02d °C, %d.%04d hPa, %d.%03d %%",
              tph[0] / 100, tph[0] % 100,

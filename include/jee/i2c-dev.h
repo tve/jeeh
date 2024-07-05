@@ -39,6 +39,7 @@ struct Poll {
 
     void deinit () {
         Pin::config(":F,", &sda, 2);
+        I2C[CR1](0) = 0; // ~PE
         RCC(cfg.ena, 1) = 0;
     }
 

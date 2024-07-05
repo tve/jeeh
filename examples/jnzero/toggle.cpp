@@ -10,8 +10,8 @@ template< typename T >
 void readSensor (T& bme, bool f, int32_t* tph) {
     bme.init(f);
     bme.start();
-    sys::wait(10);
-    bme.getReading(tph);
+    sys::wait(8);
+    bme.getReadings(tph);
     //bme.deinit();
 };
 
@@ -21,7 +21,8 @@ int main () {
     i2c::Dev dev1 { i2cBus, 0x76 };
     BME280 bme1 (dev1);
 
-    constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:PV";
+    // config SPI1 to use the sensor pins iso the on-board radio module
+    constexpr auto ALT_PINS = "A7:H0,A6,A5,A4:PH";
     spi::Dev dev2 { spiBus };
     BME280 bme2 (dev2);
 
@@ -33,7 +34,7 @@ int main () {
         int32_t tph [3];
 
         power = 1;
-        sys::wait(5);
+        sys::wait(2);
 
         if (useSpi) {
             spiBus.init(ALT_PINS, 10'000);

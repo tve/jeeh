@@ -18,7 +18,6 @@ struct BME280 {
         tc.H6 = tc.H5 >> 8;
         tc.H5 = ((int8_t) tc.H5 << 4) | ((tc.H4 >> 12) & 0x0F);
         tc.H4 = ((int8_t) tc.H4 << 4) | ((tc.H4 >> 8) & 0x0F);
-        //logDump(&tc, sizeof tc);
     }
 
     void deinit () const {
@@ -31,7 +30,7 @@ struct BME280 {
         dev.write(0xF5 & wMask, (3<<5) | (0<<2) | 0);
     }
 
-    void getReading (int32_t* tph) const {
+    void getReadings (int32_t* tph) const {
         uint8_t buf [8];
         dev.read(0xF7, buf, sizeof buf);
         tc.convert(buf, tph);
