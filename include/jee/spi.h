@@ -54,8 +54,6 @@ struct Dev {
 };
 
 struct Gpio {
-    using ID = Pin;
-
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;

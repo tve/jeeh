@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "uart"
+#define PIOENV  "toggle-sync"
 
 //CG1 board leds
 #define LED  "A8"
@@ -33,7 +33,8 @@ inline Uart console ('U');
 #define SPI_CONF  { ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,1,1 }
 //CG]
 
-//CG: board mode
+//CG1 board mode
+#define MODE_SYNC 1
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;
@@ -106,7 +107,7 @@ uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
 }
 
 void initBoard () {
-    fastClock();
+    //fastClock();
     rtc::init(true);
     led.mode("P");
 

@@ -60,8 +60,6 @@ void detect (I2C& bus) {
 }
 
 struct Gpio {
-    using ID = uint8_t;
-
     Pin sda, scl; // pin definitions must be kept in this order
     uint16_t rate;
 
