@@ -64,16 +64,7 @@ int main () {
              tph[1] / 10000, tph[1] % 10000,
              tph[2] / 1000, tph[2] % 1000);
 
-#if 0
-        if (useSpi) {
-            sys::wait(10);
-            led = 0; // inverted logic
-            sys::wait(1);
-            led = 1;
-        }
-#endif
-
-        sys::wait(useSpi ? 25 : 300);
+        sys::wait(useSpi ? 25 : 500);
 
         useSpi = !useSpi;
     }

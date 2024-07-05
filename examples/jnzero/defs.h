@@ -110,6 +110,7 @@ void initBoard () {
     //fastClock();
     rtc::init(true);
     led.mode("P");
+    led = 1; // turn LED off
 
 #if 0
     console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
