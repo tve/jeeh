@@ -32,7 +32,7 @@ int main () {
 
     int i = 0;
     while (true) {
-        logf("loop %d", ++i);
+        logf("loop %d @ %d", ++i, rtc::getSecs());
         sys::recv();
     }
 }

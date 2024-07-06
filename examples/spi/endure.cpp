@@ -12,13 +12,16 @@ int main () {
     spiBus.init(SPI_PINS, 85'000);
     SpiFlash spif (spiBus);
 
+#if 0
     constexpr auto CHIP  = 512*1024;
+#else
+    constexpr auto CHIP  = 2048*1024;
+#endif
     constexpr auto BLOCK = 4*1024;
     constexpr auto PAGE  = 256;
 
     constexpr auto BPC  = CHIP/BLOCK; // blocks per chip
     constexpr auto PPB  = BLOCK/PAGE; // pages per block
-    assert(BPC == 128);
     assert(PPB == 16);
 
     logf("wipe: %d kB (%d blocks of %d kB)", CHIP>>10, BPC, BLOCK>>10);

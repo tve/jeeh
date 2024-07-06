@@ -1,6 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
-//CG pio
+//CG1 pio
+#define PIOENV  "blink"
 
 //CG1 board leds
 #define LED  "A5"
@@ -13,7 +14,7 @@
 //CG]
 
 constexpr Pin led (LED);
-Uart uart ('U');
+Uart console ('U');
 
 extern "C" int _write (int, char* ptr, int len) {
     Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
@@ -30,8 +31,8 @@ void initBoard () {
     led.mode("P");
     rtc::init();
 
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
-                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
+    console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+                                       UART_FREQ, Irq::UART_NAME, UART_CONF });
 
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
