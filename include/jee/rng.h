@@ -6,8 +6,10 @@ namespace jeeh::rng {
 enum { CRRCR=0x98 };
 
 void init () {
+#if !STM32F4
     RCC[CRRCR](0) = 1;        // HSI48ON
     while (!RCC[CRRCR](1)) {} // ~HSI48RDY
+#endif
 
     RCC(ena::RNG,1) = 1;
     RNG[0x00](2) = 1; // RNGEN

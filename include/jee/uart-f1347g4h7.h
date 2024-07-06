@@ -86,6 +86,10 @@ struct Uart : Device {
 
     void start (Message& m) override {
         switch (m.mTag) {
+            case 'I':
+                m.mLen = rxAvail();
+                reply(&m);
+                break;
             case 'R':
                 if (m.mLen > 0) {
                     rxFill = (rxFill + m.mLen) % RXBYTES;
