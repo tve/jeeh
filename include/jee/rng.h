@@ -29,8 +29,8 @@ uint32_t rand () {
 // see https://en.wikipedia.org/wiki/Fisher–Yates_shuffle
 template< int N >
 struct Permutation {
-    static_assert(1 <= N && N <= 256);
-    uint8_t choice [N], limit;
+    static_assert(1 <= N && N <= 65536);
+    uint16_t choice [N], limit;
 
     void init () {
         rng::init();
