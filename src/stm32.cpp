@@ -313,7 +313,7 @@ void sleepNow (int mode) {
     BlockIRQ irq;
     PWR[0x00](0, 3) = mode - sys::STOP0; // CR1: LPMS
     SCB[0x10](2) = 1; // SLEEPDEEP
-    asm ("wfe");
+    asm ("sev; wfe; wfe");
     SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
 
