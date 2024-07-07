@@ -246,10 +246,12 @@ struct Thread : Message, Chain {
             if (nextToRun == 0) {
                 auto t = nextTick();
                 auto power = lowestPower(Device::powerScan(), t);
-                if (power >= sys::STOP0)
+                asm ("sev; wfe");
+                if (power >= sys::STOP0) {
                     rtc::shortSleep(t, power);
-                resumePower();
-                SCB[0x10](1) = 1; // SLEEPONEXIT
+                    resumePower();
+                } else
+                    SCB[0x10](1) = 1; // SLEEPONEXIT
                 break;
             }
             --nextToRun;

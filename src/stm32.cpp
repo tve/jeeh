@@ -185,7 +185,7 @@ struct Ticker : Device, Chain {
     uint32_t millis () const {
         // the result has millisecond resolution, even when rate > 1
         while (true) // spinloop, in case ticks changes midway
-            if (uint32_t t = ticks, c = STK[0x08]; t == ticks) {
+            if (uint32_t t = ticks, c = STK[0x8]; t == ticks) {
                 return t + rate - (c*8)/(SystemCoreClock/1000);
             }
     }
@@ -253,7 +253,7 @@ void reset () {
 #endif
 
 void init (bool lse) {
-#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0 | STM32L4)
+#if !(STM32F3 | STM32F4 | STM32F7 | STM32L0)
     RCC(ena::RTCAPB, 1) = 1;
 #endif
 #if !(STM32H7 | STM32WL)
