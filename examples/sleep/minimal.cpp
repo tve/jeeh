@@ -24,7 +24,6 @@ int main () {
         led = 1;
         cycles::msBusy(1);
         led = 0;
-        cycles::msBusy(1);
         sys::wait(500);
     }
 }
