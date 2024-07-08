@@ -294,3 +294,9 @@ namespace cache {
     template<typename T>
     void flush (T const& obj) { flush(&obj, sizeof obj); }
 } // namespace cache
+
+namespace flash {
+    uint32_t pageSize (uint32_t offset);
+    void erase (uint32_t offset);
+    void write32 (uint32_t offset, uint32_t const* data);
+}

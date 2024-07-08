@@ -41,3 +41,60 @@ uint32_t fastClock (bool high) {
         return clockChange(16'000'000);
     }
 }
+
+namespace flash {
+    enum { KEYR=0x08, SR=0x10, CR=0x14 };
+
+    uint32_t pageSize (uint32_t offset) {
+        (void) offset;
+        return 2048;
+    }
+
+    volatile uint32_t& word (uint32_t pos) {
+        return *(uint32_t*) (0x08000000 + pos);
+    }
+
+    void wait () {
+        while (FLASH[CR](16)) {}
+    }
+
+    void unlock () {
+        wait();
+        if (FLASH[CR](31)) {
+            FLASH[KEYR] = 0x45670123;
+            FLASH[KEYR] = 0xCDEF89AB;
+        }
+    }
+
+    void finish () {
+        wait();
+        FLASH[CR] = 1<<31; // LOCK
+    }
+
+    void erase (uint32_t offset) {
+        assert(offset % pageSize(offset) == 0);
+        auto sector = offset / pageSize(offset);
+        unlock();
+        FLASH[CR] = (sector<<3) | (1<<1); // SNB PER
+        FLASH[CR](16) = 1; // STRT
+        finish();
+    }
+
+    void write2w (uint32_t offset, uint32_t val1, uint32_t val2) {
+        assert(offset % 8 == 0);       // must be on 8-byte boundary
+        assert(word(offset) == ~0U);   // must be empty at offset
+        assert(word(offset+4) == ~0U); // must be empty at offset+4
+        unlock();
+        FLASH[CR](0) = 1; // PG
+        word(offset) = val1;
+        word(offset+4) = val2;
+        wait();
+    }
+
+    void write8w (uint32_t offset, uint32_t const* data) {
+        for (auto i = 0U; i < 8; i += 2) {
+            write2w(offset, data[i], data[i+1]);
+            offset += 8;
+        }
+    }
+}
