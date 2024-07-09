@@ -17,6 +17,6 @@ struct FileSys {
     }
 };
 
-#if STM32G4
+#if STM32F4 | STM32G4
 FileSys fs { 0x1'0000, 0x1'0000 };
 #endif

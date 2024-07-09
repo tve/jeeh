@@ -26,6 +26,8 @@ int main () {
         offset += psz;
     }
 
+    logDump((uint32_t*) (0x0800'0000 + BASE), 80, "empty");
+
     for (auto i = 0; i < NUMP; ++i) {
         auto offset = BASE + i * psz;
 

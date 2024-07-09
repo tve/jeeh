@@ -55,7 +55,7 @@ namespace flash {
     }
 
     void wait () {
-        while (FLASH[CR](16)) {}
+        while (FLASH[SR](16)) {}
     }
 
     void unlock () {

@@ -4,25 +4,25 @@
 #define PIOENV  "list"
 
 //CG1 board leds
-#define LED  "B8"
+#define LED  "A1"
 
 constexpr Pin led (LED);
 
 //CG[ board uart
-#define UART_NAME  USART2
-#define UART_PINS  "A2:UH7,A3"
-#define UART_FREQ  170
-#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
+#define UART_NAME  USART1
+#define UART_PINS  "A9:7,A10"
+#define UART_FREQ  84
+#define UART_CONF  Irq::DMA2_Stream7,Irq::DMA2_Stream5,2-1,7-0,5-0,4,4
 //CG]
 
 inline Uart console ('U');
 
 //CG[ board spi
 #define SPI_NAME  SPI1
-#define SPI_PINS  "B5:H5,B4,B3,A11:HP"
-#define SPI_FREQ  170
-#define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,4-1
-#define SPI_CONF  { ena::SPI1,170,Irq::DMA1_CH3,Irq::DMA1_CH4,1-1,11,10 }
+#define SPI_PINS  "B5:H5,B4,B3,A15:HP"
+#define SPI_FREQ  84
+#define SPI_TYPE  SPI1.ADDR,DMA2.ADDR,3-0,2-0
+#define SPI_CONF  { ena::SPI1,84,Irq::DMA2_Stream3,Irq::DMA2_Stream2,2-1,3,3 }
 //CG]
 
 //CG: board mode
