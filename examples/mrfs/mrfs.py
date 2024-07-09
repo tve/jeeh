@@ -17,21 +17,31 @@ def addFile(fn):
 
     hdr = pack('4s I 16s i I',
                b'MRFS', size, os.path.basename(fn)[:15].encode(), date, 0)
-    pad = (31&-size) * b'\0'
+    pad = (31&-size) * b'\xFF'
 
     crc = crc32(dat)
     crc = crc32(pad, crc)
     crc = crc32(hdr[:28], crc)
     hdr = hdr[:28] + pack('I', crc)
 
+    with open(image, 'rb') as xfd:
+        old = xfd.read().rstrip(b'\xFF');
+    while len(old) % 32 != 0:
+        old += b'\xFF'
+
+    fd.seek(len(old))
+    fd.truncate()
+
     fd.write(hdr)   # 32-byte header
     fd.write(dat)   # payload, i.e. file contents
     fd.write(pad)   # padding to multiple of 32
 
+    fd.write(32*b'\xFF') # append an empty slot
+
 def listing():
     with open(image, 'rb') as fd:
         dat = fd.read()
-    files, limit, pos = {}, len(dat), 0
+    files, pos = {}, 0
     while dat[:4] == b'MRFS':
         siz, nam, tim, crc = unpack('I16siI', dat[4:32])
         nam = nam.strip(b'\0').decode()
@@ -45,7 +55,7 @@ def listing():
         v = files[k]
         if v[3] != 0: # skip deleted files
             print('%04X: [%08X] %5db  %8d.%02d%02d  %s' % v)
-    print("%04X: %d bytes" % (limit, limit))
+    print("%04X: %d bytes" % (pos, pos))
     if len(dat) > 0 and dat[:4] != b'\xff\xff\xff\xff':
         raise SystemExit('%s: bad header at offset %d' % (image, pos))
 
@@ -59,8 +69,8 @@ else:
     sys.exit(1)
 
 if args:
-    with open(image, 'ab') as fd:
-        for fn in args:
+    for fn in args:
+        with open(image, 'ab') as fd:
             addFile(fn)
 else:
     listing()

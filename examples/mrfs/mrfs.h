@@ -17,7 +17,7 @@ namespace mrfs {
     };
     static_assert(sizeof (File) == 32);
 
-    static constexpr auto MAGIC = 0x3179746D; // 'mty1'
+    static constexpr auto MAGIC = 0x5346524D; // 'MRFS'
 
     inline static File* base; // first entry in flash
     inline static File* fill; // next unused position
