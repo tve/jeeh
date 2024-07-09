@@ -3,19 +3,21 @@
 #include <jee.h>
 
 uint32_t mrfs::time10d () {
-    auto dt = jeeh::rtc::get();
-    auto d = 10000*(dt.yr-20) + 100*dt.mo + dt.dy;
-    auto t = 100*dt.hh + dt.mm;
-    return 10000*d + t; // 10-digit int: YYMMDDhhmm, relative to 2020
+    auto dt = rtc::getDate();
+    auto d = 10000*dt.yr + 100*dt.mo + dt.dy;
+    auto t = 64*dt.hh + dt.mm;
+    return (d<<11) + t;
 }
 
-void mrfs::eraseRom (uintptr_t rom, uint32_t len) {
-    for (auto i = 0U; i < len; i += jeeh::flash::pageSize(i))
-        jeeh::flash::erasePage(rom + i);
+void mrfs::eraseRom (uintptr_t offset, uint32_t len) {
+    assert(offset < (1<<21)); // offset from start of flash, not addr
+    for (auto i = 0U; i < len; i += flash::pageSize(i))
+        flash::erase(offset + i);
 }
 
-void mrfs::writeRom (uintptr_t dest, void const* ptr) {
-    jeeh::flash::write32b(dest, ptr);
+void mrfs::writeRom (uintptr_t offset, void const* ptr) {
+    assert(offset < (1<<21)); // offset from start of flash, not addr
+    flash::write8w(offset, (uint32_t const*) ptr);
 }
 
 #else // not arm cortex, i.e. native code

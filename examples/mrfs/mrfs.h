@@ -80,8 +80,10 @@ namespace mrfs {
             if (pos == 0)
                 memset(obuf, 0xFF, sizeof obuf);
             obuf[pos] = ((uint8_t const*) ptr)[i];
-            if (pos == sizeof obuf - 1)
-                writeRom((uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos, obuf);
+            if (pos == sizeof obuf - 1) {
+                auto p = (uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos;
+                writeRom(p & 0x07FF'FFFF, obuf);
+            }
             ++ofile.size;
         }
         return len;
@@ -91,11 +93,13 @@ namespace mrfs {
         if (ofile.magic == 0)
             return -1;
         // flush any bytes still in obuf
-        if (auto pos = ofile.size % sizeof obuf; pos != 0)
-            writeRom((uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos, obuf);
+        if (auto pos = ofile.size % sizeof obuf; pos != 0) {
+            auto p = (uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos;
+            writeRom(p & 0x07FF'FFFF, obuf);
+        }
         if (ofile.time == 0)
             ofile.time = time != 0 ? time : time10d();
-        writeRom((uintptr_t) fill, &ofile);
+        writeRom((uintptr_t) fill & 0x07FF'FFFF, &ofile);
         fill = next(fill);
         memset(&ofile, 0, sizeof ofile);
         return 0;

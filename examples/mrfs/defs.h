@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "flash"
+#define PIOENV  "list"
 
 //CG1 board leds
 #define LED  "B8"
