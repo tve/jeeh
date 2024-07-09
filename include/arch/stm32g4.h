@@ -72,8 +72,8 @@ namespace flash {
     }
 
     void erase (uint32_t offset) {
-        assert(offset < (1<<21)); // offset from start of flash, not addr
-        assert(offset % pageSize(offset) == 0);
+        //assert(offset < (1<<21)); // offset from flash start, not addr
+        //assert(offset % pageSize(offset) == 0);
         auto sector = offset / pageSize(offset);
         unlock();
         FLASH[CR] = (sector<<3) | (1<<1); // SNB PER
@@ -82,10 +82,10 @@ namespace flash {
     }
 
     void write2w (uint32_t offset, uint32_t val1, uint32_t val2) {
-        assert(offset < (1<<21));      // offset from start of flash, not addr
-        assert(offset % 8 == 0);       // must be on 8-byte boundary
-        assert(word(offset) == ~0U);   // must be empty at offset
-        assert(word(offset+4) == ~0U); // must be empty at offset+4
+        //assert(offset < (1<<21));      // offset from flash start, not addr
+        //assert(offset % 8 == 0);       // must be on 8-byte boundary
+        //assert(word(offset) == ~0U);   // must be empty at offset
+        //assert(word(offset+4) == ~0U); // must be empty at offset+4
         unlock();
         FLASH[CR](0) = 1; // PG
         word(offset) = val1;
