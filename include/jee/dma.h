@@ -91,6 +91,7 @@ struct DmaConfig {
         else
             return false;
 #endif
+        assert(!isRunning());
         return true;
     }
 
@@ -99,6 +100,7 @@ struct DmaConfig {
     }
 
     void done () const {
+        assert(isRunning());
         DTX[CCR](0) = 0; // ~EN
         DRX[CCR](0) = 0; // ~EN
     }

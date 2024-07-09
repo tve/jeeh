@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "add"
+#define PIOENV  "spif-poll"
 
 //CG1 board leds
 #define LED  "A1"
@@ -25,7 +25,8 @@ inline Uart console ('U');
 #define SPI_CONF  { ena::SPI1,84,Irq::DMA2_Stream3,Irq::DMA2_Stream2,2-1,3,3 }
 //CG]
 
-//CG: board mode
+//CG1 board mode
+#define MODE_POLL 1
 
 #if MODE_GPIO
 spi::Gpio spiBus;
@@ -39,9 +40,10 @@ spi::Call<SPI_TYPE> spiBus (SPI_CONF);
 
 void initBoard () {
     fastClock();
-    led.mode("P");
     cycles::init();
     rtc::init(false);
+    led.mode("P");
+    led = 1; // inverted logic
 
     console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });

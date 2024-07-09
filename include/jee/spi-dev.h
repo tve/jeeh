@@ -31,7 +31,7 @@ struct Poll {
 
         RCC(cfg.ena, 1) = 1;
         SPI[CR1] = (div<<3) | (1<<2); // BD MSTR
-#if STM32F1 | STM32L0
+#if STM32F1 | STM32F4 | STM32L0
         SPI[CR2] = (1<<2); // SSOE
 #else
         SPI[CR2] = (1<<12) | (7<<8) | (1<<2); // FRXTH DS SSOE
