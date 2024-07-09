@@ -1,4 +1,4 @@
-// Add a dummy file to an MRFS area.
+// Add dummy files to an MRFS area.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -31,26 +31,20 @@ int main () {
         auto n = 1 + rng::rand() % 10;
         logf("%s / %d: %dx %db \"...%s\"", fnBuf, r, n, strlen(buf), buf + 23);
 
-#if 1
         mrfs::create(fnBuf);
         for (auto j = 0U; j < n; ++j)
             mrfs::write(buf, strlen(buf));
         mrfs::close();
-#endif
     }
 
     mrfs::File* p = nullptr;
     while (mrfs::readDir(p)) {
         auto a = (uint16_t) ((uint32_t) p - fs.mapBase) >> 5;
-        logf("%04x: [%08x] %6d %d.%02d%02d %s",
+        logf("%04x: [%08x] %6d  20%d.%02d%02d  %s",
                 a, p->check, p->size,
                 p->time>>11, (p->time>>6)&0x1F, p->time&0x3F,
                 p->name);
     }
 
     while (true) { led.toggle(); sys::wait(250); }
-}
-
-uint32_t time10d () {
-    return rtc::getSecs();
 }

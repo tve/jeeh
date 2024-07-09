@@ -1,4 +1,4 @@
-// List an MRFS area.
+// Delete a file from an MRFS area.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -12,8 +12,14 @@ using namespace jeeh;
 
 int main () {
     initBoard();
+    rng::init();
 
     mrfs::init((uint8_t*) 0x0800'0000 + fs.mapBase, fs.mapSize);
+
+    char fnBuf [20];
+    snprintf(fnBuf, sizeof fnBuf, "file-%d.txt", rng::rand() % 10);
+
+    mrfs::remove(fnBuf);
 
     mrfs::File* p = nullptr;
     while (mrfs::readDir(p)) {
