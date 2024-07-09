@@ -9,6 +9,7 @@
 - **`hytiny`** - use a HyTiny to receive packets with an RFM69 RF module
 - **`i2c`** - some tests for I2C devices connected to a Nucleo-32 L432KC
 - **`jnzero`** - a low-power measurement setup using the JeeNode Zero v4
+- **`mrfs`** - a demo of Minimal ROMable File Storage for flash memory
 - **`rtt`** - explore Real Time Transfer with Blackmagic's BMDA app
 - **`sleep`** - measuring low-power consumption with a Nucleo-32 L432KC
 - **`spi`** - some tests for SPI devices connected to a Nucleo-32 G431KB

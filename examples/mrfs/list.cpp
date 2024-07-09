@@ -12,6 +12,7 @@ using namespace jeeh;
 
 int main () {
     initBoard();
+    rtc::set(DateTime {}); // set date to the compilation time of this code
 
     mrfs::init((uint8_t*) 0x0800'0000 + fs.mapBase, fs.mapSize);
 

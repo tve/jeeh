@@ -10,7 +10,7 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    rtc::set(DateTime {});
+    rtc::set(DateTime {}); // set date to the compilation time of this code
 
     cycles::clear();
     fs.format();
