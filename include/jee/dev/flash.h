@@ -38,7 +38,8 @@ struct SpiFlash {
         return 1 << ((info() & 0xFF) - 10);
     }
 
-    void serNum (uint8_t* buf) {
+    void serNum (uint8_t* buf) const {
+        memset(buf, 0, 8);
         rwCmd(spi, "\x05\x4B....", buf, 8);
     }
 
