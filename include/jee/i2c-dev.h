@@ -91,15 +91,13 @@ struct Sync : Poll<A>, Device {
 
     struct Config : BASE::Config {
         Irq evIrq, erIrq;
-        uint8_t Xdma, XtxReq, XrxReq; // 0-based
     };
 
-    DmaConfig<D,T,R> const dma;
     Config const cfg;
+    DmaConfig<D,T,R> const dma;
 
-    Sync (Config const& c)
-        : BASE (c.ena, c.mhz), Device ('I'),
-          dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
+    Sync (Config const& c, DmaConfig<D,T,R> d)
+        : BASE (c.ena, c.mhz), Device ('I'), cfg (c), dma (d) {}
 
     void init (char const* defs, uint32_t timing) {
         BASE::init(defs, timing);

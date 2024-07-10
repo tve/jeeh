@@ -68,7 +68,7 @@ def BOARD(block, name, suffix=''):
              f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
             t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
-            c = '{ ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER,$D-1,$C }'
+            c = '{ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER}, {$D-1,$C}'
             r.append(f'#define I2C{suffix}_TYPE  ' + Template(t).substitute(f))
             r.append(f'#define I2C{suffix}_CONF  ' + Template(c).substitute(f))
         return r
@@ -86,7 +86,7 @@ def BOARD(block, name, suffix=''):
              f'#define SPI{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
             t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
-            c = '{ ena::$N,$F,Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,$D-1,$C }'
+            c = '{ena::$N,$F,Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R}, {$D-1,$C}'
             r.append(f'#define SPI{suffix}_TYPE  ' + Template(t).substitute(f))
             r.append(f'#define SPI{suffix}_CONF  ' + Template(c).substitute(f))
         return r
