@@ -22,7 +22,7 @@ inline Uart console ('U');
 #define I2C_PINS  "B7:OH4,B6"
 #define I2C_FREQ  80
 #define I2C_TYPE  I2C1.ADDR,DMA2.ADDR,7-1,6-1
-#define I2C_CONF  { ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER,2-1,5,5 }
+#define I2C_CONF  {ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER}, {2-1,5,5}
 //CG]
 
 //CG1 board mode

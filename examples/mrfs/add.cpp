@@ -29,7 +29,8 @@ int main () {
         snprintf(fnBuf, sizeof fnBuf, "file-%d.txt", rng::rand() % 10);
 
         auto n = 1 + rng::rand() % 10;
-        logf("%s / %d: %dx %db \"...%s\"", fnBuf, r, n, strlen(buf), buf + 23);
+        logf("add %d/%d: %s %dx %db \"...%s\"",
+                i+1, r, fnBuf, n, strlen(buf), buf + 23);
 
         mrfs::create(fnBuf);
         for (auto j = 0U; j < n; ++j)
@@ -40,9 +41,9 @@ int main () {
     mrfs::File* p = nullptr;
     while (mrfs::readDir(p)) {
         auto a = (uint16_t) ((uint32_t) p - fs.mapBase) >> 5;
-        logf("%04x: [%08x] %6d  20%d.%02d%02d  %s",
-                a, p->check, p->size,
-                p->time>>11, (p->time>>6)&0x1F, p->time&0x3F,
+        logf("%04x: %6d  20%06d.%02d%02d  %s",
+                a, p->size,
+                p->time >> 11, (p->time>>6) & 0x1F, p->time & 0x3F,
                 p->name);
     }
 

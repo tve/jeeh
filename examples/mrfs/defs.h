@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "list"
+#define PIOENV  "add"
 
 //CG1 board leds
 #define LED  "A1"
@@ -22,7 +22,7 @@ inline Uart console ('U');
 #define SPI_PINS  "B5:H5,B4,B3,A15:HP"
 #define SPI_FREQ  84
 #define SPI_TYPE  SPI1.ADDR,DMA2.ADDR,3-0,2-0
-#define SPI_CONF  { ena::SPI1,84,Irq::DMA2_Stream3,Irq::DMA2_Stream2,2-1,3,3 }
+#define SPI_CONF  {ena::SPI1,84,Irq::DMA2_Stream3,Irq::DMA2_Stream2}, {2-1,3,3}
 //CG]
 
 //CG: board mode
