@@ -6,8 +6,13 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace mrfs {
+template< typename FS >
+struct Mrfs {
     struct File {
+        enum { MAGIC = 0x5346524D }; // 'MRFS'
+
+        File () { memset(this, 0, sizeof *this); }
+
         uint32_t magic, size;
         char name [15], zero;
         uint32_t time, check;
@@ -17,129 +22,119 @@ namespace mrfs {
     };
     static_assert(sizeof (File) == 32);
 
-    static constexpr auto MAGIC = 0x5346524D; // 'MRFS'
+    FS& fs;
+    uint32_t fill; // next unused position
 
-    inline static File* base; // first entry in flash
-    inline static File* fill; // next unused position
-    inline static File* last; // past end of memory used for MRFS
+    File scan, in, out; // out.check != 0 when in progress
+    uint8_t buf [32]; // collect bytes to write in 32-byte chunks
 
-    inline static File ofile; // check != 0 when in progress
-    inline static uint8_t obuf [32]; // collect bytes to write in 32-byte chunks
-                                     //
-    inline int unused () { return (uintptr_t) last - (uintptr_t) (fill+1); }
-    inline File* next (File* p) { return p + 1 + (p->size+31)/32; }
+    int unused () { return fs.size - fill - 2*32; }
 
-    uint32_t time10d () {
-        auto dt = rtc::getDate();
+    void load (uint32_t pos, File& fd) {
+        assert(pos < fs.size);
+        fs.read(pos, &fd, sizeof fd);
+        if (fd.magic != File::MAGIC)
+            pos = ~0; // bogus position
+        fd.magic = pos;
+    }
+
+    uint32_t next (uint32_t pos, File& fd) {
+        load(pos, fd);
+        return fd.magic == pos ? pos + 32 + fd.size + (0x1F & -fd.size) : ~0;
+    }
+
+    // TODO sole dependency on jeeh
+    inline static uint32_t time10d () {
+        auto dt = jeeh::rtc::getDate();
         auto d = 10000*dt.yr + 100*dt.mo + dt.dy;
         auto t = 64*dt.hh + dt.mm;
         return (d<<11) + t;
     }
 
-    void eraseRom (uintptr_t offset, uint32_t len) {
-        assert(offset < (1<<21)); // offset from start of flash, not addr
-        for (auto i = 0U; i < len; i += flash::pageSize(i))
-            flash::erase(offset + i);
+    Mrfs (FS& f) : fs (f), fill (0) {
+        while (true) {
+            auto x = next(fill, scan);
+            if (x == 0 || x >= fs.size)
+                break;
+            fill = x;
+        }
     }
 
-    void writeRom (uintptr_t offset, void const* ptr) {
-        assert(offset < (1<<21)); // offset from start of flash, not addr
-        flash::write8w(offset, (uint32_t const*) ptr);
-    }
-
-    inline void init (void* ptr, uint32_t len) {
-        // assert(ptr != nullptr && (uintptr_t) ptr % sizeof (uint32_t) == 0);
-        base = (File*) ptr;
-        fill = base;
-        last = base + len / sizeof (File);
-        while (fill < last && fill->magic == MAGIC)
-            fill = next(fill);
-    }
-
-    inline void format () {
-        fill = base;
-        eraseRom((uintptr_t) base, (uintptr_t) last - (uintptr_t) base);
-    }
-
-    inline File const* open (char const* name =nullptr) {
+    File const* open (char const* name =nullptr) {
         // an open output file always overrides any others
-        if (ofile.magic != 0 && name == nullptr)
-            return &ofile;
+        if (name == nullptr)
+            return out.magic != 0 ? &out : nullptr;
 
         // go over all entries, looking for the last filename match
-        File const* p = nullptr;
-        if (name != nullptr)
-            for (auto q = base; q < fill; q = next(q))
-                if (strcmp(name, q->name) == 0)
-                    p = q->time != ~0U ? q : nullptr; // it may be a deletion
-        return p;
+        uint32_t p = fs.size;
+        for (auto pos = 0U; pos < fill; pos = next(pos, in)) {
+            load(pos, in);
+            if (strcmp(name, in.name) == 0)
+                p = in.time != ~0U ? pos : fs.size; // might be deleted
+        }
+        if (p == fs.size)
+            return nullptr;
+        in.magic = p;
+        return &in;
     }
 
-    inline int create (char const* name =nullptr) {
+    int create (char const* name =nullptr) {
         if (name != nullptr) {
-            if (ofile.magic != 0)
+            if (out.magic != 0)
                 return -1;
-            ofile.magic = MAGIC;
-            strncpy(ofile.name, name, sizeof ofile.name);
+            out.magic = File::MAGIC;
+            strncpy(out.name, name, sizeof out.name);
         }
         return unused();
     }
 
-    inline int write (void const* ptr, uint32_t len) {
-        if (ofile.magic == 0 || len > unused() - ofile.size)
+    int write (void const* ptr, uint32_t len) {
+        if (out.magic != File::MAGIC || len > unused() - out.size)
             return -1;
         for (auto i = 0U; i < len; ++i) {
-            auto pos = ofile.size % sizeof obuf;
+            auto pos = out.size % sizeof buf;
             if (pos == 0)
-                memset(obuf, 0xFF, sizeof obuf);
-            obuf[pos] = ((uint8_t const*) ptr)[i];
-            if (pos == sizeof obuf - 1) {
-                auto p = (uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos;
-                writeRom(p & 0x07FF'FFFF, obuf);
-            }
-            ++ofile.size;
+                memset(buf, 0xFF, sizeof buf);
+            buf[pos] = ((uint8_t const*) ptr)[i];
+            ++out.size;
+            if (++pos == sizeof buf)
+                fs.write(fill + out.size, buf, sizeof buf);
         }
         return len;
     }
 
-    inline int close (uint32_t time =0) {
-        if (ofile.magic == 0)
+    int close (uint32_t time =0) {
+        if (out.magic != File::MAGIC)
             return -1;
-        // flush any bytes still in obuf
-        if (auto pos = ofile.size % sizeof obuf; pos != 0) {
-            auto p = (uintptr_t) (uint8_t*) (fill+1) + ofile.size - pos;
-            writeRom(p & 0x07FF'FFFF, obuf);
-        }
-        if (ofile.time == 0)
-            ofile.time = time != 0 ? time : time10d();
-        writeRom((uintptr_t) fill & 0x07FF'FFFF, &ofile);
-        fill = next(fill);
-        memset(&ofile, 0, sizeof ofile);
+        auto sz = out.size;
+        while (out.size % sizeof buf != 0)
+            write("\xFF", 1); // make sure last data gets flushed
+        out.size = sz;
+        if (out.time == 0)
+            out.time = time != 0 ? time : time10d();
+        fs.write(fill, &out, sizeof out);
+        fill = next(fill, out);
+        memset(&out, 0, sizeof out);
         return 0;
     }
 
-    inline int remove (char const* name =nullptr) {
+    int remove (char const* name =nullptr) {
         auto p = open(name);
         if (p == nullptr)
             return -1;
-        if (p != &ofile)
+        if (p != &out)
             create(name);
-        ofile.time = ~0;
+        out.time = ~0;
         return close();
     }
 
-    inline bool readDir (File*& curr) {
-        curr = curr == nullptr ? base : next(curr);
-        while (curr < fill && open(curr->name) != curr)
-            curr = next(curr); // skip obsolete entries
-        return curr < fill;
+    File* readDir (File* curr =nullptr) {
+        assert(curr == nullptr || curr == &scan);
+        auto pos = curr == nullptr ? 0 : next(scan.magic, scan);
+        load(pos, scan);
+        while (pos < fill && open(scan.name)->magic != pos)
+            pos = next(pos, scan); // skip obsolete entries
+        load(pos, scan);
+        return pos < fill ? &scan : nullptr;
     }
-
-    inline File const* listFiles () {
-        for (File* p = nullptr; readDir(p); )
-            printf("%p: %6d  %d.%04d  %s\n",
-                    (void*) p, p->size,
-                    20200000+p->time/10000, p->time%10000, p->name);
-        return fill;
-    }
-}
+};

@@ -9,7 +9,11 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    logDump((uint8_t const*) 0x0800'0000 + fs.mapBase, fs.mapSize);
+    uint8_t buf [0x2000];
+    for (auto i = 0U; i < fs.size; i += sizeof buf) {
+        fs.read(i, buf, sizeof buf);
+        logDump(buf, sizeof buf);
+    }
 
     while (true) { led.toggle(); sys::wait(250); }
 }

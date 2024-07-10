@@ -27,13 +27,13 @@ struct SpiFlash {
         rwCmd(spi, "\x01\x99");
     }
 
-    int info () const {
+    uint32_t info () const {
         uint8_t buf [3];
         rwCmd(spi, "\x01\x9F", buf, sizeof buf);
         return (buf[0] << 16) | (buf[1] << 8) | buf[2];
     }
 
-    int size () const {
+    uint32_t size () const {
         // works for WinBond W25Qxx, e.g. W25Q64 => 0xC84017 => 8192 KB
         return 1 << ((info() & 0xFF) - 10);
     }
@@ -43,35 +43,46 @@ struct SpiFlash {
         rwCmd(spi, "\x05\x4B....", buf, 8);
     }
 
+    uint32_t pageSize (uint32_t) const {
+        return 4096;
+    }
+
     void wipe () const {
         unlock();
         rwCmd(spi, "\x01\xC7"); // 0x60 doesn't work on Micron Tech (N25Q)
         wait();
     }
 
-    void erase (int page) const {
+    void erase (uint32_t pos) const {
+        assert(pos % pageSize(pos) == 0);
         unlock();
-        rwCmd(spi, cmdAddr(0x20, page<<8));
+        rwCmd(spi, cmdAddr(0x20, pos));
         wait();
     }
 
-    void read256 (int page, uint8_t* buf) const {
-        read(page<<8, buf, 256);
-    }
-
-    void read (int offset, uint8_t* buf, int len) const {
-        auto p = cmdAddr(0x0B, offset);
+    void read (uint32_t pos, uint8_t* buf, uint32_t len) const {
+        auto p = cmdAddr(0x0B, pos);
         *p += 1; // add dummy byte
         rwCmd(spi, p, buf, len);
     }
 
-    void write256 (int page, const uint8_t* buf) const {
-        write(page<<8, buf, 256);
+    void write (uint32_t pos, void const* ptr, uint32_t len) const {
+        // break up writes to not straddle 256-byte pages
+        while (len > 0) {
+            auto max = 256 - (pos & 0xFF);
+            if (max > len)
+                max = len;
+            write256(pos, ptr, max);
+            pos += max;
+            len -= max;
+            ptr = (uint8_t const*) ptr + max;
+        }
     }
 
-    void write (int offset, const uint8_t* buf, int len) const {
+    void write256 (uint32_t pos, void const* buf, uint32_t len) const {
+        assert((pos>>8) == ((pos+len-1)>>8)); // must stay within same page
         unlock();
-        auto p = cmdAddr(0x02, offset);
+        auto p = cmdAddr(0x02, pos);
         *p |= 0x80; // write
         rwCmd(spi, p, (uint8_t*) buf, len);
         wait();

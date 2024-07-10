@@ -27,7 +27,7 @@ namespace flash {
         return (kb < 64 ? 16 : kb < 128 ? 64 : 128) << 10;
     }
 
-    volatile uint32_t& word (uint32_t pos) {
+    uint32_t& word (uint32_t pos) {
         return *(uint32_t*) (0x08000000 + pos);
     }
 

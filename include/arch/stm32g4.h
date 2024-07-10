@@ -50,7 +50,7 @@ namespace flash {
         return 2048;
     }
 
-    volatile uint32_t& word (uint32_t pos) {
+    uint32_t& word (uint32_t pos) {
         return *(uint32_t*) (0x08000000 + pos);
     }
 
