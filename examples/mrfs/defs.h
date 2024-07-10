@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "add"
+#define PIOENV  "spif-call"
 
 //CG1 board leds
 #define LED  "A1"
@@ -25,7 +25,8 @@ inline Uart console ('U');
 #define SPI_CONF  {ena::SPI1,84,Irq::DMA2_Stream3,Irq::DMA2_Stream2}, {2-1,3,3}
 //CG]
 
-//CG: board mode
+//CG1 board mode
+#define MODE_CALL 1
 
 #if MODE_GPIO
 spi::Gpio spiBus;
@@ -58,3 +59,14 @@ extern "C" int _write (int, char* ptr, int len) {
 void jeeh::logWriter (void const* ptr, size_t len) {
     _write(1, (char*) ptr, len);
 }
+
+struct FileSys {
+    uint32_t mapBase, mapSize;
+
+    void format () {
+        for (auto i = 0U; i < mapSize; i += flash::pageSize(mapBase + i))
+            flash::erase(mapBase + i);
+    }
+};
+
+FileSys fs { 0x1'0000, 0x1'0000 };

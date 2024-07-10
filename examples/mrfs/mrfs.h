@@ -29,10 +29,23 @@ namespace mrfs {
     inline int unused () { return (uintptr_t) last - (uintptr_t) (fill+1); }
     inline File* next (File* p) { return p + 1 + (p->size+31)/32; }
 
-    // external dependencies
-    uint32_t time10d ();
-    void eraseRom (uintptr_t rom, uint32_t len);
-    void writeRom (uintptr_t dest, void const* ptr);
+    uint32_t time10d () {
+        auto dt = rtc::getDate();
+        auto d = 10000*dt.yr + 100*dt.mo + dt.dy;
+        auto t = 64*dt.hh + dt.mm;
+        return (d<<11) + t;
+    }
+
+    void eraseRom (uintptr_t offset, uint32_t len) {
+        assert(offset < (1<<21)); // offset from start of flash, not addr
+        for (auto i = 0U; i < len; i += flash::pageSize(i))
+            flash::erase(offset + i);
+    }
+
+    void writeRom (uintptr_t offset, void const* ptr) {
+        assert(offset < (1<<21)); // offset from start of flash, not addr
+        flash::write8w(offset, (uint32_t const*) ptr);
+    }
 
     inline void init (void* ptr, uint32_t len) {
         // assert(ptr != nullptr && (uintptr_t) ptr % sizeof (uint32_t) == 0);

@@ -6,9 +6,7 @@
 using namespace jeeh;
 #include "defs.h"
 
-#include "filesys.h"
 #include "mrfs.h"
-#include "mrfs-arch.h"
 
 int main () {
     initBoard();

@@ -6,8 +6,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-#include "filesys.h"
-
 int main () {
     initBoard();
     rtc::set(DateTime {}); // set date to the compilation time of this code
