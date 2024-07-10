@@ -101,12 +101,15 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
     if (msg != nullptr)
         logf("%s: (%db)", msg, n);
     auto q = (uint8_t const*) p;
+    auto same = false;
     for (int off = 0; off < n; off += 16) {
         if (off > 0 && memcmp(q + off, q + off-16, 16) == 0) {
-            if (off > 16 && memcmp(q + off, q + off-32, 16) != 0)
+            if (!same)
                 logf("*");
+            same = true;
             continue;
         }
+        same = false;
         auto p = logBuf;
         p += snprintf(p, sizeof logBuf, " %03x:", off);
         for (int i = 0; i < 16; ++i) {
