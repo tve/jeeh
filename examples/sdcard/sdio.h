@@ -12,19 +12,21 @@ struct Sdio : Device, private Chain {
     Sdio () : Device ('D') {}
 
     void init () {
-        Pin present ("C13");
-        present.mode("U");
-        printf("detect %d\n", +present);
+        //Pin present ("C13");
+        //present.mode("U");
+        //printf("detect %d\n", +present);
 
-        Pin::config("C8:UH12,C9,C10,C11,C12,D2");
+        Pin::config("C8:V12,C9,C10,C11,C12,D2");
         RCC(ena::DMA2, 1) = 1;   // dma on
         RCC(ena::SDMMC1, 1) = 1; // sdio on
 
+#if STM32F7
         // set up 48 MHz as SDMMC clock
         RCC[0x00](28) = 0;            // ~PLLSAION in CR
         RCC[0x88] = (5<<28) | (2<<24) | (3<<16) | (384<<6); // R, Q, P, N
         RCC[0x00](28) = 1;            // PLLSAION in CR
         while (RCC[0x00](29) == 0) {} // wait for PLLSAIRDY in CR
+#endif
 
         SDMMC1[SD_CCR] = (1<<14) | (1<<9) | (118<<0); // HWFC_EN PWRSAV CLKDIV
         SDMMC1[SD_PWR] = 3; // PWRON
@@ -37,8 +39,13 @@ struct Sdio : Device, private Chain {
         sendCmd(8, 0x1AA, 1); // SEND_IF_COND
 
         do
+{
+sys::wait(500);
             sendCmd(55, 0, 1); // APP_CMD
+sys::wait(500);
+}
         while (sendCmd(41, 0<<30, 1) == 1); // APP_OP_COND
+sys::wait(10);
 
         sendCmd(58, 0, 1); // READ_OCR
         sendCmd(16, 512, 1); // SET_BLOCKLEN
@@ -49,7 +56,7 @@ struct Sdio : Device, private Chain {
         sendCmd(3, 0, 1); // SET_REL_ADDR
         auto rel = SDMMC1[SD_RSP] & 0xFFFF0000;
         SDMMC1[SD_CCR](0, 8) = 0;  // switch to 24 MHz
-        SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
+        //SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
 
         sendCmd(9, rel, 3); // SEND_CSD
         csd[0] = SDMMC1[SD_RSP];
@@ -157,7 +164,7 @@ private:
             dmaReg(CCR)(0) = 1; // EN
 
             // similar to sendCmd, but with DMA_IRQ when response received
-            SDMMC1[SD_MASK](6) = 1; // CMDRENDIE
+            SDMMC1[SD_MASK](8) = 1; // DATAENDIE
             SDMMC1[SD_ARG] = (csd[0] >> 30 ? 1 : 512) * seek;
             SDMMC1[SD_CMD] = // CPSMEN WAITRESP CMDIDX
                 (1<<10) | (1<<6) | ((read ? 17 : 24)<<0);
@@ -173,10 +180,10 @@ private:
             case (int) Irq::SDMMC1:
                 SDMMC1[SD_ICR] = (1<<7) | (1<<6) | (1<<2) | (1<<0);
                 SDMMC1[SD_DCTR](0) = 1; // DTEN
-                break; // sdio done, dma started
+                return true; // sdio done, dma started
             case (int) DMA_IRQ:
                 DMA2[IFCR+(STREAM&~3)] = 0b111101 << ifcBits[STREAM&3];
-                return true; // dma done, but card still in write cmd
+                return false; // dma done, but card still in write cmd
         }
         return false;
     }
