@@ -16,15 +16,15 @@ int veprintf (void (*fun)(void*,int), void* arg, char const* fmt, va_list ap) {
             while (radix == 0)
                 switch (c = *fmt++) {
                     case '-': left = 1; break;
-                    case 'o': radix =  8; break;
+                    case 'o': radix = 8; break;
                     case 'u':
                     case 'd': radix = 10; break;
                     case 'p': pad = '0'; width = 8;
-                                [[fallthrough]];
+                              [[fallthrough]];
                     case 'x': radix = 16; break;
                     case 'c': fill(width - 1);
-                                c = va_arg(ap, int);
-                                [[fallthrough]];
+                              c = va_arg(ap, int);
+                              [[fallthrough]];
                     case '%': emit(c); radix = 1; break;
                     case '*': width = va_arg(ap, int);
                               if (width < 0) {

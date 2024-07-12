@@ -7,8 +7,10 @@ using namespace jeeh;
 
 #include "spi-sdcard.h"
 
-void sdTest () {
-    // F7508-DK:
+int main () {
+    initBoard();
+
+    // bbbbbbb & f750d
     //  PC8  D0  MISO
     //  PC9  D1
     //  PC10 D2
@@ -23,28 +25,23 @@ void sdTest () {
     sd.init();
     spiBus.rate = 1;
 
+    FatFS fs (sd);
+    fs.init();
+
     uint8_t buf [512];
     for (auto i = 0; i < 500; ++i) {
-        sd.readBlock(2048 + i, buf);
+        sd.read(fs.base + i, buf);
         if (buf[0] != 0) {
             logf("%d", i);
-            logDump(buf, 128);
+            logDump(buf, 64);
         }
     }
 
-    FatFS fatFs (sd);
-
     // 8M = 256 fat entries x 32K
-    typedef FileMap< decltype(fatFs), 257 > DiskMap;
-    DiskMap diskMap (fatFs);
-    auto limit = diskMap.open("FIRMWAREELF");
-    logf("limit %d", limit);
-}
-
-int main () {
-    initBoard();
-
-    sdTest();
+    typedef FileMap< decltype(fs), 257 > Disk;
+    Disk disk (fs);
+    auto bytes = disk.open("FIRMWAREELF");
+    logf("bytes %d", bytes);
 
     while (true) { led.toggle(); sys::wait(250); }
 }

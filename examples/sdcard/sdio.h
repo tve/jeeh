@@ -44,7 +44,7 @@ sys::wait(500);
             sendCmd(55, 0, 1); // APP_CMD
 sys::wait(500);
 }
-        while (sendCmd(41, 0<<30, 1) == 1); // APP_OP_COND
+        while (sendCmd(41, 1<<30, 1) == 1); // APP_OP_COND
 sys::wait(10);
 
         sendCmd(58, 0, 1); // READ_OCR
