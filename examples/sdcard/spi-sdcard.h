@@ -31,8 +31,8 @@ struct SdCard {
         logf("sdhc %d", sdhc);
     }
 
-    int read (uint32_t page, uint8_t* buf) const {
-        int last = cmd(17, sdhc ? page : page * 512);
+    int readBlock (uint32_t block, uint8_t* buf) const {
+        int last = cmd(17, sdhc ? block : block * 512);
         for (int i = 0; last != 0xFE; ++i) {
             if (++i >= TIMEOUT)
                 return 0;
@@ -45,8 +45,8 @@ struct SdCard {
         return 512;
     }
 
-    int write (uint32_t page, uint8_t const* buf) const {
-        cmd(24, sdhc ? page : page * 512);
+    int writeBlock (uint32_t block, uint8_t const* buf) const {
+        cmd(24, sdhc ? block : block * 512);
         spi.rwByte(0xFF);
         spi.rwByte(0xFE);
         for (int i = 0; i < 512; ++i)
@@ -100,17 +100,17 @@ private:
     }
 };
 
-template< typename BLK >
+template< typename DEV >
 struct FatFS {
-    BLK& blk;
+    DEV& dev;
 
-    FatFS (BLK& s) : blk (s) {}
+    FatFS (DEV& d) : dev (d) {}
 
     void init () {
-        blk.read(0, buf);                        // find boot sector
-        base = *(uint32_t*) (buf+0x1C6);         // base for everything
+        dev.readBlock(0, buf);                   // read boot sector
+        base = *(uint32_t*) (buf+0x1C6);         // first partition
 
-        blk.read(base, buf);                     // location of boot rec
+        dev.readBlock(base, buf);                // location of BPB
         spc = buf[0x0D];                         // sectors per cluster
         rsec = (uint16_t&) buf[0x0E];            // reserved sectors
         uint8_t nfc = buf[0x10];                 // number of FAT copies
@@ -128,7 +128,7 @@ struct FatFS {
 #endif
     }
 
-    // TODO use buf[] to read on-demand if fat sector is not in memory
+    // TODO use buf[] to readBlock on-demand if fat sector is not in memory
     int chain (int cn) {
         if (cn < 2 || cn >= clim)
             return 0;
@@ -136,7 +136,7 @@ struct FatFS {
         int off = clim < 4096 ? cn/2*3 : cn*2;  // 12 or 16 bits per entry
         if (curr != off/512) {
             curr = off/512;
-            blk.read(base + rsec + curr, buf);
+            dev.readBlock(base + rsec + curr, buf);
         }
 
         if (clim >= 4096)  // is it FAT16?
@@ -151,7 +151,7 @@ struct FatFS {
         uint8_t b1 = buf[off];
         off = (off+1) % 512;
         if (off == 0)
-            blk.read(base + rsec + ++curr, buf);
+            dev.readBlock(base + rsec + ++curr, buf);
         uint8_t b2 = buf[off];
 
         return cn & 1 ? b1>>4 | b2<<4 : b1 | (b2&0xF)<<8;
@@ -185,7 +185,7 @@ struct FileMap {
         for (auto i = 0; i < fs.rmax; ++i) {
             int off = (i*32) % 512;
             if (off == 0)
-                fs.blk.read(fs.rdir + i/16, fs.buf);
+                fs.dev.readBlock(fs.rdir + i/16, fs.buf);
             if (memcmp(fnBuf, fs.buf + off, sizeof fnBuf) == 0) {
                 auto bytes = (uint32_t&) fs.buf[off+28];
                 fs.curr = ~0; // consider buf to be empty at this point
@@ -205,6 +205,7 @@ struct FileMap {
                     }
                     cluster = fs.chain(cluster);
                 }
+                //logf("%s: %d frags, %d bytes", name, n+1, bytes);
                 return bytes;
             }
         }
@@ -220,20 +221,25 @@ struct FileMap {
                 fnBuf[i++] = c - ('a' <= c && c <= 'z' ? 0x20 : 0);
     }
 
-    bool rwBlock (bool wr, int num, void* buf) const {
-        uint16_t grp = num / fs.spc;
+    int ioBlock (bool wr, int block, uint8_t* ptr) const {
+        uint16_t grp = block / fs.spc;
         int i = 0;
         while (grp >= size[i]) {
             grp -= size[i];
             if (++i >= NFRAG)
-                return false;
+                return -1;
         }
-        uint16_t off = fs.data + (map[i] + grp - 2) * fs.spc + num % fs.spc;
-        logf("rwBlock(%d,%d) => %d", wr, num, off);
-        if (wr)
-            fs.blk.write(off, (uint8_t const*) buf);
-        else
-            fs.blk.read(off, (uint8_t*) buf);
-        return true;
+        uint16_t pos = fs.data + (map[i] + grp - 2) * fs.spc + block % fs.spc;
+        //logf("ioBlock(%d,%d) => %d", wr, block, pos);
+        return wr ? fs.dev.writeBlock(pos, ptr)
+                  : fs.dev.readBlock(pos, ptr);
+    }
+
+    int readBlock (uint32_t block, uint8_t* buf) const {
+        return ioBlock(false, block, buf);
+    }
+
+    int writeBlock (uint32_t block, uint8_t const* buf) const {
+        return ioBlock(true, block, (uint8_t*) buf);
     }
 };

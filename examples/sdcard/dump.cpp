@@ -30,7 +30,7 @@ int main () {
 
     uint8_t buf [512];
     for (auto i = 0; i < 500; ++i) {
-        sd.read(fs.base + i, buf);
+        sd.readBlock(fs.base + i, buf);
         if (buf[0] != 0) {
             logf("%d", i);
             logDump(buf, 64);
@@ -57,7 +57,8 @@ int main () {
     auto n = file.open("list.cpp");
     for (auto i = 0; i < n; i += 512) {
         uint8_t buf [512];
-        file.rwBlock(false, i>>9, buf);
+        auto n = file.readBlock(i>>9, buf);
+        assert(n == 512);
         logDump(buf, sizeof buf);
     }
 
