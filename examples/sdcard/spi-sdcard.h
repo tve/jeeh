@@ -169,53 +169,71 @@ struct FatFS {
     uint8_t buf [512];      // buffer space for one sector
 };
 
-template< typename T, int N >
+template< typename FS >
 struct FileMap {
-    T& fat;
-    uint16_t map [N];
+    enum { NFRAG = 3 };
+    uint16_t map [NFRAG] {};
+    uint8_t size [NFRAG] {};
+    FS& fs;
 
-    FileMap (T& f) : fat (f) {
-        memset(map, 0, sizeof map);
-    }
+    FileMap (FS& fat) : fs (fat) {}
 
-    int open (char const name [11]) {
-        for (auto i = 0; i < fat.rmax; ++i) {
+    int open (char const* name) {
+        char fnBuf [11];
+        conv83(name, fnBuf);
+
+        for (auto i = 0; i < fs.rmax; ++i) {
             int off = (i*32) % 512;
             if (off == 0)
-                fat.blk.read(fat.rdir + i/16, fat.buf);
-            if (memcmp(name, fat.buf + off, 11) == 0) {
-                for (auto j = 0; j < 11; ++j) {
-                    if (j == 8)
-                        printf(".");
-                    printf("%c", name[j]);
-                }
-                printf("\n");
-                auto cluster = (uint16_t&) fat.buf[off+26];
-                auto bytes = (uint32_t&) fat.buf[off+28];
-                fat.curr = ~0; // consider buf to be empty at this point
+                fs.blk.read(fs.rdir + i/16, fs.buf);
+            if (memcmp(fnBuf, fs.buf + off, sizeof fnBuf) == 0) {
+                auto bytes = (uint32_t&) fs.buf[off+28];
+                fs.curr = ~0; // consider buf to be empty at this point
+
                 auto n = 0;
-                while (2 <= cluster && cluster < fat.clim) {
-                    printf("%d,", cluster);
-                    map[n++] = cluster;
-                    cluster = fat.chain(cluster);
+                auto cluster = (uint16_t&) fs.buf[off+26];
+                while (2 <= cluster && cluster < fs.clim) {
+                    while (n < NFRAG) {
+                        if (size[n] == 0)
+                            map[n] = cluster;
+                        if (cluster == map[n] + size[n]) {
+                            ++size[n];
+                            break;
+                        }
+                        if (++n >= NFRAG)
+                            return -2; // too many fragments
+                    }
+                    cluster = fs.chain(cluster);
                 }
-                printf(" %d @ %d, %db\n", n, cluster, bytes);
                 return bytes;
             }
         }
-        return -1;
+        return -1; // not found
     }
 
-    bool ioSect (bool wr, int num, void* buf) {
-        uint16_t grp = num / fat.spc;
-        if (grp >= N || map[grp] == 0)
-            return false;
-        uint16_t off = fat.data + (map[grp] - 2) * fat.spc + num % fat.spc;
-        logf("rwSect(%d,%d) => %d", wr, num, off);
+    static void conv83 (char const* name, char fnBuf [11]) {
+        memset(fnBuf, ' ', 11);
+        for (auto i = 0U; *name != 0; ++name)
+            if (auto c = *name; c == '.')
+                i = 8;
+            else if (i < 11)
+                fnBuf[i++] = c - ('a' <= c && c <= 'z' ? 0x20 : 0);
+    }
+
+    bool rwBlock (bool wr, int num, void* buf) const {
+        uint16_t grp = num / fs.spc;
+        int i = 0;
+        while (grp >= size[i]) {
+            grp -= size[i];
+            if (++i >= NFRAG)
+                return false;
+        }
+        uint16_t off = fs.data + (map[i] + grp - 2) * fs.spc + num % fs.spc;
+        logf("rwBlock(%d,%d) => %d", wr, num, off);
         if (wr)
-            fat.blk.write(off, buf);
+            fs.blk.write(off, (uint8_t const*) buf);
         else
-            fat.blk.read(off, buf);
+            fs.blk.read(off, (uint8_t*) buf);
         return true;
     }
 };

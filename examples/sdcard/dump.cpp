@@ -37,11 +37,29 @@ int main () {
         }
     }
 
-    // 8M = 256 fat entries x 32K
-    typedef FileMap< decltype(fs), 257 > Disk;
-    Disk disk (fs);
-    auto bytes = disk.open("FIRMWAREELF");
-    logf("bytes %d", bytes);
+    auto show = [&](auto fn) {
+        FileMap file (fs);
+        auto n = file.open(fn);
+        logf("%s: %d b", fn, n);
+        for (auto i = 0; i < file.NFRAG; ++i)
+            if (file.size[i] > 0)
+                logf("  %d: %4d #%d", i, file.map[i], file.size[i]);
+    };
+
+    show("firmware.elf");
+    show("f");
+    show("g");
+    show("h");
+    show("x");
+    show("list.cpp");
+
+    FileMap file (fs);
+    auto n = file.open("list.cpp");
+    for (auto i = 0; i < n; i += 512) {
+        uint8_t buf [512];
+        file.rwBlock(false, i>>9, buf);
+        logDump(buf, sizeof buf);
+    }
 
     while (true) { led.toggle(); sys::wait(250); }
 }
