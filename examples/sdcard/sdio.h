@@ -16,9 +16,9 @@ struct Sdio : Device, private Chain {
         //present.mode("U");
         //printf("detect %d\n", +present);
 
-        Pin::config("C8:V12,C9,C10,C11,C12,D2");
-        RCC(ena::DMA2, 1) = 1;   // dma on
+        Pin::config("C8:H12,C9,C10,C11,C12,D2");
         RCC(ena::SDMMC1, 1) = 1; // sdio on
+        RCC(ena::DMA2, 1) = 1;   // dma on
 
 #if STM32F7
         // set up 48 MHz as SDMMC clock
@@ -28,9 +28,12 @@ struct Sdio : Device, private Chain {
         while (RCC[0x00](29) == 0) {} // wait for PLLSAIRDY in CR
 #endif
 
-        SDMMC1[SD_CCR] = (1<<14) | (1<<9) | (118<<0); // HWFC_EN PWRSAV CLKDIV
+        //SDMMC1[SD_CCR] = (1<<14) | (1<<9) | (118<<0); // HWFC_EN PWRSAV CLKDIV
+        //SDMMC1[SD_CCR] = (0<<9) | (118<<0); // PWRSAV CLKDIV
+        SDMMC1[SD_CCR] = (118<<0); // CLKDIV
         SDMMC1[SD_PWR] = 3; // PWRON
         SDMMC1[SD_CCR](8) = 1; // CLKEN
+sys::wait(2);
 
         SDMMC1[SD_DTIM] = 48'000'000;
         SDMMC1[SD_DLEN] = 512;
@@ -38,14 +41,20 @@ struct Sdio : Device, private Chain {
         sendCmd(0, 0, 0); // GO_IDLE_STATE
         sendCmd(8, 0x1AA, 1); // SEND_IF_COND
 
-        do
-{
-sys::wait(500);
+        int r;
+        do {
             sendCmd(55, 0, 1); // APP_CMD
-sys::wait(500);
-}
-        while (sendCmd(41, 1<<30, 1) == 1); // APP_OP_COND
-sys::wait(10);
+            r = sendCmd(41, 0xC0100000 , 1);
+        } while (r & 4); // APP_OP_COND
+
+        do {
+            sendCmd(55, 0, 1); // APP_CMD
+            r = sendCmd(41, 0x80100000 , 1);
+logf("c41 %08x", +SDMMC1[SD_RSP]);
+        } while (r != 1); // APP_OP_COND
+
+        bool sdhc = SDMMC1[SD_RSP](30);
+logf("sdhc %d", sdhc);
 
         sendCmd(58, 0, 1); // READ_OCR
         sendCmd(16, 512, 1); // SET_BLOCKLEN
@@ -56,7 +65,7 @@ sys::wait(10);
         sendCmd(3, 0, 1); // SET_REL_ADDR
         auto rel = SDMMC1[SD_RSP] & 0xFFFF0000;
         SDMMC1[SD_CCR](0, 8) = 0;  // switch to 24 MHz
-        //SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
+        SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
 
         sendCmd(9, rel, 3); // SEND_CSD
         csd[0] = SDMMC1[SD_RSP];
@@ -128,7 +137,7 @@ private:
         t = cycles::count() - t;
         uint32_t s = SDMMC1[SD_STA];
         printf("  cmd %2d: s %08x, %d us, r %08x\n",
-                cmd, s, t/200, +SDMMC1[SD_RSP]);
+                cmd, s, t/168, +SDMMC1[SD_RSP]);
         SDMMC1[SD_ICR] = CMD_STATUS; // clear flags
         return s;
     }
@@ -164,7 +173,7 @@ private:
             dmaReg(CCR)(0) = 1; // EN
 
             // similar to sendCmd, but with DMA_IRQ when response received
-            SDMMC1[SD_MASK](8) = 1; // DATAENDIE
+            SDMMC1[SD_MASK](6) = 1; // DATAENDIE
             SDMMC1[SD_ARG] = (csd[0] >> 30 ? 1 : 512) * seek;
             SDMMC1[SD_CMD] = // CPSMEN WAITRESP CMDIDX
                 (1<<10) | (1<<6) | ((read ? 17 : 24)<<0);
@@ -180,10 +189,10 @@ private:
             case (int) Irq::SDMMC1:
                 SDMMC1[SD_ICR] = (1<<7) | (1<<6) | (1<<2) | (1<<0);
                 SDMMC1[SD_DCTR](0) = 1; // DTEN
-                return true; // sdio done, dma started
+                return false; // sdio done, dma started
             case (int) DMA_IRQ:
                 DMA2[IFCR+(STREAM&~3)] = 0b111101 << ifcBits[STREAM&3];
-                return false; // dma done, but card still in write cmd
+                return true; // dma done, but card still in write cmd
         }
         return false;
     }

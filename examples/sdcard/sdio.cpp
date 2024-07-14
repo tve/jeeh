@@ -16,20 +16,16 @@ struct SdWrap {
 
     int rwBlock(uint8_t rw, uint32_t page, uint8_t* buf) const {
         Message m { sdio.dId, 'B', 0, (uint8_t*) page };
-logf("10 %d", page);
         while (true) {
             sys::call(m);
             if (m.mLen == 0)
                 break;
-logf("11 %d %d", page, m.mLen);
             sys::wait(1);
         }
         m.mTag = rw;
         m.mLen = 512;
         m.mPtr = buf;
-logf("12");
         sys::call(m);
-logf("13");
         return 512;
     }
 
@@ -60,23 +56,29 @@ void sdTest () {
     logf("cap %d", m.mPtr);
 
     SdWrap sd (sdio);
+    FatFS fs (sd);
+    fs.init();
 
     uint8_t buf [512];
     for (auto i = 0; i < 500; ++i) {
-        sd.readBlock(2048 + i, buf);
+        auto t = cycles::count();
+        sd.readBlock(fs.base + i, buf);
+        t = cycles::count() - t;
         if (buf[0] != 0) {
+            logf("read %d: %d us", i, t/168);
             logf("%d", i);
-            logDump(buf, 128);
+            logDump(buf, 64);
         }
     }
 
-    FatFS fatFs (sd);
+#if 0
 
     // 8M = 256 fat entries x 32K
-    typedef FileMap< decltype(fatFs), 257 > DiskMap;
-    DiskMap diskMap (fatFs);
+    typedef FileMap< decltype(fs), 257 > DiskMap;
+    DiskMap diskMap (fs);
     auto limit = diskMap.open("FIRMWAREELF");
     logf("limit %d", limit);
+#endif
 }
 
 int main () {
