@@ -10,13 +10,13 @@ using namespace jeeh;
 int main () {
     initBoard();
 
-    // bbbbbbb & f750d
+    // f407deb & f750d
     //  PC8  D0  MISO
     //  PC9  D1
     //  PC10 D2
     //  PC11 D3  NSEL
     //  PC12 CLK SCLK
-    //  PC13 Detect
+    //  PC13 Detect (only F750d)
     //  PD2  CMD MOSI
     spiBus.init("D2,C8,C12,C11", 1000);
 
@@ -56,6 +56,7 @@ int main () {
     FileMap file (fs);
     auto n = file.open("list.cpp");
     for (auto i = 0; i < n; i += 512) {
+        logf("data @ %d", i);
         uint8_t buf [512];
         auto n = file.readBlock(i>>9, buf);
         assert(n == 512);

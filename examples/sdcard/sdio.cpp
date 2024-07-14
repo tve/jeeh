@@ -15,12 +15,14 @@ struct SdWrap {
     SdWrap (SDIO& s) : sdio (s) {}
 
     int rwBlock(uint8_t rw, uint32_t page, uint8_t* buf) const {
+        assert((uint32_t) buf % 4 == 0);
         Message m { sdio.dId, 'B', 0, (uint8_t*) page };
         while (true) {
             sys::call(m);
             if (m.mLen == 0)
                 break;
-            sys::wait(1);
+logf("act");
+            sys::wait(10);
         }
         m.mTag = rw;
         m.mLen = 512;
@@ -34,11 +36,13 @@ struct SdWrap {
     }
 
     int writeBlock (uint32_t page, uint8_t const* buf) const {
-        return rwBlock('W', page, buf);
+        return rwBlock('W', page, (uint8_t*) buf);
     }
 };
 
-void sdTest () {
+int main () {
+    initBoard();
+
     // F7508-DK:
     //  PC8  D0  MISO
     //  PC9  D1
@@ -56,35 +60,87 @@ void sdTest () {
     logf("cap %d", m.mPtr);
 
     SdWrap sd (sdio);
+
     FatFS fs (sd);
     fs.init();
 
-    uint8_t buf [512];
+    auto mhz = SystemCoreClock/1'000'000;
+    uint8_t buf [512] alignas (4);
+
     for (auto i = 0; i < 500; ++i) {
         auto t = cycles::count();
         sd.readBlock(fs.base + i, buf);
         t = cycles::count() - t;
         if (buf[0] != 0) {
-            logf("read %d: %d us", i, t/168);
+            logf("read %d: %d us", i, t/mhz);
             logf("%d", i);
             logDump(buf, 64);
         }
     }
 
+    auto show = [&](auto fn) {
+        FileMap file (fs);
+        auto n = file.open(fn);
+        logf("%s: %d b", fn, n);
+        for (auto i = 0; i < file.NFRAG; ++i)
+            if (file.size[i] > 0)
+                logf("  %d: %4d #%d", i, file.map[i], file.size[i]);
+    };
+
+    show("firmware.elf");
+    show("f");
+    show("g");
+    show("h");
+    show("x");
+    show("list.cpp");
+
+    FileMap file (fs);
+    auto n = file.open("list.cpp");
+    for (auto i = 0; i < n; i += 512) {
+        logf("data @ %d", i);
+        auto n = file.readBlock(i>>9, buf);
+        assert(n == 512);
+        logDump(buf, sizeof buf);
+    }
+
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3000, buf);
+    logDump(buf, 16, "3000: ??");
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3001, buf);
+    logDump(buf, 16, "3001: ??");
+
+sys::wait(100);
+    memset(buf, 0x11, sizeof buf);
+    sd.writeBlock(3000, buf);
+sys::wait(100);
+    memset(buf, 0x22, sizeof buf);
+    sd.writeBlock(3001, buf);
+sys::wait(100);
+
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3000, buf);
+    logDump(buf, 16, "3000: 11");
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3001, buf);
+    logDump(buf, 16, "3001: 22");
+
 #if 0
+sys::wait(100);
+    memset(buf, 0x33, sizeof buf);
+    sd.writeBlock(3000, buf);
+sys::wait(100);
+    memset(buf, 0x44, sizeof buf);
+    sd.writeBlock(3001, buf);
+sys::wait(100);
 
-    // 8M = 256 fat entries x 32K
-    typedef FileMap< decltype(fs), 257 > DiskMap;
-    DiskMap diskMap (fs);
-    auto limit = diskMap.open("FIRMWAREELF");
-    logf("limit %d", limit);
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3000, buf);
+    logDump(buf, 16, "3000: 33");
+    memset(buf, 0, sizeof buf);
+    sd.readBlock(3001, buf);
+    logDump(buf, 16, "3001: 44");
 #endif
-}
-
-int main () {
-    initBoard();
-
-    sdTest();
 
     while (true) { led.toggle(); sys::wait(250); }
 }

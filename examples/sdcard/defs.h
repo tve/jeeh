@@ -51,8 +51,16 @@ void initBoard () {
 }
 
 extern "C" int _write (int, char* ptr, int len) {
+#if 0
     Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
+#else
+    while (--len >= 0) {
+        while (!UART_NAME[0x00](7)) {} // TXFNF
+        UART_NAME[0x04] = *ptr++; // TDR
+    }
+    while (!UART_NAME[0x00](7)) {} // TXFNF
+#endif
     return len;
 }
 

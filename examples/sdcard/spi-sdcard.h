@@ -166,7 +166,7 @@ struct FatFS {
     uint8_t spc;            // sectors per cluster
 
     uint16_t curr;          // current sector in buffer (during chain calls)
-    uint8_t buf [512];      // buffer space for one sector
+    uint8_t buf [512] alignas (4); // buffer space for one sector
 };
 
 template< typename FS >
