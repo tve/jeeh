@@ -15,7 +15,7 @@ struct Sdio : Device, private Chain {
     Sdio () : Device ('D') {}
 
     void init () {
-        Pin::config("C8:H12,C9,C10,C11,C12,D2");
+        Pin::config("C8:V12,C9,C10,C11,C12,D2");
         RCC(ena::SDMMC1, 1) = 1; // sdio on
         RCC(ena::DMA2, 1) = 1;   // dma on
 
@@ -61,7 +61,7 @@ sys::wait(2);
         sendCmd(3, 0, 1); // SET_REL_ADDR
         rel = SDMMC1[SD_RSP] & 0xFFFF0000;
         SDMMC1[SD_CCR](0,8) = 0; // switch to 24 MHz
-        SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
+        //SDMMC1[SD_CCR](10) = 1;  // switch to 48 MHz
 
         sendCmd(9, rel, 3); // SEND_CSD
         csd[0] = SDMMC1[SD_RSP];
@@ -100,8 +100,14 @@ sys::wait(2);
                 break;
             case 'B':
                 seek = (uint32_t) m.mPtr;
-                //sendCmd(13, rel, 1);
-                m.mLen = (SDMMC1[SD_STA] & 0x3800) != 0; // RX/TX/CMD ACT
+                m.mLen = (SDMMC1[SD_STA] & 0x3000) != 0; // RX/TX ACT
+#if 0
+                if (!m.mLen) {
+                    SDMMC1[SD_MASK] = 0;
+                    sendCmd(13, rel, 1);
+                    m.mLen = SDMMC1[SD_RSP](8) == 0;
+                }
+#endif
                 break;
             case 'R':
             case 'W':
@@ -165,7 +171,7 @@ private:
                 cache::flush(mp->mPtr, mp->mLen);
 
             //dmaReg(CCR)(0) = 0;
-logf("dma %08x", +DMA2[0x00]);
+//logf("dma %08x", +DMA2[0x00]);
             DMA2[IFCR] = 0b111101 << 22;
 
             dmaReg(CMAR) = (uint32_t) mp->mPtr;
@@ -186,7 +192,8 @@ logf("dma %08x", +DMA2[0x00]);
 
     // the actual interrupt handler, with access to the sdio object
     bool interrupt (int) override {
-logf("I %x", +SDMMC1[SD_STA]);
+//logf("I %x", +SDMMC1[SD_STA]);
+assert(SDMMC1[SD_STA] == 0x580);
         SDMMC1[SD_ICR] = 0x7FF;
         return true; // sdio done
     }
