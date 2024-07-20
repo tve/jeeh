@@ -8,7 +8,7 @@ using namespace jeeh;
 int main () {
     Tester t;
 
-#if STM32G431xx
+#if STM32F103xB | STM32G431xx
     // there are no OSC32 pins on Nucleo-32's G431KB, must use the 32 kHz LSI
     rtc::init(false);
 #else
@@ -34,7 +34,7 @@ int main () {
         rtc::shortSleep(30, sys::STOP1);
         led.toggle();
     }
-    fastClock();
+    //fastClock();
 
     auto ms3 = rtc::getDate().todMillis();
     logf("3: %d", ms3);
