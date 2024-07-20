@@ -19,3 +19,7 @@ Pos | Pin | Channel
 15 | B7  | 14
 16 | B8  | 15
 17 | B9  | GND
+
+**Logic Analyser hookup:**
+
+![](la-board.jpg)

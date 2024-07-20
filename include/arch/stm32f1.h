@@ -16,7 +16,17 @@ uint32_t fastClock (bool pll) {
 }
 
 namespace rtc {
-    enum { CRL=0x04,PRLL=0x0C,DIVL=0x10,CNTH=0x18,CNTL=0x1C,BDCR=0x20,CSR=0x24 };
+
+// On F1, the RTC cannot generate subsecond interrupts unless the prescaler is
+// set to run faster than 1 Hz. To resemble newer µCs, it is set here to run
+// at 250 Hz. This means that the 32-bit RTC counter overflows every ≈199 days.
+// It also increases power consumption (but F1 is not meant for low-power use).
+
+enum {
+    CRH=0x00,CRL=0x04,PRLL=0x0C,DIVL=0x10,CNTH=0x18,CNTL=0x1C,BDCR=0x20,CSR=0x24
+};
+
+uint32_t offSecs; // offset, since the RTC will run at 250 Hz iso 1 Hz
 
 void init (bool lse) {
     RCC(ena::PWR, 1) = 1;
@@ -24,34 +34,25 @@ void init (bool lse) {
     RCC(ena::BKP, 1) = 1;
 
     if (lse) {
-        RCC[BDCR](0) = 1;               // LSEON
-        while (RCC[BDCR](1) == 0) {}    // wait for LSERDY
-        RCC[BDCR](8,2) = 1;             // RTSEL = LSE
+        RCC[BDCR](0) = 1;            // LSEON
+        while (RCC[BDCR](1) == 0) {} // wait for LSERDY
+        RCC[BDCR](8,2) = 1;          // RTSEL = LSE
     } else {
-        RCC[CSR](0) = 1;                // LSION
-        while (RCC[CSR](1) == 0) {}     // wait for LSIRDY
-        RCC[BDCR](8,2) = 2;             // RTSEL = LSI
+        RCC[CSR](0) = 1;             // LSION
+        while (RCC[CSR](1) == 0) {}  // wait for LSIRDY
+        RCC[BDCR](8,2) = 2;          // RTSEL = LSI
     }
-    RCC[BDCR](15) = 1;                  // RTCEN
-    RTC[CRL](3) = 0;                    // ~RSF
-    while (RTC[CRL](3) == 0) {}         // wait for RSF
-    RTC[CRL](4) = 1;                    // CNF
-    RTC[PRLL] = lse ? 32'767 : 39'999;  // 32 kHz crystal or ≈40 kHz LSI
-    RTC[CRL](4) = 0;                    // ~CNF
-    while (RTC[CRL](5) == 0) {}         // wait for RTOFF
+    RCC[BDCR](15) = 1;               // RTCEN
+    RTC[CRL](3) = 0;                 // ~RSF
+    while (RTC[CRL](3) == 0) {}      // wait for RSF
+    RTC[CRL](4) = 1;                 // CNF
+    RTC[PRLL] = lse ? 131 : 159;     // 32 kHz crystal or 40 kHz LSI
+    RTC[CRL](4) = 0;                 // ~CNF
+    while (!RTC[CRL](5)) {}          // wait for RTOFF
 
 }
 
-bool shortSleep (uint16_t ms, int mode) {
-    (void) ms; (void) mode;
-    fail(); // TODO
-}
-
-DateTime getDate () {
-    return DateTime { getSecs() };
-}
-
-uint32_t getSecs () {
+uint32_t get250hz () {
     while (true) {
         uint16_t lo = RTC[CNTL];
         uint16_t hi = RTC[CNTH];
@@ -61,16 +62,42 @@ uint32_t getSecs () {
     }
 }
 
+bool sleep250hz (uint32_t ticks, int mode) {
+    (void) ticks; (void) mode;
+    fail();
+}
+
+bool shortSleep (uint16_t ms, int mode) {
+    return sleep250hz(ms/4 + 1, mode);
+}
+
+bool longSleep (uint32_t sec, int mode) {
+    return sleep250hz(250 * sec, mode);
+}
+
+DateTime getDate () {
+    auto t = get250hz();
+    DateTime dt { offSecs + t/250 };
+    dt.ff = t % 250;
+    return dt;
+}
+
+uint32_t getSecs () {
+    return offSecs + get250hz() / 250;
+}
+
 void set (DateTime const& dt) {
     set((uint32_t) dt);
 }
 
 void set (uint32_t t) {
-    RTC[CRL](4) = 1;            // CNF
-    RTC[CNTL] = (uint16_t) t;
-    RTC[CNTH] = t >> 16;
-    RTC[CRL](4) = 0;            // ~CNF
-    while (RTC[CRL](5) == 0) {} // wait for RTOFF
+    offSecs = t;
+    while (!RTC[CRL](5)) {} // wait for RTOFF
+    RTC[CRL](4) = 1;        // CNF
+    RTC[CNTL] = 0;
+    RTC[CNTH] = 0;
+    RTC[CRL](4) = 0;        // ~CNF
+    while (!RTC[CRL](5)) {} // wait for RTOFF
 }
 
 uint32_t getReg (int reg) {

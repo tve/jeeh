@@ -9,6 +9,7 @@ namespace jeeh {
 
 void initBoard () {
     fastClock();
+    rtc::init(false);
     led.mode("P");
     led = 1; // inverted logic
 

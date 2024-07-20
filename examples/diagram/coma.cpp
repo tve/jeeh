@@ -1,4 +1,4 @@
-// Examine the control flow of sys::wait.
+// Examine the control flow of sys::coma.
 
 #include <jee.h>
 using namespace jeeh;
@@ -9,6 +9,6 @@ int main () {
 
     while (true) {
         Tracer<10> pt;
-        sys::wait(3);
+        sys::coma(1);
     }
 }
