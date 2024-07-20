@@ -213,6 +213,7 @@ struct Thread : Message, Chain {
     }
 
     void submit (Message& msg) {
+        trace(SUBMIT);
         assert(irqState() == 0); // must be in SVC or PendSV
 
         if (block == &msg) {
@@ -238,6 +239,7 @@ struct Thread : Message, Chain {
             nextToRun = mTag;
 
         while (true) {
+            trace(RESCHED);
             auto th = threads[nextToRun];
             assert(th != nullptr);
             if (th->state == RUN) {
@@ -324,6 +326,7 @@ inline namespace {
         assert(irqState() == 0); // must be in PendSV
         auto p = __atomic_exchange_4(&pending, 0, __ATOMIC_RELAXED);
         while (p != 0) {
+            trace(TRIGGER);
             auto i = __builtin_ctz(p); // gcc can count trailing zeros
             assert(devices[i] != nullptr);
             devices[i]->finish();
@@ -397,6 +400,7 @@ void Device::reply (Message* mp) {
 //------------------------------------------------------------------- send/recv
 
 void sys::send (Message& m) {
+    trace(SEND);
     assert(irqState() < 0); // must be in thread mode
     auto f = +[](Message& msg) {
         auto id = msg.mDst;
@@ -410,6 +414,7 @@ void sys::send (Message& m) {
 }
 
 Message& sys::recv () {
+    trace(RECV);
     assert(irqState() < 0); // must be in thread mode
     auto f = +[]() {
         auto& th = context();
@@ -666,6 +671,7 @@ void SVC_Handler () {
 extern "C" {
 
 void irqDispatch () {
+    trace(IRQDISP);
     uint8_t irq = SCB[0x4] - 16; // ICSR
     assert(irq < (uint8_t) Irq::limit);
     auto o = interrupts[irq];

@@ -4,6 +4,12 @@
 using namespace jeeh;
 #include "defs.h"
 
+template< int N >
+struct PinTracer {
+    PinTracer () { tracePins[N] = 1; }
+    ~PinTracer () { tracePins[N] = 0; }
+};
+
 void one () {
     PinTracer<1> pt;
 }

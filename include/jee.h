@@ -27,7 +27,7 @@ extern "C" {
 namespace jeeh {
 
 //CG1 version
-constexpr auto VERSION = "v6.0.0-79-g9ab6ce7";
+constexpr auto VERSION = "v6.0.0-79-gc2459e1";
 
 #include "arch/sys.h"
 
@@ -36,5 +36,11 @@ constexpr auto VERSION = "v6.0.0-79-g9ab6ce7";
 #include "jee-stm32.h"
 #include "arch/pin.h"
 #endif
+
+#if TRACE
+#include "trace.h"
+#else
+#define trace(x)
+#endif // TRACE
 
 } // namespace jeeh

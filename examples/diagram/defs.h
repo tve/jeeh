@@ -2,13 +2,10 @@
 #define LED  "A1"
 
 Pin led (LED);
-Pin pins [16];
 
-template< int N >
-struct PinTracer {
-    PinTracer () { pins[N] = 1; }
-    ~PinTracer () { pins[N] = 0; }
-};
+namespace jeeh {
+    Pin tracePins [16];
+}
 
 void initBoard () {
     fastClock();
@@ -18,6 +15,6 @@ void initBoard () {
     AFIO[0x04](24,3) = 2; // disable non-SWD JTAG pins
 
     Pin::config("B10:P,B11,B12,B13,B14,B15,A8,A11,A12,A15,B3,B4,B5,B6,B7,B8",
-                    pins, sizeof pins);
-    PinTracer<0> pt;
+                    tracePins, sizeof tracePins);
+    trace(INIT);
 }

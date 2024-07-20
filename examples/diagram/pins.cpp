@@ -9,8 +9,8 @@ int main () {
 
     int i = 0;
     while (true) {
-        pins[i] = 0;
-        i = (i+1) % sizeof pins;
-        pins[i] = 1;
+        tracePins[i] = 0;
+        i = (i+1) % sizeof tracePins;
+        tracePins[i] = 1;
     }
 }

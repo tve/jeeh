@@ -174,6 +174,7 @@ struct Ticker : Device, Chain {
     }
 
     bool interrupt (int) override {
+        trace(TICK);
         ticks += rate;
         return next() < rate;
     }
