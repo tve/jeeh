@@ -3,9 +3,9 @@
 Pos Name Pin Use Channel
 1  VIN
 2  GND
-3  TNRST
+3  TNRST   RST
 4  5V
-5  A7      PA2
+5  A7      PA2  uart TX (include)
 6  A6      PA7
 7  A5      PA15
 8  A4      PB7
@@ -15,7 +15,7 @@ Pos Name Pin Use Channel
 12 A0      PA0
 13 AVDD    
 14 3V3
-15 D13     PB3  swo
+15 D13     PB3
 
 1  D1      PA9  uart
 2  D0      PA10 uart
@@ -23,8 +23,8 @@ Pos Name Pin Use Channel
 4  GND
 5  D2      PA12
 6  D3      PB0
-7  D4      PB7
-8  D5      PA15
+7  D4      PB7  dupl
+8  D5      PA15 dupl
 9  D6      PB6
 10 D7   
 11 D8   

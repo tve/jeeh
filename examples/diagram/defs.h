@@ -4,18 +4,15 @@
 Pin led (LED);
 
 namespace jeeh {
-    Pin tracePins [16];
+    Pin tracePins [15];
 }
 
 void initBoard () {
     fastClock();
     rtc::init(false);
     led.mode("P");
-    led = 1; // inverted logic
 
-    AFIO[0x04](24,3) = 2; // disable non-SWD JTAG pins
-
-    Pin::config("B10:P,B11,B12,B13,B14,B15,A8,A11,A12,A15,B3,B4,B5,B6,B7,B8",
+    Pin::config("A2:P,A7,A15,B7,A4,A1,A0,B3,A12,B0,B6,A8,A11,B5,B4",
                     tracePins, sizeof tracePins);
     trace(INIT);
 }
