@@ -1,6 +1,7 @@
 // Use PinTracer objects to auto-set/-clear pins in a lexical scope.
 
 #include <jee.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

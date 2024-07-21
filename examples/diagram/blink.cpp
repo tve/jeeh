@@ -1,16 +1,16 @@
 // Toggle the on-board LED.
 
 #include <jee.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard();
+    //initBoard();
+    led.mode("P");
 
     while (true) {
         led.toggle();
-
-        for (auto i = 0; i < 2'000'000; ++i)
-            asm ("");  // prevents getting optimised away
+        sys::wait(250);
     }
 }

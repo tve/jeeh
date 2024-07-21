@@ -1,15 +1,15 @@
 // Examine the control flow when there is a background thread.
 
 #include <jee.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
 int blinker (Message& m) {
     while (true) {
-        //Tracer<10> tr;
+        Tracer<10> tr;
         led.toggle();
-        sys::wait(3);
-        (void) m; //sys::send(m);
+        sys::call(m);
         sys::wait(100);
     }
 }
@@ -17,14 +17,6 @@ int blinker (Message& m) {
 int main () {
     initBoard();
 
-    while (true) {
-        led.toggle();
-        sys::wait(10);
-        //for (auto i = 0; i < 2'000'000; ++i)
-            //asm ("");  // prevents getting optimised away
-    }
-Message m {};
-blinker(m);
     uint32_t stack [250];
     sys::init(stack);
 
@@ -32,7 +24,8 @@ blinker(m);
     sys::fork(blinkerStack, blinker);
 
     while (true) {
-        //Tracer<11> tr;
-        sys::recv();
+        Tracer<11> tr;
+        auto& m = sys::recv();
+        sys::send(m);
     }
 }
