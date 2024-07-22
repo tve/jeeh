@@ -10,6 +10,16 @@ int main () {
 
     while (true) {
         Tracer<10> pt;
-        sys::wait(100);
+        sys::coma(1, sys::STOP2);
+        logf("hello abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
+}
+
+uint8_t jeeh::lowestPower (uint8_t power, uint16_t) {
+    Tracer<11> pt;
+    return power;
+}
+
+void jeeh::resumePower () {
+    Tracer<12> pt;
 }

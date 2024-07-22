@@ -8,6 +8,9 @@ using namespace jeeh;
 int main () {
     initBoard();
 
+    RCC[0x08](24,4) = 6;    // LSI
+    Pin::config("A8:0");    // MCO
+
     while (true) {
         Tracer<10> pt;
         sys::wait(2);

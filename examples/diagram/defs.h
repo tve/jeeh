@@ -1,40 +1,36 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "thread"
+#define PIOENV  "coma"
 
 //CG1 board leds
-#define LED  "B8"
+#define LED  "B3"
 
 constexpr Pin led (LED);
 
-namespace jeeh {
-    Pin tracePins [14];
-}
-
 //CG[ board uart
 #define UART_NAME  USART2
-#define UART_PINS  "A2:UH7,A3"
-#define UART_FREQ  170
-#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,27,26
+#define UART_PINS  "A2:7,A15:3"
+#define UART_FREQ  80
+#define UART_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,2,2
 //CG]
 
 inline Uart console ('U');
 
 //CG[ board i2c
 #define I2C_NAME  I2C1
-#define I2C_PINS  "B7:OH4,A15"
-#define I2C_FREQ  170
-#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,3-1,4-1
-#define I2C_CONF  {ena::I2C1,170,Irq::I2C1_EV,Irq::I2C1_ER}, {1-1,17,16}
+#define I2C_PINS  "B7:O4,B6"
+#define I2C_FREQ  80
+#define I2C_TYPE  I2C1.ADDR,DMA2.ADDR,7-1,6-1
+#define I2C_CONF  {ena::I2C1,80,Irq::I2C1_EV,Irq::I2C1_ER}, {2-1,5,5}
 //CG]
 
 //CG[ board spi
 #define SPI_NAME  SPI1
 #define SPI_PINS  "B5:H5,B4,B3,A11:HP"
-#define SPI_FREQ  170
-#define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,4-1
-#define SPI_CONF  {ena::SPI1,170,Irq::DMA1_CH3,Irq::DMA1_CH4}, {1-1,11,10}
+#define SPI_FREQ  80
+#define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
+#define SPI_CONF  {ena::SPI1,80,Irq::DMA1_Channel3,Irq::DMA1_Channel2}, {1-1,1,1}
 //CG]
 
 //CG: board mode
@@ -53,19 +49,36 @@ i2c::Call<I2C_TYPE> i2cBus (I2C_CONF);
 spi::Call<SPI_TYPE> spiBus (SPI_CONF);
 #endif
 
+namespace jeeh {
+    Pin tracePins [14];
+}
+
 void initBoard () {
-    //fastClock();
     led.mode("P");
+
+#if STM32L432xx
+    RCC[0x00](8,4) = 0b1001;      // HSIASFS HSIKERON HSION
+    while (RCC[0x00](10) == 0) {} // wait for HSIRDY
+    RCC[0x88](2,2) = 2;           // use HSI16 for USART2
+
+    // LED shared with SPI1 SCK
+    Pin::config("A12:P,B0,B1,A7,A6,A5,A4,A1,A0,A8,A11,B3,B5,B4",
+                    tracePins, sizeof tracePins);
+    rtc::init(true); // has 32 kHz XTAL
+#elif STM32G431xx
     Pin::config("A12:P,B0,B6,A7,A15,B7,A4,A1,A0,A8,A11,B3,B5,B4",
                     tracePins, sizeof tracePins);
+    rtc::init(false);
+#endif
+
     trace(INIT);
 
     console.init(UART_PINS, 1'000'000, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
+    USART2[0x0C] = 16; // fix baudrate (for L432), i.e. 16 MHz -> 1 MBd
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 
     cycles::init();
-    rtc::init(false);
 }
 
 extern "C" int _write (int, char* ptr, int len) {

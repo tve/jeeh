@@ -84,6 +84,7 @@ namespace sys {
     Message& recv ();
     void call (Message& msg);
     bool drop (Message& msg, uint8_t id);
+
     void wait (uint16_t ms);
     bool coma (uint32_t sec, int mode =STOP0);
 
