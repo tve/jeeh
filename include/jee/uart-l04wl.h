@@ -22,6 +22,9 @@ struct Uart : Device {
         RCC(dev.uena, 1) = 1;         // uart on
         baudRate(baud);
 
+        rxBuf = sys::pool(RXBYTES+TXBYTES, cache::align);
+        txBuf = rxBuf + RXBYTES;
+
         RCC(ena::DMA1+dev.dma, 1) = 1; // dma on
 
 #if STM32WL
@@ -35,7 +38,7 @@ struct Uart : Device {
         dmaReg(CSELR)(4*(dev.txChan), 4) = dev.txReq;
 #endif
 
-        dmaRX(CNDTR) = sizeof rxBuf;
+        dmaRX(CNDTR) = RXBYTES;
         dmaRX(CMAR) = (uint32_t) rxBuf;
         dmaRX(CPAR) = dev.uart + RDR;
         dmaRX(CCR) = 0b1010'0111; // MINC CIRC HTIE TCIE EN
@@ -66,6 +69,10 @@ struct Uart : Device {
 
     void start (Message& m) override {
         switch (m.mTag) {
+            case 'I':
+                m.mLen = rxAvail();
+                reply(&m);
+                break;
             case 'R':
                 if (m.mLen > 0) {
                     rxFill = (rxFill + m.mLen) % sizeof rxBuf;
@@ -99,30 +106,47 @@ struct Uart : Device {
                 reply(mp);
             }
         }
-        if (dmaTX(CCR)(0) == 0) {
-            reply(txMsgs.pull());
-            txStart();
-        }
+        txStart();
     }
 
     Config dev;
 private:
-    uint8_t rxBuf [100];
-    uint16_t rxFill =0; // where the next data comes from
+    static constexpr auto RXBYTES = 128, TXBYTES = 128;
+    uint8_t *rxBuf, *txBuf;
+    uint16_t rxFill =0, txFill =0; // where the next data comes from / goes to
     Chain rxMsgs, txMsgs;
 
     uint32_t rxAvail () const {
-        int n = sizeof rxBuf - rxFill - dmaRX(CNDTR);
-        return n >= 0 ?  n : sizeof rxBuf - rxFill;
+        int n = RXBYTES - rxFill - dmaRX(CNDTR);
+        return n >= 0 ?  n : RXBYTES - rxFill;
     }
 
     void txStart () {
         auto mp = txMsgs.first();
-        if (mp != nullptr) {
-            dmaTX(CMAR) = (uint32_t) mp->mPtr;
-            dmaTX(CNDTR) = mp->mLen;
-            dmaTX(CCR)(0) = 1; // EN
-        }
+        if (mp == nullptr || dmaTX(CCR)(0))
+            return;
+
+        auto n = mp->mLen;
+        if (n > TXBYTES - txFill)
+            n = TXBYTES - txFill;
+        assert(n > 0);
+
+        dmaTX(CMAR) = (uint32_t) txBuf + txFill;
+        dmaTX(CNDTR) = n;
+
+        auto p = mp->mPtr;
+        for (auto i = 0U; i < n; ++i)
+            txBuf[txFill++] = *p++;
+
+        cache::clean(txBuf + txFill - n, n);
+        dmaTX(CCR)(0) = 1; // EN
+
+        if (txFill >= TXBYTES)
+            txFill = 0;
+        mp->mPtr = p;
+        mp->mLen -= n;
+        if (mp->mLen == 0)
+            reply(txMsgs.pull());
     }
 
     // the actual interrupt handler, with access to the uart object

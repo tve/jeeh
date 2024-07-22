@@ -1,4 +1,4 @@
-// Examine the control flow of sys::coma.
+// Examine the control flow of automatic stop mode.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -12,14 +12,14 @@ int main () {
 
     while (true) {
         Tracer<10> pt;
-        sys::coma(1, sys::STOP2);
+        sys::wait(100);
         logf("hello");
     }
 }
 
 uint8_t jeeh::lowestPower (uint8_t power, uint16_t) {
     Tracer<11> pt;
-    return power;
+    return sys::STOP2;
 }
 
 void jeeh::resumePower () {
