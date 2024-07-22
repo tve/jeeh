@@ -49,6 +49,25 @@ i2c::Call<I2C_TYPE> i2cBus (I2C_CONF);
 spi::Call<SPI_TYPE> spiBus (SPI_CONF);
 #endif
 
+namespace serio {
+
+enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28, UE=0 };
+
+void init () {
+    Pin::config(UART_PINS);
+    RCC(ena::UART_NAME, 1) = 1;
+    UART_NAME[BRR] = 16; // 16 MHz => 1 Mbd
+    UART_NAME[CR1] = (1<<3) | (1<<2) | (1<<UE);  // TE RE UE
+}
+
+void putch (char c) {
+    while (!UART_NAME[ISR](7)) {} // TXE
+    UART_NAME[TDR] = c;
+    while (UART_NAME[ISR](6) == 0) {} // TC
+}
+
+}
+
 namespace jeeh {
     Pin tracePins [14];
 }
@@ -77,16 +96,25 @@ void initBoard () {
 
     trace(INIT);
 
+#if 0
     console.init(UART_PINS, 1'000'000, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
+#else
+    serio::init();
+#endif
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 
     cycles::init();
 }
 
 extern "C" int _write (int, char* ptr, int len) {
+#if 0
     Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
+#else
+    while (--len >= 0)
+        serio::putch(*ptr++);
+#endif
     return len;
 }
 
