@@ -21,12 +21,11 @@ struct Example {
     void start (char type) {
         assert(!timer.inUse());
         assert(!rcPin.inUse());
+        led.toggle();
 
         sys::wait(100);
         logf("%c %d", type, cycles::millis());
 
-        Tracer<9> pt;
-        led.toggle();
         rc.mode(rc ? "D": "U"); // switch to pull-down or pull-up
 
         timer.mLen = 30;
