@@ -1,4 +1,4 @@
-// Use external cap on A9 and A10 to generate time-delayed interrupts.
+// Generate time-delayed pin interrupts with an external capacitor on A12.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -11,18 +11,23 @@ int main () {
     initBoard();
     Pin::config("B4:V15"); // EVENTOUT
 
-    Pin rc ("A12");
+    Pin rc ("A12"); // this pin has ≈800 nF capacitance tied to ground
 
     auto i = 0;
     while (true) {
+        Tracer<10> pt;
         logf("%d", ++i); // uses blocking polled I/O
-
         sys::wait(100);
-        rc.mode(i & 1 ? "U": "D");
-        led.toggle();
 
+        led.toggle();
+        rc.mode(rc ? "D": "U"); // switch to pull-down or pull-up
+
+        // wait for the pin interrupt, some 15..25 ms from now
         Message m {exti.dId, 'A', 12, (uint8_t*) ExtIrq::BOTH};
         sys::call(m);
+
+        rc = +rc;     // force output to same state as currently read
+        rc.mode("P"); // ... then enable push-pull mode
     }
 }
 
