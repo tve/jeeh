@@ -319,7 +319,8 @@ void sleepNow (int mode) {
 }
 
 bool shortSleep (uint16_t ms, int mode) {
-    assert(ms <= 16'000);
+    if (ms > 16'000)
+        ms = 16'000;
     auto sel = 3;
     auto count = (100'000*ms) / 6104; // 61.035 us, but need to avoid overflow
     while (count >= 32768) {
