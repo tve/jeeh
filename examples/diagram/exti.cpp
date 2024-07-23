@@ -8,34 +8,41 @@ using namespace jeeh;
 struct Example {
     ExtIrq exti;
     Pin rc {"A12"}; // this pin has ≈800 nF capacitance tied to ground
-
+    Message delay { '@', 'T' };
     Message timer { '@', 'T' };
     Message rcPin { exti.dId, 'A', 12, (uint8_t*) ExtIrq::BOTH };
 
     Example () {
+        delay.setCallback(this, &Example::onDelay);
         timer.setCallback(this, &Example::onTimeout);
         rcPin.setCallback(this, &Example::onPinChange);
         start('I');
     }
 
     void start (char type) {
+        assert(!delay.inUse());
         assert(!timer.inUse());
         assert(!rcPin.inUse());
         led.toggle();
 
-        sys::wait(100);
         logf("%c %d", type, cycles::millis());
+        delay.mLen = 100;
+        sys::send(delay);
+    }
 
+    void onDelay (Message&) {
         rc.mode(rc ? "D": "U"); // switch to pull-down or pull-up
 
-        timer.mLen = 5000;
-        //sys::send(timer); // generate a timeout in case pin change is missing
+        timer.mDst = '@';
+        timer.mLen = 55;
+        sys::send(timer); // generate a timeout in case pin change is missing
 
+        rcPin.mDst = exti.dId;
         sys::send(rcPin); // trigger on pin change, some 15..25 ms from now
     }
 
     void onPinChange (Message&) {
-        //assert(timer.inUse());
+        assert(timer.inUse());
         sys::drop(timer, '@');
         assert(!timer.inUse());
 
@@ -47,7 +54,9 @@ struct Example {
 
     void onTimeout (Message &) {
         assert(rcPin.inUse());
-        sys::drop(rcPin, exti.dId);
+        //sys::drop(rcPin, exti.dId);
+        auto f = exti.remove(rcPin);
+        assert(f);
         assert(!rcPin.inUse());
 
         start('T');
@@ -57,6 +66,9 @@ struct Example {
 int main () {
     initBoard();
     Pin::config("B4:V15"); // EVENTOUT
+
+    Message m { '@', 'T', 10'000 };
+    sys::send(m);
 
     Example activity;
 
