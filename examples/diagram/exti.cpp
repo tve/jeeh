@@ -28,14 +28,16 @@ struct Example {
 
         rc.mode(rc ? "D": "U"); // switch to pull-down or pull-up
 
-        timer.mLen = 30;
-        sys::send(timer); // generate a timeout in case pin change is missing
+        timer.mLen = 5000;
+        //sys::send(timer); // generate a timeout in case pin change is missing
 
         sys::send(rcPin); // trigger on pin change, some 15..25 ms from now
     }
 
     void onPinChange (Message&) {
+        //assert(timer.inUse());
         sys::drop(timer, '@');
+        assert(!timer.inUse());
 
         rc = +rc;     // force output to same state as currently read
         rc.mode("P"); // ... then enable push-pull mode
@@ -44,7 +46,10 @@ struct Example {
     }
 
     void onTimeout (Message &) {
+        assert(rcPin.inUse());
         sys::drop(rcPin, exti.dId);
+        assert(!rcPin.inUse());
+
         start('T');
     }
 };
