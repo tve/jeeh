@@ -41,10 +41,6 @@ struct Example {
         rc = +rc;     // force output to same state as currently read
         rc.mode("P"); // ... then enable push-pull mode
 
-        static auto i = 0;
-        logf("%d", ++i); // uses blocking polled I/O
-        logf("T %d", cycles::millis());
-
         start('+');
     }
 
