@@ -7,6 +7,7 @@
 - **`diagram`** - an F103 tied to a logic analyser to create timing diagrams
 - **`ethernet`** - driver for the F4/F7 built-in ethernet peripheral
 - **`f429hy`** - HAOYU's STM32F429GI board with RAM/NOR/NAND and 5" LCD
+- **`f769d`** - explore the STM32F769NI discovery kit w/ 800x480 LCD
 - **`hytiny`** - use a HyTiny to receive packets with an RFM69 RF module
 - **`i2c`** - some tests for I2C devices connected to a Nucleo-32 L432KC
 - **`jnzero`** - a low-power measurement setup using the JeeNode Zero v4
