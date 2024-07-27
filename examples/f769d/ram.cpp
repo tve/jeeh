@@ -6,10 +6,11 @@ using namespace jeeh;
 #include "defs.h"
 #include "memtest.h"
 
+auto ram = (uint8_t* const) 0xC000'0000;
+
 int main () {
     initBoard();
 
-    initFmcPins();
     auto sdRam = initSdRam();
 
     for (auto i = 0; i < 32; ++i)

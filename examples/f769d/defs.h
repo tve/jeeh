@@ -2,10 +2,14 @@
 
 //CG1 pio
 #define PIOENV  "ram"
-//CG1 board leds
+//CG3 board leds
 #define LED  "J5"
+#define LED1 "J5"
+#define LED2 "J13"
 
 constexpr Pin led (LED);
+constexpr Pin led1 (LED1);
+constexpr Pin led2 (LED2);
 
 //CG[ board uart
 #define UART_NAME  USART1
@@ -45,15 +49,25 @@ uint8_t* initSdRam () {
 }
 
 void initBoard () {
+    cycles::init();
     fastClock();
-    led.mode("P");
+    led1.mode("P"); // green LED
+    led2.mode("P"); // red LED
 
     console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
-    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
-
-    cycles::init();
     rtc::init();
+    auto dt = rtc::getDate();
+    logf("\n%s: %s @ %d MHz, %d cy [20%02d/%02d/%02d %02d:%02d:%02d.%03d]",
+            PIOENV, SVDNAME, SystemCoreClock / 1'000'000, cycles::count(),
+            dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff * 1000) / 256);
+
+    if (rtc::getSecs() < 367 * 86400) {
+        logf("rtc set to: %s %s", __DATE__, __TIME__);
+        rtc::set(DateTime {});
+    }
+
+    initFmcPins();
 }
 
 extern "C" int _write (int, char* ptr, int len) {

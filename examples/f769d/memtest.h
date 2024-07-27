@@ -69,6 +69,7 @@ int memTests (uint32_t start, uint32_t bytes) {
         checkLfsr(e);
     for (auto e : fixedPatterns)
         checkFixed(e);
+    printf("\n");
 
     return errors;
 }
