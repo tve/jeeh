@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "uart"
+#define PIOENV  "ram"
 //CG1 board leds
 #define LED  "J5"
 
@@ -18,19 +18,20 @@ Uart console ('U');
 
 void initFmcPins () {
     RCC(ena::FMC, 1) = 1;
-    Pin::config("B7:V12,C0,C3,"
-                "D0,D1,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13,D14,D15,"
-                "E0,E1,E2,E3,E4,E5,E7,E8,E9,E10,E11,E12,E13,E14,E15,"
+    Pin::config("D0:UH12,D1,D8,D9,D10,D14,D15,"
+                "E0,E1,E7,E8,E9,E10,E11,E12,E13,E14,E15,"
                 "F0,F1,F2,F3,F4,F5,F11,F12,F13,F14,F15,"
-                "G0,G1,G2,G3,G4,G5,G8,G9,G10,G12,G15,"
-                "H2,H3,H5");
+                "G0,G1,G2,G4,G5,G8,G15,"
+                "H2,H3,H5,H8,H9,H10,H11,H12,H13,H14,H15,"
+                "I0,I1,I2,I3,I4,I5,I6,I7,I9,I10");
+
 }
 
 uint8_t* initSdRam () {
-    // set up 32 MB SDRAM
+    // set up 16 MB SDRAM
     enum {CR1=0x140,CR2=0x144,TR1=0x148,TR2=0x14C,CMR=0x150,RTR=0x154,SR=0x158};
-    FMC[CR1] = (1<<13)|(1<<12)|(2<<10)|(3<<7)|(1<<6)|(1<<4)|(2<<2)|(1<<0);
-    FMC[TR1] = (1<<24)|(1<<20)|(1<<16)|(5<<12)|(3<<8)|(6<<4)|(1<<0);
+    FMC[CR1] = (0<<13)|(1<<12)|(2<<10)|(3<<7)|(1<<6)|(2<<4)|(1<<2)|(0<<0);
+    FMC[TR1] = (1<<24)|(1<<20)|(1<<16)|(6<<12)|(3<<8)|(6<<4)|(1<<0);
 
     // SDRAM commands
     auto fmcWait = []() { while (FMC[SR](5)) {} };
@@ -45,13 +46,14 @@ uint8_t* initSdRam () {
 
 void initBoard () {
     fastClock();
-    cycles::init();
-
     led.mode("P");
 
     console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
+
+    cycles::init();
+    rtc::init();
 }
 
 extern "C" int _write (int, char* ptr, int len) {
