@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "ram"
+#define PIOENV  "uart"
 //CG3 board leds
 #define LED  "J5"
 #define LED1 "J5"
@@ -58,7 +58,7 @@ void initBoard () {
                                        UART_FREQ, Irq::UART_NAME, UART_CONF });
     rtc::init();
     auto dt = rtc::getDate();
-    logf("\n%s: %s @ %d MHz, %d cy [20%02d/%02d/%02d %02d:%02d:%02d.%03d]",
+    logf("\n%s: %s @ %d MHz, %d cy (20%02d/%02d/%02d %02d:%02d:%02d.%03d)",
             PIOENV, SVDNAME, SystemCoreClock / 1'000'000, cycles::count(),
             dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff * 1000) / 256);
 
