@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "ram"
+#define PIOENV  "font"
 
 //CG[ board leds
 #define LED  "B0"
@@ -20,7 +20,7 @@ constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
 #define UART_CONF  Irq::DMA2_Stream7,Irq::DMA2_Stream5,2-1,7-0,5-0,4,4
 //CG]
 
-Uart uart ('U');
+Uart console ('U');
 
 void initBoard () {
     fastClock();
@@ -31,13 +31,13 @@ void initBoard () {
     ledC.mode("P"); ledC = 1; // inverted logic
     ledB.mode("P");
 
-    uart.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
-                                    UART_FREQ, Irq::UART_NAME, UART_CONF });
+    console.init(UART_PINS, 115'200, { UART_NAME.ADDR, ena::UART_NAME,
+                                       UART_FREQ, Irq::UART_NAME, UART_CONF });
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
 extern "C" int _write (int, char* ptr, int len) {
-    Message m { 'U', 'W', (uint16_t) len, (uint8_t*) ptr };
+    Message m { console.dId, 'W', (uint16_t) len, (uint8_t*) ptr };
     sys::call(m);
     return len;
 }
