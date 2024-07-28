@@ -16,11 +16,14 @@ int main () {
     for (auto i = 0; i < 50; ++i) asm ("");
 
     led = 1;
+    for (auto i = 0; i < 100; ++i) asm ("");
+    led = 0;
+
     rtc::shortSleep(10, sys::STOP2);
     for (auto i = 0; i < 50; ++i) asm ("");
 
     led = 0;
-    rtc::shortSleep(5000, sys::SHUTDOWN);
+    rtc::shortSleep(2000, sys::SHUTDOWN);
 
     fail(); // blink LED
 }
