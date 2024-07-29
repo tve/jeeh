@@ -1,6 +1,6 @@
 {
     "name": "JeeH",
-    "version": "6.0.0",
+    "version": "6.1.0",
     "description": "Hardware abstraction and multi-tasker for ARM Cortex µCs",
     "keywords": "experimental",
     "authors": {

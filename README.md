@@ -16,4 +16,4 @@ to the ones included with the Arduino IDE, STM32CubeMX, and others.
 JeeH is in active development. All the API and naming conventions can change.  
 Latest changes are in the `dev` branch of <https://git.sr.ht/~jcw/jeeh/refs>.  
 Issues & bugs are (not actively) tracked at <https://todo.sr.ht/~jcw/issues>.  
-Documentation? Yeah, some day. For now just <https://jc.wippler.nl/docs/jeeh/>.
+Documentation? Yeah, some day... For now just <https://jc.wippler.nl/posts/>.
