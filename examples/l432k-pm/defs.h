@@ -13,8 +13,9 @@
 void jeeh::fail(void const*, char const*, int) {
     constexpr Pin led (LED);
     led.mode("P");
+    cycles::init();
     while (true) {
         led.toggle();
-        sys::wait(100);
+        cycles::msBusy(100);
     }
 }
