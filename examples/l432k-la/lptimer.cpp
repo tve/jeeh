@@ -34,7 +34,9 @@ struct LpTimer {
         uint32_t isr = TIM[ISR];
         TIM[ICR] = isr; // clear all current interrupts
         if (isr & (1<<1)) { // ARRM
+            assert(SCB[0x4](22)); // ICSR: ISRPENDING
             nvic::clearPend((uint8_t) Irq::LPTIM1);
+            assert(!SCB[0x4](22)); // ICSR: ~ISRPENDING
             return true;
         }
         return false;
