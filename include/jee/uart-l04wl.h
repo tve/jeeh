@@ -48,7 +48,8 @@ struct Uart : Device {
         dmaTX(CCR) = 0b1001'0010; // MINC DIR TCIE
 
         devReg(CR3) = 0b1100'0000; // DMAT DMAR
-        devReg(CR1) = 0b0001'1101; // IDLEIE TE RE UE
+        devReg(CR1) = 0b0001'1100; // IDLEIE TE RE
+        devReg(CR1)(UE) = 1;
 
         irqInstall((int) dev.idleIrq); // uart
         irqInstall((int) dev.rxIrq);   // dma rx
@@ -64,7 +65,16 @@ struct Uart : Device {
         auto n = SystemCoreClock;
         while (n > dev.mhz * 1'000'000)
             n /= 2;
-        devReg(BRR) = n / bd;
+        devReg(CR1)(UE) = 0;
+        auto div = n / bd;
+        if (div < 16) {
+            assert(div >= 8);
+            div += 8; // switch from Q12.4 to Q12.3 format
+            devReg(CR1)(15) = 1; // OVER8
+        } else
+            devReg(CR1)(15) = 0; // ~OVER8
+        devReg(BRR) = div;
+        devReg(CR1)(UE) = 1;
     }
 
     void start (Message& m) override {
@@ -172,7 +182,7 @@ private:
         return false;
     }
 
-    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,CR=0x20,RDR=0x24,TDR=0x28 };
+    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,CR=0x20,RDR=0x24,TDR=0x28,UE=0 };
     enum { ISR=0x00,IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14,CSELR=0xA8 };
     enum { CHAN_STEP=0x14 };
 };

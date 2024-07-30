@@ -61,11 +61,8 @@ struct Uart : Device {
 #endif
 
         devReg(CR3) = 0b1100'0000; // DMAT DMAR
-#if STM32F1 | STM32F4
-        devReg(CR1) = 0b0010'0000'0001'1100 ; // UE IDLEIE TE RE
-#else
-        devReg(CR1) = 0b0001'1101; // IDLEIE TE RE UE
-#endif
+        devReg(CR1) = 0b0001'1100; // IDLEIE TE RE
+        devReg(CR1)(UE) = 1;
 
         irqInstall((int) dev.idleIrq); // uart
         irqInstall((int) dev.rxIrq);   // dma rx
@@ -81,7 +78,16 @@ struct Uart : Device {
         auto n = SystemCoreClock;
         while (n > dev.mhz * 1'000'000)
             n /= 2;
-        devReg(BRR) = n / bd;
+        devReg(CR1)(UE) = 0;
+        auto div = n / bd;
+        if (div < 16) {
+            assert(div >= 8);
+            div += 8; // switch from Q12.4 to Q12.3 format
+            devReg(CR1)(15) = 1; // OVER8
+        } else
+            devReg(CR1)(15) = 0; // ~OVER8
+        devReg(BRR) = div;
+        devReg(CR1)(UE) = 1;
     }
 
     void start (Message& m) override {
@@ -204,9 +210,9 @@ private:
     }
 
 #if STM32F1 | STM32F4
-    enum { SR=0x00,RDR=0x04,TDR=0x04,BRR=0x08,CR1=0x0C,CR3=0x14 };
+    enum { SR=0x00,RDR=0x04,TDR=0x04,BRR=0x08,CR1=0x0C,CR3=0x14,UE=13 };
 #else
-    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,CR=0x20,RDR=0x24,TDR=0x28 };
+    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,CR=0x20,RDR=0x24,TDR=0x28,UE=0 };
 #endif
 #if STM32F1 | STM32F3 | STM32G4
     enum { IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
