@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "send-poll"
+#define PIOENV  "send-call"
 
 //CG1 board leds
 #define LED  "A5"
@@ -36,7 +36,7 @@ inline Uart loopback ('L');
 inline Uart lowpower ('P');
 
 //CG1 board mode
-#define MODE_POLL 1
+#define MODE_CALL 1
 
 void initBoard () {
     fastClock();

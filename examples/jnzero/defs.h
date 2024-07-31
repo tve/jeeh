@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "toggle-sync"
+#define PIOENV  "uart"
 
 //CG1 board leds
 #define LED  "A8"
@@ -22,7 +22,7 @@ inline Uart console ('U');
 #define I2C_PINS  "B7:OH1,B6"
 #define I2C_FREQ  32
 #define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,6-1,7-1
-#define I2C_CONF  { ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER,1-1,6,6 }
+#define I2C_CONF  {ena::I2C1,32,Irq::I2C1_EV,Irq::I2C1_ER}, {1-1,6,6}
 //CG]
 
 //CG[ board spi
@@ -30,11 +30,10 @@ inline Uart console ('U');
 #define SPI_PINS  "B5:H0,B4,B3,A15:HP"
 #define SPI_FREQ  32
 #define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
-#define SPI_CONF  { ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,1,1 }
+#define SPI_CONF  {ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2}, {1-1,1,1}
 //CG]
 
-//CG1 board mode
-#define MODE_SYNC 1
+//CG: board mode
 
 #if MODE_GPIO
 i2c::Gpio i2cBus;

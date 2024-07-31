@@ -1,8 +1,9 @@
 // Try out the alarm wakeup capabilities of the RTC.
 
 #include <jee.h>
-#include "defs.h"
+#include <jee/hal.h>
 using namespace jeeh;
+#include "defs.h"
 
 int main () {
     slowClock();

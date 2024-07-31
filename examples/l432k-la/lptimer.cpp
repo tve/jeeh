@@ -56,15 +56,18 @@ int main () {
 
         logf("hi! %d", ++i); // uses blocking polled I/O
 
-        timer.enable(1<<13); // 0.25 sec
+        timer.enable(1<<12); // 0.125 sec
         assert(!timer.done());
         asm ("wfe");
         assert(timer.done());
 
         timer.enable(1<<12); // 0.125 sec
         assert(!timer.done());
-        cycles::msBusy(250);
+        cycles::msBusy(150);
         assert(timer.done());
+        asm ("wfe"); // the event flag still needs to be cleared!
+
+        sys::wait(100);
         asm ("wfe"); // the event flag still needs to be cleared!
     }
 }

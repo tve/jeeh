@@ -1,8 +1,9 @@
 // Enter ever-deeper low-power modes, with the last one ending in a reset.
 
 #include <jee.h>
-#include "defs.h"
+#include <jee/hal.h>
 using namespace jeeh;
+#include "defs.h"
 
 int main () {
     slowClock(true);            // 4 MHz

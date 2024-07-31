@@ -22,7 +22,7 @@ inline Uart console ('U');
 #define SPI_PINS  "B5:0,B4,B3,A11:P"
 #define SPI_FREQ  32
 #define SPI_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
-#define SPI_CONF  { ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2,1-1,1,1 }
+#define SPI_CONF  {ena::SPI1,32,Irq::DMA1_Channel3,Irq::DMA1_Channel2}, {1-1,1,1}
 //CG]
 
 //CG1 board mode

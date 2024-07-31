@@ -47,7 +47,7 @@ inline Uart uart_w ('W');
 #define SPI_PINS  "C3:5,C2,I1,I0:P"
 #define SPI_FREQ  54
 #define SPI_TYPE  SPI2.ADDR,DMA1.ADDR,4-0,3-0
-#define SPI_CONF  { ena::SPI2,54,Irq::DMA1_Stream4,Irq::DMA1_Stream3,1-1,0,0 }
+#define SPI_CONF  {ena::SPI2,54,Irq::DMA1_Stream4,Irq::DMA1_Stream3}, {1-1,0,0}
 //CG]
 
 //CG2 board rfm69

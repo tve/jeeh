@@ -63,7 +63,7 @@ int main () {
             crc::init();
             for (auto p = 0; p < PPB; ++p) {
                 buf[PAGE-1] = 0;
-                spif.read256(b * PPB + p, buf);
+                spif.read(b * PPB + p, buf, sizeof buf);
                 for (auto i = 0; i < PAGE; ++i)
                     crc::update8(buf[i]);
             }
@@ -85,7 +85,7 @@ int main () {
                     wp[i] = rng::rand();
                 for (auto i = 0; i < PAGE; ++i)
                     crc::update8(buf[i]);
-                spif.write256(b * PPB + p, buf);
+                spif.write256(b * PPB + p, buf, sizeof buf);
             }
             bSums[b] = crc::get();
         }
@@ -98,7 +98,7 @@ int main () {
             crc::init();
             for (auto p = 0; p < PPB; ++p) {
                 buf[PAGE-1] = 0;
-                spif.read256(b * PPB + p, buf);
+                spif.read(b * PPB + p, buf, sizeof buf);
                 for (auto i = 0; i < PAGE; ++i)
                     crc::update8(buf[i]);
             }
