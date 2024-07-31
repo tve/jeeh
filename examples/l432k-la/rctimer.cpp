@@ -7,6 +7,14 @@ using namespace jeeh;
 
 ExtIrq exti;
 
+#if 0 // TODO experimental code to determine the overhead of irqDispath
+extern "C" void EXTI15_10_IRQHandler () {
+    Tracer<9> pt;
+    exti.interrupt(0);
+    return exti.finish();
+}
+#endif
+
 int main () {
     initBoard();
     Pin::config("B4:V15"); // EVENTOUT
