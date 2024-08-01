@@ -369,7 +369,7 @@ void Device::irqInstall (uint8_t num, uint8_t prio) {
 void Device::irqTrigger (uint8_t num) {
     assert(irqState() > 0); // must be in a "real" interrupt
     if (interrupt(num)) {
-        if (0 && SCB[0x24](7)) { // SHCSR: SVCALLACT
+        if (SCB[0x24](7)) { // SHCSR: SVCALLACT
             __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
             triggerPendSV(); // call "finish" once SVC returns
         } else          // TODO this is not atomic during nested IRQs!
