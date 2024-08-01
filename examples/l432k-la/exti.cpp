@@ -61,12 +61,7 @@ struct Example {
     void onTimeout (Message &) {
         logf("T");
         assert(rcPin.inUse());
-#if 0
         sys::drop(rcPin, exti.dId);
-#else
-        auto f = exti.remove(rcPin);
-        assert(f);
-#endif
         assert(!rcPin.inUse());
 
         start('t');
