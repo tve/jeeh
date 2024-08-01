@@ -8,15 +8,13 @@ using namespace jeeh;
 struct Example {
     ExtIrq exti;
     Pin rc {"A12"}; // this pin has ≈800 nF capacitance tied to ground
-    Message delay { '@', 'T' };
-    Message timer { '@', 'T' };
-    Message rcPin { exti.dId, 'A', 12, (uint8_t*) ExtIrq::BOTH };
+    Message delay {}, timer {}, rcPin {};
 
     Example () {
         delay.setCallback(this, &Example::onDelay);
         timer.setCallback(this, &Example::onTimeout);
         rcPin.setCallback(this, &Example::onPinChange);
-        start('I');
+        start('i');
     }
 
     void start (char type) {
@@ -25,23 +23,31 @@ struct Example {
         assert(!rcPin.inUse());
         led.toggle();
 
-        logf("%c %d", type, cycles::millis());
+        logf("%c %04d", type, cycles::millis() % 10'000);
+        delay.mDst = '@';
+        delay.mTag = 'T';
         delay.mLen = 100;
         sys::send(delay);
     }
 
     void onDelay (Message&) {
+        logf("D");
         rc.mode(rc ? "D": "U"); // switch to pull-down or pull-up
 
         timer.mDst = '@';
+        timer.mTag = 'T';
         timer.mLen = 55;
         sys::send(timer); // generate a timeout in case pin change is missing
 
         rcPin.mDst = exti.dId;
+        rcPin.mTag = 'A';
+        rcPin.mLen = 12;
+        rcPin.mPtr = (uint8_t*) ExtIrq::BOTH;
         sys::send(rcPin); // trigger on pin change, some 15..25 ms from now
     }
 
     void onPinChange (Message&) {
+        logf("P");
         assert(timer.inUse());
         sys::drop(timer, '@');
         assert(!timer.inUse());
@@ -49,17 +55,21 @@ struct Example {
         rc = +rc;     // force output to same state as currently read
         rc.mode("P"); // ... then enable push-pull mode
 
-        start('+');
+        start('p');
     }
 
     void onTimeout (Message &) {
+        logf("T");
         assert(rcPin.inUse());
-        //sys::drop(rcPin, exti.dId);
+#if 0
+        sys::drop(rcPin, exti.dId);
+#else
         auto f = exti.remove(rcPin);
         assert(f);
+#endif
         assert(!rcPin.inUse());
 
-        start('T');
+        start('t');
     }
 };
 

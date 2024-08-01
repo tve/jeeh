@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "lptimer"
+#define PIOENV  "exti"
 
 //CG1 board leds
 #define LED  "B3"
@@ -60,10 +60,9 @@ void init () {
     UART_NAME[CR1] = (1<<15) | (1<<3) | (1<<2) | (1<<UE);  // OVER8 TE RE UE
 }
 
-void putch (char c) {
+static void putch (char c) {
     while (!UART_NAME[ISR](7)) {} // TXE
     UART_NAME[TDR] = c;
-    while (UART_NAME[ISR](6) == 0) {} // TC
 }
 
 }
@@ -105,6 +104,7 @@ extern "C" int _write (int, char* ptr, int len) {
 #else
     while (--len >= 0)
         serio::putch(*ptr++);
+    while (!UART_NAME[serio::ISR](6)) {} // while ~TC
 #endif
     return len;
 }

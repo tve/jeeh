@@ -50,11 +50,10 @@ int main () {
 
     timer.init();
 
-    auto i = 0;
     while (true) {
         led.toggle();
 
-        logf("hi! %d", ++i); // uses blocking polled I/O
+        logf("L %04d", cycles::millis() % 10'000); // uses blocking polled I/O
 
         timer.enable(1<<12); // 0.125 sec
         assert(!timer.done());
