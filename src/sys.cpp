@@ -214,7 +214,7 @@ struct Thread : Message, Chain {
 
     void submit (Message& msg) {
         trace(SUBMIT);
-        assert(irqState() == 0); // must be in SVC or PendSV
+        assert(irqState() >= 0); // must be in handler mode
 
         if (block == &msg) {
             insert(msg);
@@ -233,7 +233,7 @@ struct Thread : Message, Chain {
     }
 
     void reschedule (int newState =RUN) {
-        assert(irqState() == 0); // must be in SVC or PendSV
+        assert(irqState() >= 0); // must be in handler mode
         state = newState;
         if (mTag > nextToRun)
             nextToRun = mTag;
@@ -369,8 +369,11 @@ void Device::irqInstall (uint8_t num, uint8_t prio) {
 void Device::irqTrigger (uint8_t num) {
     assert(irqState() > 0); // must be in a "real" interrupt
     if (interrupt(num)) {
-        __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
-        triggerPendSV(); // will call "finish" once back in thread mode
+        if (SCB[0x24](7)) { // SHCSR: SVCALLACT
+            __atomic_or_fetch(&pending, 1 << (dId-BASE), __ATOMIC_RELAXED);
+            triggerPendSV(); // call "finish" once SVC returns
+        } else          // TODO this is not atomic during nested IRQs!
+            finish();   //  solution: fall back to PendSV in this case
     }
 }
 
@@ -389,7 +392,7 @@ uint8_t Device::powerScan () {
 }
 
 void Device::reply (Message* mp) {
-    assert(irqState() == 0); // must be in either SVC or PendSV
+    assert(irqState() >= 0); // must be in handler mode
     if (mp != nullptr) {
         auto id = mp->mDst;
         mp->mDst = dId; // restore original destination, i.e. this driver
