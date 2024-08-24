@@ -21,9 +21,12 @@ struct Example {
         assert(!delay.inUse());
         assert(!timer.inUse());
         assert(!rcPin.inUse());
-        led.toggle();
+        //led.toggle(); // oops, this interferes with Tracer<11>
 
-        logf("%c %04d", type, cycles::millis() % 10'000);
+        logf("%c %04d", type, rtc::getDate().todMillis() % 10'000);
+
+        logf("z %d", rtc::shortSleep(50, sys::STOP2));
+
         delay.mDst = '@';
         delay.mTag = 'T';
         delay.mLen = 100;
@@ -71,9 +74,6 @@ struct Example {
 int main () {
     initBoard();
     Pin::config("B4:V15"); // EVENTOUT
-
-    Message m { '@', 'T', 10'000 };
-    sys::send(m);
 
     Example activity;
 
