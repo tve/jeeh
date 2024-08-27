@@ -4,6 +4,7 @@
 - **`blink`** - a very simple LED blinker for a wide variety of boards
 - **`bmp390`** - read out the BMP390 sensor using either I2C or SPI
 - **`central`** - a WSN "central node" using the F723IE Discovery board
+- **`dcf77`** - DCF77 clock decoder using the L496 discovery board
 - **`ethernet`** - driver for the F4/F7 built-in ethernet peripheral
 - **`f429hy`** - HAOYU's STM32F429GI board with RAM/NOR/NAND and 5" LCD
 - **`f769d`** - explore the STM32F769NI discovery kit w/ 800x480 LCD
@@ -15,7 +16,7 @@
 - **`lpuart`** - try out the low-power UART, using the same UART-DMA code
 - **`mrfs`** - a demo of Minimal ROMable File Storage for flash memory
 - **`rtt`** - explore Real Time Transfer with Blackmagic's BMDA app
-- **`sdcard`** - explore tge new DMA-based SDIO hardware interface
+- **`sdcard`** - explore the new DMA-based SDIO hardware interface
 - **`spi`** - some tests for SPI devices connected to a Nucleo-32 G431KB
 - **`trace`** - SPI + logic analyzer trace setup for a Nucleo-32 G431KB
 - **`uart`** - a new-style uart driver, modeled after I2C/SPI's design
