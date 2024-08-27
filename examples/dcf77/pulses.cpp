@@ -48,8 +48,6 @@ int synchronise () {
     return STEP * pos;
 }
 
-
-
 DateTime decode () {
     uint64_t bits = 0;
 
