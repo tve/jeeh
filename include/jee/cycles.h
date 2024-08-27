@@ -6,8 +6,10 @@ constexpr IoReg<0xE000'1000> DWT {};
 
 enum { CTRL=0x000, CYCCNT=0x004, LAR=0xFB0, DEMCR=0x0FC };
 
+inline static uint32_t last, upper;
+
 inline static void clear () {
-    DWT[0x04] = 0;
+    DWT[0x04] = last = upper = 0;
 }
 
 inline static void init () {
@@ -22,11 +24,20 @@ inline static void deinit () {
 }
 
 inline static uint32_t count () {
-    return DWT[0x04];
+    uint32_t t = DWT[0x04];
+    if (t < last)
+        ++upper;
+    return last = t;
+}
+
+inline static uint64_t count64 () {
+    auto lower = count();
+    return lower | ((uint64_t) upper << 32);
 }
 
 inline static uint32_t millis () {
-    return count() / (SystemCoreClock/1000);
+    // use 64-bit arithmetic to get 32-bit resolution
+    return (1000 * count64()) / SystemCoreClock;
 }
 
 inline static uint32_t micros () {

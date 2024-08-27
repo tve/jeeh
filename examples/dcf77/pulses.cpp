@@ -48,6 +48,10 @@ int synchronise () {
     return STEP * pos;
 }
 
+uint8_t fromBcd (uint8_t v) {
+    return v - 6 * (v>>4);
+}
+
 DateTime decode () {
     uint64_t bits = 0;
 
@@ -63,54 +67,39 @@ DateTime decode () {
     };
 
     for (auto i = 0; i < 200; ++i) {
-        auto hi = count(100);
-        if (hi < 50) {
-            logf("%d #%d: %07x %08x",
-                    i, hi, (uint32_t) (bits>>32), (uint32_t) bits);
-            if (i >= 59)
+        if (count(100) < 50) {
+            logf("%8d: %07x%08x", i, (uint32_t) (bits>>32), (uint32_t) bits);
+            if (i >= 59) {
+                count(900);
                 break;
+            }
         }
-        hi += count(100);
 
         bits >>= 1;
-        bits |= (uint64_t) (hi > 170) << 58;
+        bits |= (uint64_t) (count(100) > 50) << 58;
 
-        hi += count(800);
-        //logf("high %d ms", hi);
+        count(800);
     }
 
-    auto fromBcd = [](uint8_t v) {
-        return v - 6 * (v>>4);
-    };
-
-    DateTime dt { fromBcd((bits >> 50) & 0xFF),
-                  fromBcd((bits >> 45) & 0x1F),
-                  fromBcd((bits >> 36) & 0x3F),
-                  fromBcd((bits >> 29) & 0x3F),
-                  fromBcd((bits >> 21) & 0x7F) };
-    logf("20%02d-%02d-%02d %02d:%02d", dt.yr, dt.mo, dt.dy, dt.hh, dt.mm);
-    return dt; // uint8_t yr, mo, dy, hh, mm, ss, ff =0;
+    // uint8_t yr, mo, dy, hh, mm, ss, ff;
+    return { fromBcd((bits >> 50) & 0xFF),
+             fromBcd((bits >> 45) & 0x1F),
+             fromBcd((bits >> 36) & 0x3F),
+             fromBcd((bits >> 29) & 0x3F),
+             fromBcd((bits >> 21) & 0x7F) };
 }
 
 int main () {
     initBoard();
 
+    auto ms = synchronise();
+    logf("t %d ms, wait %d ms", myMillis(), ms);
     stepSync();
-    for (auto i = 0; i < 10; ++i) {
-        stepWait(100);
-        logf("t %04d ms", cycles::millis());
-    }
+    stepWait(ms);
+    stepSync();
 
     while (true) {
-        auto ms = synchronise();
-        logf("t %d ms, wait %d ms", myMillis(), ms);
-        stepSync();
-        stepWait(ms);
-
-        cycles::clear();
-        stepSync();
-
         auto dt = decode();
-        logf("dt %u", +dt);
+        logf("20%02d-%02d-%02d %02d:%02d", dt.yr, dt.mo, dt.dy, dt.hh, dt.mm);
     }
 }
