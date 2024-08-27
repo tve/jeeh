@@ -66,19 +66,15 @@ DateTime decode () {
         return n;
     };
 
-    for (auto i = 0; i < 200; ++i) {
-        if (count(100) < 50) {
-            logf("%8d: %07x%08x", i, (uint32_t) (bits>>32), (uint32_t) bits);
-            if (i >= 59) {
-                count(900);
-                break;
-            }
-        }
-
-        bits >>= 1;
-        bits |= (uint64_t) (count(100) > 50) << 58;
-
+    for (auto i = 0; ; ++i) {
+        auto done = count(100) < 50;
+        bits = (bits >> 1) | ((uint64_t) (count(100) > 50) << 59);
         count(800);
+
+        if (done && i >= 59) {
+            logf("%8d: %x%08x", i, (uint32_t) (bits>>32), (uint32_t) bits);
+            break;
+        }
     }
 
     // uint8_t yr, mo, dy, hh, mm, ss, ff;
@@ -93,7 +89,7 @@ int main () {
     initBoard();
 
     auto ms = synchronise();
-    logf("t %d ms, wait %d ms", myMillis(), ms);
+    logf("wait %d ms @ %d ms", ms, myMillis());
     stepSync();
     stepWait(ms);
     stepSync();
