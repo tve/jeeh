@@ -296,7 +296,7 @@ void init (bool lse) {
     RTC[CR](5) = 1;   // BYPSHAD, this is faster than waiting for RSF
 
     if (!RTC[ISR](4)) // INITS
-        set({1,1,1}); // set to 2001-01-01, so it starts running properly
+        set({0,1,1}); // set to 2000-01-01, so it starts running properly
 
     SCB[0x10](4) = 1; // SEVONPEND
 }

@@ -1,4 +1,4 @@
-// Decode DCF77 using cycle counts, without adjusting for drift
+// Decode DCF77 using 256 Hz RTC steps, without adjusting for drift
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -8,7 +8,7 @@ using namespace jeeh;
 uint32_t clickOffset;
 
 uint32_t clicks () {
-    return cycles::millis();
+    return rtc::getDate().todTicks();
 }
 
 void stepSync () {
@@ -22,7 +22,7 @@ void stepWait (uint32_t n) {
 }
 
 int synchronise () {
-    constexpr auto NUM = 50, STEP = 1000 / NUM;
+    constexpr auto NUM = 64, STEP = 256 / NUM;
 
     char tally [NUM+1];
     memset(tally, '0', NUM);
@@ -56,7 +56,7 @@ DateTime decode () {
     uint64_t bits = 0;
 
     auto count = [](uint32_t ms) {
-        constexpr auto MS = 5;
+        constexpr auto MS = 2;
         int n = 0;
         for (auto j = 0U; j < ms; j += MS) {
             led = +dcfData;
@@ -68,12 +68,12 @@ DateTime decode () {
 
     for (auto i = 0; ; ++i) {
         ledN = 0;
-        count(5);
+        count(2);
         ledN = 1;
 
-        auto done = count(95) < 40;
-        bits = (bits >> 1) | ((uint64_t) (count(100) > 60) << 59);
-        count(800);
+        auto done = count(22) < 10;
+        bits = (bits >> 1) | ((uint64_t) (count(26) > 14) << 59);
+        count(206);
 
         if (done && i >= 59) {
             logf("%8d: %x%08x", i, (uint32_t) (bits>>32), (uint32_t) bits);

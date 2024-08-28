@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "cycles"
+#define PIOENV  "pulses"
 
 //CG3 board leds
 #define LED  "A5"
@@ -22,7 +22,7 @@ namespace serio {
     void init () {
         Pin::config("A2:7");
         RCC(ena::USART2,1) = 1;
-#if 0
+#if 1
         USART2[BRR] = 2 * SystemCoreClock / 2'000'000;
         USART2[CR1] = (1<<15) | (1<<3) | (1<<2) | (1<<0); // OVER8 TE RE UE
 #else

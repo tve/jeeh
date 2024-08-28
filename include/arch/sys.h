@@ -231,8 +231,12 @@ public:
         return ((days * 24L + hh) * 60 + mm) * 60 + ss;
     }
 
+    uint32_t todTicks () {
+        return ff + 256 * (ss + 60 * (mm + 60 * hh)); // 256 Hz steps
+    }
+
     uint32_t todMillis () {
-        return ((hh*60 + mm-1)*60 + ss)*1000 + (ff*1000)/256;
+        return (todTicks() * 125U) / 32U; // avoid 32-bit overflow
     }
 };
 
