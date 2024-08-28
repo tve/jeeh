@@ -1,4 +1,4 @@
-// Decode DCF77 signal, without adjusting for any drift
+// Decode DCF77 using cycle counts, without adjusting for drift
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -7,18 +7,17 @@ using namespace jeeh;
 
 uint32_t msOffset;
 
-uint32_t myMillis () {
-    //return rtc::getDate().todMillis();
+uint32_t clicks () {
     return cycles::millis();
 }
 
 void stepSync () {
-    msOffset = myMillis();
+    msOffset = clicks();
 }
 
 void stepWait (uint32_t ms) {
-    while ((myMillis() - msOffset) % ms == 0) {}
-    while ((myMillis() - msOffset) % ms != 0) {}
+    while ((clicks() - msOffset) % ms == 0) {}
+    while ((clicks() - msOffset) % ms != 0) {}
 }
 
 int synchronise () {
