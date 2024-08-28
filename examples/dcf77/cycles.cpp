@@ -92,8 +92,12 @@ DateTime decode () {
 int main () {
     initBoard();
 
+    auto ff = rtc::getDate().ff;
+    cycles::msBusy(250);
+    logf("250 ms = %d rtc ticks", (uint8_t) (rtc::getDate().ff - ff));
+
     auto ms = synchronise();
-    logf("wait %d ms @ %d ms", ms, myMillis());
+    logf("wait %d ms", ms);
     stepSync();
     stepWait(ms);
     stepSync();
