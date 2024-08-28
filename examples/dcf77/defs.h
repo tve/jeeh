@@ -11,9 +11,7 @@
 constexpr Pin led (LED1), ledN (LED2);
 
 // TODO it looks like the entire "G" port on my disco board is broken ...
-//constexpr Pin dcfData ("G12");
-//constexpr Pin dcfPon ("G10");
-
+//constexpr Pin dcfData ("G12"), dcfPon ("G10");
 constexpr Pin dcfData ("B2"), dcfPon ("H2");
 
 namespace serio {
@@ -22,13 +20,8 @@ namespace serio {
     void init () {
         Pin::config("A2:7");
         RCC(ena::USART2,1) = 1;
-#if 1
         USART2[BRR] = 2 * SystemCoreClock / 2'000'000;
         USART2[CR1] = (1<<15) | (1<<3) | (1<<2) | (1<<0); // OVER8 TE RE UE
-#else
-        USART2[BRR] = SystemCoreClock / 115'200;
-        USART2[CR1] = (1<<3) | (1<<2) | (1<<0); // TE RE UE
-#endif
     }
 
     void write (void const* ptr, int len) {
@@ -46,7 +39,6 @@ void initBoard () {
 
     // enable LSE and use it to lock the MSI for better accuracy
     rtc::init();
-    //fastClock(); // 80 MHz HSI+PLL
     RCC[0x00](2) = 1; // MSIPLLEN
     fastClock(false); // 48 MHz MSI
     assert(RCC[0x00](2));

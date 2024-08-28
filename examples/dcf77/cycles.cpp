@@ -92,10 +92,6 @@ DateTime decode () {
 int main () {
     initBoard();
 
-    auto t = rtc::getDate().todTicks();
-    cycles::msBusy(2500);
-    logf("2500 ms = %d rtc ticks", rtc::getDate().todTicks() - t);
-
     auto n = synchronise();
     logf("wait %d clicks", n);
     stepSync();
