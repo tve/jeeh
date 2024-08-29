@@ -32,3 +32,6 @@ interrupts.
 **push.cpp** - Turn the decoder logic inside out: sample the DCF77 pin
 periodically and feed it to a decoder object. Does not use any timers or
 interrupts.
+
+**convol.cpp** - This is a completely different decoder, based on convolution.
+It was ported from `stm32x/nucleo-l432/src/dcf77-conv.cpp`.

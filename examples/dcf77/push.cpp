@@ -79,7 +79,8 @@ struct Decoder {
                         dt.yr, dt.mo, dt.dy, dt.hh, dt.mm);
             }
             history = check;
-        } else if (++fail >= 10)
+        }
+        if (++fail >= 5)
             resync();
         else
             logf("fail %d: %08x %08x",
