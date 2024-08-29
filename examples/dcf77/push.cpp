@@ -8,64 +8,87 @@ using namespace jeeh;
 template< uint16_t NSLOTS >
 struct Decoder {
     bool inSync;
-    uint16_t slot;
-    uint8_t count, errors;
+    uint8_t count, pass, fail;
     uint8_t bins [NSLOTS];
-    uint64_t shift;
+    uint16_t slot;
+    uint32_t history;
+    uint64_t shifter;
 
     Decoder () { resync(); }
 
     void resync () {
         logf("out of sync");
         inSync = false;
-        slot = errors = 0;
+        history = slot = pass = fail = 0;
         memset(bins, 0, sizeof bins);
     }
 
     bool step (bool on) {
+        auto valid = false; // nothing to report, keep going
+
         bins[slot] += on;
         slot = (slot+1) % NSLOTS;
 
-        if (!inSync) {
-            if (bins[slot] > 9) {
-                logf("sync at %d of %d", slot, NSLOTS);
-                slot = 0;
-                inSync = true;
+        if (inSync) {
+            count += on;
+            switch (slot) {
+                case 0: // 0.0 s
+                    count = 0;
+                    break;
+                case NSLOTS/10: // 0.1 s
+                    if (count < NSLOTS/20) // missing pulse
+                        valid = verify();
+                    count = 0;
+                    break;
+                case 2*NSLOTS/10: // 0.2 s
+                    shifter >>= 1;
+                    shifter |= ((uint64_t) (count > NSLOTS/20) << 58);
+                    break;
             }
-            return false;
+        } else if (bins[slot] > 9) {
+            logf("sync at %d of %d", slot, NSLOTS);
+            slot = 0;
+            inSync = true;
         }
 
-        count += on;
-        switch (slot) {
-            case 0: // 0.0 s
-                count = 0;
-                break;
-            case NSLOTS/10: // 0.1 s
-                if (count < NSLOTS/20) { // missing pulse?
-                    if (bits(0, 1) == 0 && bits(20, 1) == 1 &&
-                        __builtin_popcount(bits(17, 2)) == 1 &&
-                        __builtin_parity(bits(21, 8)) == 0 &&
-                        __builtin_parity(bits(29, 7)) == 0 &&
-                        __builtin_parity(bits(36, 23)) == 0) {
-                        errors = 0;
-                        return true;
+        return valid;
+    }
+
+    bool verify () {
+        if (bits(0, 1) == 0 && bits(20, 1) == 1 &&      // fixed
+                __builtin_popcount(bits(17, 2)) == 1 && // dst
+                __builtin_parity(bits(21, 8)) == 0 &&   // minute
+                __builtin_parity(bits(29, 7)) == 0 &&   // hour
+                __builtin_parity(bits(36, 23)) == 0) {  // date
+            fail = 0;
+
+            // only compare to previous if not start of the hour
+            auto check = bits(29, 30);
+            if (bits(21, 8) != 0) { // minute + parity
+                // copy time to RTC after 5x same hour & date
+                if (check == history) {
+                    if (++pass == 5) {
+                        logf("set RTC");
+                        rtc::set(now());
                     }
-                    logf("error: %08x %08x", bits(32, 28), (uint32_t) shift);
-                    if (++errors > 10)
-                        resync();
+                    return true; // shifter and now() are valid
                 }
-                count = 0;
-                break;
-            case NSLOTS/5: // 0.2 s
-                shift = (shift >> 1) | ((uint64_t) (count > NSLOTS/20) << 58);
-                break;
-        }
-
+                pass = 0;
+                auto dt = now();
+                logf("rejecting: 20%02d-%02d-%02d %02d:%02d",
+                        dt.yr, dt.mo, dt.dy, dt.hh, dt.mm);
+            }
+            history = check;
+        } else if (++fail >= 10)
+            resync();
+        else
+            logf("fail %d: %08x %08x",
+                    fail, bits(32, 28), (uint32_t) shifter);
         return false;
     }
 
     uint32_t bits (uint8_t pos, uint8_t num) const {
-        return (shift >> pos) & ((1 << num) - 1);
+        return (shifter >> pos) & ((1 << num) - 1);
     }
 
     uint8_t bcd (uint8_t v) const {

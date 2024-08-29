@@ -48,7 +48,11 @@ void initBoard () {
 
     dcfData.mode("U");
     serio::init();
-    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
+
+    auto dt = rtc::getDate();
+    logf("\n%s: %s @ %d MHz - 20%02d-%02d-%02d %02d:%02d:%02d",
+            PIOENV, SVDNAME, SystemCoreClock / 1'000'000,
+            dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss);
 
     dcfPon.mode("P"); // 0 = on
 }
