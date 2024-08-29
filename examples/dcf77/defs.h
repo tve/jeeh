@@ -20,8 +20,8 @@ namespace serio {
     void init () {
         Pin::config("A2:7");
         RCC(ena::USART2,1) = 1;
-        USART2[BRR] = 2 * SystemCoreClock / 2'000'000;
-        USART2[CR1] = (1<<15) | (1<<3) | (1<<2) | (1<<0); // OVER8 TE RE UE
+        USART2[BRR] = SystemCoreClock / 1'000'000;
+        USART2[CR1] = (1<<3) | (1<<2) | (1<<0); // TE RE UE
     }
 
     void write (void const* ptr, int len) {
@@ -43,12 +43,13 @@ void initBoard () {
     fastClock(false); // 48 MHz MSI
     assert(RCC[0x00](2));
 
+    cycles::init();
+    cycles::msBusy(10); // to let MSI PLL stabilise
+
+    dcfData.mode("U");
     serio::init();
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 
-    cycles::init();
-
-    dcfData.mode("U");
     dcfPon.mode("P"); // 0 = on
 }
 

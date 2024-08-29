@@ -15,7 +15,7 @@ Pin | Signal | PMOD | Notes
 
 **blink.cpp** - Blink both on-board LEDs and show a greeting on the serial port.
 This is just to verify that both the build and the board work (use: `pio run -e
-blink -t upload`). The serial output goes to the ST-Link at 2 Mbaud (use: `pio
+blink -t upload`). The serial output goes to the ST-Link at 1 Mbaud (use: `pio
 device monitor`).
 
 **signal.cpp** - Mirror the DCF77 input signal to the LED, to verify that the
