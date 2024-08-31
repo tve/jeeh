@@ -196,8 +196,8 @@ int main() {
     int ssr = 0;
     while (true) {
         // wait until the next 256 Hz tick
-        while (ssr == RTC[0x28]) {} // sub-second register
-        ssr = RTC[0x28];
+        while (ssr == RTC[0x08]) {} // sub-second register
+        ssr = RTC[0x08];
 
         led = dcfData;
         d.step(led);

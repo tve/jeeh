@@ -1,15 +1,13 @@
-## DCF77 receiver using STM32L496 Discovery
+## DCF77 receiver using STM32L412RB Nucleo-64
 
-PMOD connector, lower row:
+Connector on DCF module:
 
-Pin | Signal | PMOD | Notes
-----|--------|------|------
- 6  | VCC    |      | nearest to ST-Link USB
- 5  | GND    |      |
- 4  | N/C    |      |
- 3  | N/C    |      |
- 2  | PB2    | # 12 | data, needs pull-up
- 1  | PH2    | # 11 | power, 0 = on
+Pin | Signal | Notes
+----|--------|------
+ 1  | VCC    | near corner
+ 2  | GND    |
+ 3  | PC0    | data, needs pull-up
+ 4  | PC1    | power, 0 = on
 
 ### Implementations:
 
@@ -34,4 +32,4 @@ periodically and feed it to a decoder object. Does not use any timers or
 interrupts.
 
 **convol.cpp** - This is a completely different decoder, based on convolution.
-It was ported from `stm32x/nucleo-l432/src/dcf77-conv.cpp`.
+It was ported to JeeH from `stm32x/nucleo-l432/src/dcf77-conv.cpp`.
