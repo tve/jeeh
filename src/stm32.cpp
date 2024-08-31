@@ -226,7 +226,7 @@ bool sys::coma (uint32_t sec, int mode) {
 #if !STM32F1
 namespace jeeh::rtc {
 
-#if STM32G4 | STM32WL
+#if STM32G4 | STM32L4 | STM32WL
 enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
         CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
 #else
@@ -354,7 +354,7 @@ bool shortSleep (uint16_t ms, int mode) {
     RTC[CR](10) = 0;    // ~WUTE
 
     bool done = RTC[ISR](10);
-#if STM32G4 | STM32WL
+#if STM32G4 | STM32L4 | STM32WL
     RTC[SCR] = 1<<2;    // CWUTF
 #else
     RTC[ISR](10) = 0;   // clear WUTF
@@ -392,7 +392,7 @@ bool longSleep (uint32_t sec, int mode) {
         return false;
     RTC[CR](8) = 0;     // ~ALRAE: only disable once it has triggered
 
-#if STM32G4 | STM32WL
+#if STM32G4 | STM32L4 | STM32WL
     RTC[SCR] = 1<<0;    // CALRAF
 #else
     RTC[ISR](8) = 0;    // clear ALRAF
