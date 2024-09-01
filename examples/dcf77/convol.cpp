@@ -10,7 +10,7 @@ struct Decoder {
     static constexpr auto N1 = 22, N2 = 22, N3 = 36, N4 = 22,
                           NK = N1+N2+N3+N4, NN = 256-N2-N3-2;
 
-    uint32_t lastMin {};
+    uint32_t lastMin {}, lastCycle {};
     int16_t pulse {}, value {}, noise {}, noiseSum {};
     int16_t convMax {};
     uint8_t convOff {}, minPos {};
@@ -119,13 +119,16 @@ private:
         //setDate(dt, lastMin/(24*60));
         //setTime(dt, lastMin*60);
 
+        auto t = cycles::count();
 // 2021-09-12 14:20 S <2429E914A090C92> r00 a0000 zFF00 o45 n000 p00 mFF gFF
-        logf("20%02d-%02d-%02d %02d:%02d %c <%07x%08x> "
-                "r%02x a%02x%02x z%02x%02x o%02x n%03d p%02x m%02x g%02x\n",
+        logf("20%02d-%02d-%02d %02d:%02d %c %07x%08x r%02xa%02x%02x"
+             "z%02x%02xo%02xn%03dp%02x m%02x g%02x +%d us\n",
                 dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, "?mtwhfsS"[wday],
                 (uint32_t) (frame>>33), (uint32_t) (frame>>1),
                 flags[0], flags[1], flags[4], flags[2], flags[3],
-                convOff, (999*noiseSum+60*NN-1)/(60*NN), pty, match, good);
+                convOff, (999*noiseSum+60*NN-1)/(60*NN), pty, match, good,
+                (t - lastCycle) / (SystemCoreClock / 1'000'000));
+        lastCycle = t;
 
         noiseSum = 0;
     }
