@@ -5,24 +5,6 @@
 using namespace jeeh;
 #include "defs.h"
 
-//#define D(n,x) D_##x
-
-#ifdef D
-#define D_rescale \
-    logf("rescale\n");
-#define D_newmax \
-    auto tenths = (ticks/100) % 1000; \
-    logf("conv #%03d @ %3d = %3d:", tenths, convOff, convMax); \
-    for (int i = -5; i <= 5; ++i) \
-        logf(" %d", counts[i-N2-N3-N4]); \
-    logf("\n");
-#define D_tallies \
-    logf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", \
-            ticks/100, pulse, value, noise, mid, value-mid, pulse<5);
-#else
-#define D(n,x)
-#endif
-
 struct Decoder {
     // convolution kernel: N1 x -1, N2 x 2, N3 x 0, N4 x -1 (NN is noise window)
     static constexpr auto N1 = 22, N2 = 22, N3 = 36, N4 = 22,
@@ -68,7 +50,6 @@ struct Decoder {
         counts.next();
         if (signal) {
             if (++counts[0] == 255) {
-                D(1,rescale)
                 counts.rescale();
                 convMax /= 2;
             }
@@ -78,7 +59,6 @@ struct Decoder {
         if (v > convMax) {
             convMax = v;
             convOff = counts.off;
-            D(1,newmax)
         }
 
         uint8_t n = counts.off - convOff;
@@ -100,7 +80,6 @@ struct Decoder {
         auto mid = (noise*NN/256+2*22)/3; // 1's weighted twice as much as 0's
         if (minPos < sizeof minute)
             minute[minPos++] = value-mid;
-        D(1,tallies)
 
         if (pulse < 5)
             completeMin();
