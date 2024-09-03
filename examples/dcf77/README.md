@@ -36,3 +36,6 @@ It was ported to JeeH from `stm32x/nucleo-l432/src/dcf77-conv.cpp`.
 
 **lptimer.cpp** - Again the convolution decoder, but triggered from the
 low-power timer (also at 256 Hz).
+
+**systick.cpp** - Now the decoder is called directly from the `SysTick_Handler`
+exception code, i.e. in handler mode. In preparation of workers & triggers ...

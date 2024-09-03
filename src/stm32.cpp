@@ -96,7 +96,6 @@ void jeeh::swoWrite (void const* ptr, size_t len) {
 
 //--------------------------------------------------------------------- Ticker
 
-
 inline namespace {
 
 struct Ticker : Device, Chain {
@@ -196,7 +195,9 @@ Ticker ticker;
 
 } // inline namespace
 
+#if ! MYSYSTICK
 extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
+#endif
 
 // TODO these are needed by sys.cpp
 int nextTick () { return ticker.next(); }

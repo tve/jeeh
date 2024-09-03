@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "lptimer"
+#define PIOENV  "systick"
 
 //CG1 board leds
 #define LED  "B13"
@@ -60,4 +60,8 @@ void initBoard () {
 
 void jeeh::logWriter (void const* ptr, size_t len) {
     serio::write(ptr, len);
+}
+
+uint8_t jeeh::lowestPower (uint8_t, uint16_t) {
+    return sys::SLEEP; // never go into RTC sleep
 }

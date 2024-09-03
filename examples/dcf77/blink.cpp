@@ -10,8 +10,8 @@ int main () {
 
     while (true) {
         led = 1;
-        cycles::msBusy(100);
+        sys::wait(100);
         led = 0;
-        cycles::msBusy(400);
+        sys::wait(400);
     }
 }
