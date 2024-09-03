@@ -33,3 +33,6 @@ interrupts.
 
 **convol.cpp** - This is a completely different decoder, based on convolution.
 It was ported to JeeH from `stm32x/nucleo-l432/src/dcf77-conv.cpp`.
+
+**lptimer.cpp** - Again the convolution decoder, but triggered from the
+low-power timer (also at 256 Hz).

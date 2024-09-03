@@ -26,7 +26,7 @@ struct LpTimer {
     //void deinit () const { RCC(ena::LPTIM1,1) = 0; }
 
     void enable (uint16_t count) const {
-        TIM[ARR] = count;
+        TIM[ARR] = count-1;
         TIM[CR](1) = 1; // SNGSTRT
     }
 
