@@ -115,8 +115,6 @@ int main () {
         ssr = RTC[0x28];
 
         led = dcfData;
-        ledN = !(decoder.inSync && decoder.slot == 0);
-
         if (decoder.step(led)) {
             auto dt = decoder.now();
             logf("20%02d-%02d-%02d %02d:%02d",

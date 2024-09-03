@@ -67,11 +67,7 @@ DateTime decode () {
     };
 
     for (auto i = 0; ; ++i) {
-        ledN = 0;
-        count(2);
-        ledN = 1;
-
-        auto done = count(22) < 10;
+        auto done = count(24) < 10;
         bits = (bits >> 1) | ((uint64_t) (count(26) > 14) << 59);
         count(206);
 

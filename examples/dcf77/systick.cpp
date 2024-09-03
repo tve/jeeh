@@ -1,4 +1,4 @@
-// Decode DCF77 using a convolution kernel, triggered from LPTIM1.
+// Decode DCF77 using a convolution kernel, called from the SysTick IRQ.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -8,6 +8,7 @@ using namespace jeeh;
 
 Decoder d;
 
+// this needs "-DMYSYSTICK" to disable JeeH's default SysTick handler
 extern "C" void SysTick_Handler () {
     led = dcfData;
     d.step(led);
