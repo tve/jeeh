@@ -72,33 +72,7 @@ namespace jeeh::sys {
     }
 }
 
-struct Trigger : Device { // TODO get rid of Device type
-    uint8_t tId =++tSeq;
-
-    Trigger () : Device ('A'+tId) {
-        assert(tId < sizeof triggers / sizeof *triggers);
-        triggers[tId] = this;
-    }
-
-    static Trigger& at (uint8_t id) {
-        assert(0 < id && id < sizeof triggers / sizeof *triggers);
-        assert(triggers[id] != nullptr);
-        return *triggers[id];
-    }
-
-    virtual void interrupt () =0;
-
-private:
-    // don't use most of the Device logic, only its interrupt handling
-    void start (Message&) override { fail(); }
-    void finish () override { fail(); }
-    bool interrupt (int) override { interrupt(); return false; }
-
-    static inline uint8_t tSeq;
-    static inline Trigger* triggers [20];
-};
-
-struct Dcf77 : Worker, Trigger {
+struct Dcf77 : Worker {
     enum TAG { INIT, STEP };
 
     Decoder d; // see decoder.h, needs to be called 256x per second
@@ -121,7 +95,7 @@ struct Dcf77 : Worker, Trigger {
         return reply;
     }
 
-    void interrupt () override {
+    void interrupt () {
         sys::Xsend(toSelf(STEP, dcfData));
     }
 
