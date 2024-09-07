@@ -15,6 +15,56 @@ struct Event {
         : eDst (dst), eTag (tag), eVal (val) {}
 };
 
+template< typename T, int N >
+class RingBuffer {
+    uint16_t in =0, out =0;
+    T buf [N];
+    static_assert((N & (N-1)) == 0, "must be a power of 2");
+
+public:
+    bool full () const {
+        return (((in+1) ^ out) & (N-1)) == 0;
+    }
+
+    bool empty () const {
+        return ((in ^ out) & (N-1)) == 0;
+    }
+
+    void put (T v) {
+        assert(!full());
+        buf[in++ & (N-1)] = v;
+    }
+
+    void putAtomic (T v) {
+        assert(!full());
+        buf[__atomic_fetch_add(&in, 1, __ATOMIC_RELAXED) & (N-1)] = v;
+    }
+
+    T get () {
+        assert(!empty());
+        return buf[out++ & (N-1)];
+    }
+
+    T getAtomic () {
+        assert(!empty());
+        return buf[__atomic_fetch_add(&out, 1, __ATOMIC_RELAXED) & (N-1)];
+    }
+};
+
+uint32_t currIrq () {
+    uint32_t ipsr;
+    asm ("mrs %0, ipsr" : "=r" (ipsr));
+    return ipsr;
+}
+
+void setPendSV () {
+    SCB[0x04](28) = 1; // ICSR PENDSVSET
+}
+
+namespace jeeh::sys {
+    void Xsend (Event req, Event reply ={}, void* arg =nullptr);
+}
+
 struct Worker {
     uint8_t wId =++wSeq;
     uint8_t head =0;
@@ -28,7 +78,7 @@ struct Worker {
         workers[wId] = nullptr;
     }
 
-    Event toSelf (uint8_t tag, uint16_t val =0) {
+    Event toSelf (uint8_t tag, uint16_t val =0) const {
         return { wId, tag, val };
     }
 
@@ -54,25 +104,40 @@ struct Worker {
         return Event (~0, curr.eTag, curr.eVal);
     }
 
+    void trigger (uint8_t tag, uint16_t val) const {
+        ring.putAtomic(toSelf(tag, val));
+        setPendSV();
+        asm ("isb"); // make sure PendSV runs (it's an imprecise exception)
+    }
+
+    static void pullTriggers () {
+        while (!ring.empty()) {
+            auto req = ring.get();
+            // FIXME this needs to POSTPONE if the priority is lower!
+            sys::Xsend(req);
+        }
+    }
+
     static inline Worker* current;
 private:
     static inline uint8_t wSeq;
     static inline Worker* workers [20];
 
-    static constexpr auto NPOOL = 100;
-    static inline Event pool [NPOOL];
+    static inline RingBuffer<Event,8> ring;
+
+    static inline Event pool [100];
     static inline uint8_t free;
 };
 
 namespace jeeh::sys {
-    void Xsend (Event req, Event reply ={}, void* arg =nullptr) {
+    void Xsend (Event req, Event reply, void* arg) {
         // FIXME this needs to POSTPONE if the priority is lower!
         //  and pick up all pending events before resuming
         Worker::at(req.eDst).process(req, reply, arg);
     }
 }
 
-struct Dcf77 : Worker {
+struct DCF77 : Worker {
     enum TAG { INIT, STEP };
 
     Decoder d; // see decoder.h, needs to be called 256x per second
@@ -96,17 +161,19 @@ struct Dcf77 : Worker {
     }
 
     void interrupt () {
-        sys::Xsend(toSelf(STEP, dcfData));
+        trigger(STEP, dcfData);
     }
 
 };
 
-Dcf77 app;
+DCF77 app;
 
-// this needs "-DMYSYSTICK" to disable JeeH's default SysTick handler
-extern "C" void SysTick_Handler () {
-    app.interrupt(); // TODO tie this into Ticker iso of this demo app
-}
+#define IRQ_DISPATCH(irq, call) \
+    extern "C" void irq##_Handler () { call(); }
+
+// this needs "-DMYSYSTICK" to disable JeeH's default handlers
+IRQ_DISPATCH(SysTick, app.interrupt)
+IRQ_DISPATCH(PendSV, Worker::pullTriggers)
 
 int main() {
     initBoard();

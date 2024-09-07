@@ -322,6 +322,7 @@ inline namespace {
     Device* devices [Device::LAST-Device::BASE+1];
     uint8_t interrupts [(uint8_t) Irq::limit];
 
+#if ! MYSYSTICK
     void* processTriggers () {
         assert(irqState() == 0); // must be in PendSV
         auto p = __atomic_exchange_4(&pending, 0, __ATOMIC_RELAXED);
@@ -342,6 +343,7 @@ inline namespace {
         stacks.newSp = context().sp;
         return &stacks;
     }
+#endif
 
 } // inline namespace
 
@@ -572,6 +574,8 @@ void HardFault_Handler () {
 
 //---------------------------------------------------------------------- PendSV
 
+#if ! MYSYSTICK
+
 extern "C" [[gnu::naked]]
 void PendSV_Handler () {
     asm (
@@ -627,6 +631,8 @@ void PendSV_Handler () {
         " pop      {r0,pc}       \n"
     :: "r" (processTriggers));
 }
+
+#endif // ! MYSYSTICK
 
 //------------------------------------------------------------------------- SVC
 
