@@ -23,31 +23,33 @@ class RingBuffer {
 
 public:
     bool full () const {
-        return (((in+1) ^ out) & (N-1)) == 0;
+        return (((in+1) ^ out) % N) == 0;
     }
 
     bool empty () const {
-        return ((in ^ out) & (N-1)) == 0;
+        return ((in ^ out) % N) == 0;
     }
 
     void put (T v) {
         assert(!full());
-        buf[in++ & (N-1)] = v;
+        buf[in++ % N] = v;
     }
 
     void putAtomic (T v) {
         assert(!full());
-        buf[__atomic_fetch_add(&in, 1, __ATOMIC_RELAXED) & (N-1)] = v;
+        auto i = __atomic_fetch_add(&in, 1, __ATOMIC_RELAXED);
+        buf[i % N] = v;
     }
 
     T get () {
         assert(!empty());
-        return buf[out++ & (N-1)];
+        return buf[out++ % N];
     }
 
     T getAtomic () {
         assert(!empty());
-        return buf[__atomic_fetch_add(&out, 1, __ATOMIC_RELAXED) & (N-1)];
+        auto i = __atomic_fetch_add(&out, 1, __ATOMIC_RELAXED);
+        return buf[i % N];
     }
 };
 
@@ -107,7 +109,7 @@ struct Worker {
     void trigger (uint8_t tag, uint16_t val) const {
         ring.putAtomic(toSelf(tag, val));
         setPendSV();
-        asm ("isb"); // make sure PendSV runs (it's an imprecise exception)
+        asm ("isb"); // make sure PendSV runs now
     }
 
     static void pullTriggers () {
