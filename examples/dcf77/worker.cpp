@@ -68,20 +68,16 @@ namespace jeeh::sys {
 }
 
 struct Worker {
-    uint8_t wId =++wSeq;
+    uint8_t wId =0;
     uint8_t head =0;
 
-    Worker () {
+    Worker () {}
+
+    void init () {
+        assert(wId == 0);
+        wId =++wSeq;
         assert(wId < sizeof workers / sizeof *workers);
         workers[wId] = this;
-    }
-
-    ~Worker () {
-        workers[wId] = nullptr;
-    }
-
-    Event toSelf (uint8_t tag, uint16_t val =0) const {
-        return { wId, tag, val };
     }
 
     virtual Event process (Event req, Event reply, void* arg) =0;
@@ -106,18 +102,23 @@ struct Worker {
         return Event (~0, curr.eTag, curr.eVal);
     }
 
-    void trigger (uint8_t tag, uint16_t val) const {
-        ring.putAtomic(toSelf(tag, val));
+    void request (uint8_t tag, uint16_t val =0) const {
+        assert(wId > 0);
+        triggers.putAtomic({ wId, tag, val });
         setPendSV();
         asm ("isb"); // make sure PendSV runs now
     }
 
-    static void pullTriggers () {
-        while (!ring.empty()) {
-            auto req = ring.get();
+    static void dispatch () {
+        while (!triggers.empty()) {
+            auto req = triggers.get();
             // FIXME this needs to POSTPONE if the priority is lower!
             sys::Xsend(req);
         }
+    }
+
+    uint8_t level () const {
+        return current == nullptr ? 0 : current->wId;
     }
 
     static inline Worker* current;
@@ -125,7 +126,7 @@ private:
     static inline uint8_t wSeq;
     static inline Worker* workers [20];
 
-    static inline RingBuffer<Event,8> ring;
+    static inline RingBuffer<Event,8> triggers;
 
     static inline Event pool [100];
     static inline uint8_t free;
@@ -144,8 +145,8 @@ struct DCF77 : Worker {
 
     Decoder d; // see decoder.h, needs to be called 256x per second
 
-    Event process (Event request, Event reply, void*) override {
-        switch (request.eTag) {
+    Event process (Event req, Event reply, void*) override {
+        switch (req.eTag) {
             case INIT:
                 // set up SysTick interrupts at ≈256 Hz
                 STK[0x4] = (SystemCoreClock/256) / 8 - 1;
@@ -153,8 +154,8 @@ struct DCF77 : Worker {
                 STK[0x0] = 0b011; // enable, clk/8 mode
                 break;
             case STEP:
-                led = request.eVal;
-                d.step(request.eVal);
+                led = req.eVal;
+                d.step(req.eVal);
                 break;
             default:
                 fail(); // unknown request
@@ -163,24 +164,26 @@ struct DCF77 : Worker {
     }
 
     void interrupt () {
-        trigger(STEP, dcfData);
+        request(STEP, dcfData);
     }
 
 };
 
 DCF77 app;
 
-#define IRQ_DISPATCH(irq, call) \
-    extern "C" void irq##_Handler () { call(); }
+#define IRQ_HANDLER(name, func) \
+    extern "C" void name##_Handler () { func(); }
 
 // this needs "-DMYSYSTICK" to disable JeeH's default handlers
-IRQ_DISPATCH(SysTick, app.interrupt)
-IRQ_DISPATCH(PendSV, Worker::pullTriggers)
+IRQ_HANDLER(SysTick, app.interrupt)
+IRQ_HANDLER(PendSV, Worker::dispatch)
 
 int main() {
     initBoard();
 
-    sys::Xsend(app.toSelf(app.INIT));
+    app.init();
+    app.request(app.INIT);
+
     while (true)
         asm ("wfi");
 }

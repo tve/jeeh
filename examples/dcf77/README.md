@@ -9,7 +9,11 @@ Pin | Signal | Notes
  3  | PC0    | data, needs pull-up
  4  | PC1    | power, 0 = on
 
-### Implementations:
+![](board.jpg)
+
+### Builds
+
+Use `pio run -e blink -t upload` etc to compile and upload each of these:
 
 **blink.cpp** - Blink both on-board LEDs and show a greeting on the serial port.
 This is just to verify that both the build and the board work (use: `pio run -e
@@ -39,3 +43,6 @@ low-power timer (also at 256 Hz).
 
 **systick.cpp** - Now the decoder is called directly from the `SysTick_Handler`
 exception code, i.e. in handler mode. In preparation of workers & triggers ...
+
+**worker.cpp** - New code using `Worker` and `Event` as core types. This code is
+highly experimental and very much "under construction". Uses SysTick @ 256 Hz.
