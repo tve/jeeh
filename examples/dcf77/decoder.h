@@ -44,10 +44,11 @@ struct Decoder {
     void step (int signal) {
         counts.next();
         if (signal) {
-            if (++counts[0] == 255) {
+            if (counts[0] == 255) {
                 counts.rescale();
                 convMax /= 2;
             }
+            ++counts[0];
         }
 
         auto v = convolution();
@@ -77,13 +78,13 @@ struct Decoder {
             minute[minPos++] = value-mid;
 
         if (pulse < 5)
-            completeMin();
+            completed();
 
         pulse = value = noise = 0;
     }
 
 private:
-    void completeMin () {
+    void completed () {
         uint64_t frame = 0;
         for (int i = 0; i < 60; ++i)
             frame = (frame << 1) | (minute[59-i] >= 0);
