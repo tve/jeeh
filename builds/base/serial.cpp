@@ -39,13 +39,13 @@ int main () {
     Pin led ("B8");
     led.mode("P");
 
-    uint32_t us = 0, bd = 0, seq = 0, mhz = SystemCoreClock/1'000'000;
+    uint32_t us = 0, bd = 0, seq = 0;
 
     while (true) {
         seq = seq % 64 + 1;
         cycles::init();
         printf("%3d us %6d kbd %*c\n", us, bd, seq, '#');
-        us = cycles::count() / mhz;
+        us = cycles::micros();
         bd = (seq+19) * 10'000 / us;
 
         led = 1;
