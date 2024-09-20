@@ -246,20 +246,18 @@ enum { CSR=0x50 };
 enum { BDCR=0x90, CSR=0x94 };
 #endif
 
-#if 0
 void reset () {
     RCC[BDCR](16) = 1; // BDRST
-    sys::wait(2);
+    //sys::wait(2);
     RCC[BDCR](16) = 0; // ~BDRST
 }
-#endif
 
 void init (bool lse) {
 #if !(STM32F3 | STM32F4 | STM32F7 | STM32L0)
-    RCC(ena::RTCAPB, 1) = 1;
+    RCC(ena::RTCAPB,1) = 1;
 #endif
 #if !(STM32H7 | STM32WL)
-    RCC(ena::PWR, 1) = 1;
+    RCC(ena::PWR,1) = 1;
 #endif
     PWR[0x00](8) = 1; // DBP
 
@@ -300,6 +298,10 @@ void init (bool lse) {
         set({0,1,1}); // set to 2000-01-01, so it starts running properly
 
     SCB[0x10](4) = 1; // SEVONPEND
+}
+
+void deinit () {
+    RCC[BDCR](15) = 0; // ~RTCEN
 }
 
 uint8_t fromBcd (uint8_t v) {
