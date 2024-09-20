@@ -50,14 +50,14 @@ struct Worker {
     }
 
     static void send (Event evt, Event reply ={}, void* arg =nullptr) {
-        if (evt.eDst != 0) {
-            auto prev = current;
-            current = &at(evt.eDst);
-            reply = current->process(evt, reply, arg);
-            current = prev;
-            if (reply.eDst != 0)
-                send(reply); // can't recurse again (can't reply to a reply)
-        }
+        assert(evt.eDst != 0);
+        // TODO must postpone call when sending to a lower-priority worker!
+        auto prev = current;
+        current = &at(evt.eDst);
+        reply = current->process(evt, reply, arg);
+        current = prev;
+        if (reply.eDst != 0)
+            send(reply); // won't recurse again (i.e. can't reply to a reply)
     }
 
     static Worker& at (uint8_t id) {
