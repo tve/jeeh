@@ -2,7 +2,7 @@
 
 #include <stm32g4xx.h>
 
-extern "C" int _write (int, char* ptr, int len) {
+extern "C" int putchar (int ch) {
     if (USART2->BRR == 0) {
         RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN;
         RCC->APB1ENR1 |= RCC_APB1ENR1_USART2EN;
@@ -22,11 +22,9 @@ extern "C" int _write (int, char* ptr, int len) {
         USART2->CR1 |= USART_CR1_FIFOEN | USART_CR1_TE | USART_CR1_UE;
     }
 
-    for (auto i = 0; i < len; ++i) {
-        while ((USART2->ISR & USART_ISR_TXE) == 0) {}
-        USART2->TDR = ptr[i];
-    }
-    return len;
+    while ((USART2->ISR & USART_ISR_TXE) == 0) {}
+    USART2->TDR = ch;
+    return ch;
 }
 
 #else // JeeH version:
@@ -34,7 +32,7 @@ extern "C" int _write (int, char* ptr, int len) {
 #include <jee.h>
 using namespace jeeh;
 
-extern "C" int _write (int, char* ptr, int len) {
+extern "C" int putchar (int ch) {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28 };
 
     if (USART2[BRR] == 0) {
@@ -47,11 +45,9 @@ extern "C" int _write (int, char* ptr, int len) {
             asm ("");
     }
 
-    for (auto i = 0; i < len; ++i) {
-        while (!USART2[ISR](7)) {} // TXE
-        USART2[TDR] = ((uint8_t const*) ptr)[i];
-    }
-    return len;
+    while (!USART2[ISR](7)) {} // TXE
+    USART2[TDR] = ch;
+    return ch;
 }
 
 #endif
