@@ -1,17 +1,15 @@
-#include <unity.h>
-#include <jee.h>
-using namespace jeeh;
+// A minimal test, no smoke will appear if all is well ...
+
+#include "../common.h"
 
 void setUp () {}
 void tearDown () {}
 
 void smoke () {
-    TEST_ASSERT_EQUAL(42, 40 + 2);
+    TEST_ASSERT_EQUAL(42, 40 + 2); // verify that this trivial test is working
 }
 
-int main () {
-    fastClock();
+void allTests () {
     UNITY_BEGIN();
     RUN_TEST(smoke);
-    return UNITY_END();
 }
