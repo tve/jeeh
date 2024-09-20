@@ -8,7 +8,7 @@ static void delayLoop (uint16_t ms) {
 }
 
 int main () {
-    fastClock(); // 170 MHz
+    fastClock(); // 160 MHz
 
     Pin led ("B8");
     led.mode("P");

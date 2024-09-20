@@ -13,7 +13,7 @@ namespace serio {
     void init () {
         Pin::config("A2:7");
         RCC(ena::USART2,1) = 1;
-        USART2[BRR] = SystemCoreClock / 10'625'000; // 170 MHz CPU clock
+        USART2[BRR] = SystemCoreClock / 10'000'000; // 160 MHz CPU clock
         USART2[CR1] = (1<<29) | (1<<3) | (1<<0); // FIFOEN TE UE
     }
 
@@ -33,7 +33,7 @@ extern "C" int _write (int fd, char* buf, int len) {
 }
 
 int main () {
-    fastClock(); // 170 MHz
+    fastClock(); // 160 MHz
     serio::init();
 
     Pin led ("B8");
@@ -44,9 +44,9 @@ int main () {
     while (true) {
         seq = seq % 64 + 1;
         cycles::init();
-        printf("%3d us %6d kbd %*c\n", us, bd, seq, '#');
+        printf("%2d us %5d kbd %*c\n", us, bd, seq, '#');
         us = cycles::micros();
-        bd = (seq+19) * 10'000 / us;
+        bd = (seq+17) * 10'000 / us;
 
         led = 1;
         delayLoop(50);
