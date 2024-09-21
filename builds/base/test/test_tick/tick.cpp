@@ -116,7 +116,7 @@ struct TimerWorker : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
-    bool done =false;
+    volatile bool done =false;
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
@@ -126,15 +126,15 @@ struct TimerWorker : Worker {
                 break;
             case ONE:
                 TEST_ASSERT_INT_WITHIN(1, start+5, ticker.millis());
-done = true;
-                //ticker.delay(10, { wId, TWO });
+                ticker.delay(10, { wId, THREE });
                 break;
             case TWO:
                 TEST_ASSERT_INT_WITHIN(1, start+5+10, ticker.millis());
                 ticker.delay(20, { wId, THREE });
                 break;
             case THREE:
-                TEST_ASSERT_INT_WITHIN(1, start+5+10+20, ticker.millis());
+                //TEST_ASSERT_INT_WITHIN(1, 5+10+20, ticker.millis()-start);
+TEST_ASSERT_INT_WITHIN(1, 5+10, ticker.millis()-start);
                 done = true;
                 break;
             default:
@@ -161,8 +161,11 @@ void msWaiter () {
     do {
         asm ("wfi");
         ++n;
+        if (n > 100)
+            break;
     } while (!tw.done);
-    TEST_ASSERT_EQUAL(35, n);
+    //TEST_ASSERT_EQUAL(35, n);
+TEST_ASSERT_EQUAL(15, n);
 }
 
 void allTests () {

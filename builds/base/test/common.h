@@ -5,24 +5,16 @@
 #include <jee/cycles.h>
 using namespace jeeh;
 
-// avoid pulling in logf, etc
-void jeeh::fail (void const*, char const*, int line) {
-    TEST_ASSERT_EQUAL_MESSAGE(0, line, "jeeh::fail");
-    __builtin_unreachable();
-}
-
-void jeeh::hardFaultHandler (uint32_t*) {
-    TEST_FAIL_MESSAGE("jeeh::hardFault_Handler");
-    __builtin_unreachable();
-}
-
-// allow the use of printf
-extern "C" int putchar (int ch);
+// allow the use of printf and logf
 
 extern "C" int _write (int, char* ptr, int len) {
     for (auto i = 0; i < len; ++i)
         putchar(ptr[i]);
     return len;
+}
+
+void jeeh::logWriter (void const* ptr, size_t len) {
+    _write(1, (char*) ptr, len);
 }
 
 extern void allTests ();
@@ -32,7 +24,7 @@ int main () {
     cycles::init();
 
     // adjust priorities before they might interfere with "real" IRQs
-    //SCB.byte(0x1F) = 0xDF; // irq #11: SVC
+    //SCB.byte(0x1F) = 0xFF; // irq #11: SVC
     SCB.byte(0x22) = 0xFF; // irq #14: PendSV
 
     UNITY_BEGIN();
@@ -106,7 +98,6 @@ struct Worker {
     }
 
     static void irqPendSV () {
-TEST_FAIL();
         for (auto e : workers)
             if (e != nullptr && e->head != 0)
                 dispatch(e->pull());
@@ -178,6 +169,7 @@ void SVC_Handler () {
         " addne sp,#32 \n"
         " pop {r0,r1} \n"
         " msr psr,r0 \n"
-        " bx r1 \n"
+        " mov lr,r1 \n"
+        " bx lr \n"
     );
 }
