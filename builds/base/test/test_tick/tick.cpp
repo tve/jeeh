@@ -105,10 +105,10 @@ void msTicker () {
 
     Worker::send({ tickerId, ticker.RATE, 1 });
 
-    auto t = ticker.millis();
+    auto start = ticker.millis();
     for (auto i = 1; i <= 50; ++i) {
         cycles::msBusy(1);
-        TEST_ASSERT_INT_WITHIN(1, t+i, ticker.millis());
+        TEST_ASSERT_INT_WITHIN(1, i, ticker.millis()-start);
     }
 }
 
@@ -126,6 +126,7 @@ struct TimerWorker : Worker {
                 break;
             case ONE:
                 TEST_ASSERT_INT_WITHIN(1, start+5, ticker.millis());
+                //ticker.delay(10, { wId, TWO });
                 ticker.delay(10, { wId, THREE });
                 break;
             case TWO:
@@ -134,7 +135,7 @@ struct TimerWorker : Worker {
                 break;
             case THREE:
                 //TEST_ASSERT_INT_WITHIN(1, 5+10+20, ticker.millis()-start);
-TEST_ASSERT_INT_WITHIN(1, 5+10, ticker.millis()-start);
+                TEST_ASSERT_INT_WITHIN(1, 5+10, ticker.millis()-start);
                 done = true;
                 break;
             default:
@@ -161,11 +162,9 @@ void msWaiter () {
     do {
         asm ("wfi");
         ++n;
-        if (n > 100)
-            break;
     } while (!tw.done);
     //TEST_ASSERT_EQUAL(35, n);
-TEST_ASSERT_EQUAL(15, n);
+    TEST_ASSERT_EQUAL(15, n);
 }
 
 void allTests () {

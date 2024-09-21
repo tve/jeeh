@@ -66,14 +66,11 @@ struct Worker {
     static void send (Event evt, Event reply ={}, void* arg =nullptr) {
         assert(evt.eDst != 0);
 
-        auto irq = inIrq();
-        if (irq != 0) { // postpone when called from an IRQ
+        if (irqState() != 0) { // postpone when called from an IRQ
             assert(reply.eDst == 0 && arg == nullptr); // only replies allowed
             at(evt.eDst).pend(evt);
-            return;
-        }
-
-        dispatch(evt, reply, arg);
+        } else
+            dispatch(evt, reply, arg);
     }
 
     static void dispatch (Event evt, Event reply ={}, void* arg =nullptr) {
@@ -118,7 +115,7 @@ protected:
     }
 
 private:
-    static uint32_t inIrq () {
+    static uint32_t irqState () {
         uint32_t ipsr;
         asm ("mrs %0, ipsr" : "=r" (ipsr));
         return ipsr;
