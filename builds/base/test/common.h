@@ -26,6 +26,10 @@ int main () {
 
 // End of boilerplate, below is for temporary code, to be moved once ready.
 
+// this needs "-DMYSYSTICK" to disable JeeH's default handlers
+#define IRQ_HANDLER(name, func) \
+    extern "C" void name##_Handler () { func(); }
+
 struct Event {
     uint32_t eDst :8;
     uint32_t eTag :8;
