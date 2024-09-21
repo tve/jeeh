@@ -7,11 +7,14 @@ using namespace jeeh;
 
 // avoid pulling in logf, etc
 void jeeh::fail (void const*, char const*, int line) {
-    TEST_ASSERT_EQUAL(0, line);
+    TEST_ASSERT_EQUAL_MESSAGE(0, line, "jeeh::fail");
     __builtin_unreachable();
 }
 
-void jeeh::hardFaultHandler (uint32_t*) { fail(); }
+void jeeh::hardFaultHandler (uint32_t*) {
+    TEST_FAIL_MESSAGE("jeeh::hardFault_Handler");
+    __builtin_unreachable();
+}
 
 // allow the use of printf
 extern "C" int putchar (int ch);
@@ -27,6 +30,10 @@ extern void allTests ();
 int main () {
     fastClock();
     cycles::init();
+
+    // adjust priorities before they might interfere with "real" IRQs
+    //SCB.byte(0x1F) = 0xDF; // irq #11: SVC
+    SCB.byte(0x22) = 0xFF; // irq #14: PendSV
 
     UNITY_BEGIN();
     allTests();
@@ -68,23 +75,23 @@ struct Worker {
         assert(evt.eDst != 0);
 
         auto irq = inIrq();
-        if (irq != 0 && irq != 14) { // postpone when called from an IRQ
+        if (irq != 0) { // postpone when called from an IRQ
             assert(reply.eDst == 0 && arg == nullptr); // only replies allowed
             at(evt.eDst).pend(evt);
             return;
         }
 
-        accept(evt, reply, arg);
+        dispatch(evt, reply, arg);
     }
 
-    static void accept (Event evt, Event reply ={}, void* arg =nullptr) {
+    static void dispatch (Event evt, Event reply ={}, void* arg =nullptr) {
         // TODO must postpone call when sending to a lower-priority worker!
         auto prev = current;
         current = &at(evt.eDst);
         reply = current->process(evt, reply, arg);
         current = prev;
         if (reply.eDst != 0)
-            send(reply); // won't recurse again (i.e. can't reply to a reply)
+            dispatch(reply); // won't recurse again (can't reply to a reply)
     }
 
     static void clearAll () {
@@ -98,16 +105,26 @@ struct Worker {
         return *workers[id];
     }
 
-    static void dispatch () {
+    static void irqPendSV () {
+TEST_FAIL();
         for (auto e : workers)
             if (e != nullptr && e->head != 0)
-                accept(e->pull());
+                dispatch(e->pull());
     }
 
     static inline Worker* current;
 
 protected:
     virtual Event process (Event in, Event out, void* arg) =0;
+
+    void pend (Event e) {
+        assert(free < 100); // XXX
+        auto next = ++free;
+        // TODO pull from a free list
+        pool[next] = Event (head, e.eTag, e.eVal);
+        head = next;
+        SCB[0x04](28) = 1; // ICSR PENDSVSET
+    }
 
 private:
     static uint32_t inIrq () {
@@ -116,19 +133,12 @@ private:
         return ipsr;
     }
 
-    void pend (Event e) {
-        auto next = ++free;
-        // TODO pull(free);
-        pool[next] = Event (head, e.eTag, e.eVal);
-        head = next;
-        SCB[0x04](28) = 1; // ICSR PENDSVSET
-    }
-
     Event pull () {
         assert(head != 0);
         auto h = pool[head];
         head = h.eDst;
         h.eDst = wId;
+        // TODO return slot to the free list
         return h;
     }
 
@@ -139,4 +149,35 @@ private:
     static inline uint8_t free;
 };
 
-IRQ_HANDLER(PendSV, Worker::dispatch)
+extern "C" [[gnu::naked]]
+void PendSV_Handler () {
+    asm (
+        " mrs r0,psr \n"
+        " push {r0,lr} \n"
+        " sub sp,#32 \n"
+        " addw r0,pc,#16 \n"
+        " str r0,[sp,#24] \n"
+        " ldr r0,=0x01000000 \n"
+        " str r0,[sp,#28] \n"
+        " ldr r0,=0xFFFFFFF9 \n"
+        " mov lr,r0 \n"
+        " bx lr \n"
+        // target of addw above:
+        " bl %0 \n"
+        " svc 0 \n"
+        " b . \n"
+    :: "i" (Worker::irqPendSV));
+}
+
+extern "C" [[gnu::naked]]
+void SVC_Handler () {
+    asm (
+        " tst lr,#0x10 \n"
+        " ite eq \n"
+        " addeq sp,#104 \n"
+        " addne sp,#32 \n"
+        " pop {r0,r1} \n"
+        " msr psr,r0 \n"
+        " bx r1 \n"
+    );
+}

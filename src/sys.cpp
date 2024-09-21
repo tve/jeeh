@@ -641,6 +641,8 @@ int sys::svc (int, int, int, int) {
     asm ("svc 0; bx lr");
 }
 
+#if ! MYSYSTICK
+
 extern "C" [[gnu::naked]]
 void SVC_Handler () {
     asm (
@@ -673,6 +675,8 @@ void SVC_Handler () {
         " bx    r2          \n"
     );
 }
+
+#endif // ! MYSYSTICK
 
 //------------------------------------------------------------------------- IRQ
 
