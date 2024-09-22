@@ -14,8 +14,9 @@ class Ticker : Worker {
                     auto h = head;
                     head = links[h];
                     send(timers[h]);
-                    timers[h].eVal = free;
-                    free = h;
+                    // FIXME
+                    //links[h] = free;
+                    //free = h;
                 }
                 break;
             case RATE:
@@ -38,12 +39,11 @@ class Ticker : Worker {
     }
 
     void add (uint16_t ms, Event out) {
-        //
         out.eVal = ticks + ms; // deadline
         auto slot = 0;
         if (free != 0) {
             slot = links[free];
-            free = timers[slot].eVal;
+            free = links[slot];
         } else
             slot = ++last;
         links[slot] = head;
@@ -126,16 +126,14 @@ struct TimerWorker : Worker {
                 break;
             case ONE:
                 TEST_ASSERT_INT_WITHIN(1, start+5, ticker.millis());
-                //ticker.delay(10, { wId, TWO });
-                ticker.delay(10, { wId, THREE });
+                ticker.delay(10, { wId, TWO });
                 break;
             case TWO:
                 TEST_ASSERT_INT_WITHIN(1, start+5+10, ticker.millis());
                 ticker.delay(20, { wId, THREE });
                 break;
             case THREE:
-                //TEST_ASSERT_INT_WITHIN(1, 5+10+20, ticker.millis()-start);
-                TEST_ASSERT_INT_WITHIN(1, 5+10, ticker.millis()-start);
+                TEST_ASSERT_INT_WITHIN(1, 5+10+20, ticker.millis()-start);
                 done = true;
                 break;
             default:
@@ -163,8 +161,7 @@ void msWaiter () {
         asm ("wfi");
         ++n;
     } while (!tw.done);
-    //TEST_ASSERT_EQUAL(35, n);
-    TEST_ASSERT_EQUAL(15, n);
+    TEST_ASSERT_EQUAL(35, n);
 }
 
 void allTests () {
