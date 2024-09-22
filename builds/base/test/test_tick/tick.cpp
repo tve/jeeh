@@ -8,7 +8,7 @@ void tearDown () { Worker::resetAll(); }
 template< uint8_t MAX >
 class Ticker : Worker {
     Event process (Event in, Event out, void*) override {
-        switch (in.eTag) {
+        switch ((TAG) in.eTag) {
             case TICK:
                 while (expired()) {
                     auto slot = tHead;
@@ -138,7 +138,7 @@ struct SequentialDelays : Worker {
     bool done =false;
 
     Event process (Event in, Event out, void*) override {
-        switch (in.eTag) {
+        switch ((TAG) in.eTag) {
             case START:
                 start = ticker.millis();
                 ticker.delay(5, { wId, ONE });
@@ -193,7 +193,7 @@ struct ParallelDelays : Worker {
 
     Event process (Event in, Event out, void*) override {
         ++calls;
-        switch (in.eTag) {
+        switch ((TAG) in.eTag) {
             case START:
                 start = ticker.millis();
                 ticker.delay( 5, { wId, ONE });   // first one
