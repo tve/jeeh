@@ -49,7 +49,7 @@ struct Event {
 
 struct Worker {
     uint8_t wId =0;
-    uint8_t head =0;
+    uint8_t wHead =0;
 
     Worker () {}
     ~Worker () { workers[wId] = nullptr; }
@@ -86,7 +86,7 @@ struct Worker {
     static void resetAll () { // to reset between test cases
         for (auto& e : workers)
             if (e != nullptr) {
-                e->wId = e->head = 0;
+                e->wId = e->wHead = 0;
                 e = nullptr;
             }
         wSeq = 0;
@@ -105,7 +105,7 @@ struct Worker {
     static void irqPendSV () {
         for (auto e : workers)
             if (e != nullptr)
-                while (e->head != 0)
+                while (e->wHead != 0)
                     dispatch(e->pull());
     }
 
@@ -127,18 +127,18 @@ private:
     }
 
     void pend (Event e) {
-        assert(free < 100); // XXX
-        auto next = ++free;
+        assert(wFree < 100); // XXX
+        auto next = ++wFree;
         // TODO pull from a free list
-        pool[next] = Event (head, e.eTag, e.eVal);
-        head = next;
+        wPool[next] = Event (wHead, e.eTag, e.eVal);
+        wHead = next;
         SCB[0x04](28) = 1; // ICSR PENDSVSET
     }
 
     Event pull () {
-        assert(head != 0);
-        auto h = pool[head];
-        head = h.eDst;
+        assert(wHead != 0);
+        auto h = wPool[wHead];
+        wHead = h.eDst;
         h.eDst = wId;
         // TODO return slot to the free list
         return h;
@@ -147,8 +147,8 @@ private:
     static inline uint8_t wSeq;
     static inline Worker* workers [20];
 
-    static inline Event pool [100];
-    static inline uint8_t free;
+    static inline Event wPool [100];
+    static inline uint8_t wFree;
 };
 
 extern "C" [[gnu::naked]]
@@ -179,7 +179,6 @@ void SVC_Handler () {
         " addne sp,#32 \n"
         " pop {r0,r1} \n"
         " msr psr,r0 \n"
-        " mov lr,r1 \n"
-        " bx lr \n"
+        " bx r1 \n"
     );
 }
