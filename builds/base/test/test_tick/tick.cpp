@@ -6,73 +6,7 @@ void setUp () {}
 void tearDown () { Worker::resetAll(); }
 
 template< uint8_t MAX >
-class Ticker : Worker {
-    Event process (Event in, Event out, void*) override {
-        switch (in.eTag) {
-            case TICK:
-                while (expired()) {
-                    auto slot = tHead;
-                    tHead = links[slot];
-                    // can't return as reply, multiple timers may be expiring
-                    reply(timers[slot]);
-                    links[slot] = tFree;
-                    tFree = slot;
-                }
-                assert(out.eDst == 0);
-                break;
-            case RATE:
-                setRate(in.eVal);
-                break;
-            case DELAY:
-                add(in.eVal, out);
-                return {};
-            default:
-                fail();
-        }
-        return out;
-    }
-
-    void setRate (uint8_t ms) {
-        tRate = ms;
-        STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
-        STK[0x8] = 0;
-        STK[0x0] = 0b011; // enable, clk/8 mode
-    }
-
-    void add (uint16_t ms, Event out) {
-        // find a free timer slot
-        uint8_t slot = tFree;
-        if (slot == 0) {
-            slot = ++tLast;
-            assert(slot < MAX);
-        } else
-            tFree = links[slot];
-
-        // save the timer event with proper deadline
-        auto t = ticks;
-        timers[slot] = out;
-        timers[slot].eVal = t + ms;
-
-        // locate the position to insert
-        auto p = &tHead; // insert in proper position
-        while (*p != 0 && ms >= (uint16_t) (timers[*p].eVal - t))
-            p = &links[*p];
-
-        // insert before the first timer past this one (or at the end)
-        links[slot] = *p;
-        *p = slot;
-    }
-
-    bool expired () const {
-        return tHead != 0 &&
-                (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
-    }
-
-    volatile uint32_t ticks =0;
-    Event timers [MAX];
-    uint8_t links [MAX], tHead =0, tFree =0, tLast =0, tRate =0;
-
-public:
+struct Ticker : Worker {
     enum TAG { TICK, RATE, DELAY };
 
     uint8_t init () {
@@ -98,6 +32,73 @@ public:
     void delay (uint16_t ms, Event done) const {
         assert(done.eDst != 0);
         send({ wId, DELAY, ms }, done);
+    }
+
+private:
+    volatile uint32_t ticks =0;
+    Event timers [MAX];
+    uint8_t links [MAX], tHead =0, tFree =0, tLast =0, tRate =0;
+
+    Event process (Event in, Event out, void*) override {
+        switch (in.eTag) {
+            case TICK:
+                while (expired()) {
+                    auto slot = tHead;
+                    tHead = links[slot];
+                    // can't return as reply, multiple timers may be expiring
+                    reply(timers[slot]);
+                    links[slot] = tFree;
+                    tFree = slot;
+                }
+                assert(out.eDst == 0);
+                break;
+            case RATE:
+                out.eVal = tRate;
+                setRate(in.eVal);
+                break;
+            case DELAY:
+                add(in.eVal, out);
+                return {};
+            default:
+                fail();
+        }
+        return out;
+    }
+
+    void setRate (uint8_t ms) {
+        tRate = ms;
+        STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
+        STK[0x8] = 0;
+        STK[0x0] = 0b011; // enable, clk/8 mode
+    }
+
+    void add (uint16_t ms, Event out) {
+        // find a free timer slot
+        uint8_t slot = tFree;
+        if (slot == 0) {
+            slot = ++tLast;
+            assert(slot < MAX); // fail if too many timers are active
+        } else
+            tFree = links[slot];
+
+        // save the timer event with proper deadline
+        auto t = ticks;
+        timers[slot] = out;
+        timers[slot].eVal = t + ms;
+
+        // locate the position to insert
+        auto p = &tHead;
+        while (*p != 0 && ms >= (uint16_t) (timers[*p].eVal - t))
+            p = &links[*p];
+
+        // insert before the first timer past this one (or at the end)
+        links[slot] = *p;
+        *p = slot;
+    }
+
+    bool expired () const {
+        return tHead != 0 &&
+                (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
     }
 };
 

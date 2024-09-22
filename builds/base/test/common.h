@@ -48,9 +48,6 @@ struct Event {
 };
 
 struct Worker {
-    uint8_t wId =0;
-    uint8_t wHead =0;
-
     Worker () {}
     ~Worker () { workers[wId] = nullptr; }
 
@@ -73,16 +70,6 @@ struct Worker {
             dispatch(evt);
     }
 
-    static void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
-        assert(irqState() == 0);
-
-        // TODO must postpone call when sending to a lower-priority worker!
-        auto prev = current;
-        current = &at(evt.eDst);
-        reply(current->process(evt, done, arg));
-        current = prev;
-    }
-
     static void resetAll () { // to reset between test cases
         for (auto& e : workers)
             if (e != nullptr) {
@@ -103,15 +90,18 @@ struct Worker {
     }
 
     static void irqPendSV () {
+        assert(irqState() == 0); // PendSV magic ...
+
         for (auto e : workers)
             if (e != nullptr)
                 while (e->wHead != 0)
                     dispatch(e->pull());
     }
 
+protected:
+    uint8_t wId =0;
     static inline Worker* current;
 
-protected:
     virtual Event process (Event in, Event out, void* arg) =0;
 
     void trigger (uint8_t tag, uint16_t val =0) {
@@ -120,10 +110,25 @@ protected:
     }
 
 private:
+    uint8_t wHead =0;
+
+    static inline uint8_t wSeq;
+    static inline Worker* workers [20];
+    static inline Event wPool [100];
+    static inline uint8_t wFree;
+
     static uint32_t irqState () {
         uint32_t ipsr;
         asm ("mrs %0, ipsr" : "=r" (ipsr));
         return ipsr;
+    }
+
+    static void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
+        // TODO must postpone call when sending to a lower-priority worker!
+        auto prev = current;
+        current = &at(evt.eDst);
+        reply(current->process(evt, done, arg));
+        current = prev;
     }
 
     void pend (Event e) {
@@ -143,12 +148,6 @@ private:
         // TODO return slot to the free list
         return h;
     }
-
-    static inline uint8_t wSeq;
-    static inline Worker* workers [20];
-
-    static inline Event wPool [100];
-    static inline uint8_t wFree;
 };
 
 extern "C" [[gnu::naked]]
