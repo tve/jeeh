@@ -17,7 +17,7 @@ private:
         lastTag = in.eTag;
         lastVal = in.eVal;
 
-        TEST_ASSERT_EQUAL(this, current);
+        TEST_ASSERT_EQUAL(wId, level);
 
         out.eVal *= 2; // change the reply value
         return out;

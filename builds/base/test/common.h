@@ -48,59 +48,48 @@ struct Event {
 };
 
 struct Worker {
+    constexpr static auto MAX_WORKERS = 20, MAX_EVENTS = 100;
+
+    static inline uint8_t level; // index of currently active worker
+
     Worker () {}
     ~Worker () { workers[wId] = nullptr; }
 
     uint8_t init () {
         if (wId == 0) {
-            wId =++wSeq;
-            assert(wId < sizeof workers / sizeof *workers);
+            wId = MAX_WORKERS; // assign id's in decreasing order
+            while (workers[--wId] != nullptr)
+                assert(wId > 0);
             workers[wId] = this;
         }
         return wId;
     }
 
     static void send (Event evt, Event done ={}, void* arg =nullptr) {
-        assert(evt.eDst != 0);
-        dispatch(evt, done, arg);
+        at(evt.eDst).dispatch(evt, done, arg);
     }
 
     static void reply (Event evt) {
         if (evt.eDst != 0)
-            dispatch(evt);
-    }
-
-    static void resetAll () { // to reset between test cases
-        for (auto& e : workers)
-            if (e != nullptr) {
-                e->wId = e->wHead = 0;
-                e = nullptr;
-            }
-        wSeq = 0;
-    }
-
-    static uint8_t level () {
-        return current == nullptr ? 0 : current->wId;
+            at(evt.eDst).dispatch(evt);
     }
 
     static Worker& at (uint8_t id) {
-        assert(0 < id && id < sizeof workers / sizeof *workers);
-        assert(workers[id] != nullptr);
+        assert(id < MAX_WORKERS && workers[id] != nullptr);
         return *workers[id];
     }
 
     static void irqPendSV () {
         assert(irqState() == 0); // PendSV magic ...
 
-        for (auto e : workers)
-            if (e != nullptr)
+        for (auto i = MAX_WORKERS; --i > 0; )
+            if (auto e = workers[i]; e != nullptr)
                 while (e->wHead != 0)
-                    dispatch(e->pull());
+                    e->dispatch(e->pull());
     }
 
 protected:
-    uint8_t wId =0;
-    static inline Worker* current;
+    uint8_t wId =0; // index (and priority) of this worker
 
     virtual Event process (Event in, Event out, void* arg) =0;
 
@@ -110,11 +99,11 @@ protected:
     }
 
 private:
-    uint8_t wHead =0;
+    uint8_t wHead =0; // chain of pending events
+    uint8_t wPrev =0; // previous suspended worker
 
-    static inline uint8_t wSeq;
-    static inline Worker* workers [20];
-    static inline Event wPool [100];
+    static inline Worker* workers [MAX_WORKERS];
+    static inline Event wPending [MAX_EVENTS];
     static inline uint8_t wFree;
 
     static uint32_t irqState () {
@@ -123,26 +112,26 @@ private:
         return ipsr;
     }
 
-    static void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
+    void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
         // TODO must postpone call when sending to a lower-priority worker!
-        auto prev = current;
-        current = &at(evt.eDst);
-        reply(current->process(evt, done, arg));
-        current = prev;
+        wPrev = level;
+        level = wId;
+        reply(process(evt, done, arg));
+        level = wPrev;
     }
 
     void pend (Event e) {
-        assert(wFree < 100); // XXX
+        assert(wFree < MAX_EVENTS);
         auto next = ++wFree;
         // TODO pull from a free list
-        wPool[next] = Event (wHead, e.eTag, e.eVal);
+        wPending[next] = Event (wHead, e.eTag, e.eVal);
         wHead = next;
         SCB[0x04](28) = 1; // ICSR PENDSVSET
     }
 
     Event pull () {
         assert(wHead != 0);
-        auto h = wPool[wHead];
+        auto h = wPending[wHead];
         wHead = h.eDst;
         h.eDst = wId;
         // TODO return slot to the free list

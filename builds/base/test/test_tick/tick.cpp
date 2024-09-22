@@ -3,16 +3,15 @@
 #include "../common.h"
 
 void setUp () {}
-void tearDown () { Worker::resetAll(); }
+void tearDown () {}
 
 template< uint8_t MAX >
 struct Ticker : Worker {
     enum TAG { TICK, RATE, DELAY };
 
     uint8_t init () {
-        Worker::init();
         setRate(100);
-        return wId;
+        return Worker::init();
     }
 
     void irqSysTick () {
@@ -24,9 +23,8 @@ struct Ticker : Worker {
     uint32_t millis () const {
         // the result has millisecond resolution, even when rate > 1 ms
         while (true) // spinloop, in case ticks changes midway
-            if (uint32_t t = ticks, c = STK[0x8]; t == ticks) {
-                return t + tRate - (c*8)/(SystemCoreClock/1000);
-            }
+            if (uint32_t t = ticks, c = STK[0x8]; t == ticks)
+                return t + ((STK[0x4]-c) * 8) / (SystemCoreClock/1000);
     }
 
     void delay (uint16_t ms, Event done) const {
@@ -36,8 +34,12 @@ struct Ticker : Worker {
 
 private:
     volatile uint32_t ticks =0;
-    Event timers [MAX];
-    uint8_t links [MAX], tHead =0, tFree =0, tLast =0, tRate =0;
+    Event timers [MAX];  // timer pool
+    uint8_t links [MAX]; // timer chain
+    uint8_t tHead =0;    // first timer in chain
+    uint8_t tFree =0;    // first unused slot
+    uint8_t tLast =0;    // last slot used so far
+    uint8_t tRate =0;    // current SysTick rate in ms
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
@@ -66,10 +68,11 @@ private:
     }
 
     void setRate (uint8_t ms) {
+        ticks = millis(); // don't lose the current partial count
         tRate = ms;
         STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
         STK[0x8] = 0;
-        STK[0x0] = 0b011; // enable, clk/8 mode
+        STK[0x0] = tRate > 0 ? 0b011 : 0; // enable, clk/8 mode
     }
 
     void add (uint16_t ms, Event out) {
@@ -110,7 +113,7 @@ void testTicker () {
     auto tickerId = ticker.init();
     TEST_ASSERT_GREATER_THAN(0, tickerId);
 
-    // 250x 1 ms busy is 250 ms elapsed, wven with a ticker rate of 100 ms
+    // 250x 1 ms busy is 250 ms elapsed, even with a ticker rate of 100 ms
     for (auto i = 1; i <= 250; ++i) {
         cycles::msBusy(1);
         TEST_ASSERT_INT_WITHIN(1, i, ticker.millis());
@@ -165,8 +168,8 @@ struct SequentialDelays : Worker {
 
 void testSequentialDelays () {
     SequentialDelays worker;
-    auto swId = worker.init();
     auto tickerId = ticker.init();
+    auto swId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, swId);
     TEST_ASSERT_GREATER_THAN(swId, tickerId);
@@ -219,8 +222,8 @@ struct ParallelDelays : Worker {
 
 void testParallelDelays () {
     ParallelDelays worker;
-    auto pwId = worker.init();
     auto tickerId = ticker.init();
+    auto pwId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, pwId);
     TEST_ASSERT_GREATER_THAN(pwId, tickerId);
