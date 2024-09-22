@@ -24,7 +24,7 @@ public:
     uint16_t lastVal =0;
 };
 
-void simpleWorker () {
+void testSimpleWorker () {
     SimpleWorker w;
 
     auto wid = w.init();
@@ -70,5 +70,5 @@ void simpleWorker () {
 }
 
 void allTests () {
-    RUN_TEST(simpleWorker);
+    RUN_TEST(testSimpleWorker);
 }

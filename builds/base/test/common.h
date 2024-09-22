@@ -55,7 +55,7 @@ struct Worker {
     ~Worker () { workers[wId] = nullptr; }
 
     uint8_t init () {
-        if (workers[wId] == nullptr) {
+        if (wId == 0) {
             wId =++wSeq;
             assert(wId < sizeof workers / sizeof *workers);
             workers[wId] = this;
@@ -63,29 +63,37 @@ struct Worker {
         return wId;
     }
 
-    static void send (Event evt, Event reply ={}, void* arg =nullptr) {
+    static void send (Event evt, Event done ={}, void* arg =nullptr) {
         assert(evt.eDst != 0);
-
-        if (irqState() != 0) { // postpone when called from an IRQ
-            assert(reply.eDst == 0 && arg == nullptr); // only replies allowed
-            at(evt.eDst).pend(evt);
-        } else
-            dispatch(evt, reply, arg);
+        dispatch(evt, done, arg);
     }
 
-    static void dispatch (Event evt, Event reply ={}, void* arg =nullptr) {
+    static void reply (Event evt) {
+        if (evt.eDst != 0)
+            dispatch(evt);
+    }
+
+    static void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
+        assert(irqState() == 0);
+
         // TODO must postpone call when sending to a lower-priority worker!
         auto prev = current;
         current = &at(evt.eDst);
-        reply = current->process(evt, reply, arg);
+        reply(current->process(evt, done, arg));
         current = prev;
-        if (reply.eDst != 0)
-            dispatch(reply); // won't recurse again (can't reply to a reply)
     }
 
-    static void clearAll () {
-        memset(workers, 0, sizeof workers);
+    static void resetAll () { // to reset between test cases
+        for (auto& e : workers)
+            if (e != nullptr) {
+                e->wId = e->head = 0;
+                e = nullptr;
+            }
         wSeq = 0;
+    }
+
+    static uint8_t level () {
+        return current == nullptr ? 0 : current->wId;
     }
 
     static Worker& at (uint8_t id) {
@@ -96,14 +104,27 @@ struct Worker {
 
     static void irqPendSV () {
         for (auto e : workers)
-            if (e != nullptr && e->head != 0)
-                dispatch(e->pull());
+            if (e != nullptr)
+                while (e->head != 0)
+                    dispatch(e->pull());
     }
 
     static inline Worker* current;
 
 protected:
     virtual Event process (Event in, Event out, void* arg) =0;
+
+    void trigger (uint8_t tag, uint16_t val =0) {
+        assert(irqState() != 0); // can only be called from an IRQ handler
+        pend({ wId, tag, val });
+    }
+
+private:
+    static uint32_t irqState () {
+        uint32_t ipsr;
+        asm ("mrs %0, ipsr" : "=r" (ipsr));
+        return ipsr;
+    }
 
     void pend (Event e) {
         assert(free < 100); // XXX
@@ -112,13 +133,6 @@ protected:
         pool[next] = Event (head, e.eTag, e.eVal);
         head = next;
         SCB[0x04](28) = 1; // ICSR PENDSVSET
-    }
-
-private:
-    static uint32_t irqState () {
-        uint32_t ipsr;
-        asm ("mrs %0, ipsr" : "=r" (ipsr));
-        return ipsr;
     }
 
     Event pull () {
@@ -150,10 +164,9 @@ void PendSV_Handler () {
         " ldr r0,=0xFFFFFFF9 \n"
         " mov lr,r0 \n"
         " bx lr \n"
-        // target of addw above:
-        " bl %0 \n"
+        " bl %0 \n" // target of addw above
         " svc 0 \n"
-        " b . \n"
+        " b . \n"   // never reached
     :: "i" (Worker::irqPendSV));
 }
 

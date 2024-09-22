@@ -3,7 +3,7 @@
 #include "../common.h"
 
 void setUp () {}
-void tearDown () { Worker::clearAll(); }
+void tearDown () { Worker::resetAll(); }
 
 template< uint8_t MAX >
 class Ticker : Worker {
@@ -69,11 +69,10 @@ public:
         return wId;
     }
 
-    void interrupt () {
+    void irqSysTick () {
         ticks += rate;
         if (expired())
-            //send({ wId, TICK });
-            pend({ wId, TICK });
+            trigger(TICK);
     }
 
     uint32_t millis () const {
@@ -84,20 +83,21 @@ public:
             }
     }
 
-    void delay (uint16_t ms, Event reply) const {
-        assert(reply.eDst != 0);
-        send({ wId, DELAY, ms }, reply);
+    void delay (uint16_t ms, Event done) const {
+        assert(done.eDst != 0);
+        send({ wId, DELAY, ms }, done);
     }
 };
 
 Ticker<10> ticker;
 
-IRQ_HANDLER(SysTick, ticker.interrupt)
+IRQ_HANDLER(SysTick, ticker.irqSysTick)
 
-void msTicker () {
+void testTicker () {
     auto tickerId = ticker.init();
     TEST_ASSERT_GREATER_THAN(0, tickerId);
 
+    // 250x 1 ms busy is 250 ms elapsed, wven with a ticker rate of 100 ms
     for (auto i = 1; i <= 250; ++i) {
         cycles::msBusy(1);
         TEST_ASSERT_INT_WITHIN(1, i, ticker.millis());
@@ -105,18 +105,25 @@ void msTicker () {
 
     Worker::send({ tickerId, ticker.RATE, 1 });
 
+    // the simpler case is 50x 1 ms when the ticker rate is also 1 ms
     auto start = ticker.millis();
     for (auto i = 1; i <= 50; ++i) {
         cycles::msBusy(1);
         TEST_ASSERT_INT_WITHIN(1, i, ticker.millis()-start);
     }
+
+    // check that 25 interrupts also happen in 25 ms
+    start = ticker.millis();
+    for (auto i = 1; i <= 25; ++i)
+        asm ("wfi");
+    TEST_ASSERT_INT_WITHIN(1, 25, ticker.millis()-start);
 }
 
 struct TimerWorker : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
-    volatile bool done =false;
+    bool done =false;
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
@@ -143,17 +150,18 @@ struct TimerWorker : Worker {
     }
 };
 
-void msWaiter () {
-    // TODO worker priority ordering
+TimerWorker tw;
+
+void testTimerWorker () {
+    auto twId = tw.init();
     auto tickerId = ticker.init();
-    TEST_ASSERT_GREATER_THAN(0, tickerId);
+
+    TEST_ASSERT_GREATER_THAN(0, twId);
+    TEST_ASSERT_GREATER_THAN(twId, tickerId);
 
     Worker::send({ tickerId, ticker.RATE, 1 });
 
-    TimerWorker tw;
-    auto twId = tw.init();
-    TEST_ASSERT_GREATER_THAN(0, twId);
-
+    // start 3 delays in sequence, for 5, 10, and 20 ms, respectively
     Worker::send({ twId, tw.START });
 
     int n = 0;
@@ -161,10 +169,12 @@ void msWaiter () {
         asm ("wfi");
         ++n;
     } while (!tw.done);
+
+    // since the ticker runs every 1 ms, there will have been 35 interrupts
     TEST_ASSERT_EQUAL(35, n);
 }
 
 void allTests () {
-    RUN_TEST(msTicker);
-    RUN_TEST(msWaiter);
+    RUN_TEST(testTicker);
+    RUN_TEST(testTimerWorker);
 }
