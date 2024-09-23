@@ -2,6 +2,9 @@
 
 #include "../common.h"
 
+Ticker ticker;
+IRQ_HANDLER(SysTick, ticker.irqSysTick)
+
 void setUp () {}
 void tearDown () {}
 

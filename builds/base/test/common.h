@@ -334,6 +334,3 @@ private:
                 (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
     }
 };
-
-Ticker ticker;
-IRQ_HANDLER(SysTick, ticker.irqSysTick)
