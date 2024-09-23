@@ -31,7 +31,7 @@ void testTicker () {
     TEST_ASSERT_INT_WITHIN(1, 25, ticker.millis()-start);
 }
 
-struct SequentialDelays : Worker {
+struct SequentialDelay : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
@@ -62,8 +62,8 @@ struct SequentialDelays : Worker {
     }
 };
 
-void testSequentialDelays () {
-    SequentialDelays worker;
+void testSequentialDelay () {
+    SequentialDelay worker;
     auto tkId = ticker.init();
     auto swId = worker.init();
 
@@ -85,7 +85,7 @@ void testSequentialDelays () {
     TEST_ASSERT_EQUAL(35, n);
 }
 
-struct ParallelDelays : Worker {
+struct ParallelDelay : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
@@ -101,12 +101,15 @@ struct ParallelDelays : Worker {
                 ticker.delay(15, THREE); // inserted before last
                 break;
             case ONE:
+                TEST_ASSERT_EQUAL(2, calls);
                 TEST_ASSERT_INT_WITHIN(1, 5, ticker.millis()-start);
                 break;
             case TWO:
+                TEST_ASSERT_EQUAL(4, calls);
                 TEST_ASSERT_INT_WITHIN(1, 30, ticker.millis()-start);
                 break;
             case THREE:
+                TEST_ASSERT_EQUAL(3, calls);
                 TEST_ASSERT_INT_WITHIN(1, 15, ticker.millis()-start);
                 break;
             default:
@@ -116,8 +119,8 @@ struct ParallelDelays : Worker {
     }
 };
 
-void testParallelDelays () {
-    ParallelDelays worker;
+void testParallelDelay () {
+    ParallelDelay worker;
     auto tkId = ticker.init();
     auto pwId = worker.init();
 
@@ -140,8 +143,68 @@ void testParallelDelays () {
     TEST_ASSERT_EQUAL(30, n);
 }
 
+struct CancelledDelay : Worker {
+    enum TAG { START, ONE, TWO, THREE };
+
+    uint16_t start;
+    uint8_t calls =0;
+
+    Event process (Event in, Event out, void*) override {
+        ++calls;
+        switch (in.eTag) {
+            case START:
+                start = ticker.millis();
+                ticker.delay( 5, ONE);   // first one
+                ticker.delay(30, TWO);   // appended to end
+                ticker.delay(15, THREE); // inserted before last
+                break;
+            case ONE:
+                TEST_ASSERT_EQUAL(2, calls);
+                TEST_ASSERT_INT_WITHIN(1, 5, ticker.millis()-start);
+                ticker.cancel(THREE); // cancel delay before it fires
+                break;
+            case TWO:
+                TEST_ASSERT_EQUAL(3, calls);
+                TEST_ASSERT_INT_WITHIN(1, 30, ticker.millis()-start);
+                break;
+            case THREE:
+                TEST_FAIL(); // oops, the cancellation failed
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+};
+
+void testCancelledDelay () {
+    CancelledDelay worker;
+    auto tkId = ticker.init();
+    auto cwId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, cwId);
+    TEST_ASSERT_GREATER_THAN(cwId, tkId);
+
+    Worker::send({ tkId, ticker.RATE, 1 });
+
+    // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
+    // after 5 ms, the 15 ms delay is cancelled so it won't trigger
+    Worker::send({ cwId, worker.START });
+    TEST_ASSERT_EQUAL(1, worker.calls);
+
+    int n = 0;
+    do {
+        asm ("wfi");
+        ++n;
+    } while (worker.calls < 3);
+
+    // since the ticker runs every 1 ms, there will have been 30 interrupts
+    TEST_ASSERT_EQUAL(30, n);
+}
+
 void allTests () {
     RUN_TEST(testTicker);
-    RUN_TEST(testSequentialDelays);
-    RUN_TEST(testParallelDelays);
+    RUN_TEST(testSequentialDelay);
+    RUN_TEST(testParallelDelay);
+    RUN_TEST(testCancelledDelay);
 }

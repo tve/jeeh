@@ -198,7 +198,7 @@ void SVC_Handler () {
 
 struct Ticker : Worker {
     constexpr static auto MAX_TIMERS = 20;
-    enum TAG { TICK, RATE, DELAY };
+    enum TAG { TICK, RATE, DELAY, CANCEL };
 
     uint8_t init () {
         setRate(100);
@@ -220,6 +220,10 @@ struct Ticker : Worker {
 
     void delay (uint16_t ms, uint8_t tag, uint16_t val =0) const {
         send({ wId, DELAY, ms }, { level, tag, val });
+    }
+
+    void cancel (uint16_t tag) const {
+        send({ wId, CANCEL, (uint16_t) ((level<<8) | tag) });
     }
 
 private:
@@ -251,6 +255,9 @@ private:
             case DELAY:
                 add(in.eVal, out);
                 return {};
+            case CANCEL:
+                remove(in.eVal >> 8, in.eVal);
+                break;
             default:
                 fail();
         }
@@ -287,6 +294,19 @@ private:
         // insert before the first timer past this one (or at the end)
         links[slot] = *p;
         *p = slot;
+    }
+
+    void remove (uint8_t dst, uint8_t tag) {
+        for (auto p = &tHead; *p != 0; p = &links[*p]) {
+            auto& t = timers[*p];
+            if (t.eDst == dst && t.eTag == tag) {
+                auto slot = *p;
+                *p = links[*p];
+                links[slot] = tFree;
+                tFree = slot;
+                break;
+            }
+        }
     }
 
     bool expired () const {
