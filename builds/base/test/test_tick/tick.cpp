@@ -5,113 +5,9 @@
 void setUp () {}
 void tearDown () {}
 
-template< uint8_t MAX >
-struct Ticker : Worker {
-    enum TAG { TICK, RATE, DELAY };
-
-    uint8_t init () {
-        setRate(100);
-        return Worker::init();
-    }
-
-    void irqSysTick () {
-        ticks += tRate;
-        if (expired())
-            trigger(TICK);
-    }
-
-    uint32_t millis () const {
-        // the result has millisecond resolution, even when rate > 1 ms
-        while (true) // spinloop, in case ticks changes midway
-            if (uint32_t t = ticks, c = STK[0x8]; t == ticks)
-                return t + ((STK[0x4]-c) * 8) / (SystemCoreClock/1000);
-    }
-
-    void delay (uint16_t ms, Event done) const {
-        assert(done.eDst != 0);
-        send({ wId, DELAY, ms }, done);
-    }
-
-private:
-    volatile uint32_t ticks =0;
-    Event timers [MAX];  // timer pool
-    uint8_t links [MAX]; // timer chain
-    uint8_t tHead =0;    // first timer in chain
-    uint8_t tFree =0;    // first unused timer slot
-    uint8_t tLast =0;    // last timer slot used so far
-    uint8_t tRate =0;    // current SysTick rate in ms
-
-    Event process (Event in, Event out, void*) override {
-        switch (in.eTag) {
-            case TICK:
-                while (expired()) {
-                    auto slot = tHead;
-                    tHead = links[slot];
-                    // can't return as reply, multiple timers may be expiring
-                    reply(timers[slot]);
-                    links[slot] = tFree;
-                    tFree = slot;
-                }
-                assert(out.eDst == 0);
-                break;
-            case RATE:
-                out.eVal = tRate;
-                setRate(in.eVal);
-                break;
-            case DELAY:
-                add(in.eVal, out);
-                return {};
-            default:
-                fail();
-        }
-        return out;
-    }
-
-    void setRate (uint8_t ms) {
-        ticks = millis(); // don't lose the current partial count
-        tRate = ms;
-        STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
-        STK[0x8] = 0;
-        STK[0x0] = tRate > 0 ? 0b011 : 0; // enable, clk/8 mode
-    }
-
-    void add (uint16_t ms, Event out) {
-        // find a free timer slot
-        uint8_t slot = tFree;
-        if (slot == 0) {
-            slot = ++tLast;
-            assert(slot < MAX); // fail if too many timers are active
-        } else
-            tFree = links[slot];
-
-        // save the timer event with proper deadline
-        auto t = ticks;
-        timers[slot] = out;
-        timers[slot].eVal = t + ms;
-
-        // locate the position to insert
-        auto p = &tHead;
-        while (*p != 0 && ms >= (uint16_t) (timers[*p].eVal - t))
-            p = &links[*p];
-
-        // insert before the first timer past this one (or at the end)
-        links[slot] = *p;
-        *p = slot;
-    }
-
-    bool expired () const {
-        return tHead != 0 &&
-                (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
-    }
-};
-
-Ticker<10> ticker;
-
-IRQ_HANDLER(SysTick, ticker.irqSysTick)
-
 void testTicker () {
-    auto tickerId = ticker.init();
-    TEST_ASSERT_GREATER_THAN(0, tickerId);
+    auto tkId = ticker.init();
+    TEST_ASSERT_GREATER_THAN(0, tkId);
 
     // 250x 1 ms busy is 250 ms elapsed, even with a ticker rate of 100 ms
     for (auto i = 1; i <= 250; ++i) {
@@ -119,7 +15,7 @@ void testTicker () {
         TEST_ASSERT_INT_WITHIN(1, i, ticker.millis());
     }
 
-    Worker::send({ tickerId, ticker.RATE, 1 });
+    Worker::send({ tkId, ticker.RATE, 1 });
 
     // the simpler case is 50x 1 ms when the ticker rate is also 1 ms
     auto start = ticker.millis();
@@ -168,13 +64,13 @@ struct SequentialDelays : Worker {
 
 void testSequentialDelays () {
     SequentialDelays worker;
-    auto tickerId = ticker.init();
+    auto tkId = ticker.init();
     auto swId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, swId);
-    TEST_ASSERT_GREATER_THAN(swId, tickerId);
+    TEST_ASSERT_GREATER_THAN(swId, tkId);
 
-    Worker::send({ tickerId, ticker.RATE, 1 });
+    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in sequence, for 5, 10, and 20 ms, respectively
     Worker::send({ swId, worker.START });
@@ -222,13 +118,13 @@ struct ParallelDelays : Worker {
 
 void testParallelDelays () {
     ParallelDelays worker;
-    auto tickerId = ticker.init();
+    auto tkId = ticker.init();
     auto pwId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, pwId);
-    TEST_ASSERT_GREATER_THAN(pwId, tickerId);
+    TEST_ASSERT_GREATER_THAN(pwId, tkId);
 
-    Worker::send({ tickerId, ticker.RATE, 1 });
+    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
     Worker::send({ pwId, worker.START });

@@ -5,7 +5,7 @@
 #include <jee/cycles.h>
 using namespace jeeh;
 
-// allow the use of printf and logf
+// tie printf and logf into Unity's output mechanism
 
 extern "C" int _write (int, char* ptr, int len) {
     for (auto i = 0; i < len; ++i)
@@ -181,3 +181,106 @@ void SVC_Handler () {
         " bx r1 \n"
     );
 }
+
+struct Ticker : Worker {
+    constexpr static auto MAX_TIMERS = 20;
+    enum TAG { TICK, RATE, DELAY };
+
+    uint8_t init () {
+        setRate(100);
+        return Worker::init();
+    }
+
+    void irqSysTick () {
+        ticks += tRate;
+        if (expired())
+            trigger(TICK);
+    }
+
+    uint32_t millis () const {
+        // the result has millisecond resolution, even when rate > 1 ms
+        while (true) // spinloop, in case ticks changes midway
+            if (uint32_t t = ticks, c = STK[0x8]; t == ticks)
+                return t + ((STK[0x4]-c) * 8) / (SystemCoreClock/1000);
+    }
+
+    void delay (uint16_t ms, Event done) const {
+        assert(done.eDst != 0);
+        send({ wId, DELAY, ms }, done);
+    }
+
+private:
+    volatile uint32_t ticks =0; // adjusted each time SysTick fires
+    Event timers [MAX_TIMERS];  // timer pool
+    uint8_t links [MAX_TIMERS]; // timer chain
+    uint8_t tHead =0;           // first timer in chain
+    uint8_t tFree =0;           // first unused timer slot
+    uint8_t tLast =0;           // last timer slot used so far
+    uint8_t tRate =0;           // current SysTick rate in ms
+
+    Event process (Event in, Event out, void*) override {
+        switch (in.eTag) {
+            case TICK:
+                while (expired()) {
+                    auto slot = tHead;
+                    tHead = links[slot];
+                    // can't return as reply, multiple timers may be expiring
+                    reply(timers[slot]);
+                    links[slot] = tFree;
+                    tFree = slot;
+                }
+                assert(out.eDst == 0);
+                break;
+            case RATE:
+                out.eVal = tRate;
+                setRate(in.eVal);
+                break;
+            case DELAY:
+                add(in.eVal, out);
+                return {};
+            default:
+                fail();
+        }
+        return out;
+    }
+
+    void setRate (uint8_t ms) {
+        ticks = millis(); // don't lose the current partial count
+        tRate = ms;
+        STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
+        STK[0x8] = 0;
+        STK[0x0] = tRate > 0 ? 0b011 : 0; // enable, clk/8 mode
+    }
+
+    void add (uint16_t ms, Event out) {
+        // find a free timer slot
+        uint8_t slot = tFree;
+        if (slot == 0) {
+            slot = ++tLast;
+            assert(slot < MAX_TIMERS); // fail if too many timers are active
+        } else
+            tFree = links[slot];
+
+        // save the timer event with proper deadline
+        auto t = ticks;
+        timers[slot] = out;
+        timers[slot].eVal = t + ms;
+
+        // locate the position to insert
+        auto p = &tHead;
+        while (*p != 0 && ms >= (uint16_t) (timers[*p].eVal - t))
+            p = &links[*p];
+
+        // insert before the first timer past this one (or at the end)
+        links[slot] = *p;
+        *p = slot;
+    }
+
+    bool expired () const {
+        return tHead != 0 &&
+                (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
+    }
+};
+
+Ticker ticker;
+IRQ_HANDLER(SysTick, ticker.irqSysTick)
