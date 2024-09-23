@@ -218,9 +218,8 @@ struct Ticker : Worker {
                 return t + ((STK[0x4]-c) * 8) / (SystemCoreClock/1000);
     }
 
-    void delay (uint16_t ms, Event done) const {
-        assert(done.eDst != 0);
-        send({ wId, DELAY, ms }, done);
+    void delay (uint16_t ms, uint8_t tag, uint16_t val =0) const {
+        send({ wId, DELAY, ms }, { level, tag, val });
     }
 
 private:

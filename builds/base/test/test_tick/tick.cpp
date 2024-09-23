@@ -41,15 +41,15 @@ struct SequentialDelays : Worker {
         switch (in.eTag) {
             case START:
                 start = ticker.millis();
-                ticker.delay(5, { wId, ONE });
+                ticker.delay(5, ONE);
                 break;
             case ONE:
                 TEST_ASSERT_INT_WITHIN(1, 5, ticker.millis()-start);
-                ticker.delay(10, { wId, TWO });
+                ticker.delay(10, TWO);
                 break;
             case TWO:
                 TEST_ASSERT_INT_WITHIN(1, 5+10, ticker.millis()-start);
-                ticker.delay(20, { wId, THREE });
+                ticker.delay(20, THREE);
                 break;
             case THREE:
                 TEST_ASSERT_INT_WITHIN(1, 5+10+20, ticker.millis()-start);
@@ -96,9 +96,9 @@ struct ParallelDelays : Worker {
         switch (in.eTag) {
             case START:
                 start = ticker.millis();
-                ticker.delay( 5, { wId, ONE });   // first one
-                ticker.delay(30, { wId, TWO });   // appended to end
-                ticker.delay(15, { wId, THREE }); // inserted before last
+                ticker.delay( 5, ONE);   // first one
+                ticker.delay(30, TWO);   // appended to end
+                ticker.delay(15, THREE); // inserted before last
                 break;
             case ONE:
                 TEST_ASSERT_INT_WITHIN(1, 5, ticker.millis()-start);
