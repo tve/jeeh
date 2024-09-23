@@ -47,8 +47,48 @@ struct Event {
         : eDst (dst), eTag (tag), eVal (val) {}
 };
 
-struct Worker {
-    constexpr static auto MAX_WORKERS = 20, MAX_EVENTS = 100;
+struct EventList {
+    constexpr static auto MAX_EVENTS = 100;
+
+    bool hasEvents () {
+        return head != 0;
+    }
+
+    void save (Event evt) {
+        // find a free event slot
+        uint8_t slot = free;
+        if (slot == 0) {
+            slot = ++last;
+            assert(slot < MAX_EVENTS); // fail if too many events are pending
+        } else
+            free = wPending[slot].eVal;
+
+        // insert the event in this worker's chain
+        wPending[slot] = Event (head, evt.eTag, evt.eVal);
+        head = slot;
+    }
+
+    Event pull (uint8_t dst) {
+        assert(hasEvents());
+        auto h = head;
+        auto evt = wPending[h];
+        head = evt.eDst;
+        wPending[h].eVal = free;
+        free = h;
+        evt.eDst = dst; // clobbered while queued
+        return evt;
+    }
+
+private:
+    uint8_t head =0; // chain of pending events
+
+    static inline Event wPending [MAX_EVENTS];
+    static inline uint8_t free; // first unused event slot
+    static inline uint8_t last; // last event slot used so far
+};
+
+struct Worker : private EventList {
+    constexpr static auto MAX_WORKERS = 20;
 
     static inline uint8_t level; // index of currently active worker
 
@@ -83,9 +123,8 @@ struct Worker {
         assert(irqState() == 0); // PendSV magic ...
 
         for (auto i = MAX_WORKERS; --i > 0; )
-            if (auto e = workers[i]; e != nullptr)
-                while (e->wHead != 0)
-                    e->dispatch(e->pull());
+            if (auto w = workers[i]; w != nullptr)
+                w->dispatchAll();
     }
 
 protected:
@@ -95,22 +134,25 @@ protected:
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // can only be called from an IRQ handler
-        pend({ wId, tag, val });
+        save({ wId, tag, val });
+        if (wId > level)
+            SCB[0x04](28) = 1; // ICSR PENDSVSET
     }
 
 private:
-    uint8_t wHead =0; // chain of pending events
     uint8_t wPrev =0; // previous suspended worker
 
     static inline Worker* workers [MAX_WORKERS];
-    static inline Event wPending [MAX_EVENTS];
-    static inline uint8_t wFree; // first unused event slot
-    static inline uint8_t wLast; // last event slot used so far
 
     static uint32_t irqState () {
         uint32_t ipsr;
         asm ("mrs %0, ipsr" : "=r" (ipsr));
         return ipsr;
+    }
+
+    void dispatchAll () {
+        while (hasEvents())
+            dispatch(pull(wId));
     }
 
     void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
@@ -119,34 +161,6 @@ private:
         level = wId;
         reply(process(evt, done, arg));
         level = wPrev;
-    }
-
-    void pend (Event e) {
-        // find a free event slot
-        uint8_t slot = wFree;
-        if (slot == 0) {
-            slot = ++wLast;
-            assert(slot < MAX_EVENTS); // fail if too many events are pending
-        } else
-            wFree = wPending[slot].eVal;
-
-        // save the event in this worker's chain
-        wPending[slot] = Event (wHead, e.eTag, e.eVal);
-        wHead = slot;
-
-        if (wId > level)
-            SCB[0x04](28) = 1; // ICSR PENDSVSET
-    }
-
-    Event pull () {
-        auto h = wHead;
-        assert(h != 0);
-        auto evt = wPending[h];
-        wHead = evt.eDst;
-        wPending[h].eVal = wFree;
-        wFree = h;
-        evt.eDst = wId;
-        return evt;
     }
 };
 
