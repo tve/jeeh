@@ -65,15 +65,15 @@ struct SequentialDelay : Worker {
 void testSequentialDelay () {
     SequentialDelay worker;
     auto tkId = ticker.init();
-    auto swId = worker.init();
+    auto sdId = worker.init();
 
-    TEST_ASSERT_GREATER_THAN(0, swId);
-    TEST_ASSERT_GREATER_THAN(swId, tkId);
+    TEST_ASSERT_GREATER_THAN(0, sdId);
+    TEST_ASSERT_GREATER_THAN(sdId, tkId);
 
     Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in sequence, for 5, 10, and 20 ms, respectively
-    Worker::send({ swId, worker.START });
+    Worker::send({ sdId, worker.START });
 
     int n = 0;
     do {
@@ -122,15 +122,15 @@ struct ParallelDelay : Worker {
 void testParallelDelay () {
     ParallelDelay worker;
     auto tkId = ticker.init();
-    auto pwId = worker.init();
+    auto pdId = worker.init();
 
-    TEST_ASSERT_GREATER_THAN(0, pwId);
-    TEST_ASSERT_GREATER_THAN(pwId, tkId);
+    TEST_ASSERT_GREATER_THAN(0, pdId);
+    TEST_ASSERT_GREATER_THAN(pdId, tkId);
 
     Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
-    Worker::send({ pwId, worker.START });
+    Worker::send({ pdId, worker.START });
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
@@ -180,16 +180,16 @@ struct CancelledDelay : Worker {
 void testCancelledDelay () {
     CancelledDelay worker;
     auto tkId = ticker.init();
-    auto cwId = worker.init();
+    auto cdId = worker.init();
 
-    TEST_ASSERT_GREATER_THAN(0, cwId);
-    TEST_ASSERT_GREATER_THAN(cwId, tkId);
+    TEST_ASSERT_GREATER_THAN(0, cdId);
+    TEST_ASSERT_GREATER_THAN(cdId, tkId);
 
     Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
     // after 5 ms, the 15 ms delay is cancelled so it won't trigger
-    Worker::send({ cwId, worker.START });
+    Worker::send({ cdId, worker.START });
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
@@ -243,17 +243,17 @@ struct PeriodicDelay : Worker {
 void testPeriodicDelay () {
     PeriodicDelay worker;
     auto tkId = ticker.init();
-    auto cwId = worker.init();
+    auto pdId = worker.init();
 
-    TEST_ASSERT_GREATER_THAN(0, cwId);
-    TEST_ASSERT_GREATER_THAN(cwId, tkId);
+    TEST_ASSERT_GREATER_THAN(0, pdId);
+    TEST_ASSERT_GREATER_THAN(pdId, tkId);
 
     Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, one of them is periodic
     // another delay cancels the periodic one
     // and the last one makes sure the cancellation worked
-    Worker::send({ cwId, worker.START });
+    Worker::send({ pdId, worker.START });
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
