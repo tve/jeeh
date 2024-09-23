@@ -104,7 +104,8 @@ private:
 
     static inline Worker* workers [MAX_WORKERS];
     static inline Event wPending [MAX_EVENTS];
-    static inline uint8_t wFree;
+    static inline uint8_t wFree; // first unused event slot
+    static inline uint8_t wLast; // last event slot used so far
 
     static uint32_t irqState () {
         uint32_t ipsr;
@@ -121,21 +122,31 @@ private:
     }
 
     void pend (Event e) {
-        assert(wFree < MAX_EVENTS);
-        auto next = ++wFree;
-        // TODO pull from a free list
-        wPending[next] = Event (wHead, e.eTag, e.eVal);
-        wHead = next;
-        SCB[0x04](28) = 1; // ICSR PENDSVSET
+        // find a free event slot
+        uint8_t slot = wFree;
+        if (slot == 0) {
+            slot = ++wLast;
+            assert(slot < MAX_EVENTS); // fail if too many events are pending
+        } else
+            wFree = wPending[slot].eVal;
+
+        // save the event in this worker's chain
+        wPending[slot] = Event (wHead, e.eTag, e.eVal);
+        wHead = slot;
+
+        if (wId > level)
+            SCB[0x04](28) = 1; // ICSR PENDSVSET
     }
 
     Event pull () {
-        assert(wHead != 0);
-        auto h = wPending[wHead];
-        wHead = h.eDst;
-        h.eDst = wId;
-        // TODO return slot to the free list
-        return h;
+        auto h = wHead;
+        assert(h != 0);
+        auto evt = wPending[h];
+        wHead = evt.eDst;
+        wPending[h].eVal = wFree;
+        wFree = h;
+        evt.eDst = wId;
+        return evt;
     }
 };
 

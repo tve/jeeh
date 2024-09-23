@@ -37,8 +37,8 @@ private:
     Event timers [MAX];  // timer pool
     uint8_t links [MAX]; // timer chain
     uint8_t tHead =0;    // first timer in chain
-    uint8_t tFree =0;    // first unused slot
-    uint8_t tLast =0;    // last slot used so far
+    uint8_t tFree =0;    // first unused timer slot
+    uint8_t tLast =0;    // last timer slot used so far
     uint8_t tRate =0;    // current SysTick rate in ms
 
     Event process (Event in, Event out, void*) override {
