@@ -250,8 +250,9 @@ void testPeriodicDelay () {
 
     Worker::send({ tkId, ticker.RATE, 1 });
 
-    // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
-    // after 5 ms, the 15 ms delay is cancelled so it won't trigger
+    // start 3 delays in parallel, one of them is periodic
+    // another delay cancels the periodic one
+    // and the last one makes sure the cancellation worked
     Worker::send({ cwId, worker.START });
     TEST_ASSERT_EQUAL(1, worker.calls);
 
