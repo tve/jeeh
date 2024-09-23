@@ -106,15 +106,15 @@ struct Worker : private EventList {
     }
 
     static void send (Event evt, Event done ={}, void* arg =nullptr) {
-        at(evt.eDst).dispatch(evt, done, arg);
+        byId(evt.eDst).dispatch(evt, done, arg);
     }
 
     static void reply (Event evt) {
         if (evt.eDst != 0)
-            at(evt.eDst).dispatch(evt);
+            byId(evt.eDst).dispatch(evt);
     }
 
-    static Worker& at (uint8_t id) {
+    static Worker& byId (uint8_t id) {
         assert(id < MAX_WORKERS && workers[id] != nullptr);
         return *workers[id];
     }

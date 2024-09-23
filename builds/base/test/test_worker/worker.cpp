@@ -27,40 +27,40 @@ private:
 void testSimpleWorker () {
     SimpleWorker w1;
 
-    auto wid = w1.init();
-    TEST_ASSERT_GREATER_THAN(0, wid);
-    TEST_ASSERT_EQUAL(&w1, &Worker::at(wid));
+    auto id1 = w1.init();
+    TEST_ASSERT_GREATER_THAN(0, id1);
+    TEST_ASSERT_EQUAL(&w1, &Worker::byId(id1));
 
     TEST_ASSERT_EQUAL(0, w1.calls);
     TEST_ASSERT_EQUAL(0, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send ({ wid, 11 });
+    Worker::send ({ id1, 11 });
     TEST_ASSERT_EQUAL(1, w1.calls);
     TEST_ASSERT_EQUAL(11, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send ({ wid, 22, 1111 });
+    Worker::send ({ id1, 22, 1111 });
     TEST_ASSERT_EQUAL(2, w1.calls);
     TEST_ASSERT_EQUAL(22, w1.lastTag);
     TEST_ASSERT_EQUAL(1111, w1.lastVal); // no change in incoming value
 
     // request a reply, which also gets sent to w1 in this case
-    Worker::send ({ wid, 33, 2222 }, { wid, 44, 3333 });
+    Worker::send ({ id1, 33, 2222 }, { id1, 44, 3333 });
     TEST_ASSERT_EQUAL(4, w1.calls);
     TEST_ASSERT_EQUAL(44, w1.lastTag);
     TEST_ASSERT_EQUAL(6666, w1.lastVal); // reply value was doubled
 
     SimpleWorker w2;
 
-    auto wid2 = w2.init();
-    TEST_ASSERT_GREATER_THAN(0, wid2);
-    TEST_ASSERT_EQUAL(&w2, &Worker::at(wid2));
+    auto id2 = w2.init();
+    TEST_ASSERT_GREATER_THAN(0, id2);
+    TEST_ASSERT_EQUAL(&w2, &Worker::byId(id2));
 
-    TEST_ASSERT_NOT_EQUAL(wid, wid2);
+    TEST_ASSERT_NOT_EQUAL(id1, id2);
 
     // request a reply, which now gets sent from w1 to w2
-    Worker::send ({ wid, 55, 321 }, { wid2, 66, 123 });
+    Worker::send ({ id1, 55, 321 }, { id2, 66, 123 });
     TEST_ASSERT_EQUAL(5, w1.calls);
     TEST_ASSERT_EQUAL(55, w1.lastTag);
     TEST_ASSERT_EQUAL(321, w1.lastVal);
