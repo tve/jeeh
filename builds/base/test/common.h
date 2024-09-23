@@ -198,7 +198,7 @@ void SVC_Handler () {
 
 struct Ticker : Worker {
     constexpr static auto MAX_TIMERS = 20;
-    enum TAG { TICK, RATE, DELAY, CANCEL };
+    enum TAG { TICK, RATE, DELAY, PERIOD, CANCEL };
 
     uint8_t init () {
         setRate(100);
@@ -222,30 +222,30 @@ struct Ticker : Worker {
         send({ wId, DELAY, ms }, { level, tag, val });
     }
 
+    void periodic (uint16_t ms, uint8_t tag, uint16_t val =0) const {
+        send({ wId, PERIOD, ms }, { level, tag, val });
+    }
+
     void cancel (uint16_t tag) const {
         send({ wId, CANCEL, (uint16_t) ((level<<8) | tag) });
     }
 
 private:
-    volatile uint32_t ticks =0; // adjusted each time SysTick fires
-    Event timers [MAX_TIMERS];  // timer pool
-    uint8_t links [MAX_TIMERS]; // timer chain
-    uint8_t tHead =0;           // first timer in chain
-    uint8_t tFree =0;           // first unused timer slot
-    uint8_t tLast =0;           // last timer slot used so far
-    uint8_t tRate =0;           // current SysTick rate in ms
+    volatile uint32_t ticks =0;   // adjusted each time SysTick fires
+    Event timers [MAX_TIMERS];    // timer pool
+    uint16_t period [MAX_TIMERS]; // non-zero if repeating
+    uint8_t links [MAX_TIMERS];   // timer chain
+    uint8_t tHead =0;             // first timer in chain
+    uint8_t tFree =0;             // first unused timer slot
+    uint8_t tLast =0;             // last timer slot used so far
+    uint8_t tRate =0;             // current SysTick rate in ms
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
             case TICK:
-                while (expired()) {
-                    auto slot = tHead;
-                    tHead = links[slot];
-                    // can't return as reply, multiple timers may be expiring
-                    reply(timers[slot]);
-                    links[slot] = tFree;
-                    tFree = slot;
-                }
+                while (expired())
+                    timeout();
+                // can't return as reply, multiple timers may have expired
                 assert(out.eDst == 0);
                 break;
             case RATE:
@@ -253,7 +253,8 @@ private:
                 setRate(in.eVal);
                 break;
             case DELAY:
-                add(in.eVal, out);
+            case PERIOD:
+                add(in.eVal, out, in.eTag == PERIOD);
                 return {};
             case CANCEL:
                 remove(in.eVal >> 8, in.eVal);
@@ -272,7 +273,7 @@ private:
         STK[0x0] = tRate > 0 ? 0b011 : 0; // enable, clk/8 mode
     }
 
-    void add (uint16_t ms, Event out) {
+    void add (uint16_t ms, Event out, bool repeat) {
         // find a free timer slot
         uint8_t slot = tFree;
         if (slot == 0) {
@@ -285,6 +286,7 @@ private:
         auto t = ticks;
         timers[slot] = out;
         timers[slot].eVal = t + ms;
+        period[slot] = repeat ? ms : 0;
 
         // locate the position to insert
         auto p = &tHead;
@@ -294,6 +296,24 @@ private:
         // insert before the first timer past this one (or at the end)
         links[slot] = *p;
         *p = slot;
+    }
+
+    void timeout () {
+        auto slot = tHead;
+        tHead = links[slot];
+
+        auto evt = timers[slot];
+        reply(evt);
+
+        auto ms = period[slot];
+        links[slot] = tFree;
+        tFree = slot;
+        if (ms == 0)
+            return;
+
+        ms += ticks - evt.eVal; // correct for missed ticks
+        assert(ms <= 60'000);
+        add(ms, evt, true); // reschedule
     }
 
     void remove (uint8_t dst, uint8_t tag) {
