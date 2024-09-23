@@ -29,7 +29,6 @@ void testSimpleWorker () {
 
     auto id1 = w1.init();
     TEST_ASSERT_GREATER_THAN(0, id1);
-    TEST_ASSERT_EQUAL(&w1, &Worker::byId(id1));
 
     TEST_ASSERT_EQUAL(0, w1.calls);
     TEST_ASSERT_EQUAL(0, w1.lastTag);
@@ -55,7 +54,6 @@ void testSimpleWorker () {
 
     auto id2 = w2.init();
     TEST_ASSERT_GREATER_THAN(0, id2);
-    TEST_ASSERT_EQUAL(&w2, &Worker::byId(id2));
 
     TEST_ASSERT_NOT_EQUAL(id1, id2);
 

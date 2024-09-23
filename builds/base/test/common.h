@@ -50,8 +50,8 @@ struct Event {
 struct EventList {
     constexpr static auto MAX_EVENTS = 100;
 
-    bool hasEvents () {
-        return head != 0;
+    bool isEmpty () const {
+        return head == 0;
     }
 
     void save (Event evt) {
@@ -69,7 +69,7 @@ struct EventList {
     }
 
     Event pull (uint8_t dst) {
-        assert(hasEvents());
+        assert(!isEmpty());
         auto h = head;
         auto evt = wPending[h];
         head = evt.eDst;
@@ -87,7 +87,7 @@ private:
     static inline uint8_t last; // last event slot used so far
 };
 
-struct Worker : private EventList {
+struct Worker {
     constexpr static auto MAX_WORKERS = 20;
 
     static inline uint8_t level; // index of currently active worker
@@ -114,6 +114,7 @@ struct Worker : private EventList {
             byId(evt.eDst).dispatch(evt);
     }
 
+    // FIXME make private, but moving this runs into a hard fault (?!)
     static Worker& byId (uint8_t id) {
         assert(id < MAX_WORKERS && workers[id] != nullptr);
         return *workers[id];
@@ -134,12 +135,13 @@ protected:
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // can only be called from an IRQ handler
-        save({ wId, tag, val });
+        wPend.save({ wId, tag, val });
         if (wId > level)
             SCB[0x04](28) = 1; // ICSR PENDSVSET
     }
 
 private:
+    EventList wPend;  // pending events
     uint8_t wPrev =0; // previous suspended worker
 
     static inline Worker* workers [MAX_WORKERS];
@@ -147,12 +149,12 @@ private:
     static uint32_t irqState () {
         uint32_t ipsr;
         asm ("mrs %0, ipsr" : "=r" (ipsr));
-        return ipsr;
+        return ipsr; // current IRQ, or zero if none
     }
 
     void dispatchAll () {
-        while (hasEvents())
-            dispatch(pull(wId));
+        while (!wPend.isEmpty())
+            dispatch(wPend.pull(wId));
     }
 
     void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
