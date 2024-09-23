@@ -261,7 +261,7 @@ void testPeriodicDelay () {
         asm ("wfi");
         ++n;
     } while (!worker.done);
-    TEST_ASSERT_EQUAL(6, worker.calls); // start + 7, 15, 21, 25, 30 ms
+    TEST_ASSERT_EQUAL(6, worker.calls); // start + 7, 14, 21, 25, 30 ms
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
