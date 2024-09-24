@@ -37,7 +37,7 @@ int main () {
 
 // End of boilerplate, below is for temporary code, to be moved once ready.
 
-// this needs "-DMYSYSTICK" to disable JeeH's default handlers
+// this needs "-DWORKERS" to disable JeeH's default handlers
 #define IRQ_HANDLER(name, func) \
     extern "C" void name##_Handler () { func(); }
 

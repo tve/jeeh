@@ -195,7 +195,7 @@ Ticker ticker;
 
 } // inline namespace
 
-#if ! MYSYSTICK
+#if ! WORKERS
 extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
 #endif
 
