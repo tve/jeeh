@@ -174,7 +174,7 @@ DCF77 app;
 #define IRQ_HANDLER(name, func) \
     extern "C" void name##_Handler () { func(); }
 
-// this needs "-DMYSYSTICK" to disable JeeH's default handlers
+// this needs "-DWORKERS" to disable JeeH's default handlers
 IRQ_HANDLER(SysTick, app.interrupt)
 IRQ_HANDLER(PendSV, Worker::dispatch)
 

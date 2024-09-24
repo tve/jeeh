@@ -95,6 +95,31 @@ void jeeh::logf (char const* fmt ...) {
     fail();
 }
 
+//------------------------------------------------------------------- HardFault
+
+extern "C" [[gnu::naked]]
+void HardFault_Handler () {
+    asm volatile (
+#if STM32G0 | STM32L0
+        " mov   r0,lr  \n"
+        " mov   r1,#4  \n"
+        " tst   r0,r1  \n"
+        " bne   1f     \n"
+        " mrs   r0,msp \n"
+        " b     2f     \n"
+        "1:            \n"
+        " mrs   r0,psp \n"
+        "2:            \n"
+#else
+        " tst   lr,#4  \n"
+        " ite   eq     \n"
+        " mrseq r0,msp \n"
+        " mrsne r0,psp \n"
+#endif
+        " bx    %0     \n"
+    :: "r" (hardFaultHandler));
+}
+
 //--------------------------------------------------------------------- logDump
 
 void jeeh::logDump (void const* p, int n, char const* msg) {
@@ -133,6 +158,7 @@ void jeeh::logDump (void const* p, int n, char const* msg) {
 }
 
 //----------------------------------------------------------------------- Chain
+#if ! WORKERS
 
 bool Chain::insert (Message& msg) {
     assert(!msg.inUse());
@@ -322,7 +348,6 @@ inline namespace {
     Device* devices [Device::LAST-Device::BASE+1];
     uint8_t interrupts [(uint8_t) Irq::limit];
 
-#if ! WORKERS
     void* processTriggers () {
         assert(irqState() == 0); // must be in PendSV
         auto p = __atomic_exchange_4(&pending, 0, __ATOMIC_RELAXED);
@@ -343,7 +368,6 @@ inline namespace {
         stacks.newSp = context().sp;
         return &stacks;
     }
-#endif
 
 } // inline namespace
 
@@ -547,32 +571,6 @@ void sys::quit (intptr_t ret) {
     svc((int) f, (int) &th);
 }
 
-//------------------------------------------------------------------- HardFault
-
-extern "C" [[gnu::naked]]
-void HardFault_Handler () {
-    asm volatile (
-#if STM32G0 | STM32L0
-        " mov   r0,lr  \n"
-        " mov   r1,#4  \n"
-        " tst   r0,r1  \n"
-        " bne   1f     \n"
-        " mrs   r0,msp \n"
-        " b     2f     \n"
-        "1:            \n"
-        " mrs   r0,psp \n"
-        "2:            \n"
-#else
-        " tst   lr,#4  \n"
-        " ite   eq     \n"
-        " mrseq r0,msp \n"
-        " mrsne r0,psp \n"
-#endif
-        " bx    %0     \n"
-    :: "r" (hardFaultHandler));
-}
-
-#if ! WORKERS
 //---------------------------------------------------------------------- PendSV
 
 extern "C" [[gnu::naked]]

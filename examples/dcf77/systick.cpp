@@ -8,7 +8,7 @@ using namespace jeeh;
 
 Decoder d;
 
-// this needs "-DMYSYSTICK" to disable JeeH's default SysTick handler
+// this needs "-DWORKERS" to disable JeeH's default SysTick handler
 extern "C" void SysTick_Handler () {
     led = dcfData;
     d.step(led);

@@ -31,7 +31,6 @@ namespace jeeh {
 using namespace jeeh;
 
 //------------------------------------------------------------------------ SWO
-
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
 
 void jeeh::swoInit (uint32_t baud, uint32_t hz) {
@@ -64,11 +63,7 @@ void jeeh::swoInit (uint32_t baud, uint32_t hz) {
     TPI[FFCR] = 0x0000'0100;  // Formatter and Flush Control
 }
 
-#endif
-
 //------------------------------------------------------------------------ ITM
-
-#if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
 
 void jeeh::swoWrite (void const* ptr, size_t len) {
     constexpr IoReg<0xE000'0000> ITM;
@@ -92,9 +87,20 @@ void jeeh::swoWrite (void const* ptr, size_t len) {
     }
 }
 
-#endif
-
+#endif // Cortex M0+
 //--------------------------------------------------------------------- Ticker
+
+uint32_t jeeh::clockChange (uint32_t hz) {
+    auto n = hz/1000, o = SystemCoreClock/1000;
+    if (n != o) {
+        STK[0x4] = (STK[0x4] / o ) * n + 1; // make sure it's not zero
+        STK[0x8] = 0;
+        SystemCoreClock = hz;
+    }
+    return hz;
+}
+
+#if ! WORKERS
 
 inline namespace {
 
@@ -195,22 +201,10 @@ Ticker ticker;
 
 } // inline namespace
 
-#if ! WORKERS
 extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
-#endif
 
 // TODO these are needed by sys.cpp
 int nextTick () { return ticker.next(); }
-
-uint32_t jeeh::clockChange (uint32_t hz) {
-    auto n = hz/1000, o = SystemCoreClock/1000;
-    if (n != o) {
-        STK[0x4] = (STK[0x4] / o ) * n + 1; // make sure it's not zero
-        STK[0x8] = 0;
-        SystemCoreClock = hz;
-    }
-    return hz;
-}
 
 void sys::wait (uint16_t ms) {
     Message m { ticker.dId, 'T', ms };
@@ -223,6 +217,8 @@ bool sys::coma (uint32_t sec, int mode) {
     uint16_t ms = ticker.next(); // if there is a timeout, don't exceed that
     return rtc::shortSleep(ms < 1000 * sec ? ms : 1000 * sec, mode);
 }
+
+#endif // ! WORKERS
 
 #if !STM32F1
 namespace jeeh::rtc {
@@ -321,6 +317,7 @@ void sleepNow (int mode) {
     SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
 
+#if !WORKERS
 bool shortSleep (uint16_t ms, int mode) {
     if (ms > 16'000)
         ms = 16'000;
@@ -402,6 +399,7 @@ bool longSleep (uint32_t sec, int mode) {
 #endif
     return true;
 }
+#endif // !WORKERS
 
 DateTime getDate () {
     uint32_t ssr, tod, doy;
