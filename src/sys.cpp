@@ -572,9 +572,8 @@ void HardFault_Handler () {
     :: "r" (hardFaultHandler));
 }
 
-//---------------------------------------------------------------------- PendSV
-
 #if ! WORKERS
+//---------------------------------------------------------------------- PendSV
 
 extern "C" [[gnu::naked]]
 void PendSV_Handler () {
@@ -632,16 +631,12 @@ void PendSV_Handler () {
     :: "r" (processTriggers));
 }
 
-#endif // ! WORKERS
-
 //------------------------------------------------------------------------- SVC
 
 [[gnu::naked, gnu::noinline]]
 int sys::svc (int, int, int, int) {
     asm ("svc 0; bx lr");
 }
-
-#if ! WORKERS
 
 extern "C" [[gnu::naked]]
 void SVC_Handler () {
@@ -676,8 +671,6 @@ void SVC_Handler () {
     );
 }
 
-#endif // ! WORKERS
-
 //------------------------------------------------------------------------- IRQ
 
 // override all the interrupt handlers to dispatch through a single function
@@ -699,3 +692,39 @@ void irqDispatch () {
 #endif
 
 } // extern "C"
+
+#else // WORKERS
+
+extern "C" [[gnu::naked]]
+void PendSV_Handler () {
+    asm (
+        " mrs r0,psr \n"
+        " push {r0,lr} \n"
+        " sub sp,#32 \n"
+        " addw r0,pc,#16 \n"
+        " str r0,[sp,#24] \n"
+        " ldr r0,=0x01000000 \n"
+        " str r0,[sp,#28] \n"
+        " ldr r0,=0xFFFFFFF9 \n"
+        " mov lr,r0 \n"
+        " bx lr \n"
+        " bl %0 \n" // target of addw above
+        " svc 0 \n"
+        " b . \n"   // never reached
+    :: "i" (Worker::irqPendSV));
+}
+
+extern "C" [[gnu::naked]]
+void SVC_Handler () {
+    asm (
+        " tst lr,#0x10 \n"
+        " ite eq \n"
+        " addeq sp,#104 \n"
+        " addne sp,#32 \n"
+        " pop {r0,r1} \n"
+        " msr psr,r0 \n"
+        " bx r1 \n"
+    );
+}
+
+#endif // ! WORKERS
