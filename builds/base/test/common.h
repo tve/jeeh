@@ -5,6 +5,9 @@
 #include <jee/cycles.h>
 using namespace jeeh;
 
+#undef assert
+#define assert TEST_ASSERT
+
 // tie printf and logf into Unity's output mechanism
 
 extern "C" int _write (int, char* ptr, int len) {
@@ -106,26 +109,21 @@ struct Worker {
     }
 
     static void send (Event evt, Event done ={}, void* arg =nullptr) {
-        byId(evt.eDst).dispatch(evt, done, arg);
+        assert(evt.eDst > level);
+        dispatch(evt.eDst, evt, done, arg);
     }
 
     static void reply (Event evt) {
-        if (evt.eDst != 0)
-            byId(evt.eDst).dispatch(evt);
-    }
-
-    // FIXME make private, but moving this runs into a hard fault (?!)
-    static Worker& byId (uint8_t id) {
-        assert(id < MAX_WORKERS && workers[id] != nullptr);
-        return *workers[id];
+        auto dst = evt.eDst;
+        if (dst != 0) {
+            assert(dst <= level && workers[dst] != nullptr);
+            workers[dst]->wPend.save(evt);
+        }
     }
 
     static void irqPendSV () {
-        assert(irqState() == 0); // PendSV magic ...
-
-        for (auto i = MAX_WORKERS; --i > 0; )
-            if (auto w = workers[i]; w != nullptr)
-                w->dispatchAll();
+        assert(irqState() == 0);     // PendSV magic ...
+        dispatch(MAX_WORKERS-1, {}); // TODO worst case, loops more often
     }
 
 protected:
@@ -142,7 +140,6 @@ protected:
 
 private:
     EventList wPend;  // pending events
-    uint8_t wPrev =0; // previous suspended worker
 
     static inline Worker* workers [MAX_WORKERS];
 
@@ -152,17 +149,25 @@ private:
         return ipsr; // current IRQ, or zero if none
     }
 
-    void dispatchAll () {
-        while (!wPend.isEmpty())
-            dispatch(wPend.pull(wId));
+    static void dispatch (uint8_t up, Event evt, Event done ={}, void* arg =nullptr) {
+        // this is the only place where the level changes up and down
+        auto prev = level;
+        level = up;
+        if (evt.eDst != 0) {
+            assert(evt.eDst == level && workers[level] != nullptr);
+            reply(workers[level]->process(evt, done, arg));
+        }
+        while (level > prev && workers[level] != nullptr) {
+            workers[level]->unpend();
+            --level;
+        }
+        level = prev;
     }
 
-    void dispatch (Event evt, Event done ={}, void* arg =nullptr) {
-        // TODO must postpone call when sending to a lower-priority worker!
-        wPrev = level;
-        level = wId;
-        reply(process(evt, done, arg));
-        level = wPrev;
+    void unpend () {
+        // TODO this precesses pending events in FIFO order, is this ok?
+        while (!wPend.isEmpty())
+            process(wPend.pull(wId), {}, nullptr);
     }
 };
 
