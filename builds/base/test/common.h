@@ -185,11 +185,9 @@ private:
     }
 
     void unpend () {
-        // TODO this precesses pending events in FIFO order, is this ok?
-        while (true) {
-            auto evt = wPend.pull(wId);
-            if (evt.eDst == 0)
-                break;
+        auto evt = wPend.pull(wId);
+        if (evt.eDst != 0) {
+            unpend(); // use recursion to process in FIFO iso LIFO order
             process(evt, {}, nullptr);
         }
     }
