@@ -53,7 +53,7 @@ struct Event {
 struct EventList {
     constexpr static auto MAX_EVENTS = 100;
 
-    void save (Event evt) {
+    void push (Event evt) {
         // safely find a free event slot
         uint8_t slot = free;
         do
@@ -133,14 +133,6 @@ struct Worker {
         dispatch(evt.eDst, evt, done, arg);
     }
 
-    static void reply (Event evt) {
-        auto dst = evt.eDst;
-        if (dst != 0) {
-            assert(dst <= level && workers[dst] != nullptr);
-            workers[dst]->wPend.save(evt);
-        }
-    }
-
     static void irqPendSV () {
         assert(irqState() == 0);     // PendSV magic ...
         dispatch(MAX_WORKERS-1, {}); // TODO worst case, loops more often
@@ -153,9 +145,17 @@ protected:
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // can only be called from an IRQ handler
-        wPend.save({ wId, tag, val });
+        wPend.push({ wId, tag, val });
         if (wId > level)
             SCB[0x04](28) = 1; // ICSR PENDSVSET
+    }
+
+    static void reply (Event evt) {
+        auto dst = evt.eDst;
+        if (dst != 0) {
+            assert(dst <= level && workers[dst] != nullptr);
+            workers[dst]->wPend.push(evt);
+        }
     }
 
 private:
@@ -173,8 +173,8 @@ private:
         // this is the only place where the level changes up and down
         auto prev = level;
         level = up;
-        if (evt.eDst != 0) {
-            assert(evt.eDst == level && workers[level] != nullptr);
+        if (evt.eDst == level) {
+            assert(workers[level] != nullptr);
             reply(workers[level]->process(evt, done, arg));
         }
         while (level > prev && workers[level] != nullptr) {
