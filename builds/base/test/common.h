@@ -53,32 +53,43 @@ struct Event {
 struct EventList {
     constexpr static auto MAX_EVENTS = 100;
 
-    bool isEmpty () const {
-        return head == 0;
-    }
-
     void save (Event evt) {
-        // find a free event slot
+        // safely find a free event slot
         uint8_t slot = free;
-        if (slot == 0) {
-            slot = ++last;
-            assert(slot < MAX_EVENTS); // fail if too many events are pending
-        } else
-            free = wPending[slot].eVal;
+        do
+            if (slot == 0) {
+                slot = safePreInc(last);
+                assert(slot < MAX_EVENTS); // too many pending events
+                break;
+            }
+        while (!safeSetIfMatch(free, slot, wPending[slot].eDst));
 
-        // insert the event in this worker's chain
-        wPending[slot] = Event (head, evt.eTag, evt.eVal);
-        head = slot;
+        // safely insert the event in this worker's chain
+        auto next = head;
+        do
+            wPending[slot] = Event (next, evt.eTag, evt.eVal);
+        while (!safeSetIfMatch(head, next, slot));
     }
 
     Event pull (uint8_t dst) {
-        assert(!isEmpty());
-        auto h = head;
-        auto evt = wPending[h];
-        head = evt.eDst;
-        wPending[h].eVal = free;
-        free = h;
+        assert(dst > 0);
+
+        // safely remove the first event from this worker's chain
+        auto slot = head;
+        do
+            if (slot == 0)
+                return {}; // no more events
+        while (!safeSetIfMatch(head, slot, wPending[slot].eDst));
+
+        auto evt = wPending[slot];
         evt.eDst = dst; // clobbered while queued
+
+        // safely return slot to free list
+        auto next = free;
+        do
+            wPending[slot].eDst = next;
+        while (!safeSetIfMatch(free, next, slot));
+
         return evt;
     }
 
@@ -88,6 +99,15 @@ private:
     static inline Event wPending [MAX_EVENTS];
     static inline uint8_t free; // first unused event slot
     static inline uint8_t last; // last event slot used so far
+
+    static uint8_t safePreInc (uint8_t& v) {
+        return __atomic_add_fetch(&v, 1, __ATOMIC_RELAXED);
+    }
+
+    static bool safeSetIfMatch(uint8_t& dst, uint8_t& exp, uint8_t val) {
+        return __atomic_compare_exchange(&dst, &exp, &val, false,
+                                          __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+    }
 };
 
 struct Worker {
@@ -166,8 +186,12 @@ private:
 
     void unpend () {
         // TODO this precesses pending events in FIFO order, is this ok?
-        while (!wPend.isEmpty())
-            process(wPend.pull(wId), {}, nullptr);
+        while (true) {
+            auto evt = wPend.pull(wId);
+            if (evt.eDst == 0)
+                break;
+            process(evt, {}, nullptr);
+        }
     }
 };
 
