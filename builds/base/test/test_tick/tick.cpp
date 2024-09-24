@@ -3,7 +3,7 @@
 #include "../common.h"
 
 Ticker ticker;
-IRQ_HANDLER(SysTick, ticker.irqSysTick)
+TICKER_INSTALL(ticker)
 
 void setUp () {}
 void tearDown () {}

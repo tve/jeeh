@@ -1,6 +1,8 @@
+using jeeh::NVIC;
 using jeeh::SCB;
 using jeeh::STK;
 using jeeh::fail;
+using jeeh::Irq;
 
 #define IRQ_HANDLER(name, func) \
     extern "C" void name##_Handler () { func(); }
@@ -107,6 +109,12 @@ protected:
     uint8_t wId =0; // index (and priority) of this worker
 
     virtual Event process (Event in, Event out, void* arg) =0;
+
+    static void irqEnable (Irq irq, uint8_t prio =0x80) {
+        auto num = (uint16_t) irq;
+        NVIC.byte(0x300+num) = prio;
+        NVIC[0x00 + 4*(num/32)] = 1 << num % 32;
+    }
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler
@@ -296,3 +304,6 @@ private:
                 (uint16_t) (timers[tHead].eVal - ticks - 1) > 60000;
     }
 };
+
+#define TICKER_INSTALL(name) \
+    IRQ_HANDLER(SysTick, name.irqSysTick)
