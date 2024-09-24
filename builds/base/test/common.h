@@ -129,13 +129,14 @@ struct Worker {
     }
 
     static void send (Event evt, Event done ={}, void* arg =nullptr) {
+        assert(irqState() == 0); // may not be called from an IRQ handler
         assert(evt.eDst > level);
         dispatch(evt.eDst, evt, done, arg);
     }
 
     static void irqPendSV () {
-        assert(irqState() == 0);     // PendSV magic ...
-        dispatch(MAX_WORKERS-1, {}); // TODO worst case, loops more often
+        assert(irqState() == 0);                  // PendSV magic ...
+        dispatch(MAX_WORKERS-1, {}, {}, nullptr); // TODO worst case
     }
 
 protected:
@@ -144,7 +145,7 @@ protected:
     virtual Event process (Event in, Event out, void* arg) =0;
 
     void trigger (uint8_t tag, uint16_t val =0) {
-        assert(irqState() != 0); // can only be called from an IRQ handler
+        assert(irqState() != 0); // may only be called from an IRQ handler
         wPend.push({ wId, tag, val });
         if (wId > level)
             SCB[0x04](28) = 1; // ICSR PENDSVSET
@@ -169,7 +170,7 @@ private:
         return ipsr; // current IRQ, or zero if none
     }
 
-    static void dispatch (uint8_t up, Event evt, Event done ={}, void* arg =nullptr) {
+    static void dispatch (uint8_t up, Event evt, Event done, void* arg) {
         // this is the only place where the level changes up and down
         auto prev = level;
         level = up;

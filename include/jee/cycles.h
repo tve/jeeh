@@ -42,7 +42,7 @@ inline static uint32_t millis () {
 
 inline static uint32_t micros () {
     // scaled to work with any clock rate multiple of 100 kHz
-    return (10*count()) / (SystemCoreClock/100'000);
+    return (10 * count()) / (SystemCoreClock / 100'000);
 }
 
 inline static void msBusy (uint32_t ms) {
