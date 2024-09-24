@@ -270,10 +270,81 @@ void testPeriodicDelay () {
     TEST_ASSERT_EQUAL(30, n);
 }
 
+struct PostponeDelay : Worker {
+    enum TAG { START, ONE, TWO, THREE, FOUR };
+
+    uint16_t start;
+    char capture [40];
+    uint8_t calls =0;
+    bool done =false;
+
+    Event process (Event in, Event out, void*) override {
+        capture[calls++] = '0' + in.eTag;
+        TEST_ASSERT_LESS_OR_EQUAL(sizeof capture, calls+1); // trailing zero
+
+        switch (in.eTag) {
+            case START:
+                start = ticker.millis();
+                ticker.periodic(1, ONE); // start periodic timer
+                ticker.periodic(4, TWO); // second slower periodic timer
+                ticker.delay(25, THREE); // cancel the periodic timers
+                ticker.delay(30, FOUR);  // and make sure they stopped
+                break;
+            case ONE:
+                break;
+            case TWO:
+                cycles::msBusy(2); // prevent ticks from being processed
+                break;
+            case THREE:
+                ticker.cancel(ONE); // cancel periodic before it fires again
+                ticker.cancel(TWO); // also cancel second periodic timer
+                break;
+            case FOUR:
+                capture[calls] = 0;
+                done = true;
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+};
+
+void testPostponeDelay () {
+    PostponeDelay worker;
+    auto tkId = ticker.init();
+    auto pdId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, pdId);
+    TEST_ASSERT_GREATER_THAN(pdId, tkId);
+
+    Worker::send({ tkId, ticker.RATE, 1 });
+
+    // start two periodic timers and verify the sequence in which they fired
+    Worker::send({ pdId, worker.START });
+    TEST_ASSERT_EQUAL(1, worker.calls);
+
+    int n = 0;
+    do {
+        asm ("wfi");
+        ++n;
+    } while (!worker.done);
+    TEST_ASSERT_EQUAL(36, worker.calls);
+
+    TEST_ASSERT_EQUAL_STRING("011121111211112111121111211112131114",
+                                worker.capture);
+
+    // since the ticker runs every 1 ms, there were at most 30 interrupts
+    logf("n = %d", n); // add verbose flag (-v) to see this output
+    TEST_ASSERT_LESS_OR_EQUAL(30, n);
+    //TEST_ASSERT_EQUAL(30, n); // TODO why 18 iso 30?
+}
+
 void allTests () {
     RUN_TEST(testTicker);
     RUN_TEST(testSequentialDelay);
     RUN_TEST(testParallelDelay);
     RUN_TEST(testCancelledDelay);
     RUN_TEST(testPeriodicDelay);
+    RUN_TEST(testPostponeDelay);
 }

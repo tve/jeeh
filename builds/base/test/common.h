@@ -27,7 +27,7 @@ int main () {
     cycles::init();
 
     // adjust priorities before they might interfere with "real" IRQs
-    //SCB.byte(0x1F) = 0xFF; // irq #11: SVC
+    SCB.byte(0x1F) = 0xFF; // irq #11: SVC
     SCB.byte(0x22) = 0xFF; // irq #14: PendSV
 
     UNITY_BEGIN();
