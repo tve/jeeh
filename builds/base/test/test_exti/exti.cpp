@@ -1,6 +1,7 @@
 // External pin interrupt tests.
 
 #include "../common.h"
+#include <jee/exti.h>
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -44,7 +45,7 @@ struct ExtIinterrupt : Worker {
                 outPin.mode("P");
                 exti.enable((Pin) "A10", exti.BOTH, TWO);
                 ticker.periodic(4, ONE); // toggle the output pin
-                ticker.delay(25, THREE); // disable the exti input
+                ticker.delay(20, THREE); // disable the exti input
                 ticker.delay(30, FOUR);  // end of test
                 break;
             case ONE:
@@ -56,6 +57,7 @@ struct ExtIinterrupt : Worker {
                 exti.disable((Pin) "A10");
                 break;
             case FOUR:
+                ticker.cancel(ONE); // cancel periodic timer
                 capture[calls] = 0;
                 done = true;
                 break;
@@ -87,7 +89,7 @@ void testExti () {
         ++n;
     } while (!worker.done);
 
-    TEST_ASSERT_EQUAL_STRING("0121212121212314", worker.capture);
+    TEST_ASSERT_EQUAL_STRING("01212121231114", worker.capture);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
