@@ -100,126 +100,6 @@ uint32_t jeeh::clockChange (uint32_t hz) {
     return hz;
 }
 
-#if ! WORKERS
-
-inline namespace {
-
-struct Ticker : Device, Chain {
-    uint16_t rate;
-    volatile uint32_t ticks;
-
-    Ticker () : Device (Device::BASE), rate (0), ticks (0) {
-        dPower = sys::SHUTDOWN;
-        SCB.byte(0x23) = 0xFF; // irq #15: lowest IRQ priority
-    }
-
-    // next timeout: -1 if none, 0 if now or overdue, else first timeout ms
-    int next () const {
-        auto p = first();
-        if (p == nullptr)
-            return -1;
-        uint16_t t = cHead->mLen - ticks;
-        return t <= 60'000 ? t : 0;
-    }
-
-    void skip (uint16_t ms) {
-        STK[0x0] = 0;     // stop the clock, will restart with a new rate
-        ticks = millis(); // update actual tick count
-        ticks += ms;      // time advances
-        finish();         // restart ticker
-    }
-
-    void start (Message& msg) override {
-        auto ms = msg.mLen;
-        assert(ms <= 60'000);
-
-        auto up = next();
-        if (up > ms)
-            up = ms;          // new entry will become the first one
-        if (up < rate) {
-            STK[0x0] = 0;     // stop the clock, will restart with a new rate
-            ticks = millis(); // update actual tick count
-        }
-
-        auto t = ticks;
-        auto pp = &cHead; // insert in proper position
-        while (*pp != nullptr && msg.mLen >= (uint16_t) ((*pp)->mLen - t))
-            pp = &(*pp)->mLnk;
-
-        msg.mLen += t; // make absolute, truncated to 16 bits
-        msg.mLnk = *pp;
-        *pp = &msg;
-
-        finish();
-    }
-
-    void cancel (Message& msg) override {
-        remove(msg);
-    }
-
-    void finish () override {
-        while (expired())
-            reply(pull());
-
-        auto up = next();
-        if (up < 0) {
-            dPower = sys::SHUTDOWN;
-            STK[0x0] = 0; // disable
-            return;
-        }
-        rate = up < 100 ? up : 100;
-
-        // TODO this is a hack: assumes RTC running if DBP bit set in PWR
-        //  need SysTick if no RTC
-        dPower = PWR[0x00](8) ? sys::STOP2 : sys::SLEEP;
-
-        STK[0x4] = (rate * (SystemCoreClock/1000)) / 8 - 1; // reload value
-        STK[0x8] = 0;
-        STK[0x0] = 0b011; // enable, clk/8 mode
-    }
-
-    bool interrupt (int) override {
-        trace(TICK);
-        ticks += rate;
-        return next() < rate;
-    }
-
-    bool expired () const {
-        return !isEmpty() && (uint16_t) (cHead->mLen - ticks - 1) > 60'000;
-    }
-
-    uint32_t millis () const {
-        // the result has millisecond resolution, even when rate > 1
-        while (true) // spinloop, in case ticks changes midway
-            if (uint32_t t = ticks, c = STK[0x8]; t == ticks) {
-                return t + rate - (c*8)/(SystemCoreClock/1000);
-            }
-    }
-};
-
-Ticker ticker;
-
-} // inline namespace
-
-extern "C" void SysTick_Handler () { ticker.irqTrigger(0); }
-
-// TODO these are needed by sys.cpp
-int nextTick () { return ticker.next(); }
-
-void sys::wait (uint16_t ms) {
-    Message m { ticker.dId, 'T', ms };
-    call(m);
-}
-
-bool sys::coma (uint32_t sec, int mode) {
-    if (ticker.isEmpty())
-        return rtc::longSleep(sec, mode);
-    uint16_t ms = ticker.next(); // if there is a timeout, don't exceed that
-    return rtc::shortSleep(ms < 1000 * sec ? ms : 1000 * sec, mode);
-}
-
-#endif // ! WORKERS
-
 #if !STM32F1
 namespace jeeh::rtc {
 
@@ -308,6 +188,7 @@ uint8_t toBcd (uint8_t v) {
     return v + 6 * (v/10);
 }
 
+#if 0
 void sleepNow (int mode) {
     assert(mode >= sys::STOP0);
     BlockIRQ irq;
@@ -316,90 +197,7 @@ void sleepNow (int mode) {
     asm ("sev; wfe; wfe");
     SCB[0x10](2) = 0; // ~SLEEPDEEP
 }
-
-#if !WORKERS
-bool shortSleep (uint16_t ms, int mode) {
-    if (ms > 16'000)
-        ms = 16'000;
-    auto sel = 3;
-    auto count = (100'000*ms) / 6104; // 61.035 us, but need to avoid overflow
-    while (count >= 32768) {
-        --sel;
-        count /= 2;
-    }
-    assert(sel >= 0);
-//RTC[SCR] = 1<<2;    // CWUTF
-
-#if STM32WL
-    EXTI[0x00](20) = 1; // RT20 in RTSR1
-    EXTI[0x84](20) = 1; // EM20 in EMR1
-#else
-    EXTI[0x08](20) = 1; // RT20 in RTSR1
-    EXTI[0x04](20) = 1; // EM20 in EMR1
 #endif
-
-    RTC[CR](10) = 0;             // ~WUTE
-    while (RTC[ISR](2) == 0) {}  // wait for WUTWF
-
-    RTC[WUTR] = count;
-    RTC[CR](0,3) = sel;
-
-    RTC[CR](14) = 1;             // WUTIE
-    RTC[CR](10) = 1;             // WUTE
-
-    auto todLast = getDate().todMillis();
-    sleepNow(mode);
-    ticker.skip(getDate().todMillis() - todLast); // TODO wraparound
-
-    RTC[CR](10) = 0;    // ~WUTE
-
-    bool done = RTC[ISR](10);
-#if STM32G4 | STM32L4 | STM32WL
-    RTC[SCR] = 1<<2;    // CWUTF
-#else
-    RTC[ISR](10) = 0;   // clear WUTF
-#endif
-    return done;
-}
-
-bool longSleep (uint32_t sec, int mode) {
-    assert(sec > 0);
-    DateTime dt (getSecs() + sec);
-
-#if STM32WL
-    EXTI[0x00](18) = 1; // RT18 in RTSR1
-    EXTI[0x84](18) = 1; // EM18 in EMR1
-#else
-    EXTI[0x08](18) = 1; // RT18 in RTSR1
-    EXTI[0x04](18) = 1; // EM18 in EMR1
-#endif
-
-    RTC[CR](8) = 0;             // ~ALRAE
-#if !STM32WL
-    while (RTC[ISR](0) == 0) {} // wait for ALRAWF
-#endif
-
-    RTC[ALRMAR] = (toBcd(dt.dy)<<24) | (toBcd(dt.hh)<<16) |
-                   (toBcd(dt.mm)<<8) | toBcd(dt.ss);
-    //RTC[ALRMASSR] = 0;
-
-    RTC[CR](12) = 1;             // ALRAIE
-    RTC[CR](8) = 1;              // ALRAE
-
-    sleepNow(mode);
-
-    if (!RTC[ISR](8))   // ~ALRAF
-        return false;
-    RTC[CR](8) = 0;     // ~ALRAE: only disable once it has triggered
-
-#if STM32G4 | STM32L4 | STM32WL
-    RTC[SCR] = 1<<0;    // CALRAF
-#else
-    RTC[ISR](8) = 0;    // clear ALRAF
-#endif
-    return true;
-}
-#endif // !WORKERS
 
 DateTime getDate () {
     uint32_t ssr, tod, doy;

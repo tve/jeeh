@@ -34,6 +34,8 @@ constexpr auto VERSION = "<stripped>";
 #include "arch/pin.h"
 #endif
 
+#include "arch/workers.h"
+
 #if TRACE
 #include "trace.h"
 #else
@@ -41,8 +43,3 @@ constexpr auto VERSION = "<stripped>";
 #endif // TRACE
 
 } // namespace jeeh
-
-// Not placed in "jeeh" namespace for now, as it conflicts with Ticker etc.
-#if WORKERS
-#include "arch/workers.h"
-#endif

@@ -61,101 +61,12 @@ struct Message {
 };
 static_assert(sizeof (Message) == 20);
 
-struct Chain {
-    bool isEmpty () const { return cHead == nullptr; }
-    Message* first () const { return cHead; }
-
-    bool insert (Message& msg);
-    bool append (Message& msg);
-    bool remove (Message& msg);
-    Message* pull ();
-
-protected:
-    Message* cHead =nullptr;
-};
-static_assert(sizeof (Chain) == 4);
-
-namespace sys {
-    enum { SLEEP, STOP0, STOP1, STOP2, STANDBY, SHUTDOWN };
-
-    int svc (int f, int x =0, int y =0, int z =0);
-
-    void send (Message& msg);
-    Message& recv ();
-    void call (Message& msg);
-    bool drop (Message& msg, uint8_t id);
-
-    void wait (uint16_t ms);
-    bool coma (uint32_t sec, int mode =STOP0);
-
-    uint8_t* pool (uint32_t bytes, uint32_t align =4);
-
-    void init (uint32_t* ptr, uint32_t len);
-    Message& fork (uint32_t*, uint16_t, int (*)(Message&), intptr_t =0);
-    void quit (intptr_t ret =0);
-
-    template< uint32_t N > // see Sys::fork comment
-    void init (uint32_t (&stack)[N]) { init(stack, N); }
-
-    // when handed an array as stack, this variant will auto-derive its size
-    template< uint32_t N >
-    inline static Message& fork (uint32_t (&s)[N], int (*f)(Message&), intptr_t a =0) {
-        return fork(s, N, f, a);
-    }
-
-} // namespace sys
-
-struct Fixer {
-    Fixer ();
-    ~Fixer ();
-
-    bool saved;
-};
-
-struct Lock {
-    bool acquire (bool blocking =true);
-    void release ();
-
-    bool locked =false;
-    Chain waiting;
-};
-
 struct BlockIRQ {
     BlockIRQ () { asm ("mrs %0, primask; cpsid i" : "=r" (mask)); }
     ~BlockIRQ () { asm ("msr primask, %0" :: "r" (mask)); }
 private:
     uint32_t mask;
 };
-
-struct Device {
-    enum { BASE = '@', LAST = 'Z' };
-
-    uint8_t dId;
-    uint8_t dPower =sys::SLEEP; // default value: sysclk must keep running
-
-    Device (uint8_t id);
-    // TODO ~Device ();
-
-    virtual void start (Message&) =0;
-    virtual void cancel (Message&) {}
-    virtual void finish () =0;
-
-    void irqTrigger (uint8_t num);
-
-    static Device& byId (uint8_t id);
-    static uint8_t powerScan ();
-
-protected:
-    virtual bool interrupt (int) =0;
-
-    void irqInstall (uint8_t num, uint8_t prio =0x80);
-    void reply (Message* mp);
-};
-static_assert(sizeof (Device) == 8);
-
-// both are called in handler mode (PendSV, via Thread::reschedule)
-uint8_t lowestPower (uint8_t power, uint16_t ms); // weak, can be redefined
-void resumePower ();                              // weak, can be redefined
 
 class DateTime {
     constexpr static uint8_t daysInMonth [] = {
