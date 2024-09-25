@@ -14,6 +14,8 @@ struct ExtIrq : Worker {
     enum TAG { FIRED };
     enum MODE { NONE, RISE, FALL, BOTH };
 
+    ExtIrq () : Worker ("ExtIrq") {}
+
     uint8_t init () {
 #if !(STM32L0 | STM32WL)
         RCC(ena::SYSCFG, 1) = 1;

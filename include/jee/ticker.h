@@ -4,6 +4,8 @@ struct Ticker : Worker {
     constexpr static auto MAX_TIMERS = 20;
     enum TAG { TICK, RATE, DELAY, PERIOD, CANCEL };
 
+    Ticker () : Worker ("Ticker") {}
+
     uint8_t init () {
         setRate(100);
         return Worker::init();

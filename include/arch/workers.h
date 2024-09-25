@@ -72,10 +72,13 @@ private:
 
 struct Worker {
     constexpr static auto MAX_WORKERS = 20;
+    enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
+
+    char const* wName;
 
     static inline uint8_t level; // index of currently active worker
 
-    Worker () {}
+    Worker (char const* name =nullptr) : wName (name) {}
     ~Worker () { workers[wId] = nullptr; }
 
     uint8_t init () {
@@ -99,6 +102,27 @@ struct Worker {
         dispatch(MAX_WORKERS-1, {}, {}, nullptr); // TODO worst case
     }
 
+#if NOSTATS
+    void showStats () {}
+#else
+    uint32_t wStats [4] ={};
+
+    static void showStats () {
+        logf("%20s %9s %9s %9s %9s",
+                "WORKER", "SEND", "DELAY", "PREEMPT", "REPLY");
+        for (auto i = 0; i < MAX_WORKERS; ++i) {
+            auto w = workers[i];
+            if (w != nullptr)
+                logf("%15s #%3d %9u %9u %9u %9u",
+                    w->wName != nullptr ? w->wName : "", i,
+                    w->wStats[S_SEND],
+                    w->wStats[S_DELAY],
+                    w->wStats[S_PREEMPT],
+                    w->wStats[S_REPLY]);
+        }
+    }
+#endif // NOSTATS
+
 protected:
     uint8_t wId =0; // index (and priority) of this worker
 
@@ -113,15 +137,19 @@ protected:
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler
         wPend.push({ wId, tag, val });
-        if (wId > level)
+        if (wId > level) {
             SCB[0x04](28) = 1; // ICSR PENDSVSET
+            stats(S_PREEMPT);
+        }
     }
 
     static void reply (Event evt) {
         auto dst = evt.eDst;
         if (dst != 0) {
-            assert(dst <= level && workers[dst] != nullptr);
-            workers[dst]->wPend.push(evt);
+            auto w = workers[dst];
+            assert(dst <= level && w != nullptr);
+            w->stats(S_REPLY);
+            w->wPend.push(evt);
         }
     }
 
@@ -129,6 +157,12 @@ private:
     EventList wPend;  // pending events
 
     static inline Worker* workers [MAX_WORKERS];
+
+#if NOSTATS
+    void stats (STATS) {}
+#else
+    void stats (STATS s) { ++wStats[s]; }
+#endif
 
     static uint32_t irqState () {
         uint32_t ipsr;
@@ -141,8 +175,10 @@ private:
         auto prev = level;
         level = up;
         if (evt.eDst == level) {
-            assert(workers[level] != nullptr);
-            reply(workers[level]->process(evt, done, arg));
+            auto w = workers[level];
+            assert(w != nullptr);
+            w->stats(S_SEND);
+            reply(w->process(evt, done, arg));
         }
         while (level > prev && workers[level] != nullptr) {
             workers[level]->unpend();
@@ -155,6 +191,7 @@ private:
         auto evt = wPend.pull(wId);
         if (evt.eDst != 0) {
             unpend(); // use recursion to process in FIFO iso LIFO order
+            stats(S_DELAY);
             process(evt, {}, nullptr);
         }
     }

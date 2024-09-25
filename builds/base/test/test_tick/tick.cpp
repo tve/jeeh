@@ -33,13 +33,16 @@ void testTicker () {
     for (auto i = 1; i <= 25; ++i)
         asm ("wfi");
     TEST_ASSERT_INT_WITHIN(1, 25, ticker.millis()-start);
+    Worker::showStats();
 }
 
-struct SequentialDelay : Worker {
+struct Sequential : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     bool done =false;
+
+    Sequential () : Worker ("Sequential") {}
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
@@ -66,8 +69,8 @@ struct SequentialDelay : Worker {
     }
 };
 
-void testSequentialDelay () {
-    SequentialDelay worker;
+void testSequential () {
+    Sequential worker;
     auto tkId = ticker.init();
     auto sdId = worker.init();
 
@@ -84,13 +87,16 @@ void testSequentialDelay () {
 
     // since the ticker runs every 1 ms, there will have been 35 interrupts
     TEST_ASSERT_EQUAL(35, n);
+    Worker::showStats();
 }
 
-struct ParallelDelay : Worker {
+struct Parallel : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     uint8_t calls =0;
+
+    Parallel () : Worker ("Parallel") {}
 
     Event process (Event in, Event out, void*) override {
         ++calls;
@@ -120,8 +126,8 @@ struct ParallelDelay : Worker {
     }
 };
 
-void testParallelDelay () {
-    ParallelDelay worker;
+void testParallel () {
+    Parallel worker;
     auto tkId = ticker.init();
     auto pdId = worker.init();
 
@@ -139,13 +145,16 @@ void testParallelDelay () {
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
+    Worker::showStats();
 }
 
-struct CancelledDelay : Worker {
+struct Cancelled : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     uint8_t calls =0;
+
+    Cancelled () : Worker ("Cancelled") {}
 
     Event process (Event in, Event out, void*) override {
         ++calls;
@@ -175,8 +184,8 @@ struct CancelledDelay : Worker {
     }
 };
 
-void testCancelledDelay () {
-    CancelledDelay worker;
+void testCancelled () {
+    Cancelled worker;
     auto tkId = ticker.init();
     auto cdId = worker.init();
 
@@ -195,14 +204,17 @@ void testCancelledDelay () {
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
+    Worker::showStats();
 }
 
-struct PeriodicDelay : Worker {
+struct Periodic : Worker {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start, expect =0;
     uint8_t calls =0;
     bool done =false;
+
+    Periodic () : Worker ("Periodic") {}
 
     Event process (Event in, Event out, void*) override {
         ++calls;
@@ -235,8 +247,8 @@ struct PeriodicDelay : Worker {
     }
 };
 
-void testPeriodicDelay () {
-    PeriodicDelay worker;
+void testPeriodic () {
+    Periodic worker;
     auto tkId = ticker.init();
     auto pdId = worker.init();
 
@@ -257,15 +269,18 @@ void testPeriodicDelay () {
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
+    Worker::showStats();
 }
 
-struct PostponeDelay : Worker {
+struct Postpone : Worker {
     enum TAG { START, ONE, TWO, THREE, FOUR };
 
     uint16_t start;
     char capture [40];
     uint8_t calls =0;
     bool done =false;
+
+    Postpone () : Worker ("Postpone") {}
 
     Event process (Event in, Event out, void*) override {
         capture[calls++] = '0' + in.eTag;
@@ -299,8 +314,8 @@ struct PostponeDelay : Worker {
     }
 };
 
-void testPostponeDelay () {
-    PostponeDelay worker;
+void testPostpone () {
+    Postpone worker;
     auto tkId = ticker.init();
     auto pdId = worker.init();
 
@@ -323,13 +338,14 @@ void testPostponeDelay () {
     logf("n = %d", n); // add verbose flag (-v) to see this output
     TEST_ASSERT_LESS_OR_EQUAL(30, n);
     //TEST_ASSERT_EQUAL(30, n); // TODO why 18 iso 30?
+    Worker::showStats();
 }
 
 void allTests () {
     RUN_TEST(testTicker);
-    RUN_TEST(testSequentialDelay);
-    RUN_TEST(testParallelDelay);
-    RUN_TEST(testCancelledDelay);
-    RUN_TEST(testPeriodicDelay);
-    RUN_TEST(testPostponeDelay);
+    RUN_TEST(testSequential);
+    RUN_TEST(testParallel);
+    RUN_TEST(testCancelled);
+    RUN_TEST(testPeriodic);
+    RUN_TEST(testPostpone);
 }

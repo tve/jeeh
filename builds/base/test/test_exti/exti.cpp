@@ -31,7 +31,7 @@ struct ExtIinterrupt : Worker {
     uint8_t calls =0;
     bool done =false;
 
-    ExtIinterrupt () : outPin ("A9","P") {}
+    ExtIinterrupt () : Worker ("ExtIinterrupt"), outPin ("A9","P") {}
 
     Event process (Event in, Event out, void*) override {
         capture[calls++] = '0' + in.eTag;
@@ -87,6 +87,7 @@ void testExti () {
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
+    Worker::showStats();
 }
 
 void allTests () {
