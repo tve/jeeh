@@ -3,6 +3,7 @@ struct Pin {
 
     constexpr Pin () =default;
     explicit constexpr Pin (char const* s) : id (parse(s)) {}
+    Pin (char const* s, char const* m) : Pin (s) { mode(m); }
 
     constexpr int port () const { return id/16-1; }
     constexpr int pin () const { return id%16; }

@@ -13,15 +13,12 @@ void setUp () {}
 void tearDown () {}
 
 void testJumper () {
-    Pin pins [2];
-    Pin::config("A9,A10", pins, sizeof pins);
-    pins[0].mode("P");
-    pins[1].mode("F");
+    Pin outPin ("A9","P"), inPin ("A10","F");
 
     // check that the two pins are connected via a jumper
-    TEST_ASSERT_EQUAL(0, pins[1]);
-    pins[0] = 1;
-    TEST_ASSERT_EQUAL(1, pins[1]);
+    TEST_ASSERT_EQUAL(0, inPin);
+    outPin = 1;
+    TEST_ASSERT_EQUAL(1, inPin);
 }
 
 struct ExtIinterrupt : Worker {
@@ -33,7 +30,7 @@ struct ExtIinterrupt : Worker {
     uint8_t calls =0;
     bool done =false;
 
-    ExtIinterrupt () : outPin ("A9") {}
+    ExtIinterrupt () : outPin ("A9","P") {}
 
     Event process (Event in, Event out, void*) override {
         capture[calls++] = '0' + in.eTag;
@@ -42,7 +39,6 @@ struct ExtIinterrupt : Worker {
         switch (in.eTag) {
             case START:
                 start = ticker.millis();
-                outPin.mode("P");
                 exti.enable((Pin) "A10", exti.BOTH, TWO);
                 ticker.periodic(4, ONE); // toggle the output pin
                 ticker.delay(20, THREE); // disable the exti input

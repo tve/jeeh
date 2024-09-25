@@ -36,8 +36,7 @@ int main () {
     fastClock(); // 160 MHz
     serio::init();
 
-    Pin led ("B8");
-    led.mode("P");
+    Pin led ("B8","P");
 
     uint32_t us = 0, bd = 0, seq = 0;
 

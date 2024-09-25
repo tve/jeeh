@@ -8,8 +8,7 @@ static void delayLoop (uint16_t ms) {
 }
 
 int main () {
-    Pin led ("B8");
-    led.mode("P");
+    Pin led ("B8","P");
 
     while (true) {
         led = 1;
