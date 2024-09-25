@@ -80,10 +80,7 @@ void testExti () {
     Worker::send({ wkId, worker.START });
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!worker.done);
 
     TEST_ASSERT_EQUAL_STRING("01212121231114", worker.capture);
 

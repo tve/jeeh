@@ -79,10 +79,7 @@ void testSequentialDelay () {
     Worker::send({ sdId, worker.START });
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!worker.done);
 
     // since the ticker runs every 1 ms, there will have been 35 interrupts
     TEST_ASSERT_EQUAL(35, n);
@@ -137,10 +134,7 @@ void testParallelDelay () {
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (worker.calls < 4);
+    do { asm ("wfi"); ++n; } while (worker.calls < 4);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
@@ -196,10 +190,7 @@ void testCancelledDelay () {
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (worker.calls < 3);
+    do { asm ("wfi"); ++n; } while (worker.calls < 3);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
@@ -260,10 +251,7 @@ void testPeriodicDelay () {
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!worker.done);
     TEST_ASSERT_EQUAL(6, worker.calls); // start + 7, 14, 21, 25, 30 ms
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
@@ -325,10 +313,7 @@ void testPostponeDelay () {
     TEST_ASSERT_EQUAL(1, worker.calls);
 
     int n = 0;
-    do {
-        asm ("wfi");
-        ++n;
-    } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!worker.done);
 
     TEST_ASSERT_EQUAL_STRING("011121111211112111121111211112131114",
                                 worker.capture);
