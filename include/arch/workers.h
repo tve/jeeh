@@ -5,7 +5,7 @@ using jeeh::fail;
 using jeeh::Irq;
 
 #define IRQ_HANDLER(name, func) \
-    extern "C" void name##_Handler () { func(); }
+    extern "C" void name##_IRQHandler () { func(); }
 
 struct Event {
     uint32_t eDst :8;
@@ -306,4 +306,4 @@ private:
 };
 
 #define TICKER_INSTALL(name) \
-    IRQ_HANDLER(SysTick, name.irqSysTick)
+    extern "C" void SysTick_Handler () { name.irqSysTick(); }

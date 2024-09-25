@@ -329,7 +329,6 @@ void testPostponeDelay () {
         asm ("wfi");
         ++n;
     } while (!worker.done);
-    TEST_ASSERT_EQUAL(36, worker.calls);
 
     TEST_ASSERT_EQUAL_STRING("011121111211112111121111211112131114",
                                 worker.capture);

@@ -67,18 +67,18 @@ struct ExtIrq : Worker {
         trigger(FIRED, pr);
     }
 
-    void enable (Pin pin, MODE mode, uint8_t tag) {
+    void enable (Pin pin, MODE mode, uint8_t tag, uint16_t val =0) {
         auto pos = pin.pin();
         auto off = 4*(pos%4) + 32*(pos/4);
-        SYSCFG[EXTICR1](off, 4) = pin.port();
+        SYSCFG[EXTICR1](off,4) = pin.port();
 
         if (mode != NONE) {
-            events[pin] = { level, tag };
+            events[pos] = { level, tag, val };
             EXTI[RTSR](pos) = (mode & RISE) != 0;
             EXTI[FTSR](pos) = (mode & FALL) != 0;
             EXTI[IMR](pos) = 1;
         } else {
-            events[pin] = {};
+            events[pos] = {};
             EXTI[IMR](pos) = 0;
         }
     }
