@@ -3,6 +3,7 @@
 #include <unity.h>
 #include <jee.h>
 #include <jee/cycles.h>
+#include <jee/dma.h>
 using namespace jeeh;
 
 #undef assert
@@ -82,9 +83,88 @@ struct Poll {
         if (w)
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
-                UART[TDR] = *q++;
-                while (UART[SR](6) == 0) {} // TC
+                UART[TDR] = *q;
+// FIXME
+if (*q++ == '\n' || 1)
+    while (!UART[SR](6)) {} // ~TC
             }
+    }
+};
+
+// DMA version, either sync-wfe or async (i.e. events sent to this device)
+template< uint32_t A, uint32_t D, int T, int R >
+struct Sync : Poll<A>, Worker {
+    using BASE = Poll<A>;
+    using BASE::Poll; // constructor
+
+    enum TAG { DONE };
+    constexpr static IoReg<A> UART {};
+
+    struct Config : BASE::Config {
+        Irq txIrq, rxIrq;
+        uint8_t Xdma, XtxReq, XrxReq; // 0-based
+    };
+
+    DmaConfig<D,T,R> dma;
+    Config const cfg;
+
+    Sync (Config const& c, char const* name ="uart")
+        : BASE (c.ena, c.mhz), Worker (name),
+          dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
+
+    void init (char const* defs, int khz) {
+        BASE::init(defs, khz);
+        UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
+
+        // peripheral address config and interrupt vector setup
+        dma.init(A + BASE::TDR, A + BASE::RDR);
+
+        irqEnable(cfg.txIrq);
+        irqEnable(cfg.rxIrq);
+    }
+
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+
+    // sync version, dma with wfe
+    void transfer (bool w, void* p, uint16_t n) const {
+        if (n > 0) {
+            startReq(w, p, n);
+            while (dma.isRunning())
+                asm ("wfe");
+            finishReq(w, p, n);
+        }
+    }
+
+    // async version, started from a msg
+    void interrupt () {
+        if (!dma.completed())
+            fail();
+        if (!dma.isRunning()) // other channel still in progress
+            trigger(DONE);
+    }
+
+private:
+    Event process (Event in, Event out, void* arg) override {
+        (void) arg;
+        switch (in.eTag) {
+            case DONE:
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+
+    void startReq (bool w, void* p, uint16_t n) const {
+        if (w)
+            dma.txStart(p, n);
+        else
+            dma.rxStart(p, n);
+    }
+
+    void finishReq (bool w, void* p, uint16_t n) const {
+        if (!w)
+            cache::inval(p, n);
     }
 };
 
