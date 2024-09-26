@@ -3,7 +3,7 @@ using namespace jeeh;
 #include <cstdarg>
 
 int veprintf (void (*fun)(void*,int), void* arg, char const* fmt, va_list ap) {
-    int pad, left = 0, count = 0;
+    int pad, count = 0;
     auto emit = [&](int c) { ++count; fun(arg, c); };
     auto fill = [&](int n) { while (--n >= 0) emit(pad); };
 
@@ -12,7 +12,7 @@ int veprintf (void (*fun)(void*,int), void* arg, char const* fmt, va_list ap) {
             emit(c);
         else {
             pad = *fmt == '0' ? '0' : ' ';
-            int width = 0, radix = 0;
+            int width = 0, left = 0, radix = 0;
             while (radix == 0)
                 switch (c = *fmt++) {
                     case '-': left = 1; break;
