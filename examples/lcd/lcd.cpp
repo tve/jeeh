@@ -184,7 +184,7 @@ int main () {
     while (true) {
         led.toggle();
 
-        auto v = (seq++ * 12) % HEIGHT;
+        auto v = (seq++ % (HEIGHT/12)) * 12;
 
         start = cycles::micros();
         fill(0, v, WIDTH-1, 12, 0xFFE0);
