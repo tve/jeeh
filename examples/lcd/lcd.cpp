@@ -175,15 +175,23 @@ int main () {
     logf("clear %5d us", cycles::micros()-start);
 
     start = cycles::micros();
-    fill(0, HEIGHT/4, WIDTH-1, 16, 0xFFE0);
-    logf("fill %6d us", cycles::micros()-start);
-
-    start = cycles::micros();
     pixel(WIDTH/2, HEIGHT/2, 0xF800);
     logf("pixel %5d us", cycles::micros()-start);
 
+    cycles::msBusy(1000);
+
+    auto seq = 0;
     while (true) {
         led.toggle();
-        cycles::msBusy(500);
+
+        auto v = (seq++ * 12) % HEIGHT;
+
+        start = cycles::micros();
+        fill(0, v, WIDTH-1, 12, 0xFFE0);
+        logf("fill %6d us", cycles::micros()-start);
+
+        cycles::msBusy(250);
+
+        fill(0, v, WIDTH-1, 12, 0);
     }
 }
