@@ -46,20 +46,10 @@ inline void out16 (uint16_t v) {
 
 // returns with cs low
 void cmd (uint8_t v) {
-#if 0
     rs = 0;
     cs = 0;
     out8(v);
     rs = 1;
-#else
-    //rs = 0;
-    GPIOA[BSRR] = (0b0000'0000'0001'0000 << 16) | (0<<4); // A4
-    //cs = 0;
-    GPIOB[BSRR] = (0b0000'0000'0000'0001 << 16) | (0<<0); // B0
-    out8(v);
-    //rs = 1;
-    GPIOA[BSRR] = (0b0000'0000'0001'0000 << 16) | (1<<4); // A4
-#endif
 }
 
 void cmdEnd () {
