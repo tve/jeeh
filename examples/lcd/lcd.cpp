@@ -111,12 +111,12 @@ void init () {
     cmdEnd();
 }
 
-constexpr auto WIDTH = 480, HEIGHT = 320;
+uint16_t width = 480, height = 320;
 
-uint16_t xLimit = WIDTH-1;
-uint16_t yLimit = HEIGHT-1;
+uint16_t xLimit = width-1;
+uint16_t yLimit = height-1;
 
-void bounds (int xend =WIDTH-1, int yend =HEIGHT-1) {
+void bounds (int xend =width-1, int yend =height-1) {
     xLimit = xend;
     yLimit = yend;
 }
@@ -151,7 +151,17 @@ void fill (int x, int y, int w, int h, uint16_t rgb) {
 }
 
 void clear () {
-    fill(0, 0, WIDTH, HEIGHT, 0);
+    fill(0, 0, width, height, 0);
+}
+
+void orientation (uint8_t rot) {
+    height = rot & 1 ? 320 : 480;
+    width = rot & 1 ? 480 : 320;
+
+    constexpr uint8_t mac [4] = { 0x48, 0x28, 0x98, 0xF8 };
+    cmd(0x36);
+    out8(mac[rot]);
+    cmdEnd();
 }
 
 int main () {
@@ -175,7 +185,7 @@ int main () {
     logf("clear %5d us", cycles::micros()-start);
 
     start = cycles::micros();
-    pixel(WIDTH/2, HEIGHT/2, 0xF800);
+    pixel(width/2, height/2, 0xF800);
     logf("pixel %5d us", cycles::micros()-start);
 
     cycles::msBusy(1000);
@@ -184,14 +194,16 @@ int main () {
     while (true) {
         led.toggle();
 
-        auto v = (seq++ % (HEIGHT/12)) * 12;
+        if (seq % 4 == 0)
+            orientation((seq / 4) % 4);
+        auto v = (seq++ % 4) * 12;
 
         start = cycles::micros();
-        fill(0, v, WIDTH-1, 12, 0xFFE0);
+        fill(0, v, width-1, 12, 0xFFE0);
         logf("fill %6d us", cycles::micros()-start);
 
         cycles::msBusy(250);
 
-        fill(0, v, WIDTH-1, 12, 0);
+        fill(0, v, width-1, 12, 0);
     }
 }
