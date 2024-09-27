@@ -75,7 +75,6 @@ void init () {
         0xFF, 10,
 #if 0
         0x3A, 1, 0x55, // pxiel format 16b
-        0x36, 1, 0xB8, // orientation, bits 7..4 = MY MX MV ML
         // TODO more setup is probably needed for proper colour gamma, etc
 #else
         0xF2, 9, 0x1C, 0xA3, 0x32, 0x02, 0xB2, 0x12, 0xFF, 0x12, 0x00,
@@ -90,7 +89,7 @@ void init () {
                     0x32, 0x0F, 0x10, 0x06, 0x0F, 0x07, 0x00,
         0xE1, 15, 0x0F, 0x38, 0x30, 0x09, 0x0F, 0x0F, 0x4E, 0x77,
                     0x3C, 0x07, 0x10, 0x05, 0x23, 0x1B, 0x00, 
-        0x36, 1, 0xB8, //0x0A, 
+        0x36, 1, 0x28, //0x0A,
         0x3A, 1, 0x55, 
 #endif
         0x11, 0,       // sleep off
@@ -155,10 +154,10 @@ void clear () {
 }
 
 void orientation (uint8_t rot) {
-    height = rot & 1 ? 320 : 480;
-    width = rot & 1 ? 480 : 320;
+    width = rot & 1 ? 320 : 480;
+    height = rot & 1 ? 480 : 320;
 
-    constexpr uint8_t mac [4] = { 0x48, 0x28, 0x98, 0xF8 };
+    constexpr uint8_t mac [] = { 0x28, 0x98, 0xF8, 0x48 };
     cmd(0x36);
     out8(mac[rot]);
     cmdEnd();
@@ -195,15 +194,16 @@ int main () {
         led.toggle();
 
         if (seq % 4 == 0)
-            orientation((seq / 4) % 4);
-        auto v = (seq++ % 4) * 12;
+            orientation((seq / 8) % 4);
+        auto v = (seq++ % 8) * 16;
 
         start = cycles::micros();
-        fill(0, v, width-1, 12, 0xFFE0);
+        fill(0, v, width, 16, 0xFFE0);
+        fill(0, v, 16, 16, 0xF800);
         logf("fill %6d us", cycles::micros()-start);
 
         cycles::msBusy(250);
 
-        fill(0, v, width-1, 12, 0);
+        fill(0, v, width, 16, 0);
     }
 }
