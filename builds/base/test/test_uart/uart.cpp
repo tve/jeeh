@@ -50,10 +50,14 @@ void testPoll () {
 }
 
 void testSync () {
+logf("09");
     uartSync.init(UART2_PINS, 1'000'000);
+logf("10");
 
     auto start = cycles::micros();
+logf("11");
     uartSync.transfer(true, (void*) "x", 1);
+logf("12");
     TEST_ASSERT_INT_WITHIN(1, 20, cycles::micros()-start);
 
     start = cycles::micros();

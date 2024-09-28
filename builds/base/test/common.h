@@ -113,20 +113,27 @@ struct Sync : Poll<A>, Worker {
           dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
 
     void init (char const* defs, int khz) {
+logf("19");
         BASE::init(defs, khz);
+logf("20");
+        Worker::init();
+logf("21");
         UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
 
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::TDR, A + BASE::RDR);
+logf("22");
 
         irqEnable(cfg.txIrq);
         irqEnable(cfg.rxIrq);
+logf("23");
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     void transfer (bool w, void* p, uint16_t n) const {
+logf("xfer");
         if (n > 0) {
             startReq(w, p, n);
             while (dma.isRunning())
@@ -137,6 +144,7 @@ struct Sync : Poll<A>, Worker {
 
     // async version, started from a msg
     void interrupt () {
+logf("IRQ");
         if (!dma.completed())
             fail();
         if (!dma.isRunning()) // other channel still in progress
@@ -156,6 +164,7 @@ private:
     }
 
     void startReq (bool w, void* p, uint16_t n) const {
+logf("start");
         if (w)
             dma.txStart(p, n);
         else
@@ -163,6 +172,7 @@ private:
     }
 
     void finishReq (bool w, void* p, uint16_t n) const {
+logf("finish");
         if (!w)
             cache::inval(p, n);
     }
