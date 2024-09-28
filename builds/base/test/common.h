@@ -57,6 +57,7 @@ struct Poll {
     Config const cfg;
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
+    ~Poll () { RCC (cfg.ena,1) = 0; }
 
     void init (char const* defs, uint32_t baud) {
         Pin::config(defs);
@@ -75,7 +76,9 @@ struct Poll {
         auto n = SystemCoreClock;
         while (n > cfg.mhz * 1'000'000)
             n /= 2;
+        UART[CR1](0) = 0; // ~UE
         UART[BRR] = n / bd;
+        UART[CR1](0) = 1; // UE
     }
 
     void transfer (bool w, void* p, uint16_t n) const {
@@ -84,9 +87,7 @@ struct Poll {
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
                 UART[TDR] = *q;
-// FIXME
-if (*q++ == '\n' || 1)
-    while (!UART[SR](6)) {} // ~TC
+if (*q++ == '\n' || 1) while (!UART[SR](6)) {} // ~TC FIXME
             }
     }
 };
@@ -95,7 +96,6 @@ if (*q++ == '\n' || 1)
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A>, Worker {
     using BASE = Poll<A>;
-    using BASE::Poll; // constructor
 
     enum TAG { DONE };
     constexpr static IoReg<A> UART {};
@@ -112,28 +112,22 @@ struct Sync : Poll<A>, Worker {
         : BASE (c.ena, c.mhz), Worker (name),
           dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
 
-    void init (char const* defs, int khz) {
-logf("19");
-        BASE::init(defs, khz);
-logf("20");
+    void init (char const* defs, int baud) {
+        BASE::init(defs, baud);
         Worker::init();
-logf("21");
         UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
 
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::TDR, A + BASE::RDR);
-logf("22");
 
         irqEnable(cfg.txIrq);
         irqEnable(cfg.rxIrq);
-logf("23");
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     void transfer (bool w, void* p, uint16_t n) const {
-logf("xfer");
         if (n > 0) {
             startReq(w, p, n);
             while (dma.isRunning())
@@ -144,7 +138,6 @@ logf("xfer");
 
     // async version, started from a msg
     void interrupt () {
-logf("IRQ");
         if (!dma.completed())
             fail();
         if (!dma.isRunning()) // other channel still in progress
@@ -164,7 +157,6 @@ private:
     }
 
     void startReq (bool w, void* p, uint16_t n) const {
-logf("start");
         if (w)
             dma.txStart(p, n);
         else
@@ -172,7 +164,6 @@ logf("start");
     }
 
     void finishReq (bool w, void* p, uint16_t n) const {
-logf("finish");
         if (!w)
             cache::inval(p, n);
     }

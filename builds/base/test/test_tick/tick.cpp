@@ -335,7 +335,6 @@ void testPostpone () {
                                 worker.capture);
 
     // since the ticker runs every 1 ms, there were at most 30 interrupts
-    logf("n = %d", n); // add verbose flag (-v) to see this output
     TEST_ASSERT_LESS_OR_EQUAL(30, n);
     //TEST_ASSERT_EQUAL(30, n); // TODO why 18 iso 30?
     Worker::showStats();
