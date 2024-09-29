@@ -2,26 +2,24 @@
 
 #include "common.h"
 #include "jee/ticker.h"
-//#include "defs.h"
-
-#define UART_NAME  USART1
-#define UART_PINS  "A9:U7,A10"
-#define UART_FREQ  170
-#define UART_CONF  Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,1-1,2-1,25,24
+#include "jee/uart.h"
+#include "defs.h"
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
 uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 
+// TODO these updated definitions are needed for jee/uart.h
 #define UART_TYPE  UART_NAME.ADDR,DMA1.ADDR,1-1,2-1
-#define UART_OCONF  { ena::UART_NAME, 170, Irq::UART_NAME, \
-                      Irq::DMA1_CH1, Irq::DMA1_CH2, 1-1, 25, 24 }
+#undef UART_CONF
+#define UART_CONF  { ena::UART_NAME, 170, Irq::UART_NAME, \
+                     Irq::DMA1_CH1, Irq::DMA1_CH2, 1-1, 25, 24 }
 
-uart::Sync<UART_TYPE> uartSync (UART_OCONF);
+uart::Sync<UART_TYPE> uartSync (UART_CONF);
 IRQ_HANDLER(UART_NAME, uartSync.interrupt)
-IRQ_HANDLER(DMA1_Channel1, uartSync.interrupt)
-IRQ_HANDLER(DMA1_Channel2, uartSync.interrupt)
+IRQ_HANDLER(DMA1_Channel1, uartSync.interrupt) // not DMA1_CH1 !
+IRQ_HANDLER(DMA1_Channel2, uartSync.interrupt) // not DMA1_CH2 !
 
 void setUp () {}
 void tearDown () { uartPoll.deinit(); }
