@@ -10,4 +10,18 @@ Use any of these commands to verify that PlatformIO works properly:
 
 Run all tests on the attached board with: **`pio test`**
 
-The serial rate is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
+- **smoke** - quick check that the test setup works
+- **worker** - basic tests for `Event` and `Worker`
+- **rtc** - built-in Real Time Clock test (using LSI, not LSE)
+- **tick** - set up SysTick interrupt and test timer chain in `Ticker`
+- **exti** - set up EXTI interrupts and test `ExtIrq` (needs jumper)
+- **uart** - test variants of the UART driver (also needs PA9-PA10 jumper)
+
+Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
+
+Test setup for external SPI flash and I2C FRAM:
+
+![](board.jpg)
+
+- SPI: MOSI=B5 MISO=B4 SCLK=B3 SSEL=A11 (W25Q16: 2 MB)
+- I2C: SDA=B7 SCL=A15 (MB85RC256V: 32 KB)
