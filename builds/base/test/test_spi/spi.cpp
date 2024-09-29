@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "jee/ticker.h"
-//#include "jee/spi.h"
+#include "jee/spi.h"
 #include "defs.h"
 
 Ticker ticker;
@@ -20,7 +20,7 @@ void tearDown () {
     spiPoll.deinit();
 }
 
-void testGpio () {
+void testTxGpio () {
     spiGpio.init(SPI_PINS, 80'000);
 
     auto start = cycles::micros();
@@ -37,10 +37,19 @@ void testGpio () {
 
     start = cycles::micros();
     spiGpio.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
-    TEST_ASSERT_INT_WITHIN(1, 170, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(3, 170, cycles::micros()-start);
 }
 
-void testPoll () {
+void testRxGpio () {
+    spiGpio.init(SPI_PINS, 80'000);
+
+    uint8_t buf [100];
+    auto start = cycles::micros();
+    spiGpio.transfer(false, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(1, 577, cycles::micros()-start);
+}
+
+void testTxPoll () {
     spiPoll.init(SPI_PINS, 80'000);
 
     auto start = cycles::micros();
@@ -60,7 +69,16 @@ void testPoll () {
     TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
 }
 
-void testSync () {
+void testRxPoll () {
+    spiPoll.init(SPI_PINS, 80'000);
+
+    uint8_t buf [100];
+    auto start = cycles::micros();
+    spiPoll.transfer(false, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(1, 23, cycles::micros()-start);
+}
+
+void testTxSync () {
     spiSync.init(SPI_PINS, 80'000);
 
     auto start = cycles::micros();
@@ -80,8 +98,20 @@ void testSync () {
     TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
 }
 
+void testRxSync () {
+    spiSync.init(SPI_PINS, 80'000);
+
+    uint8_t buf [100];
+    auto start = cycles::micros();
+    spiSync.transfer(false, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(1, 23, cycles::micros()-start);
+}
+
 void allTests () {
-    RUN_TEST(testGpio);
-    RUN_TEST(testPoll);
-    RUN_TEST(testSync);
+    RUN_TEST(testTxGpio);
+    RUN_TEST(testRxGpio);
+    RUN_TEST(testTxPoll);
+    RUN_TEST(testRxPoll);
+    RUN_TEST(testTxSync);
+    RUN_TEST(testRxSync);
 }

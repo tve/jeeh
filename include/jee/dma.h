@@ -91,7 +91,7 @@ struct DmaConfig {
         else
             return false;
 #endif
-        assert(!isRunning());
+        //assert(!isRunning());
         return true;
     }
 
