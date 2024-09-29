@@ -37,19 +37,19 @@ void testPoll () {
     uartPoll.init(UART_PINS, 1'000'000);
 
     auto start = cycles::micros();
-    uartPoll.transfer(true, (void*) "x", 1);
+    uartPoll.transfer(true, (uint8_t*) "x", 1);
     TEST_ASSERT_INT_WITHIN(1, 20, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (void*) "abcde", 5);
+    uartPoll.transfer(true, (uint8_t*) "abcde", 5);
     TEST_ASSERT_INT_WITHIN(1, 52, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (void*) "1234567890", 10);
+    uartPoll.transfer(true, (uint8_t*) "1234567890", 10);
     TEST_ASSERT_INT_WITHIN(1, 102, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (void*) "123456789012345678901234567890", 30);
+    uartPoll.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(1, 307, cycles::micros()-start);
 }
 
@@ -57,19 +57,19 @@ void testSync () {
     uartSync.init(UART_PINS, 1'000'000);
 
     auto start = cycles::micros();
-    uartSync.transfer(true, (void*) "x", 1);
+    uartSync.transfer(true, (uint8_t*) "x", 1);
     TEST_ASSERT_INT_WITHIN(1, 6, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (void*) "abcde", 5);
+    uartSync.transfer(true, (uint8_t*) "abcde", 5);
     TEST_ASSERT_INT_WITHIN(1, 46, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (void*) "1234567890", 10);
+    uartSync.transfer(true, (uint8_t*) "1234567890", 10);
     TEST_ASSERT_INT_WITHIN(1, 100, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (void*) "123456789012345678901234567890", 30);
+    uartSync.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(1, 300, cycles::micros()-start);
 }
 

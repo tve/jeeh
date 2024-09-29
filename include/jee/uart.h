@@ -43,13 +43,12 @@ struct Poll {
         UART[CR1](0) = 1; // UE
     }
 
-    void transfer (bool w, void* p, uint16_t n) const {
-        auto q = (uint8_t*) p;
+    void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (w)
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
-                UART[TDR] = *q;
-if (*q++ == '\n' || 1) while (!UART[SR](6)) {} // ~TC FIXME
+                UART[TDR] = *p;
+if (*p++ == '\n' || 1) while (!UART[SR](6)) {} // ~TC FIXME
             }
     }
 };
@@ -90,7 +89,7 @@ struct Sync : Poll<A>, Worker {
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
-    void transfer (bool w, void* p, uint16_t n) const {
+    void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (n > 0) {
             startReq(w, p, n);
             while (dma.isRunning())
