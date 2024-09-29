@@ -174,12 +174,11 @@ struct Poll {
     }
 };
 
-#if 0
-// DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
-struct Sync : Poll<A>, Device {
+struct Sync : Poll<A>, Worker {
     using BASE = Poll<A>;
 
+    enum TAG { DONE };
     static constexpr IoReg<A> SPI {};
 
     struct Config : BASE::Config {
@@ -189,8 +188,8 @@ struct Sync : Poll<A>, Device {
     Config const cfg;
     DmaConfig<D,T,R> const dma;
 
-    Sync (Config const& c, DmaConfig<D,T,R> d)
-        : BASE (c.ena, c.mhz), Device ('S'), cfg (c), dma (d) {}
+    Sync (Config const& c, DmaConfig<D,T,R> d, char const* name ="uart")
+        : BASE (c.ena, c.mhz), Worker (name), cfg (c), dma (d) {}
 
     void init (char const* defs, int khz) {
         BASE::init(defs, khz);
@@ -199,8 +198,8 @@ struct Sync : Poll<A>, Device {
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::DR, A + BASE::DR);
 
-        irqInstall((uint8_t) cfg.txIrq);
-        irqInstall((uint8_t) cfg.rxIrq);
+        irqEnable(cfg.txIrq);
+        irqEnable(cfg.rxIrq);
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
@@ -216,11 +215,24 @@ struct Sync : Poll<A>, Device {
         return finishReq(w, p, n);
     }
 
-protected:
-    constexpr static auto LEN_BITS = 14, LEN_MASK = (1<<(LEN_BITS+1)) - 1;
+    void interrupt () {
+        if (!dma.completed())
+            fail();
+        if (!dma.isRunning()) // other channel still in progress
+            trigger(DONE);
+    }
 
 private:
-    Chain msgs;
+    Event process (Event in, Event out, void* arg) override {
+        (void) arg;
+        switch (in.eTag) {
+            case DONE:
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
 
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
@@ -239,39 +251,6 @@ private:
         while (SPI[BASE::SR](0)); // RXNE
         return r;
     }
-
-    // async version, started from a msg
-    void start (Message& m) override {
-        if (!msgs.append(m))
-            startAsync(m);
-    }
-
-    void finish () override {
-        auto mp = msgs.pull();
-        if (mp == nullptr)
-            return;
-        mp->mLen = finishReq(mp->mTag, mp->mPtr, mp->mLen);
-        reply(mp);
-        if (!msgs.isEmpty())
-            startAsync(*msgs.first());
-    }
-
-    void startAsync (Message& m) {
-        if (m.mLen > 0)
-            startReq(m.mTag, m.mPtr, m.mLen);
-        else
-            finish(); // this may be recursive
-    }
-
-    bool interrupt (int) override {
-        if (!dma.completed())
-            fail();
-        if (dma.isRunning())
-            return false; // other channel still in progress
-
-        return !msgs.isEmpty();
-    }
 };
-#endif
 
 } // namespace jeeh
