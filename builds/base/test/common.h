@@ -101,7 +101,7 @@ struct Sync : Poll<A>, Worker {
     constexpr static IoReg<A> UART {};
 
     struct Config : BASE::Config {
-        Irq txIrq, rxIrq;
+        Irq idleIrq, txIrq, rxIrq;
         uint8_t Xdma, XtxReq, XrxReq; // 0-based
     };
 
@@ -120,6 +120,7 @@ struct Sync : Poll<A>, Worker {
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::TDR, A + BASE::RDR);
 
+        irqEnable(cfg.idleIrq);
         irqEnable(cfg.txIrq);
         irqEnable(cfg.rxIrq);
     }

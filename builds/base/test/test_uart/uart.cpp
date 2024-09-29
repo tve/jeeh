@@ -15,12 +15,13 @@ TICKER_INSTALL(ticker)
 uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 
 #define UART_TYPE  UART_NAME.ADDR,DMA1.ADDR,1-1,2-1
-#define UART_OCONF  { ena::UART_NAME,170,Irq::DMA1_CH1,Irq::DMA1_CH2,1-1,25,24 }
+#define UART_OCONF  { ena::UART_NAME, 170, Irq::UART_NAME, \
+                      Irq::DMA1_CH1, Irq::DMA1_CH2, 1-1, 25, 24 }
 
 uart::Sync<UART_TYPE> uartSync (UART_OCONF);
-IRQ_HANDLER(DMA1_CH1, uartSync.interrupt)
-IRQ_HANDLER(DMA1_CH2, uartSync.interrupt)
 IRQ_HANDLER(UART_NAME, uartSync.interrupt)
+IRQ_HANDLER(DMA1_Channel1, uartSync.interrupt)
+IRQ_HANDLER(DMA1_Channel2, uartSync.interrupt)
 
 void setUp () {}
 void tearDown () { uartPoll.deinit(); }
@@ -39,19 +40,19 @@ void testPoll () {
 
     auto start = cycles::micros();
     uartPoll.transfer(true, (void*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(4, 20, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 20, cycles::micros()-start);
 
     start = cycles::micros();
     uartPoll.transfer(true, (void*) "abcde", 5);
-    TEST_ASSERT_INT_WITHIN(4, 50, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 52, cycles::micros()-start);
 
     start = cycles::micros();
     uartPoll.transfer(true, (void*) "1234567890", 10);
-    TEST_ASSERT_INT_WITHIN(5, 100, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 102, cycles::micros()-start);
 
     start = cycles::micros();
     uartPoll.transfer(true, (void*) "123456789012345678901234567890", 30);
-    TEST_ASSERT_INT_WITHIN(10, 300, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 307, cycles::micros()-start);
 }
 
 void testSync () {
@@ -59,19 +60,19 @@ void testSync () {
 
     auto start = cycles::micros();
     uartSync.transfer(true, (void*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(1, 20, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 6, cycles::micros()-start);
 
     start = cycles::micros();
     uartSync.transfer(true, (void*) "abcde", 5);
-    TEST_ASSERT_INT_WITHIN(2, 50, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 46, cycles::micros()-start);
 
     start = cycles::micros();
     uartSync.transfer(true, (void*) "1234567890", 10);
-    TEST_ASSERT_INT_WITHIN(5, 100, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 100, cycles::micros()-start);
 
     start = cycles::micros();
     uartSync.transfer(true, (void*) "123456789012345678901234567890", 30);
-    TEST_ASSERT_INT_WITHIN(10, 300, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 300, cycles::micros()-start);
 }
 
 void allTests () {
