@@ -17,9 +17,10 @@ uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
                      Irq::DMA1_CH1, Irq::DMA1_CH2, 1-1, 25, 24 }
 
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
-IRQ_HANDLER(UART_NAME, uartSync.interrupt)
-IRQ_HANDLER(DMA1_Channel1, uartSync.interrupt) // not DMA1_CH1 !
-IRQ_HANDLER(DMA1_Channel2, uartSync.interrupt) // not DMA1_CH2 !
+
+//IRQ_HANDLER(UART_NAME, uartSync.interrupt)
+//IRQ_HANDLER(DMA1_Channel1, uartSync.interrupt) // not DMA1_CH1 !
+//IRQ_HANDLER(DMA1_Channel2, uartSync.interrupt) // not DMA1_CH2 !
 
 void setUp () {}
 void tearDown () { uartPoll.deinit(); }
@@ -58,11 +59,11 @@ void testSync () {
 
     auto start = cycles::micros();
     uartSync.transfer(true, (uint8_t*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(1, 6, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 2, cycles::micros()-start);
 
     start = cycles::micros();
     uartSync.transfer(true, (uint8_t*) "abcde", 5);
-    TEST_ASSERT_INT_WITHIN(1, 46, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(2, 47, cycles::micros()-start);
 
     start = cycles::micros();
     uartSync.transfer(true, (uint8_t*) "1234567890", 10);

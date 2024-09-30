@@ -55,6 +55,65 @@ if (*p++ == '\n' || 1) while (!UART[SR](6)) {} // ~TC FIXME
 
 // DMA version, either sync-wfe or async (i.e. events sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
+struct Sync : Poll<A> {
+    using BASE = Poll<A>;
+
+    enum TAG { DONE };
+    constexpr static IoReg<A> UART {};
+
+    struct Config : BASE::Config {
+        Irq idleIrq, txIrq, rxIrq;
+        uint8_t Xdma, XtxReq, XrxReq; // 0-based
+    };
+
+    DmaConfig<D,T,R> dma;
+    Config const cfg;
+
+    Sync (Config const& c)
+        : BASE (c.ena, c.mhz),
+          dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
+
+    void init (char const* defs, int baud) {
+        BASE::init(defs, baud);
+        UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
+
+        // peripheral address config and interrupt vector setup
+        dma.init(A + BASE::TDR, A + BASE::RDR);
+
+        SCB[0x10](4) = 1; // SEVONPEND
+    }
+
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+
+    // sync version, dma with wfe
+    void transfer (bool w, uint8_t* p, uint16_t n) const {
+        if (n > 0) {
+            startReq(w, p, n);
+            while (!dma.completed())
+                asm ("wfe");
+            Worker::irqClear(cfg.idleIrq);
+            Worker::irqClear(cfg.txIrq);
+            Worker::irqClear(cfg.rxIrq);
+            finishReq(w, p, n);
+        }
+    }
+
+private:
+    void startReq (bool w, void* p, uint16_t n) const {
+        if (w)
+            dma.txStart(p, n);
+        else
+            dma.rxStart(p, n);
+    }
+
+    void finishReq (bool w, void* p, uint16_t n) const {
+        if (!w)
+            cache::inval(p, n);
+    }
+};
+
+#if 0
+template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A>, Worker {
     using BASE = Poll<A>;
 
@@ -130,5 +189,6 @@ private:
             cache::inval(p, n);
     }
 };
+#endif
 
 } // namespace jeeh::uart
