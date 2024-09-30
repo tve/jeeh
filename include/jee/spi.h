@@ -178,8 +178,10 @@ struct Sync : Poll<A>, Worker {
     void interrupt () {
         if (!dma.completed())
             fail();
+#if 0
         if (!dma.isRunning()) // other channel still in progress
             trigger(DONE);
+#endif
     }
 
 private:

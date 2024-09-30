@@ -81,7 +81,7 @@ struct DmaConfig {
             DRX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*R);
         } else
-            fail();
+            return false;
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if (DMA[T&~3](5+ifcBits[T&3])) // tx TCIF
