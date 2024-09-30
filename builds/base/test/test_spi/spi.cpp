@@ -12,8 +12,9 @@ TICKER_INSTALL(ticker)
 spi::Gpio spiGpio;
 spi::Poll<SPI_NAME.ADDR> spiPoll (ena::SPI_NAME, SPI_FREQ);
 spi::Sync<SPI_TYPE> spiSync (SPI_CONF);
-IRQ_HANDLER(DMA1_Channel3, spiSync.interrupt) // not DMA1_CH3 !
-IRQ_HANDLER(DMA1_Channel4, spiSync.interrupt) // not DMA1_CH4 !
+
+//IRQ_HANDLER(DMA1_Channel3, spiSync.interrupt) // not DMA1_CH3 !
+//IRQ_HANDLER(DMA1_Channel4, spiSync.interrupt) // not DMA1_CH4 !
 
 void setUp () {}
 void tearDown () {
@@ -85,7 +86,7 @@ void testTxSync () {
 
     auto start = cycles::micros();
     spiSync.transfer(true, (uint8_t*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(1, 3, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 2, cycles::micros()-start);
 
     start = cycles::micros();
     spiSync.transfer(true, (uint8_t*) "abcde", 5);
@@ -188,12 +189,10 @@ void testFlashSync () {
     uint8_t buf [512], buf2 [512];
     memset(buf, 0x55, sizeof buf);
 
-logf("11");
     start = cycles::millis();
     spif.write(0, buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(1, 1, cycles::millis()-start);
 
-logf("12");
     spif.read(0, buf2, sizeof buf2);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }

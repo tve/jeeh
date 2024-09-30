@@ -135,8 +135,71 @@ struct Poll {
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct Sync : Poll<A>, Worker {
+struct Sync : Poll<A> {
     using BASE = Poll<A>;
+
+    enum TAG { DONE };
+    static constexpr IoReg<A> SPI {};
+
+    struct Config : BASE::Config {
+        Irq txIrq, rxIrq;
+    };
+
+    Config const cfg;
+    DmaConfig<D,T,R> const dma;
+
+    Sync (Config const& c, DmaConfig<D,T,R> d)
+        : BASE (c.ena, c.mhz), cfg (c), dma (d) {}
+
+    void init (char const* defs, int khz) {
+        BASE::init(defs, khz);
+        SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
+
+        // peripheral address config and interrupt vector setup
+        dma.init(A + BASE::DR, A + BASE::DR);
+
+        SCB[0x10](4) = 1; // SEVONPEND
+    }
+
+    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+
+    // sync version, dma with wfe
+    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
+        if (n == 0)
+            return 0;
+
+        startReq(w, p, n);
+        while (!dma.completed())
+            asm ("wfe");
+        Worker::irqClear(cfg.txIrq);
+        Worker::irqClear(cfg.rxIrq);
+        return finishReq(w, p, n);
+    }
+
+private:
+    void startReq (bool w, void* p, uint16_t n) const {
+        assert(n > 0);
+
+        dma.txStart(p, n);
+        if (!w)
+            dma.rxStart(p, n);
+    }
+
+    uint8_t finishReq (bool w, void* p, uint16_t n) const {
+        if (!w)
+            cache::inval(p, n);
+        uint8_t r;
+        do
+            r = SPI.byte(BASE::DR);
+        while (SPI[BASE::SR](0)); // RXNE
+        return r;
+    }
+};
+
+#if 0
+template< uint32_t A, uint32_t D, int T, int R >
+struct Full : Sync<A>, Worker {
+    using BASE = Sync<A>;
 
     enum TAG { DONE };
     static constexpr IoReg<A> SPI {};
@@ -158,8 +221,9 @@ struct Sync : Poll<A>, Worker {
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::DR, A + BASE::DR);
 
-        irqEnable(cfg.txIrq);
-        irqEnable(cfg.rxIrq);
+        //irqEnable(cfg.txIrq);
+        //irqEnable(cfg.rxIrq);
+        SCB[0x10](4) = 1; // SEVONPEND
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
@@ -170,8 +234,10 @@ struct Sync : Poll<A>, Worker {
             return 0;
 
         startReq(w, p, n);
-        while (dma.isRunning())
+        while (!dma.completed())
             asm ("wfe");
+        irqClear(cfg.txIrq);
+        irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
     }
 
@@ -214,5 +280,6 @@ private:
         return r;
     }
 };
+#endif
 
 } // namespace jeeh

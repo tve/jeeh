@@ -123,6 +123,11 @@ struct Worker {
     }
 #endif // NOSTATS
 
+    static void irqClear (Irq irq) {
+        auto num = (uint16_t) irq;
+        NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
+    }
+
 protected:
     uint8_t wId =0; // index (and priority) of this worker
 
@@ -131,7 +136,7 @@ protected:
     static void irqEnable (Irq irq, uint8_t prio =0x80) {
         auto num = (uint16_t) irq;
         NVIC.byte(0x300+num) = prio;
-        NVIC[0x00 + 4*(num/32)] = 1 << num % 32;
+        NVIC[0x000 + 4*(num/32)] = 1 << num % 32;
     }
 
     void trigger (uint8_t tag, uint16_t val =0) {
