@@ -81,7 +81,7 @@ void testSync () {
 }
 
 struct UartWorker : Worker {
-    enum TAG { START, DONE };
+    enum TAG { START, ONE, TWO, THREE, FOUR };
 
     uint8_t calls =0;
     bool done =false;
@@ -94,9 +94,20 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartWork.start(true, (uint8_t*) "123456789", 9, { wId, DONE });
+                uartWork.start(true, (uint8_t*) "x", 1, { wId, ONE });
                 break;
-            case DONE:
+            case ONE:
+                uartWork.start(true, (uint8_t*) "abcde", 5, { wId, TWO });
+                break;
+            case TWO:
+                uartWork.start(true, (uint8_t*) "1234567890", 10, { wId, THREE });
+                break;
+            case THREE:
+                uartWork.start(true,
+                               (uint8_t*) "123456789012345678901234567890", 30,
+                               { wId, FOUR });
+                break;
+            case FOUR:
                 done = true;
                 break;
             default:
@@ -114,13 +125,15 @@ void testWork () {
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, uwId);
 
+    auto start = cycles::micros();
     Worker::send({ wkId, worker.START });
     TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be 2
 
     int n = 0;
     while (!worker.done) { asm ("wfi"); ++n; }
+    TEST_ASSERT_INT_WITHIN(1, 456, cycles::micros()-start); // 1+5+10+30 chars
 
-    TEST_ASSERT_EQUAL(2, worker.calls);
+    TEST_ASSERT_EQUAL(5, worker.calls);
 }
 
 void allTests () {
@@ -128,4 +141,6 @@ void allTests () {
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
     RUN_TEST(testWork);
+    RUN_TEST(testSync); // make sure reinit works
+    RUN_TEST(testPoll); // make sure reinit works
 }
