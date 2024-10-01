@@ -138,7 +138,6 @@ template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A> {
     using BASE = Poll<A>;
 
-    enum TAG { DONE };
     static constexpr IoReg<A> SPI {};
 
     struct Config : BASE::Config {

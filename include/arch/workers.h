@@ -139,6 +139,11 @@ protected:
         NVIC[0x000 + 4*(num/32)] = 1 << num % 32;
     }
 
+    static void irqDisable (Irq irq) {
+        auto num = (uint16_t) irq;
+        NVIC[0x080 + 4*(num/32)] = 1 << num % 32;
+    }
+
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler
         wPend.push({ wId, tag, val });
