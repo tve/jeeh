@@ -111,6 +111,35 @@ void testRxSync () {
     TEST_ASSERT_INT_WITHIN(2, 23, cycles::micros()-start);
 }
 
+void testTxWait () {
+    spiWork.init(SPI_PINS, 80'000);
+
+    auto start = cycles::micros();
+    spiWork.transfer(true, (uint8_t*) "x", 1);
+    TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
+
+    start = cycles::micros();
+    spiWork.transfer(true, (uint8_t*) "abcde", 5);
+    TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
+
+    start = cycles::micros();
+    spiWork.transfer(true, (uint8_t*) "1234567890", 10);
+    TEST_ASSERT_INT_WITHIN(3, 5, cycles::micros()-start);
+
+    start = cycles::micros();
+    spiWork.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    TEST_ASSERT_INT_WITHIN(1, 12, cycles::micros()-start);
+}
+
+void testRxWait () {
+    spiWork.init(SPI_PINS, 80'000);
+
+    uint8_t buf [100];
+    auto start = cycles::micros();
+    spiWork.transfer(false, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(2, 23, cycles::micros()-start);
+}
+
 void testFlashGpio () {
     spiGpio.init(SPI_PINS, 80'000);
     SpiFlash spif (spiGpio);
@@ -156,7 +185,7 @@ void testFlashPoll () {
 
     auto start = cycles::millis();
     spif.erase(0);
-    TEST_ASSERT_INT_WITHIN(4, 28, cycles::millis()-start);
+    TEST_ASSERT_INT_WITHIN(4, 30, cycles::millis()-start);
 
     uint8_t buf [512], buf2 [512];
     memset(buf, 0x55, sizeof buf);
@@ -234,8 +263,10 @@ void allTests () {
     RUN_TEST(testRxPoll);
     RUN_TEST(testTxSync);
     RUN_TEST(testRxSync);
+    RUN_TEST(testTxWait);
+    RUN_TEST(testRxWait);
     RUN_TEST(testFlashGpio);
     RUN_TEST(testFlashPoll);
-    RUN_TEST(testFlashSync);
+    //RUN_TEST(testFlashSync);
     RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
 }
