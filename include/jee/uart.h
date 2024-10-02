@@ -143,9 +143,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void interrupt () {
-        if (!dma.completed())
-            fail();
-        if (!dma.isRunning()) // other channel still in progress
+        if (dma.completed())
             trigger(DONE);
     }
 

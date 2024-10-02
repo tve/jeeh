@@ -13,8 +13,9 @@ spi::Gpio spiGpio;
 spi::Poll<SPI_NAME.ADDR> spiPoll (ena::SPI_NAME, SPI_FREQ);
 spi::Sync<SPI_TYPE> spiSync (SPI_CONF);
 
-//IRQ_HANDLER(DMA1_Channel3, spiSync.interrupt) // not DMA1_CH3 !
-//IRQ_HANDLER(DMA1_Channel4, spiSync.interrupt) // not DMA1_CH4 !
+spi::Work<SPI_TYPE> spiWork (SPI_CONF);
+IRQ_HANDLER(DMA1_Channel3, spiWork.interrupt) // not DMA1_CH3 !
+IRQ_HANDLER(DMA1_Channel4, spiWork.interrupt) // not DMA1_CH4 !
 
 void setUp () {}
 void tearDown () {
@@ -197,6 +198,35 @@ void testFlashSync () {
     TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 
+void testFlashWait () {
+    spiWork.init(SPI_PINS, 80'000);
+    SpiFlash spif (spiWork);
+
+    // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
+
+    TEST_ASSERT_EQUAL_HEX(0xEF4015, spif.info());
+    TEST_ASSERT_EQUAL(2048, spif.size());
+
+    uint8_t snBuf [8];
+    spif.serNum(snBuf);
+    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
+
+    auto start = cycles::millis();
+    spif.erase(0);
+    TEST_ASSERT_INT_WITHIN(4, 28, cycles::millis()-start);
+
+    uint8_t buf [512], buf2 [512];
+    memset(buf, 0x55, sizeof buf);
+
+    start = cycles::millis();
+    spif.write(0, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(1, 1, cycles::millis()-start);
+
+    spif.read(0, buf2, sizeof buf2);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
+}
+
 void allTests () {
     RUN_TEST(testTxGpio);
     RUN_TEST(testRxGpio);
@@ -207,4 +237,5 @@ void allTests () {
     RUN_TEST(testFlashGpio);
     RUN_TEST(testFlashPoll);
     RUN_TEST(testFlashSync);
+    RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
 }

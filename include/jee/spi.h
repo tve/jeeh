@@ -195,90 +195,52 @@ private:
     }
 };
 
-#if 0
 template< uint32_t A, uint32_t D, int T, int R >
-struct Full : Sync<A>, Worker {
-    using BASE = Sync<A>;
+struct Work : Sync<A,D,T,R>, Worker {
+    using BASE = Sync<A,D,T,R>;
+    using BASE::Sync, BASE::cfg, BASE::dma;
 
     enum TAG { DONE };
-    static constexpr IoReg<A> SPI {};
 
-    struct Config : BASE::Config {
-        Irq txIrq, rxIrq;
-    };
+    Event pending;
 
-    Config const cfg;
-    DmaConfig<D,T,R> const dma;
-
-    Sync (Config const& c, DmaConfig<D,T,R> d, char const* name ="uart")
-        : BASE (c.ena, c.mhz), Worker (name), cfg (c), dma (d) {}
-
-    void init (char const* defs, int khz) {
+    uint8_t init (char const* defs, int khz) {
         BASE::init(defs, khz);
-        SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
-
-        // peripheral address config and interrupt vector setup
-        dma.init(A + BASE::DR, A + BASE::DR);
-
-        //irqEnable(cfg.txIrq);
-        //irqEnable(cfg.rxIrq);
-        SCB[0x10](4) = 1; // SEVONPEND
+        irqEnable(cfg.txIrq);
+        irqEnable(cfg.rxIrq);
+        return Worker::init();
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+    void deinit () {
+        irqDisable(cfg.txIrq);
+        irqDisable(cfg.rxIrq);
+        BASE::deinit();
+    }
 
-    // sync version, dma with wfe
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
-        if (n == 0)
-            return 0;
-
-        startReq(w, p, n);
-        while (!dma.completed())
-            asm ("wfe");
-        irqClear(cfg.txIrq);
-        irqClear(cfg.rxIrq);
-        return finishReq(w, p, n);
+    // async version
+    void start (uint8_t w, uint8_t* p, uint16_t n, Event out) {
+        assert(n == 0);
+        pending = out;
+        BASE::startReq(w, p, n);
     }
 
     void interrupt () {
-        if (!dma.completed())
-            fail();
-#if 0
-        if (!dma.isRunning()) // other channel still in progress
+        if (dma.completed())
             trigger(DONE);
-#endif
     }
 
 private:
-    Event process (Event in, Event out, void* arg) override {
-        (void) arg;
+    Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
             case DONE:
+                // TODO finishReq(w, p, n);
+                reply(pending);
                 break;
             default:
                 fail();
         }
         return out;
     }
-
-    void startReq (bool w, void* p, uint16_t n) const {
-        assert(n > 0);
-
-        dma.txStart(p, n);
-        if (!w)
-            dma.rxStart(p, n);
-    }
-
-    uint8_t finishReq (bool w, void* p, uint16_t n) const {
-        if (!w)
-            cache::inval(p, n);
-        uint8_t r;
-        do
-            r = SPI.byte(BASE::DR);
-        while (SPI[BASE::SR](0)); // RXNE
-        return r;
-    }
 };
-#endif
 
-} // namespace jeeh
+} // namespace jeeh::spi

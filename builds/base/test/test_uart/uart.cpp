@@ -80,6 +80,26 @@ void testSync () {
     TEST_ASSERT_INT_WITHIN(1, 300, cycles::micros()-start);
 }
 
+void testWait () {
+    uartWork.init(UART_PINS, 1'000'000);
+
+    auto start = cycles::micros();
+    uartWork.transfer(true, (uint8_t*) "x", 1);
+    TEST_ASSERT_INT_WITHIN(1, 8, cycles::micros()-start);
+
+    start = cycles::micros();
+    uartWork.transfer(true, (uint8_t*) "abcde", 5);
+    TEST_ASSERT_INT_WITHIN(2, 47, cycles::micros()-start);
+
+    start = cycles::micros();
+    uartWork.transfer(true, (uint8_t*) "1234567890", 10);
+    TEST_ASSERT_INT_WITHIN(1, 100, cycles::micros()-start);
+
+    start = cycles::micros();
+    uartWork.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    TEST_ASSERT_INT_WITHIN(1, 300, cycles::micros()-start);
+}
+
 struct UartWorker : Worker {
     enum TAG { START, ONE, TWO, THREE, FOUR };
 
@@ -140,7 +160,8 @@ void allTests () {
     RUN_TEST(testJumper);
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
-    RUN_TEST(testWork);
+    RUN_TEST(testWait); // async in blocking mode (sync-like)
+    RUN_TEST(testWork); // async in full non-blocking mode
     RUN_TEST(testSync); // make sure reinit works
     RUN_TEST(testPoll); // make sure reinit works
 }
