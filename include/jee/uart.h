@@ -169,23 +169,24 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void interrupt () {
-        if (auto f = dma.completed(); f > 0)
-            trigger(TXDONE);
-        else if (f < 0)
+        if (auto f = dma.completed(); f < 0)
             trigger(RXDONE);
+        else if (f > 0)
+            trigger(TXDONE);
     }
 
     uint8_t const* inPtr = rxBuf;
 private:
-    enum { RX_MAX = 128 };
+    enum { RX_MAX = 32 };
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
 
     uint32_t rxAvail () const {
         auto cnt = dma.DRX[dma.CNDTR];
-        assert(cnt > 0);
-        auto end = (RX_MAX - cnt - 1) % RX_MAX + 1; // 1..RX_MAX
+        assert(0 < cnt && cnt <= RX_MAX);
+        auto end = RX_MAX - cnt; // 0 .. RX_MAX-1
         auto pos = inPtr - rxBuf;
-        return (end > pos ? end : RX_MAX) - pos;
+        assert(0 <= pos && pos < RX_MAX);
+        return (end >= pos ? end : RX_MAX) - pos;
     }
 
     Event process (Event in, Event out, void*) override {
