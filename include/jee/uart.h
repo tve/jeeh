@@ -116,9 +116,9 @@ struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg, BASE::dma;
 
-    enum TAG { DONE };
+    enum TAG { RXIDLE, RXDONE, TXDONE };
 
-    Event pending;
+    Event rxPending, txPending;
 
     uint8_t init (char const* defs, int baud) {
         BASE::init(defs, baud);
@@ -135,24 +135,36 @@ struct Work : Sync<A,D,T,R>, Worker {
         BASE::deinit();
     }
 
-    // async version
-    void start (bool w, uint8_t* p, uint16_t n, Event out) {
-        assert(n > 0);
-        pending = out;
-        BASE::startReq(w, p, n);
+    // async interface
+    void write (void const* buf, uint16_t len, Event out) {
+        assert(len > 0);
+        txPending = out;
+        BASE::startReq(true, (void*) buf, len);
+    }
+    void read (uint16_t skip, Event out) {
+        (void) skip; (void) out;
     }
 
     void interrupt () {
         if (dma.completed())
-            trigger(DONE);
+            trigger(TXDONE);
     }
 
+    uint8_t* inPtr = rxBuf;
 private:
+    uint8_t rxBuf [128]; // TODO dynamic alloc and 32-byte cache-line aligned
+
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
-            case DONE:
+            case RXDONE:
                 // TODO finishReq(w, p, n);
-                reply(pending);
+                reply(rxPending);
+                rxPending = {};
+                break;
+            case TXDONE:
+                // TODO finishReq(w, p, n);
+                reply(txPending);
+                txPending = {};
                 break;
             default:
                 fail();

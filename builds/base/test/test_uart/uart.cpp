@@ -31,15 +31,6 @@ void tearDown () {
     uartWork.deinit();
 }
 
-void testJumper () {
-    Pin outPin ("A9","P"), inPin ("A10","F");
-
-    // check that the two pins are connected via a jumper
-    TEST_ASSERT_EQUAL(0, inPin);
-    outPin = 1;
-    TEST_ASSERT_EQUAL(1, inPin);
-}
-
 void testPoll () {
     uartPoll.init(UART_PINS, 1'000'000);
 
@@ -114,17 +105,16 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartWork.start(true, (uint8_t*) "x", 1, { wId, ONE });
+                uartWork.write("x", 1, { wId, ONE });
                 break;
             case ONE:
-                uartWork.start(true, (uint8_t*) "abcde", 5, { wId, TWO });
+                uartWork.write("abcde", 5, { wId, TWO });
                 break;
             case TWO:
-                uartWork.start(true, (uint8_t*) "1234567890", 10, { wId, THREE });
+                uartWork.write("1234567890", 10, { wId, THREE });
                 break;
             case THREE:
-                uartWork.start(true,
-                               (uint8_t*) "123456789012345678901234567890", 30,
+                uartWork.write("123456789012345678901234567890", 30,
                                { wId, FOUR });
                 break;
             case FOUR:
@@ -156,12 +146,85 @@ void testWork () {
     TEST_ASSERT_EQUAL(5, worker.calls);
 }
 
+void testJumper () {
+    Pin outPin ("A9","P"), inPin ("A10","F");
+
+    // check that the two pins are connected via a jumper
+    TEST_ASSERT_EQUAL(0, inPin);
+    outPin = 1;
+    TEST_ASSERT_EQUAL(1, inPin);
+}
+
+struct LoopWorker : Worker {
+    enum TAG { START, MORE, SENT, RECV };
+
+    uint8_t calls =0, count =0;
+    uint16_t sum =0;
+    bool txDone =false, rxDone =false;
+
+    using Worker::init;
+
+private:
+    Event process (Event in, Event out, void*) override {
+        ++calls;
+
+        switch (in.eTag) {
+            case START:
+                uartWork.read(0, { wId, RECV });
+                [[fallthrough]];
+            case MORE:
+                ++count;
+                // send 1 + 2 + 3 + ... + 24 + 25 + 26 bytes
+                uartWork.write("abcdefghijklmnopqrstuvwxyz", count,
+                               { wId, count < 26 ? MORE : SENT });
+                break;
+            case SENT:
+                txDone = true;
+                break;
+            case RECV:
+                // count the number of bytes received
+                sum += in.eVal;
+                if (sum >= 26*27/2) {
+                    uartWork.read(in.eVal, {}); // consume without new request
+                    rxDone = true;
+                } else // keep reading
+                    uartWork.read(in.eVal, { wId, RECV });
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+};
+
+void testLoop () {
+    LoopWorker worker;
+    auto uwId = uartWork.init(UART_PINS, 1'000'000);
+    auto wkId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, wkId);
+    TEST_ASSERT_GREATER_THAN(wkId, uwId);
+
+    Worker::send({ wkId, worker.START });
+    TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be > 1
+
+    int n = 0;
+    while (!worker.txDone) { asm ("wfi"); ++n; }
+    TEST_ASSERT_EQUAL(25, n); // TODO not 26?
+    while (!worker.rxDone) { asm ("wfi"); ++n; }
+    TEST_ASSERT_GREATER_OR_EQUAL(52, n);
+
+    TEST_ASSERT_GREATER_OR_EQUAL(52, worker.calls);
+    TEST_ASSERT_EQUAL(26*27/2, worker.sum);
+}
+
 void allTests () {
-    RUN_TEST(testJumper);
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
     RUN_TEST(testWait); // async in blocking mode (sync-like)
     RUN_TEST(testWork); // async in full non-blocking mode
     RUN_TEST(testSync); // make sure reinit works
     RUN_TEST(testPoll); // make sure reinit works
+    RUN_TEST(testJumper);
+    RUN_TEST(testLoop);
 }
