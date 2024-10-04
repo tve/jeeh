@@ -147,8 +147,10 @@ struct Work : Sync<A,D,T,R>, Worker {
         if (!dma.DRX[dma.CCR](0)) { // start circular rx lazily
 #if STM32F1 | STM32F3 | STM32G4
             dma.DRX[dma.CCR](5) = 1; // CIRC
+            dma.DRX[dma.CCR](2) = 1; // HTIE
 #else
             dma.DRX[dma.CCR](8) = 1; // CIRC
+            dma.DRX[dma.CCR](2) = 1; // HTIE
 #endif
             dma.rxStart(rxBuf, RX_MAX);
         }
