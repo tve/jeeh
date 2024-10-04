@@ -88,7 +88,7 @@ struct Sync : Poll<A> {
     void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (n > 0) {
             startReq(w, p, n);
-            while (!dma.completed())
+            while (!dma.completed() && dma.isRunning())
                 asm ("wfe");
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
@@ -123,40 +123,73 @@ struct Work : Sync<A,D,T,R>, Worker {
     uint8_t init (char const* defs, int baud) {
         BASE::init(defs, baud);
         irqEnable(cfg.idleIrq);
-        irqEnable(cfg.txIrq);
         irqEnable(cfg.rxIrq);
+        irqEnable(cfg.txIrq);
         return Worker::init();
     }
 
     void deinit () {
         irqDisable(cfg.idleIrq);
-        irqDisable(cfg.txIrq);
         irqDisable(cfg.rxIrq);
+        irqDisable(cfg.txIrq);
         BASE::deinit();
     }
 
     // async interface
+
     void write (void const* buf, uint16_t len, Event out) {
         assert(len > 0);
         txPending = out;
         BASE::startReq(true, (void*) buf, len);
     }
+
     void read (uint16_t skip, Event out) {
-        (void) skip; (void) out;
+        if (!dma.DRX[dma.CCR](0)) { // start circular rx lazily
+#if STM32F1 | STM32F3 | STM32G4
+            dma.DRX[dma.CCR](5) = 1; // CIRC
+#else
+            dma.DRX[dma.CCR](8) = 1; // CIRC
+#endif
+            dma.rxStart(rxBuf, RX_MAX);
+        }
+#if 0 // TODO maybe ...
+        if (skip == 0 && out.eDst == 0) { // flush input
+            inPtr = rxBuf + RX_MAX - dma.DRX[dma.CNDTR];
+            return;
+        }
+#endif
+        inPtr = rxBuf + (inPtr - rxBuf + skip) % RX_MAX;
+        out.eVal = rxAvail();
+        if (out.eVal > 0)
+            reply(out);
+        else
+            rxPending = out;
     }
 
     void interrupt () {
-        if (dma.completed())
+        if (auto f = dma.completed(); f > 0)
             trigger(TXDONE);
+        else if (f < 0)
+            trigger(RXDONE);
     }
 
-    uint8_t* inPtr = rxBuf;
+    uint8_t const* inPtr = rxBuf;
 private:
-    uint8_t rxBuf [128]; // TODO dynamic alloc and 32-byte cache-line aligned
+    enum { RX_MAX = 128 };
+    uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
+
+    uint32_t rxAvail () const {
+        auto cnt = dma.DRX[dma.CNDTR];
+        assert(cnt > 0);
+        auto end = (RX_MAX - cnt - 1) % RX_MAX + 1; // 1..RX_MAX
+        auto pos = inPtr - rxBuf;
+        return (end > pos ? end : RX_MAX) - pos;
+    }
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
             case RXDONE:
+                rxPending.eVal = rxAvail();
                 // TODO finishReq(w, p, n);
                 reply(rxPending);
                 rxPending = {};

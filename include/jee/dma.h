@@ -72,23 +72,30 @@ struct DmaConfig {
         DRX[CCR](0) = 1; // EN
     }
 
-    bool completed () const {
+    int completed () const {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*T)) { // GIF
             DTX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*T);
-        } else if (DMA[ISR](4*R)) { // GIF
+            return 1;
+        }
+        if (DMA[ISR](4*R)) { // GIF
             DRX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*R);
+            return -1;
         }
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
-        if (DMA[T&~3](5+ifcBits[T&3])) // tx TCIF
+        if (DMA[T&~3](5+ifcBits[T&3])) { // tx TCIF
             DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
-        else if (DMA[R&~3](5+ifcBits[R&3])) // rx TCIF
+            return 1;
+        }
+        if (DMA[R&~3](5+ifcBits[R&3])) { // rx TCIF
             DMA[IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
+            return -1;
+        }
 #endif
-        return !isRunning();
+        return 0;
     }
 
     bool isRunning () const {

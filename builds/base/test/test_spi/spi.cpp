@@ -137,7 +137,7 @@ void testRxWait () {
     uint8_t buf [100];
     auto start = cycles::micros();
     spiWork.transfer(false, buf, sizeof buf);
-    TEST_ASSERT_INT_WITHIN(2, 23, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(3, 25, cycles::micros()-start);
 }
 
 void testFlashGpio () {

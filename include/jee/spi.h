@@ -168,7 +168,7 @@ struct Sync : Poll<A> {
             return 0;
 
         startReq(w, p, n);
-        while (!dma.completed())
+        while (!dma.completed() && dma.isRunning())
             asm ("wfe");
         Worker::irqClear(cfg.txIrq);
         Worker::irqClear(cfg.rxIrq);
