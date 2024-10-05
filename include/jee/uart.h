@@ -27,7 +27,7 @@ struct Poll {
         RCC (cfg.ena,1) = 1;
         baudRate(baud);
 
-        UART[CR1] = (1<<3) | (1<<2) | (1<<0);  // TE RE UE
+        UART[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<0);  // FIFOEN TE RE UE
     }
 
     void deinit () {
