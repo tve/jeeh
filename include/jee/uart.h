@@ -145,7 +145,7 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void read (uint16_t skip, Event out) {
         if (!dma.DRX[dma.CCR](0)) { // start circular rx lazily
-            //UART[BASE::CR1](4) = 1; // IDLEIE
+            UART[BASE::CR1](4) = 1; // IDLEIE
 
 #if STM32F1 | STM32F3 | STM32G4
             dma.DRX[dma.CCR](5) = 1; // CIRC
@@ -165,10 +165,13 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void idleIrq () {
-        if (UART[BASE::SR] & 0x1F) { // IDLE or some error
-            UART[BASE::ICR] = 0x1F;
-            trigger(RXIDLE);
-        }
+#if STM32F1 | STM32F4
+        +UART[BASE::SR];
+        +UART[BASE::RDR]; // clear idle and error flags
+#else
+        UART[BASE::ICR] = 0x1F; // clear IDLE and error flags
+#endif
+        trigger(RXIDLE);
     }
 
     void dmaIrq () {
@@ -183,7 +186,7 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     uint8_t const* inPtr = rxBuf;
 private:
-    enum { RX_MAX = 32 };
+    enum { RX_MAX = 256 };
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
 
     uint32_t rxAvail () const {

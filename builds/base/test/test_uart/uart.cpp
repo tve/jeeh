@@ -19,7 +19,7 @@ uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
 
 uart::Work<UART_TYPE> uartWork (UART_CONF);
-IRQ_HANDLER(UART_NAME, uartWork.idleIrq)
+IRQ_HANDLER(USART1, uartWork.idleIrq)
 IRQ_HANDLER(DMA1_Channel1, uartWork.dmaIrq) // not DMA1_CH1 !
 IRQ_HANDLER(DMA1_Channel2, uartWork.dmaIrq) // not DMA1_CH2 !
 
@@ -80,11 +80,11 @@ void testWait () {
 
     start = cycles::micros();
     uartWork.transfer(true, (uint8_t*) "abcde", 5);
-    TEST_ASSERT_INT_WITHIN(4, 60, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 46, cycles::micros()-start);
 
     start = cycles::micros();
     uartWork.transfer(true, (uint8_t*) "1234567890", 10);
-    TEST_ASSERT_INT_WITHIN(1, 88, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 99, cycles::micros()-start);
 
     start = cycles::micros();
     uartWork.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
@@ -183,10 +183,8 @@ private:
                 break;
             case RECV:
                 // count the number of bytes received
-logf("%d %d", in.eVal, sum+in.eVal);
-logDump(uartWork.inPtr, in.eVal);
                 sum += in.eVal;
-                if (sum >= 368/*27*28/2*/) {
+                if (sum >= 27*28/2) {
                     uartWork.read(in.eVal, {}); // consume without new request
                     rxDone = true;
                 } else // keep reading
@@ -201,8 +199,7 @@ logDump(uartWork.inPtr, in.eVal);
 
 void testLoop () {
     LoopWorker worker;
-    //auto uwId = uartWork.init(UART_PINS, 1'000'000); // TODO
-    auto uwId = uartWork.init(UART_PINS, 10'000);
+    auto uwId = uartWork.init(UART_PINS, 1'000'000);
     auto wkId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -213,20 +210,20 @@ void testLoop () {
 
     int n = 0;
     while (!worker.txDone) { asm ("wfi"); ++n; }
-    TEST_ASSERT_GREATER_OR_EQUAL(24, n);            // TODO not 27?
+    TEST_ASSERT_EQUAL(28, n);
     while (!worker.rxDone) { asm ("wfi"); ++n; }
-    TEST_ASSERT_GREATER_OR_EQUAL(24, n);            // TODO not 27?
+    TEST_ASSERT_EQUAL(29, n);
 
-    TEST_ASSERT_GREATER_OR_EQUAL(39, worker.calls); // TODO not 54?
-    //TEST_ASSERT_EQUAL(27*28/2, worker.sum);
-    TEST_ASSERT_EQUAL(368, worker.sum);             // TODO not 378?
+    TEST_ASSERT_EQUAL(31, worker.calls);
+    TEST_ASSERT_EQUAL(27*28/2, worker.sum);
+    Worker::showStats();
 }
 
 void allTests () {
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
-    //RUN_TEST(testWait); // async in blocking mode (sync-like)
-    //RUN_TEST(testWork); // async in full non-blocking mode
+    RUN_TEST(testWait); // async in blocking mode (sync-like)
+    RUN_TEST(testWork); // async in full non-blocking mode
     RUN_TEST(testSync); // make sure reinit works
     RUN_TEST(testPoll); // make sure reinit works
     RUN_TEST(testJumper);
