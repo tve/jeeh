@@ -1,4 +1,4 @@
-// Several UART variants (TODO: just poll/sync & tx-only for now).
+// Several UART variants: poll, sync, and work (also usable as sync).
 
 namespace jeeh::uart {
 
@@ -169,7 +169,7 @@ struct Work : Sync<A,D,T,R>, Worker {
         +UART[BASE::SR];
         +UART[BASE::RDR]; // clear idle and error flags
 #else
-        UART[BASE::ICR] = 0x1F; // clear IDLE and error flags
+        UART[BASE::ICR] = 0x1F; // clear idle and error flags
 #endif
         trigger(RXIDLE);
     }
@@ -190,11 +190,8 @@ private:
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
 
     uint32_t rxAvail () const {
-        auto cnt = dma.DRX[dma.CNDTR];
-        if (cnt == 0)
-            cnt = RX_MAX;
-        assert(cnt <= RX_MAX);
-        auto end = RX_MAX - cnt; // 0 .. RX_MAX-1
+        auto end = RX_MAX - dma.DRX[dma.CNDTR];
+        assert(0 <= end && end < RX_MAX);
         auto pos = inPtr - rxBuf;
         assert(0 <= pos && pos < RX_MAX);
         return (end >= pos ? end : RX_MAX) - pos;
