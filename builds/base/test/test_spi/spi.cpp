@@ -116,11 +116,11 @@ void testTxWait () {
 
     auto start = cycles::micros();
     spiWork.transfer(true, (uint8_t*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(2, 8, cycles::micros()-start);
 
     start = cycles::micros();
     spiWork.transfer(true, (uint8_t*) "abcde", 5);
-    TEST_ASSERT_INT_WITHIN(1, 7, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 3, cycles::micros()-start);
 
     start = cycles::micros();
     spiWork.transfer(true, (uint8_t*) "1234567890", 10);
@@ -137,7 +137,7 @@ void testRxWait () {
     uint8_t buf [100];
     auto start = cycles::micros();
     spiWork.transfer(false, buf, sizeof buf);
-    TEST_ASSERT_INT_WITHIN(3, 25, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(4, 27, cycles::micros()-start);
 }
 
 void testFlashGpio () {

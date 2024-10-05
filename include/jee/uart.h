@@ -8,7 +8,7 @@ struct Poll {
 #if STM32F1 | STM32F4
     enum { SR=0x00,RDR=0x04,TDR=0x04,BRR=0x08,CR1=0x0C,CR3=0x14 };
 #else
-    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,CR=0x20,RDR=0x24,TDR=0x28 };
+    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,ICR=0x20,RDR=0x24,TDR=0x28 };
 #endif
 
     struct Config {
@@ -88,7 +88,7 @@ struct Sync : Poll<A> {
     void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (n > 0) {
             startReq(w, p, n);
-            while (!dma.completed() && dma.isRunning())
+            while (dma.completed() == 0 && dma.isRunning())
                 asm ("wfe");
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
@@ -114,9 +114,9 @@ protected:
 template< uint32_t A, uint32_t D, int T, int R >
 struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg, BASE::dma;
+    using BASE::Sync, BASE::cfg, BASE::dma, BASE::UART;
 
-    enum TAG { RXIDLE, RXDONE, TXDONE };
+    enum TAG { RXIDLE, RXHALF, RXFULL, TXDONE };
 
     Event rxPending, txPending;
 
@@ -145,21 +145,17 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void read (uint16_t skip, Event out) {
         if (!dma.DRX[dma.CCR](0)) { // start circular rx lazily
+            //UART[BASE::CR1](4) = 1; // IDLEIE
+
 #if STM32F1 | STM32F3 | STM32G4
             dma.DRX[dma.CCR](5) = 1; // CIRC
-            dma.DRX[dma.CCR](2) = 1; // HTIE
 #else
             dma.DRX[dma.CCR](8) = 1; // CIRC
-            dma.DRX[dma.CCR](2) = 1; // HTIE
 #endif
+            dma.DRX[dma.CCR](2) = 1; // HTIE
             dma.rxStart(rxBuf, RX_MAX);
         }
-#if 0 // TODO maybe ...
-        if (skip == 0 && out.eDst == 0) { // flush input
-            inPtr = rxBuf + RX_MAX - dma.DRX[dma.CNDTR];
-            return;
-        }
-#endif
+        // TODO flush when skip is large, and deal with empty out
         inPtr = rxBuf + (inPtr - rxBuf + skip) % RX_MAX;
         out.eVal = rxAvail();
         if (out.eVal > 0)
@@ -168,10 +164,20 @@ struct Work : Sync<A,D,T,R>, Worker {
             rxPending = out;
     }
 
-    void interrupt () {
-        if (auto f = dma.completed(); f < 0)
-            trigger(RXDONE);
-        else if (f > 0)
+    void idleIrq () {
+        if (UART[BASE::SR] & 0x1F) { // IDLE or some error
+            UART[BASE::ICR] = 0x1F;
+            trigger(RXIDLE);
+        }
+    }
+
+    void dmaIrq () {
+        auto f = dma.completed();
+        if (f == dma.RXHALF)
+            trigger(RXHALF);
+        else if (f == dma.RXFULL)
+            trigger(RXFULL);
+        else if (f == dma.TXDONE)
             trigger(TXDONE);
     }
 
@@ -182,7 +188,9 @@ private:
 
     uint32_t rxAvail () const {
         auto cnt = dma.DRX[dma.CNDTR];
-        assert(0 < cnt && cnt <= RX_MAX);
+        if (cnt == 0)
+            cnt = RX_MAX;
+        assert(cnt <= RX_MAX);
         auto end = RX_MAX - cnt; // 0 .. RX_MAX-1
         auto pos = inPtr - rxBuf;
         assert(0 <= pos && pos < RX_MAX);
@@ -191,11 +199,17 @@ private:
 
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
-            case RXDONE:
+            case RXIDLE:
+            case RXHALF:
+            case RXFULL:
+                if (rxPending.eDst == 0)
+                    break;
                 rxPending.eVal = rxAvail();
                 // TODO finishReq(w, p, n);
-                reply(rxPending);
-                rxPending = {};
+                if (rxPending.eVal > 0) {
+                    reply(rxPending);
+                    rxPending = {};
+                }
                 break;
             case TXDONE:
                 // TODO finishReq(w, p, n);

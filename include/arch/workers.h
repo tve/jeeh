@@ -198,6 +198,7 @@ private:
     }
 
     void unpend () {
+        assert(wId != 0);
         auto evt = wPend.pull(wId);
         if (evt.eDst != 0) {
             unpend(); // use recursion to process in FIFO iso LIFO order

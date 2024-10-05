@@ -11,6 +11,7 @@ struct DmaConfig {
     enum { ISR=0x00, IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
     enum { CHAN_STEP=0x18 };
 #endif
+    enum { NONE, RXHALF, RXFULL, TXDONE };
 
     static constexpr IoReg<D>             DMA {};
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
@@ -74,28 +75,33 @@ struct DmaConfig {
 
     int completed () const {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+        if (DMA[ISR](4*R+2)) { // HTIF
+            DMA[IFCR] = 1<<(4*R+2);
+            return RXHALF;
+        }
+        if (DMA[ISR](4*R)) { // GIF
+            if (!DRX[CCR](5)) // only disable if not circular
+                DRX[CCR](0) = 0; // ~EN
+            DMA[IFCR] = 1<<(4*R);
+            return RXFULL;
+        }
         if (DMA[ISR](4*T)) { // GIF
             DTX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*T);
-            return 1;
-        }
-        if (DMA[ISR](4*R)) { // GIF
-            DRX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*R);
-            return -1;
+            return TXDONE;
         }
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
-        if (DMA[T&~3](5+ifcBits[T&3])) { // tx TCIF
-            DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
-            return 1;
-        }
-        if (DMA[R&~3](5+ifcBits[R&3])) { // rx TCIF
+        if ((uint8_t) DMA[R&~3](ifcBits[R&3],6)) { // rx irq
+            done = DMA[R&~3](4+ifcBits[R&3]) ? RXHALF : RXFULL;
             DMA[IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
-            return -1;
+        }
+        if ((uint8_t) DMA[T&~3](ifcBits[T&3],6)) { // tx irq
+            DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
+            return TXDONE;
         }
 #endif
-        return 0;
+        return NONE;
     }
 
     bool isRunning () const {
