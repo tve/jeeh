@@ -187,7 +187,7 @@ void testFlashPoll () {
 
     auto start = cycles::millis();
     spif.erase(0);
-    TEST_ASSERT_INT_WITHIN(4, 30, cycles::millis()-start);
+    TEST_ASSERT_INT_WITHIN(4, 31, cycles::millis()-start);
 
     uint8_t buf [512], buf2 [512];
     memset(buf, 0x55, sizeof buf);

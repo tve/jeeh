@@ -173,6 +173,11 @@ struct Sync : Poll<A> {
         while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
         while (SPI[BASE::SR](7)) {} // BSY
 
+        if (w) // drop all received data in tx mode
+            while (SPI[BASE::SR](9,2) != 0) // FRLVL
+                (void) +SPI.byte(BASE::DR);
+        assert(SPI[BASE::SR](9,2) == 0); // FRLVL
+
         Worker::irqClear(cfg.txIrq);
         Worker::irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
@@ -182,16 +187,15 @@ private:
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
-        dma.txStart(p, n);
         if (!w)
             dma.rxStart(p, n);
+        dma.txStart(p, n);
     }
 
     uint8_t finishReq (bool w, void* p, uint16_t n) const {
         if (!w)
             cache::inval(p, n);
-        while (SPI[BASE::SR](9,2) > 1) // rx fifo has more than 1 byte
-            (void) +SPI.byte(BASE::DR);
+        //assert(SPI[BASE::SR](9,2) == 0); // FRLVL
         return SPI.byte(BASE::DR);
     }
 };
