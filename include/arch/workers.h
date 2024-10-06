@@ -8,6 +8,8 @@ struct Event {
 
     Event (uint8_t dst =0, uint8_t tag =0, uint16_t val =0)
         : eDst (dst), eTag (tag), eVal (val) {}
+
+    operator bool () const { return eDst != 0; }
 };
 
 struct EventList {

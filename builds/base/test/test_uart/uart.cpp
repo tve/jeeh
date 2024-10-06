@@ -31,6 +31,15 @@ void tearDown () {
     uartWork.deinit();
 }
 
+void testJumper () {
+    Pin outPin ("A9","P"), inPin ("A10","F");
+
+    // check that the two pins are connected via a jumper
+    TEST_ASSERT_EQUAL(0, inPin);
+    outPin = 1;
+    TEST_ASSERT_EQUAL(1, inPin);
+}
+
 void testPoll () {
     uartPoll.init(UART_PINS, 1'000'000);
 
@@ -146,15 +155,6 @@ void testWork () {
     TEST_ASSERT_EQUAL(5, worker.calls);
 }
 
-void testJumper () {
-    Pin outPin ("A9","P"), inPin ("A10","F");
-
-    // check that the two pins are connected via a jumper
-    TEST_ASSERT_EQUAL(0, inPin);
-    outPin = 1;
-    TEST_ASSERT_EQUAL(1, inPin);
-}
-
 struct LoopWorker : Worker {
     enum TAG { START, MORE, SENT, RECV };
 
@@ -220,12 +220,14 @@ void testLoop () {
 }
 
 void allTests () {
+    RUN_TEST(testJumper);
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
     RUN_TEST(testWait); // async in blocking mode (sync-like)
     RUN_TEST(testWork); // async in full non-blocking mode
     RUN_TEST(testSync); // make sure reinit works
     RUN_TEST(testPoll); // make sure reinit works
-    RUN_TEST(testJumper);
     RUN_TEST(testLoop);
+    RUN_TEST(testSync); // make sure reinit works
+    RUN_TEST(testPoll); // make sure reinit works
 }

@@ -93,7 +93,8 @@ struct Sync : Poll<A> {
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
             Worker::irqClear(cfg.rxIrq);
-            finishReq(w, p, n);
+            if (!w)
+                cache::inval(p, n);
         }
     }
 
@@ -103,11 +104,6 @@ protected:
             dma.txStart(p, n);
         else
             dma.rxStart(p, n);
-    }
-
-    void finishReq (bool w, void* p, uint16_t n) const {
-        if (!w)
-            cache::inval(p, n);
     }
 };
 
@@ -156,7 +152,7 @@ struct Work : Sync<A,D,T,R>, Worker {
             dma.rxStart(rxBuf, RX_MAX);
         }
         // TODO flush when skip is large, and deal with empty out
-        inPtr = rxBuf + (inPtr - rxBuf + skip) % RX_MAX;
+        rxPtr = rxBuf + (rxPtr - rxBuf + skip) % RX_MAX;
         out.eVal = rxAvail();
         if (out.eVal > 0)
             reply(out);
@@ -184,7 +180,7 @@ struct Work : Sync<A,D,T,R>, Worker {
             trigger(TXDONE);
     }
 
-    uint8_t const* inPtr = rxBuf;
+    uint8_t const* rxPtr = rxBuf;
 private:
     enum { RX_MAX = 256 };
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
@@ -192,7 +188,7 @@ private:
     uint32_t rxAvail () const {
         auto end = RX_MAX - dma.DRX[dma.CNDTR];
         assert(0 <= end && end < RX_MAX);
-        auto pos = inPtr - rxBuf;
+        auto pos = rxPtr - rxBuf;
         assert(0 <= pos && pos < RX_MAX);
         return (end >= pos ? end : RX_MAX) - pos;
     }
@@ -202,17 +198,15 @@ private:
             case RXIDLE:
             case RXHALF:
             case RXFULL:
-                if (rxPending.eDst == 0)
-                    break;
-                rxPending.eVal = rxAvail();
-                // TODO finishReq(w, p, n);
-                if (rxPending.eVal > 0) {
-                    reply(rxPending);
-                    rxPending = {};
-                }
+                if (rxPending)
+                    if (auto n = rxAvail(); n > 0) {
+                        cache::inval(rxPtr, n);
+                        rxPending.eVal = n;
+                        reply(rxPending);
+                        rxPending = {};
+                    }
                 break;
             case TXDONE:
-                // TODO finishReq(w, p, n);
                 reply(txPending);
                 txPending = {};
                 break;
