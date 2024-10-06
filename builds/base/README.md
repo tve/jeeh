@@ -16,6 +16,8 @@ Run all tests on the attached board with: **`pio test`**
 - **tick** - set up SysTick interrupt and test timer chain in `Ticker`
 - **exti** - set up EXTI interrupts and test `ExtIrq` (needs jumper)
 - **uart** - test variants of the UART driver (also needs PA9-PA10 jumper)
+- **spi** - test variants of the SPI driver (needs SPI flash chip)
+- **rng** - a quick check that the random number generator h/w works
 
 Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
 
