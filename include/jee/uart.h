@@ -82,7 +82,10 @@ struct Sync : Poll<A> {
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+    void deinit () {
+        dma.deinit();
+        BASE::deinit();
+    }
 
     // sync version, dma with wfe
     void transfer (bool w, uint8_t* p, uint16_t n) const {

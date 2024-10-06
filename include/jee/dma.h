@@ -60,6 +60,11 @@ struct DmaConfig {
         DRX[CPAR] = rxAddr;
     }
 
+    void deinit () const {
+        DTX[CCR] = 0;
+        DRX[CCR] = 0;
+    }
+
     void txStart (void const* p, uint16_t n) const {
         cache::clean(p, n);
         DTX[CMAR] = (uintptr_t) p;
