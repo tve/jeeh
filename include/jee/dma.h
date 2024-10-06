@@ -82,7 +82,8 @@ struct DmaConfig {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*R+2)) { // HTIF
             DMA[IFCR] = 1<<(4*R+2);
-            return RXHALF;
+            if (DRX[CCR](5)) // only report if circular
+                return RXHALF;
         }
         if (DMA[ISR](4*R)) { // GIF
             if (!DRX[CCR](5)) // only disable if not circular

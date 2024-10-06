@@ -168,8 +168,11 @@ struct Sync : Poll<A> {
             return 0;
 
         startReq(w, p, n);
-        while (!dma.completed() && dma.isRunning())
+        while (dma.isRunning() && dma.completed() == 0)
             asm ("wfe");
+        while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
+        while (SPI[BASE::SR](7)) {} // BSY
+
         Worker::irqClear(cfg.txIrq);
         Worker::irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
@@ -187,11 +190,9 @@ private:
     uint8_t finishReq (bool w, void* p, uint16_t n) const {
         if (!w)
             cache::inval(p, n);
-        uint8_t r;
-        do
-            r = SPI.byte(BASE::DR);
-        while (SPI[BASE::SR](0)); // RXNE
-        return r;
+        while (SPI[BASE::SR](9,2) > 1) // rx fifo has more than 1 byte
+            (void) +SPI.byte(BASE::DR);
+        return SPI.byte(BASE::DR);
     }
 };
 

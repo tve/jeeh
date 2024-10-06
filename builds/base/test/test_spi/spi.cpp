@@ -267,6 +267,6 @@ void allTests () {
     RUN_TEST(testRxWait);
     RUN_TEST(testFlashGpio);
     RUN_TEST(testFlashPoll);
-    //RUN_TEST(testFlashSync);
+    RUN_TEST(testFlashSync);
     RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
 }
