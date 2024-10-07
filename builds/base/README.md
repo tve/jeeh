@@ -18,7 +18,7 @@ Run all tests on the attached board with: **`pio test`**
 - **uart** - test variants of the UART driver (needs same PA9-PA10 jumper)
 - **spi** - test variants of the SPI driver (needs SPI flash chip)
 - **rng** - a quick check that the random number generator h/w works
-- **adc** - verify that the DAC and ADC work (this needs PA4-PA7 jumper)
+- **analog** - verify that the DAC and ADC work (this needs PA4-PA7 jumper)
 
 Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
 
