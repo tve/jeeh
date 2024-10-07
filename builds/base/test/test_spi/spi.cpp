@@ -32,7 +32,7 @@ void testTxGpio () {
 
     auto start = cycles::micros();
     spiGpio.transfer(true, (uint8_t*) "x", 1);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 6, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(MARGIN, 7, cycles::micros()-start);
 
     start = cycles::micros();
     spiGpio.transfer(true, (uint8_t*) "abcde", 5);
@@ -44,7 +44,7 @@ void testTxGpio () {
 
     start = cycles::micros();
     spiGpio.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 170, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(MARGIN, 174, cycles::micros()-start);
 }
 
 void testRxGpio () {
@@ -72,7 +72,7 @@ void testFlashGpio () {
 
     auto start = cycles::millis();
     spif.erase(0);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 34, cycles::millis()-start);
+    TEST_ASSERT_INT_WITHIN(MARGIN, 33, cycles::millis()-start);
 
     uint8_t buf [512], buf2 [512];
     memset(buf, 0x55, sizeof buf);
@@ -259,6 +259,124 @@ void testFlashWait () {
     TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 
+struct SpiWorker : Worker {
+    enum TAG { TX, TX1, TX2, TX3, RX, DONE };
+
+    uint8_t calls =0;
+    bool done =false;
+    uint8_t buf [100];
+
+    using Worker::init;
+
+private:
+    Event process (Event in, Event out, void*) override {
+        ++calls;
+
+        switch (in.eTag) {
+            case TX:
+                spiWork.start(true, (uint8_t*) "x", 1, { wId, TX1 });
+                break;
+            case TX1:
+                spiWork.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
+                break;
+            case TX2:
+                spiWork.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
+                break;
+            case TX3:
+                spiWork.start(true,
+                              (uint8_t*) "123456789012345678901234567890", 30,
+                              { wId, DONE });
+                break;
+            case RX:
+                memset(buf, 0, sizeof buf);
+                spiWork.start(false, buf, sizeof buf, { wId, DONE });
+                break;
+            case DONE:
+                done = true;
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+};
+
+void testTxWork () {
+    SpiWorker worker;
+    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto wkId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, wkId);
+    TEST_ASSERT_GREATER_THAN(wkId, swId);
+
+    auto start = cycles::micros();
+    Worker::send({ wkId, worker.TX });
+    TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be 2
+
+    int n = 0;
+    while (!worker.done) { asm ("wfi"); ++n; }
+    TEST_ASSERT_INT_WITHIN(MARGIN, 50, cycles::micros()-start);
+
+    TEST_ASSERT_EQUAL(5, worker.calls);
+}
+
+void testRxWork () {
+    SpiWorker worker;
+    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto wkId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, wkId);
+    TEST_ASSERT_GREATER_THAN(wkId, swId);
+
+    auto start = cycles::micros();
+    Worker::send({ wkId, worker.RX });
+    TEST_ASSERT_EQUAL(1, worker.calls);
+
+    int n = 0;
+    while (!worker.done) { asm ("wfi"); ++n; }
+    TEST_ASSERT_INT_WITHIN(MARGIN, 38, cycles::micros()-start);
+
+    TEST_ASSERT_EQUAL(2, worker.calls);
+}
+
+void testFlashWork () {
+    SpiWorker worker;
+    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto wkId = worker.init();
+
+    TEST_ASSERT_GREATER_THAN(0, wkId);
+    TEST_ASSERT_GREATER_THAN(wkId, swId);
+
+    // TODO flash driver will need to be extended to work in async mode
+    //  i.e. wrap as worker and use periodic ticks to check erase completion
+
+    SpiFlash spif (spiWork);
+
+    // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
+
+    TEST_ASSERT_EQUAL_HEX(0xEF4015, spif.info());
+    TEST_ASSERT_EQUAL(2048, spif.size());
+
+    uint8_t snBuf [8];
+    spif.serNum(snBuf);
+    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
+
+    auto start = cycles::millis();
+    spif.erase(0);
+    TEST_ASSERT_INT_WITHIN(MARGIN, 28, cycles::millis()-start);
+
+    uint8_t buf [512], buf2 [512];
+    memset(buf, 0x55, sizeof buf);
+
+    start = cycles::millis();
+    spif.write(0, buf, sizeof buf);
+    TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::millis()-start);
+
+    spif.read(0, buf2, sizeof buf2);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
+}
+
 void allTests () {
     RUN_TEST(testTxGpio);
     RUN_TEST(testRxGpio);
@@ -269,10 +387,10 @@ void allTests () {
     RUN_TEST(testTxSync);
     RUN_TEST(testRxSync);
     RUN_TEST(testFlashSync);
-    //RUN_TEST(testTxWait);
-    //RUN_TEST(testRxWait);
-    //RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
-    //RUN_TEST(testTxWork);
-    //RUN_TEST(testRxWork);
-    //RUN_TEST(testFlashWork);
+    RUN_TEST(testTxWait);
+    RUN_TEST(testRxWait);
+    RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
+    RUN_TEST(testTxWork);
+    RUN_TEST(testRxWork);
+    RUN_TEST(testFlashWork);
 }

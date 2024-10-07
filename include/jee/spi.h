@@ -176,7 +176,7 @@ struct Sync : Poll<A> {
         return finishReq(w, p, n);
     }
 
-private:
+protected:
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
@@ -225,7 +225,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg, BASE::dma;
 
-    enum TAG { DONE };
+    enum TAG { RXDONE, TXDONE };
 
     Event pending;
 
@@ -244,21 +244,26 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     // async version
     void start (uint8_t w, uint8_t* p, uint16_t n, Event out) {
-        assert(n == 0);
+        assert(n > 0);
         pending = out;
         BASE::startReq(w, p, n);
     }
 
     void interrupt () {
-        if (dma.completed())
-            trigger(DONE);
+        auto f = dma.completed();
+        assert(f != 0);
+        trigger(f == dma.TXDONE ? TXDONE : RXDONE);
     }
 
 private:
     Event process (Event in, Event out, void*) override {
         switch (in.eTag) {
-            case DONE:
-                // TODO finishReq(w, p, n);
+            case RXDONE:
+                pending.eVal = BASE::finishReq(false, nullptr, 0);
+                reply(pending);
+                break;
+            case TXDONE:
+                pending.eVal = BASE::finishReq(true, nullptr, 0);
                 reply(pending);
                 break;
             default:
