@@ -31,6 +31,11 @@ namespace ena {
         GPIOA         = 17 + 8 * AHBENR,
 #elif STM32G0
         GPIOA         =  0 + 8 * 0x34,
+#elif STM32G4
+        DAC1          = 16 + 8 * AHB2ENR,
+        DAC2          = 17 + 8 * AHB2ENR,
+        DAC3          = 18 + 8 * AHB2ENR,
+        DAC4          = 19 + 8 * AHB2ENR,
 #elif STM32L0
         GPIOA         =  0 + 8 * 0x2C,
 #endif
