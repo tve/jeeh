@@ -176,6 +176,7 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void dmaIrq () {
         auto f = dma.completed();
+        assert(f != 0);
         if (f == dma.RXHALF)
             trigger(RXHALF);
         else if (f == dma.RXFULL)
