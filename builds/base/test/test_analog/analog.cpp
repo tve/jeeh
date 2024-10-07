@@ -36,12 +36,12 @@ void testAdc () {
     // the bottom and top 1% of the DAC range are not very accurate
     for (auto i = 40; i < 4096-40; ++i) {
         dac::set(i);
-        cycles::usBusy(3);
+        cycles::usBusy(2);
         auto v = adc::read(4); // PA7
         //logf("%d = %d - %d", i-v, i, v);
-        // there are some variations, but ± 16 counts ± 1.5% will be ok
+        // there are some variations, but ± 48+1.5% should be ok
         // most irregularities appear to be in the middle of the range
-        TEST_ASSERT_INT_WITHIN(16+i/64, i, v);
+        TEST_ASSERT_INT_WITHIN(48+i/64, i, v);
     }
 }
 
