@@ -216,7 +216,6 @@ private:
         assert(SPI[BASE::SR](11,2) == 0); // FTLVL
         assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
 
-logf("13");
         return r;
     }
 };

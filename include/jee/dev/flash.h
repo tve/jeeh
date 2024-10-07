@@ -8,10 +8,12 @@ uint8_t rwCmd (SPI& spi, void const* cmd, uint8_t* buf =0, uint16_t len =0) {
     auto send = *ptr >> 7;
     int8_t nCmd = *ptr++ & 0x7F;
 
+    cycles::usBusy(3);
     spi.enable();
     auto r = nCmd > 0 ? spi.transfer(true, ptr, nCmd) : 0;
     if (len > 0)
         spi.transfer(send, buf, len);
+    spi.enable();
     spi.disable();
     return r;
 }
@@ -96,9 +98,7 @@ private:
     }
 
     void wait () const {
-int x = 0;
-        while (rwCmd(spi, "\x02\x05.") & 1) //{}
-{ logf("busy %d", ++x); cycles::msBusy(1); }
+        while (rwCmd(spi, "\x02\x05.") & 1) {}
     }
 
     uint8_t* cmdAddr (uint8_t cmd, uint32_t addr) const {

@@ -51,4 +51,11 @@ inline static void msBusy (uint32_t ms) {
     while (count() - t < n) {}
 }
 
+inline static void usBusy (uint32_t us) {
+    auto n = SystemCoreClock < 1'000'000 ? (us * SystemCoreClock) / 1'000'000
+                                         : us * (SystemCoreClock / 1'000'000);
+    auto t = count();
+    while (count() - t < n) {}
+}
+
 } // namespace jeeh::cycles
