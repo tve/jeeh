@@ -168,9 +168,13 @@ struct Sync : Poll<A> {
             return 0;
 
         startReq(w, p, n);
-        while (dma.isRunning())
+        while (true) {
+            BlockIRQ irq;
+            if (!dma.isRunning())
+                break;
             if (dma.completed() == 0)
                 asm ("wfe");
+        }
         Worker::irqClear(cfg.txIrq);
         Worker::irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
@@ -251,8 +255,8 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void interrupt () {
         auto f = dma.completed();
-        assert(f != 0);
-        trigger(f == dma.TXDONE ? TXDONE : RXDONE);
+        if (f != 0)
+            trigger(f == dma.TXDONE ? TXDONE : RXDONE);
     }
 
 private:

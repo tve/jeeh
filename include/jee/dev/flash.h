@@ -8,13 +8,16 @@ uint8_t rwCmd (SPI& spi, void const* cmd, uint8_t* buf =0, uint16_t len =0) {
     auto send = *ptr >> 7;
     int8_t nCmd = *ptr++ & 0x7F;
 
-    cycles::usBusy(3);
     spi.enable();
     auto r = nCmd > 0 ? spi.transfer(true, ptr, nCmd) : 0;
     if (len > 0)
         spi.transfer(send, buf, len);
-    spi.enable();
+
+    // TODO why is this timing adjustment so critical ???
+    spi.enable();       // extra nano-wait
     spi.disable();
+    cycles::usBusy(3);  // extra micro-wait
+
     return r;
 }
 
