@@ -168,16 +168,9 @@ struct Sync : Poll<A> {
             return 0;
 
         startReq(w, p, n);
-        while (dma.isRunning() && dma.completed() == 0)
-            asm ("wfe");
-        while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
-        while (SPI[BASE::SR](7)) {} // BSY
-
-        if (w) // drop all received data in tx mode
-            while (SPI[BASE::SR](9,2) != 0) // FRLVL
-                (void) +SPI.byte(BASE::DR);
-        assert(SPI[BASE::SR](9,2) == 0); // FRLVL
-
+        while (dma.isRunning())
+            if (dma.completed() == 0)
+                asm ("wfe");
         Worker::irqClear(cfg.txIrq);
         Worker::irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
@@ -187,16 +180,44 @@ private:
     void startReq (bool w, void* p, uint16_t n) const {
         assert(n > 0);
 
-        if (!w)
+        assert(!SPI[BASE::SR](7)); // ~BSY
+        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
+        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
+
+        if (w)
+            dma.txStart(p, n);
+        else {
+            SPI[BASE::CR1](6) = 0; // ~SPE
+            SPI[BASE::CR1](10) = 1; // RXONLY
             dma.rxStart(p, n);
-        dma.txStart(p, n);
+            SPI[BASE::CR1](6) = 1; // SPE needed to reaffirm?
+        }
     }
 
     uint8_t finishReq (bool w, void* p, uint16_t n) const {
-        if (!w)
+        if (!w) {
+            SPI[BASE::CR1](10) = 0; // ~RXONLY
+            while (SPI[BASE::SR](7)) {} // BSY
             cache::inval(p, n);
-        //assert(SPI[BASE::SR](9,2) == 0); // FRLVL
-        return SPI.byte(BASE::DR);
+        }
+
+        while (SPI[BASE::SR](7)) {} // BSY
+        //while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
+        while (SPI[BASE::SR](7)) {} // BSY
+
+        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
+        //assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
+
+        uint8_t r;
+        do
+            r = SPI.byte(BASE::DR);
+        while (SPI[BASE::SR](9,2) > 0); // FRLVL
+
+        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
+        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
+
+logf("13");
+        return r;
     }
 };
 

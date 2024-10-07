@@ -96,7 +96,9 @@ private:
     }
 
     void wait () const {
-        while (rwCmd(spi, "\x02\x05.") & 1) {}
+int x = 0;
+        while (rwCmd(spi, "\x02\x05.") & 1) //{}
+{ logf("busy %d", ++x); cycles::msBusy(1); }
     }
 
     uint8_t* cmdAddr (uint8_t cmd, uint32_t addr) const {

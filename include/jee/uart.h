@@ -91,8 +91,9 @@ struct Sync : Poll<A> {
     void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (n > 0) {
             startReq(w, p, n);
-            while (dma.completed() == 0 && dma.isRunning())
-                asm ("wfe");
+            while (dma.isRunning())
+                if (dma.completed() == 0)
+                    asm ("wfe");
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
             Worker::irqClear(cfg.rxIrq);
