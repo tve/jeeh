@@ -19,6 +19,7 @@ Run all tests on the attached board with: **`pio test`**
 - **spi** - test variants of the SPI driver (needs SPI flash chip)
 - **rng** - a quick check that the random number generator h/w works
 - **analog** - verify that the DAC and ADC work (this needs PA4-PA7 jumper)
+- **crc** - check that the cyclic redundancy check hardware works
 
 Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
 
