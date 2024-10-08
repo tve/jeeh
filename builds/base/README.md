@@ -20,6 +20,7 @@ Run all tests on the attached board with: **`pio test`**
 - **rng** - a quick check that the random number generator h/w works
 - **analog** - verify that the DAC and ADC work (this needs PA4-PA7 jumper)
 - **crc** - check that the cyclic redundancy check hardware works
+- **i2c** - test variants of the I2C driver (needs I2C FRAM chip)
 
 Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
 
