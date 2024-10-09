@@ -247,7 +247,6 @@ protected:
     }
 };
 
-#if 0
 // DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A> {
@@ -271,9 +270,6 @@ struct Sync : Poll<A> {
 
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::TXDR, A + BASE::RXDR);
-
-        irqEnable(cfg.evIrq);
-        //irqEnable(cfg.erIrq);
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
@@ -309,16 +305,38 @@ protected:
         }
         return true;
     }
+};
 
-private:
-    Chain msgs;
+template< uint32_t A, uint32_t D, int T, int R >
+struct Work : Sync<A,D,T,R>, Worker {
+    using BASE = Sync<A,D,T,R>;
+    using BASE::Sync, BASE::cfg, BASE::dma;
 
-    // async version, started from a msg
-    void start (Event m) {
-        if (!msgs.append(m))
-            startAsync(m);
+    enum TAG { RXDONE, TXDONE };
+
+    Event pending;
+
+    uint8_t init (char const* defs, int khz) {
+        BASE::init(defs, khz);
+        irqEnable(cfg.evIrq);
+        //irqEnable(cfg.erIrq);
+        return Worker::init();
     }
 
+    void deinit () {
+        irqDisable(cfg.evIrq);
+        //irqDisable(cfg.erIrq);
+        BASE::deinit();
+    }
+
+    // async version, started from a msg
+    void start (uint8_t a, uint8_t m, uint8_t* p, uint16_t n, Event out) {
+        assert(n > 0);
+        pending = out;
+        BASE::startReq(a, n, p, n);
+    }
+
+#if 0
     void finish () {
         auto mp = msgs.pull();
         if (mp == nullptr)
@@ -335,12 +353,29 @@ private:
         if (mode == BASE::W1 && len == 0)
             finish(); // this may be recursive
     }
+#endif
 
-    bool interrupt (int) {
-        I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
-        return !msgs.isEmpty();
+    void interrupt () {
+        BASE::I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
+        trigger(RXDONE); // TODO TXDONE?
+    }
+
+private:
+    Event process (Event in, Event out, void*) override {
+        switch (in.eTag) {
+            case RXDONE:
+                pending.eVal = BASE::finishReq(false, nullptr, 0);
+                reply(pending);
+                break;
+            case TXDONE:
+                pending.eVal = BASE::finishReq(true, nullptr, 0);
+                reply(pending);
+                break;
+            default:
+                fail();
+        }
+        return out;
     }
 };
-#endif
 
 } // namespace jeeh

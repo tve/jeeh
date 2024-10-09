@@ -10,13 +10,11 @@ TICKER_INSTALL(ticker)
 
 i2c::Gpio i2cGpio;
 i2c::Poll<I2C_NAME.ADDR> i2cPoll (ena::I2C_NAME, I2C_FREQ);
-#if 0
 i2c::Sync<I2C_TYPE> i2cSync (I2C_CONF);
 
 i2c::Work<I2C_TYPE> i2cWork (I2C_CONF);
 IRQ_HANDLER(DMA1_Channel3, i2cWork.interrupt) // not DMA1_CH3 !
 IRQ_HANDLER(DMA1_Channel4, i2cWork.interrupt) // not DMA1_CH4 !
-#endif
 
 template< typename T >
 void read32 (T const& dev, uint16_t addr, void* ptr) {
@@ -34,8 +32,8 @@ void setUp () {}
 void tearDown () {
     i2cGpio.deinit();
     i2cPoll.deinit();
-    //i2cSync.deinit();
-    //i2cWork.deinit();
+    i2cSync.deinit();
+    i2cWork.deinit();
 }
 
 void testFramGpio () {
@@ -125,19 +123,65 @@ void testFramPoll () {
     }
 }
 
-#if 0
 void testFramSync () {
     i2cSync.init(I2C_PINS, i2cTiming(1000));
-    I2cFram fram (i2cSync);
+    i2c::Dev fram { i2cSync, 0x50 };
 
+    uint8_t buf [32], buf2 [32];
+
+    memset(buf, 0xEE, sizeof buf);
+    for (auto i = 0; i < 3; ++i)
+        write32(fram, 32*i, buf);
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf2, 0x55, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, i+128, sizeof buf);
+        write32(fram, 32*i, buf);
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, i+128, sizeof buf);
+        memset(buf2, 0xAA, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+    }
 }
 
 void testFramWait () {
     i2cWork.init(I2C_PINS, i2cTiming(1000));
     i2c::Dev fram { i2cWork, 0x50 };
 
+    uint8_t buf [32], buf2 [32];
+
+    memset(buf, 0xEE, sizeof buf);
+    for (auto i = 0; i < 3; ++i)
+        write32(fram, 32*i, buf);
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf2, 0x55, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, i+128, sizeof buf);
+        write32(fram, 32*i, buf);
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+        memset(buf, i+128, sizeof buf);
+        memset(buf2, 0xAA, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+    }
 }
 
+#if 0
 struct I2cWorker : Worker {
     enum TAG { TX, TX1, TX2, TX3, RX, DONE };
 
@@ -196,7 +240,7 @@ void testFramWork () {
 void allTests () {
     RUN_TEST(testFramGpio);
     RUN_TEST(testFramPoll);
-    //RUN_TEST(testFramSync);
-    //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
+    RUN_TEST(testFramSync);
+    RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
 }
