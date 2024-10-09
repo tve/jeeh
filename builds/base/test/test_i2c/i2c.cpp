@@ -5,8 +5,6 @@
 #include "jee/i2c.h"
 #include "defs.h"
 
-constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
-
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
@@ -44,26 +42,36 @@ void testFramGpio () {
     i2cGpio.init(I2C_PINS, 1000);
     i2c::Dev fram { i2cGpio, 0x50 };
 
-    i2c::detect(i2cGpio);
+    //i2c::detect(i2cGpio);
+
+    auto detect = [&](uint8_t addr) {
+        i2c::Dev dev { i2cGpio, addr };
+        return dev.transfer(i2cGpio.W1) && dev.transfer(i2cGpio.W2);
+    };
+
+    TEST_ASSERT_FALSE(detect(0x4F));
+    TEST_ASSERT_TRUE(detect(0x50));
+    TEST_ASSERT_FALSE(detect(0x51));
 
     // read FRAM's device ID, MB85RC256V.pdf p10
     i2cGpio.start(0xF8);
     i2cGpio.wrByte(fram.id<<1);
     i2cGpio.start(0xF9);
-    auto x = i2cGpio.rdByte(false);
-    auto y = i2cGpio.rdByte(false);
-    auto z = i2cGpio.rdByte(true);
-    logf("id: %02x %02x %02x", x, y, z); // should be: 00 A5 10
+    auto id = i2cGpio.rdByte(false) << 16;
+    id |= i2cGpio.rdByte(false) << 8;
+    id |= i2cGpio.rdByte(true);
+    TEST_ASSERT_EQUAL_HEX(0x00A510, id);
 
-    uint16_t buf [32];
+    uint8_t buf [32], buf2 [32];
+
     memset(buf, 0xEE, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, 0x55, sizeof buf);
-        read32(fram, 32*i, buf);
-        logDump(buf, 16);
+        memset(buf2, 0x55, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
@@ -72,35 +80,36 @@ void testFramGpio () {
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, 0xAA, sizeof buf);
-        read32(fram, 32*i, buf);
-        logDump(buf, 16);
+        memset(buf, i+128, sizeof buf);
+        memset(buf2, 0xAA, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
 
-#if 0
 void testFramPoll () {
     i2cPoll.init(I2C_PINS, i2cTiming(1000));
     i2c::Dev fram { i2cPoll, 0x50 };
 
-    // read FRAM's device ID, MB85RC256V.pdf p10
-    i2cPoll.start(0xF8);
-    i2cPoll.wrByte(fram.id<<1);
-    i2cPoll.start(0xF9);
-    auto x = i2cPoll.rdByte(false);
-    auto y = i2cPoll.rdByte(false);
-    auto z = i2cPoll.rdByte(true);
-    logf("id: %02x %02x %02x", x, y, z); // should be: 00 A5 10
+    auto detect = [&](uint8_t addr) {
+        i2c::Dev dev { i2cPoll, addr };
+        return dev.transfer(i2cPoll.W1) && dev.transfer(i2cPoll.W2);
+    };
 
-    uint16_t buf [32];
+    TEST_ASSERT_FALSE(detect(0x4F));
+    TEST_ASSERT_TRUE(detect(0x50));
+    TEST_ASSERT_FALSE(detect(0x51));
+
+    uint8_t buf [32], buf2 [32];
+
     memset(buf, 0xEE, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, 0x55, sizeof buf);
-        read32(fram, 32*i, buf);
-        logDump(buf, 16);
+        memset(buf2, 0x55, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
@@ -109,68 +118,24 @@ void testFramPoll () {
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, 0xAA, sizeof buf);
-        read32(fram, 32*i, buf);
-        logDump(buf, 16);
+        memset(buf, i+128, sizeof buf);
+        memset(buf2, 0xAA, sizeof buf2);
+        read32(fram, 32*i, buf2);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
 
+#if 0
 void testFramSync () {
     i2cSync.init(I2C_PINS, i2cTiming(1000));
     I2cFram fram (i2cSync);
 
-    // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
-
-    TEST_ASSERT_EQUAL_HEX(0xEF4015, fram.info());
-    TEST_ASSERT_EQUAL(2048, fram.size());
-
-    uint8_t snBuf [8];
-    fram.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
-
-    auto start = cycles::millis();
-    fram.erase(0);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 28, cycles::millis()-start);
-
-    uint8_t buf [512], buf2 [512];
-    memset(buf, 0x55, sizeof buf);
-
-    start = cycles::millis();
-    fram.write(0, buf, sizeof buf);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::millis()-start);
-
-    fram.read(0, buf2, sizeof buf2);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 
 void testFramWait () {
     i2cWork.init(I2C_PINS, i2cTiming(1000));
     i2c::Dev fram { i2cWork, 0x50 };
 
-    // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
-
-    TEST_ASSERT_EQUAL_HEX(0xEF4015, fram.info());
-    TEST_ASSERT_EQUAL(2048, fram.size());
-
-    uint8_t snBuf [8];
-    fram.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
-
-    auto start = cycles::millis();
-    fram.erase(0);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 28, cycles::millis()-start);
-
-    uint8_t buf [512], buf2 [512];
-    memset(buf, 0x55, sizeof buf);
-
-    start = cycles::millis();
-    fram.write(0, buf, sizeof buf);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::millis()-start);
-
-    fram.read(0, buf2, sizeof buf2);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 
 struct I2cWorker : Worker {
@@ -225,38 +190,12 @@ void testFramWork () {
 
     // TODO FRAM driver will need to be extended to work in async mode
     //  i.e. wrap as worker and use periodic ticks to check erase completion
-
-    i2c::Dev fram { i2cWork, 0x50 };
-
-    // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
-
-    TEST_ASSERT_EQUAL_HEX(0xEF4015, fram.info());
-    TEST_ASSERT_EQUAL(2048, fram.size());
-
-    uint8_t snBuf [8];
-    fram.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
-
-    auto start = cycles::millis();
-    fram.erase(0);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 28, cycles::millis()-start);
-
-    uint8_t buf [512], buf2 [512];
-    memset(buf, 0x55, sizeof buf);
-
-    start = cycles::millis();
-    fram.write(0, buf, sizeof buf);
-    TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::millis()-start);
-
-    fram.read(0, buf2, sizeof buf2);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 #endif
 
 void allTests () {
     RUN_TEST(testFramGpio);
-    //RUN_TEST(testFramPoll);
+    RUN_TEST(testFramPoll);
     //RUN_TEST(testFramSync);
     //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
