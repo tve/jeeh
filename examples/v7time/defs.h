@@ -154,6 +154,9 @@ void initBoard () {
     rtc::init();
     //ticker.init();
 
+    if (rtc::getSecs() == 0)
+        rtc::set(DateTime{}); // set to compile date if RTC was not running
+
     auto dt = rtc::getDate();
     logf("\n%s: %s @ %d MHz - 20%02d-%02d-%02d %02d:%02d:%02d.%03d",
             PIOENV, SVDNAME, SystemCoreClock / 1'000'000,
