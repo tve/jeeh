@@ -43,14 +43,14 @@
 #define UART_TTY_NAME  USART2
 #define UART_TTY_PINS  "A2:7,A3"
 #define UART_TTY_FREQ  36
-#define UART_TTY_CONF  Irq::DMA1_CH1,Irq::DMA1_CH1,1-1,1-1,1-1,7,6
+#define UART_TTY_CONF  Irq::DMA1_CH7,Irq::DMA1_CH6,1-1,7-1,6-1,7,6
 //CG]
 
 //CG[ board uart3 gps
 #define UART_GPS_NAME  USART3
 #define UART_GPS_PINS  "B10:7,B11"
 #define UART_GPS_FREQ  36
-#define UART_GPS_CONF  Irq::DMA2_CH2,Irq::DMA2_CH2,2-1,2-1,2-1,2,1
+#define UART_GPS_CONF  Irq::DMA2_CH2,Irq::DMA2_CH1,2-1,2-1,1-1,2,1
 //CG]
 
 //CG2 board gps
@@ -61,8 +61,8 @@
 #define SPI_RFM_NAME  SPI1
 #define SPI_RFM_PINS  "A7:5,A6,A5,A4:P"
 #define SPI_RFM_FREQ  72
-#define SPI_RFM_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,3-1
-#define SPI_RFM_CONF  {ena::SPI1,72,Irq::DMA1_CH3,Irq::DMA1_CH3}, {1-1,3,2}
+#define SPI_RFM_TYPE  SPI1.ADDR,DMA1.ADDR,3-1,2-1
+#define SPI_RFM_CONF  {ena::SPI1,72,Irq::DMA1_CH3,Irq::DMA1_CH2}, {1-1,3,2}
 //CG]
 
 //CG3 board rfm
@@ -74,8 +74,8 @@
 #define SPI_SD_NAME  SPI2
 #define SPI_SD_PINS  "B15:5,B14,B13,D2:P"
 #define SPI_SD_FREQ  36
-#define SPI_SD_TYPE  SPI2.ADDR,DMA1.ADDR,4-1,4-1
-#define SPI_SD_CONF  {ena::SPI2,36,Irq::DMA1_CH4,Irq::DMA1_CH4}, {1-1,5,4}
+#define SPI_SD_TYPE  SPI2.ADDR,DMA1.ADDR,5-1,4-1
+#define SPI_SD_CONF  {ena::SPI2,36,Irq::DMA1_CH5,Irq::DMA1_CH4}, {1-1,5,4}
 //CG]
 
 uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
