@@ -1,5 +1,10 @@
 ## Example projects
 
+- **`v7lcd`** - fast parallel 480x320 LCD writes using GPIO's BSRR
+- **`v7time`** - a DCF/MSF/GPS/50Hz time tracker based on Olimexino-F3
+
+## Example projects (old)
+
 - **`arduino`** - using je JeeH library alongside the Arduino runtime
 - **`blink`** - a very simple LED blinker for a wide variety of boards
 - **`bmp390`** - read out the BMP390 sensor using either I2C or SPI
