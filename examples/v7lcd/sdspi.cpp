@@ -94,7 +94,7 @@ int cmd (uint8_t req, uint32_t arg) {
     sdSpi.enable();
     auto start = cycles::micros();
     while (sdSpi.transfer(true, dat, 1) != 0xFF)
-        if (cycles::micros()-start > 10'000'000) {
+        if (cycles::micros()-start > 250'000) {
             sdSpi.disable();
             return -2;
         }
@@ -122,7 +122,7 @@ bool read512 (uint32_t blk, void* buf) {
     uint8_t dat [] = { 0xFF, 0xFF, 0xFF };
 
     auto start = cycles::micros();
-    while (cycles::micros()-start < 2500) {
+    while (cycles::micros()-start < 100'000) {
         auto r = sdSpi.transfer(true, dat, 1); // token
         if (r == 0xFE)
             break;
@@ -189,7 +189,7 @@ int main () {
     auto bsh = r ? 0 : 9;
     logf("sdhc %d, bsh %d, %d us", r, bsh, cycles::micros()-start);
 
-    sdSpi.init(SPI_PINS, 80'000);
+    sdSpi.init(SPI_PINS, 20'000);
 
     uint8_t buf [512];
     for (auto i = 0; i < 3; ++i) {
