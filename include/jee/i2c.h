@@ -12,10 +12,9 @@ struct Dev {
     }
 
     // one byte address, single-byte data
-    int32_t read (uint8_t r) const {
-        uint32_t v = 0;
+    int read (uint8_t r) const {
+        uint8_t v = 0;
         return read(r, &v, 1) ? v : -1;
-        return v;
     }
     bool write (uint8_t r, uint8_t v) const {
         return write(r, &v, 1);
@@ -208,7 +207,7 @@ struct Poll {
         RCC(cfg.ena, 1) = 0;
     }
 
-    enum { R1 = ST, R2 = AE|ST|RD, W1 = RL|ST, W2 = AE };
+    enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
@@ -247,7 +246,6 @@ protected:
     }
 };
 
-// DMA version, either sync-wfe or async (i.e. msgs sent to this device)
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A> {
     using BASE = Poll<A>;
@@ -270,16 +268,33 @@ struct Sync : Poll<A> {
 
         // peripheral address config and interrupt vector setup
         dma.init(A + BASE::TXDR, A + BASE::RXDR);
+
+        SCB[0x10](4) = 1; // SEVONPEND
     }
 
     // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        assert(n > 0);
         startReq(a, m, p, n);
-        while (I2C[BASE::ISR](15) && // BUSY
-                I2C[BASE::CR1](4,3)) // TCIE STOPIE NACKIE
-            asm ("wfe");
+        while (true) {
+            //BlockIRQ irq;
+            uint32_t isr = I2C[BASE::ISR];
+            if (!(isr & (1<<15)) || (isr & (1<<5))) // ~BUSY or STOPF
+                break;
+            if (m != BASE::R2) {
+                if ((isr & (1<<12)) || (isr & (1<<4))) { // TIMEOUT NACKF
+                    I2C[BASE::ICR] = isr & 0x3F38;
+                    break; // TODO assume finish will return false?
+                }
+            }
+            //asm ("wfe");
+        }
+        Worker::irqClear(cfg.evIrq);
+        //Worker::irqClear(cfg.erIrq);
+//logf("32 %08x", +I2C[BASE::ISR]);
+cycles::usBusy(1); // FIXME this delay is needed, what's going on here???
         return finishReq(m, p, n);
     }
 
