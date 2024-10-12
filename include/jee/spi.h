@@ -92,7 +92,6 @@ struct Poll {
 
     void deinit () {
         Pin::config(":F,,,", &mosi, 4);
-        SPI[CR1](6) = 0; // ~SPE
         RCC(cfg.ena, 1) = 0;
     }
 
