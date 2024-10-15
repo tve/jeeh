@@ -3,7 +3,7 @@
 namespace jeeh::util {
 
 uint32_t* extRamStart;
-uint32_t* extRamEnd;
+uint32_t* extRamLimit;
 int errors;
 
 uint32_t const lfsrPatterns [] {
@@ -29,10 +29,10 @@ void fail (uint32_t* ptr, uint32_t got, uint32_t want) {
 
 // store and check the same value in each memory location
 void checkFixed (uint32_t pattern) {
-    for (volatile auto p = extRamStart; p < extRamEnd; ++p)
+    for (volatile auto p = extRamStart; p < extRamLimit; ++p)
         *p = pattern;
 
-    for (volatile auto p = extRamStart; p < extRamEnd; ++p)
+    for (volatile auto p = extRamStart; p < extRamLimit; ++p)
         if (auto actual = *p; actual != pattern)
             return fail(p, actual, pattern);
 
@@ -44,7 +44,7 @@ void checkFixed (uint32_t pattern) {
 void checkLfsr (uint32_t seed) {
     for (int n = 0; n < 2; ++n) {
         auto pattern = seed;
-        for (volatile auto p = extRamStart; p < extRamEnd; p++) {
+        for (volatile auto p = extRamStart; p < extRamLimit; p++) {
             if (n == 0)
                 *p = pattern;
             else if (auto actual = *p; actual != pattern)
@@ -60,7 +60,7 @@ void checkLfsr (uint32_t seed) {
 
 int memTests (uint32_t start, uint32_t bytes) {
     extRamStart = (uint32_t*) start;
-    extRamEnd = (uint32_t*) (start + bytes);
+    extRamLimit = (uint32_t*) (start + bytes);
     errors = 0;
 
     checkFixed(0x5A698421);
