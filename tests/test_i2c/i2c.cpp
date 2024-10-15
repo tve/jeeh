@@ -100,19 +100,18 @@ void testFramPoll () {
 
     uint8_t buf [32], buf2 [32];
 
-    memset(buf, 0xEE, sizeof buf);
+    memset(buf, 0xCC, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-logDump(buf2, sizeof buf2);
-        //TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0x80, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
@@ -130,19 +129,18 @@ void testFramSync () {
 
     uint8_t buf [32], buf2 [32];
 
-    memset(buf, 0xEE, sizeof buf);
+    memset(buf, 0xDD, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-logDump(buf2, sizeof buf2);
-        //TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0x90, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
@@ -171,7 +169,7 @@ void testFramWait () {
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0xA0, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
