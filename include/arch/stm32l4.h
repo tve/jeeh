@@ -12,7 +12,7 @@ static void enableClkMaxMSI () { // using internal 48 MHz MSI
     FLASH[0x00] = 0x702;         // flash ACR, 2 wait states
     RCC[0x00](0) = 1;            // MSION
     while (RCC[0x00](1) == 0) {} // wait for MSIRDY
-    RCC[0x00](3, 5) = 0b10111;   // MSI 48 MHz
+    RCC[0x00](3,5) = 0b10111;    // MSI 48 MHz
     RCC[0x08] = 0b00;            // MSI as SYSCLK
 }
 
@@ -26,7 +26,7 @@ static void enableClkSaver (int range) { // using MSI at 100 kHz to 4 MHz
 
 uint32_t fastClock (bool high) {
     RCC(ena::PWR,1) = 1;
-    PWR[0x00](9, 2) = 0b01;        // VOS range 1
+    PWR[0x00](9,2) = 0b01;         // VOS range 1
     while (PWR[0x14](10) != 0) {}  // wait for ~VOSF
     if (high) enableClkWithPLL(); else enableClkMaxMSI();
     return SystemCoreClock = high ? 80'000'000 : 48'000'000;
@@ -35,6 +35,6 @@ uint32_t fastClock (bool high) {
 uint32_t slowClock (bool high) {
     RCC(ena::PWR,1) = 1;
     enableClkSaver(high ? 0b0110 : 0b0000);
-    PWR[0x00](9, 2) = 0b10;         // VOS range 2
+    PWR[0x00](9,2) = 0b10;          // VOS range 2
     return SystemCoreClock = high ? 4'000'000 : 100'000;
 }
