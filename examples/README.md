@@ -1,6 +1,4 @@
-# Example code
-
-Configured for a Nucleo-32 G431KB board.
+# Example code for a Nucleo-32 G431KB board.
 
 Use any of these commands to verify that PlatformIO works properly:
 

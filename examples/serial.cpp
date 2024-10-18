@@ -2,11 +2,6 @@
 #include <jee/cycles.h>
 using namespace jeeh;
 
-static void delayLoop (uint16_t ms) {
-    cycles::init();
-    while (cycles::count() < ms * (SystemCoreClock/1000)) {}
-}
-
 namespace serio {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28 };
 
@@ -48,8 +43,8 @@ int main () {
         bd = (seq+17) * 10'000 / us;
 
         led = 1;
-        delayLoop(50);
+        cycles::msBusy(50);
         led = 0;
-        delayLoop(50);
+        cycles::msBusy(50);
     }
 }
