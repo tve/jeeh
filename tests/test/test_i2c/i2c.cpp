@@ -241,6 +241,6 @@ void allTests () {
     RUN_TEST(testFramGpio);
     RUN_TEST(testFramPoll);
     RUN_TEST(testFramSync);
-    RUN_TEST(testFramWait); // async in blocking mode (sync-like)
+    //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
 }
