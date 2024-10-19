@@ -11,7 +11,11 @@ using namespace jeeh::twodee;
 // from Oli Kraus' nice font collection, https://github.com/olikraus/u8g2/wiki
 #define U8G2_FONT_SECTION(x)
 #include "font.h"
-Font const defaultFont (u8g2_font_lubR08_tr);
+#include "font2.h"
+#include "font3.h"
+Font const font (u8g2_font_lubR08_tr);
+Font const font2 (u8g2_font_7x14_tf);
+Font const font3 (u8g2_font_9x15_tf);
 
 namespace {
 
@@ -224,12 +228,22 @@ int main () {
 
     orientation(0);
     gfx.line({10, 20}, {470, 300});
+    gfx.fg = 0x07E0; // green
 
     start = cycles::micros();
-    gfx.fg = 0x07E0; // green
-    auto w = gfx.writes(defaultFont, {320, 100}, "Hello world!");
-    logf("text %6d us (12 ch)", cycles::micros()-start);
-    gfx.hLine({320, 112}, w, 0xF800);
+    auto w = gfx.writes(font, {300, 80}, "123 Hello world!");
+    logf("text %6d us (16 ch, %d px)", cycles::micros()-start, w);
+    gfx.hLine({300, 92}, w, 0xF800);
+
+    start = cycles::micros();
+    auto w2 = gfx.writes(font2, {300, 110}, "123 Hello world!");
+    logf("text %6d us (16 ch, %d px)", cycles::micros()-start, w2);
+    gfx.hLine({300, 123}, w2, 0xF800);
+
+    start = cycles::micros();
+    auto w3 = gfx.writes(font3, {300, 140}, "123 Hello world!");
+    logf("text %6d us (16 ch, %d px)", cycles::micros()-start, w3);
+    gfx.hLine({300, 153}, w3, 0xF800);
 
     gfx.fg = 0xFFE0; // yellow
     gfx.cFill({100, 200}, 40);
@@ -238,7 +252,7 @@ int main () {
     gfx.rFill({200, 30}, 50, 30, 10);
 
     gfx.fg = 0x001F; // blue
-    gfx.bFill({320, 220}, 90, 30);
+    gfx.bFill({300, 220}, 130, 30);
 
     while (true) {
         led.toggle();
