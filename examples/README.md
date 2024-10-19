@@ -12,6 +12,7 @@ Each application can be built and run independently, e.g.
 * `g431k/fast`: blink with system clock at 160 MHz
 * `g431k/serial`: send text to srial port @ 10 Mbaud
 * `g431k/i2c`: scan for attached devices on the I2C bus
+* `g431k/dog`: kick the watchdog less and less, until it resets
 
 ### Nucleo-64 w/ `G431RE`
 
