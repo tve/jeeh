@@ -9,9 +9,9 @@ Run all tests on the attached board with: **`pio test`**
 - **exti** - set up EXTI interrupts and test `ExtIrq` (needs PA9-PA10 jumper)
 - **uart** - test variants of the UART driver (needs same PA9-PA10 jumper)
 - **spi** - test variants of the SPI driver (needs SPI flash chip)
-- **rng** - a quick check that the random number generator h/w works
+- **rng** - a quick check that the Random Number Generator h/w works
 - **analog** - verify that the DAC and ADC work (this needs PA4-PA7 jumper)
-- **crc** - check that the cyclic redundancy check hardware works
+- **crc** - verify that the Cyclic Redundancy Check hardware works
 - **i2c** - test variants of the I2C driver (needs I2C FRAM chip)
 
 Serial output is 1,000,000 baud @ 16 MHz or 10,000,000 baud @ 160 MHz.
