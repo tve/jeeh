@@ -207,29 +207,28 @@ int main () {
     pixel(width/2, height/2, 0xF800);
     logf("pixel %5d us", cycles::micros()-start);
 
-    auto seq = 0;
-    while (true) {
-        led.toggle();
-
-        if (seq % 4 == 0)
-            orientation((seq / 8) % 4);
-        auto v = (seq++ % 8) * 16;
+    for (auto seq = 0; seq < 64; ++seq) {
+        if (seq % 16 == 0)
+            orientation((seq / 16) % 4);
+        auto v = (seq % 16) * 16;
 
         start = cycles::micros();
         fill(0, v, width, 16, 0xFFE0);
         fill(0, v, 16, 16, 0xF800);
-        logf("fill %6d us", cycles::micros()-start);
+        //logf("fill %6d us", cycles::micros()-start);
 
-        cycles::msBusy(250);
+        cycles::msBusy(50);
 
         fill(0, v, width, 16, 0);
-break;
     }
 
+    orientation(0);
     gfx.line({10, 20}, {470, 300});
 
+    start = cycles::micros();
     gfx.fg = 0x07E0; // green
-    auto w = gfx.writes(defaultFont, {320, 100}, "Hello, world!");
+    auto w = gfx.writes(defaultFont, {320, 100}, "Hello world!");
+    logf("text %6d us (12 ch)", cycles::micros()-start);
     gfx.hLine({320, 112}, w, 0xF800);
 
     gfx.fg = 0xFFE0; // yellow
@@ -243,6 +242,6 @@ break;
 
     while (true) {
         led.toggle();
-        cycles::msBusy(500);
+        cycles::msBusy(250);
     }
 }

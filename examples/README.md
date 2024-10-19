@@ -16,7 +16,7 @@ Each application can be built and run independently, e.g.
 ### Nucleo-64 w/ G431RE
 
 * `g431r/blink` - blink on-board LED
-* `g431r/lcd` - test for 480x320 LCD shield
+* `g431r/lcd` - graphics and text on a 480x320 LCD shield
 * `g431r/sdspi` - connect to the µSD card on the LCD shield
 
 ### Nucleo-32 w/ L412KB
