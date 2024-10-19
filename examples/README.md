@@ -24,7 +24,7 @@ Each application can be built and run independently, e.g.
 * `l412k/blink` - blink on-board LED and send some text to serial
 * `l412k/i2c` - scan for attached devices on the I2C bus
 
-### Nucleo-32 w/ `L412RB_P`
+### Nucleo-64 w/ `L412RB_P`
 
 * `l412r/blink` - blink on-board LED and send some text to serial
 * `l412r/dcf77` - decode DCF77 time pulses using attached radio module
