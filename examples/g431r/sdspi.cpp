@@ -11,7 +11,7 @@ spi::Poll<SPI_NAME.ADDR> sdSpi (ena::SPI_NAME, SPI_FREQ);
 struct SdConnect : spi::Gpio {
 
     int init (char const* pins) {
-        spi::Gpio::init(SPI_PINS, 10);
+        spi::Gpio::init(pins, 10);
 
         mosi = 1;
         for (auto i = 0; i < 10; ++i)

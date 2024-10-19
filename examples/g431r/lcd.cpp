@@ -177,8 +177,6 @@ int main () {
     pixel(width/2, height/2, 0xF800);
     logf("pixel %5d us", cycles::micros()-start);
 
-    cycles::msBusy(1000);
-
     auto seq = 0;
     while (true) {
         led.toggle();
