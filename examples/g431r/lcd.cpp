@@ -5,6 +5,14 @@
 using namespace jeeh;
 #include "defs.h"
 
+#include <jee/util/twodee.h>
+using namespace jeeh::twodee;
+
+// from Oli Kraus' nice font collection, https://github.com/olikraus/u8g2/wiki
+#define U8G2_FONT_SECTION(x)
+#include "font.h"
+Font const defaultFont (u8g2_font_lubR08_tr);
+
 namespace {
 
 enum { BSRR=0x18 };
@@ -153,6 +161,28 @@ void orientation (uint8_t rot) {
     cmdEnd();
 }
 
+struct Tft {
+    constexpr static char mode = 'H'; // this driver uses horizontal mode
+    constexpr static auto depth = 16; // colour depth (RGB565)
+
+    static void pos (Point p) {
+        cmd(0x2A); out16(p.x); out16(width-1);
+        cmd(0x2B); out16(p.y); out16(height-1);
+        cmd(0x2C);
+    }
+
+    static void lim (Rect const& r) {
+        cmd(0x2A); out16(r.x); out16(r.x+r.w-1);
+        cmd(0x2B); out16(r.y); out16(r.y+r.h-1);
+        cmd(0x2C);
+    }
+
+    static void set (unsigned c)  { out16(c); }
+    static void end ()            { cmdEnd(); }
+};
+
+TwoDee<Tft> gfx;
+
 int main () {
     initBoard();
 
@@ -193,5 +223,26 @@ int main () {
         cycles::msBusy(250);
 
         fill(0, v, width, 16, 0);
+break;
+    }
+
+    gfx.line({10, 20}, {470, 300});
+
+    gfx.fg = 0x07E0; // green
+    auto w = gfx.writes(defaultFont, {320, 100}, "Hello, world!");
+    gfx.hLine({320, 112}, w, 0xF800);
+
+    gfx.fg = 0xFFE0; // yellow
+    gfx.cFill({100, 200}, 40);
+
+    gfx.fg = 0xF800; // red
+    gfx.rFill({200, 30}, 50, 30, 10);
+
+    gfx.fg = 0x001F; // blue
+    gfx.bFill({320, 220}, 90, 30);
+
+    while (true) {
+        led.toggle();
+        cycles::msBusy(500);
     }
 }
