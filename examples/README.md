@@ -13,6 +13,8 @@ Each application can be built and run independently, e.g.
 * `g431k/serial`: send text to srial port @ 10 Mbaud
 * `g431k/i2c`: scan for attached devices on the I2C bus
 * `g431k/dog`: kick the watchdog less and less, until it resets
+* `g431k/oled`: show a test pattern on 128x64 or 128x32 I2C OLEDs
+* `g431k/imu`: read out the values of a 9-DOF I2C IMU sensor
 
 ### Nucleo-64 w/ `G431RE`
 
@@ -24,6 +26,7 @@ Each application can be built and run independently, e.g.
 
 * `l412k/blink` - blink on-board LED and send some text to serial
 * `l412k/i2c` - scan for attached devices on the I2C bus
+* `l412k/spi` - read out the BMP390 sensor using its SPI pins
 
 ### Nucleo-64 w/ `L412RB_P`
 
