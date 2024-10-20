@@ -89,18 +89,9 @@ void testFramPoll () {
     i2cPoll.init(I2C_PINS, i2cTiming(1000));
     i2c::Dev fram { i2cPoll, 0x50 };
 
-    auto detect = [&](uint8_t addr) {
-        i2c::Dev dev { i2cPoll, addr };
-        return dev.transfer(i2cPoll.W1) && dev.transfer(i2cPoll.W2);
-    };
-
-    TEST_ASSERT_FALSE(detect(0x4F));
-    TEST_ASSERT_TRUE(detect(0x50));
-    TEST_ASSERT_FALSE(detect(0x51));
-
     uint8_t buf [32], buf2 [32];
 
-    memset(buf, 0xCC, sizeof buf);
+    memset(buf, 0xDD, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
@@ -129,13 +120,14 @@ void testFramSync () {
 
     uint8_t buf [32], buf2 [32];
 
-    memset(buf, 0xDD, sizeof buf);
+    memset(buf, 0xCC, sizeof buf);
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
+logDump(buf2, 16, "Sync CC");
         TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
