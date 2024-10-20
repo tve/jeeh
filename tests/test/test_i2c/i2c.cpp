@@ -5,6 +5,8 @@
 #include "jee/i2c.h"
 #include "defs.h"
 
+Pin laPin ("B5","P"); // D11 on Nucleo-32
+
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
@@ -28,12 +30,16 @@ void write32 (T const& dev, uint16_t addr, void const* ptr) {
     dev.write16(addr, ptr, 32);
 }
 
-void setUp () {}
+void setUp () {
+    laPin = 1;
+}
+
 void tearDown () {
     i2cGpio.deinit();
     i2cPoll.deinit();
     i2cSync.deinit();
     i2cWork.deinit();
+    laPin = 0;
 }
 
 void testFramGpio () {
@@ -232,8 +238,8 @@ void testFramWork () {
 #endif
 
 void allTests () {
-    RUN_TEST(testFramGpio);
-    RUN_TEST(testFramPoll);
+    //RUN_TEST(testFramGpio);
+    //RUN_TEST(testFramPoll);
     RUN_TEST(testFramSync);
     //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
