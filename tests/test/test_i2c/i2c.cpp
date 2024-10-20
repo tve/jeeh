@@ -121,8 +121,10 @@ void testFramSync () {
     uint8_t buf [32], buf2 [32];
 
     memset(buf, 0xCC, sizeof buf);
+logf("11");
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
+logf("12");
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);

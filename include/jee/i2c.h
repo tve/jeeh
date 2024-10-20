@@ -216,7 +216,7 @@ struct Poll {
         if (m != R2)
             while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TCR ~TC ~STOPF
                 if (I2C[ISR](12) || I2C[ISR](4)) { // TIMEOUT NACKF
-                    I2C[ICR] = I2C[ISR] & 0x3F38;
+                    I2C[ICR] = I2C[ISR];
                     return false;
                 }
                 if (!I2C[ISR](15) || I2C[ISR](5)) // ~BUSY or STOPF
@@ -243,6 +243,7 @@ protected:
                  | (((m&ST) != 0) << 13) // START
                  | (((m&RD) != 0) << 10) // RD_WRN
                  |             (a << 1); // SADD
+logf("sR %x %08x", m, +I2C[CR2]);
     }
 };
 
@@ -277,24 +278,25 @@ struct Sync : Poll<A> {
     // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         assert(n > 0);
+logf("ISR %08x DMA %08x", +I2C[BASE::ISR], +dma.DMA[dma.ISR]);
         startReq(a, m, p, n);
         while (true) {
-            //BlockIRQ irq;
+            BlockIRQ irq;
             uint32_t isr = I2C[BASE::ISR];
+logf("isr %08x dma %08x", isr, +dma.DMA[dma.ISR]);
             if (!(isr & (1<<15)) || (isr & (1<<5))) // ~BUSY or STOPF
                 break;
             if (m != BASE::R2) {
-                if ((isr & (1<<12)) || (isr & (1<<4))) { // TIMEOUT NACKF
-                    I2C[BASE::ICR] = isr & 0x3F38;
+                // TIMEOUT TCR NACKF
+                if ((isr & (1<<12)) || (isr & (1<<7)) || (isr & (1<<4))) {
+                    I2C[BASE::ICR] = isr;
                     break; // TODO assume finish will return false?
                 }
             }
-            //asm ("wfe");
+            asm ("wfe");
         }
         Worker::irqClear(cfg.evIrq);
         //Worker::irqClear(cfg.erIrq);
-//logf("32 %08x", +I2C[BASE::ISR]);
-cycles::usBusy(1); // FIXME this delay is needed, what's going on here???
         return finishReq(m, p, n);
     }
 
@@ -311,11 +313,13 @@ protected:
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        dma.done();
+logf("fR");
+        dma.completed();
+        //dma.done();
         if (m == BASE::R2)
             cache::inval(p, n);
         if (I2C[BASE::ISR](4)) { // NACKF
-            I2C[BASE::ICR] = I2C[BASE::ISR] & 0x3F38;
+            I2C[BASE::ICR] = I2C[BASE::ISR];
             return false;
         }
         return true;
