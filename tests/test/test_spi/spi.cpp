@@ -8,6 +8,7 @@ Pin pins [8];
 #include "defs.h"
 
 constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
+constexpr auto SPEED = 10'000; // SPI bus speed, kHz
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -30,7 +31,7 @@ void tearDown () {
 }
 
 void testTxGpio () {
-    spiGpio.init(SPI_PINS, 80'000);
+    spiGpio.init(SPI_PINS, SPEED);
 
     auto start = cycles::micros();
     spiGpio.transfer(true, (uint8_t*) "x", 1);
@@ -50,7 +51,7 @@ void testTxGpio () {
 }
 
 void testRxGpio () {
-    spiGpio.init(SPI_PINS, 80'000);
+    spiGpio.init(SPI_PINS, SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
@@ -59,7 +60,7 @@ void testRxGpio () {
 }
 
 void testFlashGpio () {
-    spiGpio.init(SPI_PINS, 80'000);
+    spiGpio.init(SPI_PINS, SPEED);
     SpiFlash spif (spiGpio);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -88,7 +89,7 @@ void testFlashGpio () {
 }
 
 void testTxPoll () {
-    spiPoll.init(SPI_PINS, 80'000);
+    spiPoll.init(SPI_PINS, SPEED);
 
     auto start = cycles::micros();
     spiPoll.transfer(true, (uint8_t*) "x", 1);
@@ -108,7 +109,7 @@ void testTxPoll () {
 }
 
 void testRxPoll () {
-    spiPoll.init(SPI_PINS, 80'000);
+    spiPoll.init(SPI_PINS, SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
@@ -117,7 +118,7 @@ void testRxPoll () {
 }
 
 void testFlashPoll () {
-    spiPoll.init(SPI_PINS, 80'000);
+    spiPoll.init(SPI_PINS, SPEED);
     SpiFlash spif (spiPoll);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -146,7 +147,7 @@ void testFlashPoll () {
 }
 
 void testTxSync () {
-    spiSync.init(SPI_PINS, 80'000);
+    spiSync.init(SPI_PINS, SPEED);
 
     auto start = cycles::micros();
     spiSync.transfer(true, (uint8_t*) "x", 1);
@@ -166,7 +167,7 @@ void testTxSync () {
 }
 
 void testRxSync () {
-    spiSync.init(SPI_PINS, 80'000);
+    spiSync.init(SPI_PINS, SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
@@ -175,7 +176,7 @@ void testRxSync () {
 }
 
 void testFlashSync () {
-    spiSync.init(SPI_PINS, 80'000);
+    spiSync.init(SPI_PINS, SPEED);
     SpiFlash spif (spiSync);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -204,7 +205,7 @@ void testFlashSync () {
 }
 
 void testTxWait () {
-    spiWork.init(SPI_PINS, 80'000);
+    spiWork.init(SPI_PINS, SPEED);
 
     auto start = cycles::micros();
     spiWork.transfer(true, (uint8_t*) "x", 1);
@@ -224,7 +225,7 @@ void testTxWait () {
 }
 
 void testRxWait () {
-    spiWork.init(SPI_PINS, 80'000);
+    spiWork.init(SPI_PINS, SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
@@ -233,7 +234,7 @@ void testRxWait () {
 }
 
 void testFlashWait () {
-    spiWork.init(SPI_PINS, 80'000);
+    spiWork.init(SPI_PINS, SPEED);
     SpiFlash spif (spiWork);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -305,7 +306,7 @@ private:
 
 void testTxWork () {
     SpiWorker worker;
-    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto swId = spiWork.init(SPI_PINS, SPEED);
     auto wkId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -324,7 +325,7 @@ void testTxWork () {
 
 void testRxWork () {
     SpiWorker worker;
-    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto swId = spiWork.init(SPI_PINS, SPEED);
     auto wkId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -343,7 +344,7 @@ void testRxWork () {
 
 void testFlashWork () {
     SpiWorker worker;
-    auto swId = spiWork.init(SPI_PINS, 80'000);
+    auto swId = spiWork.init(SPI_PINS, SPEED);
     auto wkId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
