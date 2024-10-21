@@ -99,8 +99,9 @@ struct DmaConfig {
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if ((uint8_t) DMA[R&~3](ifcBits[R&3],6)) { // rx irq
-            done = DMA[R&~3](4+ifcBits[R&3]) ? RXHALF : RXFULL;
+            auto d = DMA[R&~3](4+ifcBits[R&3]) ? RXHALF : RXFULL;
             DMA[IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
+            return d;
         }
         if ((uint8_t) DMA[T&~3](ifcBits[T&3],6)) { // tx irq
             DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq

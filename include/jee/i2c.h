@@ -243,7 +243,6 @@ protected:
                  | (((m&ST) != 0) << 13) // START
                  | (((m&RD) != 0) << 10) // RD_WRN
                  |             (a << 1); // SADD
-logf("sR %x %08x", m, +I2C[CR2]);
     }
 };
 
@@ -278,22 +277,24 @@ struct Sync : Poll<A> {
     // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         assert(n > 0);
-logf("ISR %08x DMA %08x", +I2C[BASE::ISR], +dma.DMA[dma.ISR]);
         startReq(a, m, p, n);
         while (true) {
             BlockIRQ irq;
-            uint32_t isr = I2C[BASE::ISR];
-logf("isr %08x dma %08x", isr, +dma.DMA[dma.ISR]);
-            if (!(isr & (1<<15)) || (isr & (1<<5))) // ~BUSY or STOPF
+            if (!dma.isRunning())
                 break;
+            uint32_t isr = I2C[BASE::ISR];
             if (m != BASE::R2) {
-                // TIMEOUT TCR NACKF
-                if ((isr & (1<<12)) || (isr & (1<<7)) || (isr & (1<<4))) {
-                    I2C[BASE::ICR] = isr;
+                // TIMEOUT TCR TC NACKF
+                if ((isr & (1<<12)) || (isr & (0b1101<<4))) {
+                    //I2C[BASE::ICR] = I2C[BASE::ISR];
                     break; // TODO assume finish will return false?
                 }
             }
-            asm ("wfe");
+            if (!(isr & (1<<15)) || (isr & (1<<5))) // ~BUSY or STOPF
+                break;
+            auto dc = dma.completed();
+            if (dc == 0)
+                asm ("wfe");
         }
         Worker::irqClear(cfg.evIrq);
         //Worker::irqClear(cfg.erIrq);
@@ -313,16 +314,13 @@ protected:
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-logf("fR");
-        dma.completed();
+        I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
         //dma.done();
         if (m == BASE::R2)
             cache::inval(p, n);
-        if (I2C[BASE::ISR](4)) { // NACKF
-            I2C[BASE::ICR] = I2C[BASE::ISR];
-            return false;
-        }
-        return true;
+        bool nak = I2C[BASE::ISR](4); // NACKF
+        I2C[BASE::ICR] = I2C[BASE::ISR];
+        return !nak;
     }
 };
 

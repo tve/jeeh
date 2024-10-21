@@ -5,8 +5,6 @@
 #include "jee/i2c.h"
 #include "defs.h"
 
-Pin laPin ("B5","P"); // D11 on Nucleo-32
-
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
@@ -30,16 +28,13 @@ void write32 (T const& dev, uint16_t addr, void const* ptr) {
     dev.write16(addr, ptr, 32);
 }
 
-void setUp () {
-    laPin = 1;
-}
+void setUp () {}
 
 void tearDown () {
     i2cGpio.deinit();
     i2cPoll.deinit();
     i2cSync.deinit();
     i2cWork.deinit();
-    laPin = 0;
 }
 
 void testFramGpio () {
@@ -127,15 +122,12 @@ void testFramSync () {
     uint8_t buf [32], buf2 [32];
 
     memset(buf, 0xCC, sizeof buf);
-logf("11");
     for (auto i = 0; i < 3; ++i)
         write32(fram, 32*i, buf);
-logf("12");
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-logDump(buf2, 16, "Sync CC");
         TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
@@ -238,9 +230,9 @@ void testFramWork () {
 #endif
 
 void allTests () {
-    //RUN_TEST(testFramGpio);
-    //RUN_TEST(testFramPoll);
+    RUN_TEST(testFramGpio);
+    RUN_TEST(testFramPoll);
     RUN_TEST(testFramSync);
-    //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
+    RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
 }

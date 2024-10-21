@@ -27,7 +27,7 @@ const Pin led (LED,"P");
 #define I2C_NAME  I2C1
 #define I2C_PINS  "B7:OH4,A15"
 #define I2C_FREQ  170
-#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,3-1,4-1
+#define I2C_TYPE  I2C1.ADDR,DMA1.ADDR,5-1,6-1
 #define I2C_CONF  {ena::I2C1,170,Irq::I2C1_EV,Irq::I2C1_ER}, {1-1,17,16}
 //CG]
 
