@@ -15,6 +15,7 @@ Each application can be built and run independently, e.g.
 * `g431k/dog`: kick the watchdog less and less, until it resets
 * `g431k/oled`: show a test pattern on 128x64 or 128x32 I2C OLEDs
 * `g431k/imu`: read out the values of a 9-DOF I2C IMU sensor
+* `g431k/pulses`: generate some pulses to check the logic-analyser hookup
 
 ### Nucleo-64 w/ `G431RE`
 

@@ -91,7 +91,7 @@ struct Poll {
     }
 
     void deinit () {
-        Pin::config(":F,,,", &mosi, 4);
+        Pin::config(":F,,,:U", &mosi, 4);
         RCC(cfg.ena, 1) = 0;
     }
 

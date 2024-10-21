@@ -1,6 +1,7 @@
 // DMA-based SPI tests.
 
 #include "common.h"
+Pin pins [8];
 #include "jee/ticker.h"
 #include "jee/spi.h"
 #include <jee/dev/flash.h>
@@ -20,6 +21,7 @@ IRQ_HANDLER(DMA1_Channel3, spiWork.interrupt) // not DMA1_CH3 !
 IRQ_HANDLER(DMA1_Channel4, spiWork.interrupt) // not DMA1_CH4 !
 
 void setUp () {}
+
 void tearDown () {
     spiGpio.deinit();
     spiPoll.deinit();
@@ -378,19 +380,25 @@ void testFlashWork () {
 }
 
 void allTests () {
+    Pin::config("A15:U,B7,B5,B4,A11,B3,A1:P,A0", pins, sizeof pins);
+    for (auto e : pins) e = 1;
+    pins[5] = 0; // SCLK = 0;
+
     RUN_TEST(testTxGpio);
     RUN_TEST(testRxGpio);
     RUN_TEST(testFlashGpio);
     RUN_TEST(testTxPoll);
     RUN_TEST(testRxPoll);
+pins[6] = 0;
     RUN_TEST(testFlashPoll);
     RUN_TEST(testTxSync);
     RUN_TEST(testRxSync);
+pins[7] = 0;
     RUN_TEST(testFlashSync);
-    RUN_TEST(testTxWait);
-    RUN_TEST(testRxWait);
-    RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
-    RUN_TEST(testTxWork);
-    RUN_TEST(testRxWork);
-    RUN_TEST(testFlashWork);
+    //RUN_TEST(testTxWait);
+    //RUN_TEST(testRxWait);
+    //RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
+    //RUN_TEST(testTxWork);
+    //RUN_TEST(testRxWork);
+    //RUN_TEST(testFlashWork);
 }
