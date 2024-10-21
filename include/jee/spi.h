@@ -75,8 +75,11 @@ struct Poll {
         Pin::config(defs, &mosi, 4);
         disable(); // start with NSEL high
 
+        int clk = SystemCoreClock / 1'000;
+        while (clk > 1000 * cfg.mhz)
+            clk /= 2;
         auto div = 0; // determine clock divider
-        while ((1000*cfg.mhz >> (div+1)) > khz)
+        while ((clk >> (div+1)) > khz)
             ++div;
         assert(div <= 7);
 
@@ -207,7 +210,7 @@ protected:
 
         while (SPI[BASE::SR](7)) {} // BSY
         //while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
-        while (SPI[BASE::SR](7)) {} // BSY
+        //while (SPI[BASE::SR](7)) {} // BSY
 
         assert(SPI[BASE::SR](11,2) == 0); // FTLVL
         //assert(SPI[BASE::SR](9,2) <= 1); // FRLVL

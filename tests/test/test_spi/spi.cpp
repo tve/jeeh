@@ -8,7 +8,7 @@ Pin pins [8];
 #include "defs.h"
 
 constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
-constexpr auto SPEED = 10'000; // SPI bus speed, kHz
+constexpr auto SPEED = 80'000; // SPI bus speed, kHz
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -187,6 +187,7 @@ void testFlashSync () {
     uint8_t snBuf [8];
     spif.serNum(snBuf);
     const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
+//logDump(snBuf, sizeof snBuf);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
@@ -201,6 +202,7 @@ void testFlashSync () {
     TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::millis()-start);
 
     spif.read(0, buf2, sizeof buf2);
+//logDump(buf2, 16);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 

@@ -66,9 +66,13 @@ struct SpiFlash {
     }
 
     void read (uint32_t pos, uint8_t* buf, uint32_t len) const {
+#if 0 // TODO fast read isn't working?
         auto p = cmdAddr(0x0B, pos);
-        *p += 1; // add dummy byte
+        p += 1; // add dummy byte
         rwCmd(spi, p, buf, len);
+#else
+        rwCmd(spi, cmdAddr(0x03, pos), buf, len);
+#endif
     }
 
     void write (uint32_t pos, void const* ptr, uint32_t len) const {
