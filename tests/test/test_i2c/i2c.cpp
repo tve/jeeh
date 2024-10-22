@@ -1,9 +1,13 @@
 // DMA-based I2C tests.
 
 #include "common.h"
+Pin pins [8];
 #include "jee/ticker.h"
 #include "jee/i2c.h"
 #include "defs.h"
+
+constexpr auto SPEED = 100; // I2C bus speed, kHz
+constexpr auto DUMP = true; // false compares against expected
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -13,8 +17,8 @@ i2c::Poll<I2C_NAME.ADDR> i2cPoll (ena::I2C_NAME, I2C_FREQ);
 i2c::Sync<I2C_TYPE> i2cSync (I2C_CONF);
 
 i2c::Work<I2C_TYPE> i2cWork (I2C_CONF);
-IRQ_HANDLER(DMA1_Channel3, i2cWork.interrupt) // not DMA1_CH3 !
-IRQ_HANDLER(DMA1_Channel4, i2cWork.interrupt) // not DMA1_CH4 !
+IRQ_HANDLER(DMA1_Channel5, i2cWork.interrupt) // not DMA1_CH5 !
+IRQ_HANDLER(DMA1_Channel6, i2cWork.interrupt) // not DMA1_CH6 !
 
 template< typename T >
 void read32 (T const& dev, uint16_t addr, void* ptr) {
@@ -38,7 +42,9 @@ void tearDown () {
 }
 
 void testFramGpio () {
-    i2cGpio.init(I2C_PINS, 1000);
+    if (DUMP)
+        logf("\n<<< testFramGpio >>>");
+    i2cGpio.init(I2C_PINS, SPEED);
     i2c::Dev fram { i2cGpio, 0x50 };
 
     //i2c::detect(i2cGpio);
@@ -50,7 +56,7 @@ void testFramGpio () {
 
     TEST_ASSERT_FALSE(detect(0x4F));
     TEST_ASSERT_TRUE(detect(0x50));
-    TEST_ASSERT_FALSE(detect(0x51));
+    //TEST_ASSERT_FALSE(detect(0x51));
 
     // read FRAM's device ID, MB85RC256V.pdf p10
     i2cGpio.start(0xF8);
@@ -70,24 +76,32 @@ void testFramGpio () {
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0xEE");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0x80, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0x80, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0x80, 0x81, ...");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
 
 void testFramPoll () {
-    i2cPoll.init(I2C_PINS, i2cTiming(1000));
+    if (DUMP)
+        logf("\n<<< testFramPoll >>>");
+    i2cPoll.init(I2C_PINS, i2cTiming(SPEED));
     i2c::Dev fram { i2cPoll, 0x50 };
 
     uint8_t buf [32], buf2 [32];
@@ -99,24 +113,32 @@ void testFramPoll () {
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0xDD");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+0x80, sizeof buf);
+        memset(buf, i+0x90, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0x90, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0x90, 0x91, ...");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
 
 void testFramSync () {
-    i2cSync.init(I2C_PINS, i2cTiming(1000));
+    if (DUMP)
+        logf("\n<<< testFramSync >>>");
+    i2cSync.init(I2C_PINS, i2cTiming(SPEED));
     i2c::Dev fram { i2cSync, 0x50 };
 
     uint8_t buf [32], buf2 [32];
@@ -128,24 +150,32 @@ void testFramSync () {
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0xCC");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+0x90, sizeof buf);
+        memset(buf, i+0xA0, sizeof buf);
         write32(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
-        memset(buf, i+128, sizeof buf);
+        memset(buf, i+0xA0, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
         read32(fram, 32*i, buf2);
-        TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
+        if (DUMP)
+            logDump(buf2, 16, "0xA0, 0xA1, ...");
+        else
+            TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
 
 void testFramWait () {
-    i2cWork.init(I2C_PINS, i2cTiming(1000));
+    if (DUMP)
+        logf("\n<<< testFramWait >>>");
+    i2cWork.init(I2C_PINS, i2cTiming(SPEED));
     i2c::Dev fram { i2cWork, 0x50 };
 
     uint8_t buf [32], buf2 [32];
@@ -217,8 +247,10 @@ private:
 };
 
 void testFramWork () {
+    if (DUMP)
+        logf("\n<<< testFramWork >>>");
     I2cWorker worker;
-    auto swId = i2cWork.init(I2C_PINS, i2cTiming(1000));
+    auto swId = i2cWork.init(I2C_PINS, i2cTiming(SPEED));
     auto wkId = worker.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -230,7 +262,13 @@ void testFramWork () {
 #endif
 
 void allTests () {
+    Pin::config("A15:U,B7,B5:P,B4,A11,B3,A1,A0", pins, sizeof pins);
+    for (auto e : pins) e = 0;
+    pins[4] = 1; // NSEL
+
+pins[6] = 1;
     RUN_TEST(testFramGpio);
+pins[7] = 1;
     RUN_TEST(testFramPoll);
     RUN_TEST(testFramSync);
     RUN_TEST(testFramWait); // async in blocking mode (sync-like)

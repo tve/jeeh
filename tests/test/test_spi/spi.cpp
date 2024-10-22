@@ -383,7 +383,7 @@ void testFlashWork () {
 void allTests () {
     Pin::config("A15:U,B7,B5,B4,A11,B3,A1:P,A0", pins, sizeof pins);
     for (auto e : pins) e = 1;
-    pins[5] = 0; // SCLK = 0;
+    pins[5] = 0; // ~SCLK
 
     RUN_TEST(testTxGpio);
     RUN_TEST(testRxGpio);
