@@ -19,7 +19,7 @@ extern "C" int putchar (int ch) {
         for (auto i = SystemCoreClock/25; i > 0; --i) // startup delay
             asm ("");
 
-        USART2->BRR = 16; // 1,000,000 bd @ 16 Mhz, 10,625,000 bd @ 170 MHz
+        USART2->BRR = 16; // 1,000,000 bd @ 16 Mhz, 10,000,000 bd @ 160 MHz
         USART2->CR1 |= USART_CR1_TE | USART_CR1_UE;
     }
 
@@ -39,7 +39,7 @@ extern "C" int putchar (int ch) {
     if (USART2[BRR] == 0) {
         Pin::config("A2:U7"); // pull-up prevents bad 1st char after reset
         RCC(ena::USART2,1) = 1;
-        USART2[BRR] = 16; // 1,000,000 bd @ 16 Mhz, 10,625,000 bd @ 170 MHz
+        USART2[BRR] = 16; // 1,000,000 bd @ 16 Mhz, 10,000,000 bd @ 160 MHz
         USART2[CR1] = (1<<3) | (1<<0); // TE UE
 
         for (auto i = SystemCoreClock/25; i > 0; --i) // startup delay

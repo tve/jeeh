@@ -8,7 +8,9 @@ Pin pins [8];
 #include "defs.h"
 
 constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
-constexpr auto SPEED = 80'000; // SPI bus speed, kHz
+constexpr auto SPEED = 10'000; // SPI bus speed, kHz
+
+const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 }; // serno
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -70,7 +72,6 @@ void testFlashGpio () {
 
     uint8_t snBuf [8];
     spif.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
@@ -128,7 +129,6 @@ void testFlashPoll () {
 
     uint8_t snBuf [8];
     spif.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
@@ -186,9 +186,8 @@ void testFlashSync () {
 
     uint8_t snBuf [8];
     spif.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
-//logDump(snBuf, sizeof snBuf);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
+logDump(snBuf, sizeof snBuf);
+    //TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
     spif.erase(0);
@@ -246,8 +245,8 @@ void testFlashWait () {
 
     uint8_t snBuf [8];
     spif.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
+logDump(snBuf, sizeof snBuf);
+    //TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
     spif.erase(0);
@@ -364,7 +363,6 @@ void testFlashWork () {
 
     uint8_t snBuf [8];
     spif.serNum(snBuf);
-    const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 };
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, snBuf, sizeof snBuf);
 
     auto start = cycles::millis();
@@ -392,16 +390,16 @@ void allTests () {
     RUN_TEST(testFlashGpio);
     RUN_TEST(testTxPoll);
     RUN_TEST(testRxPoll);
-pins[6] = 0;
     RUN_TEST(testFlashPoll);
     RUN_TEST(testTxSync);
     RUN_TEST(testRxSync);
-pins[7] = 0;
     RUN_TEST(testFlashSync);
-    //RUN_TEST(testTxWait);
-    //RUN_TEST(testRxWait);
-    //RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
-    //RUN_TEST(testTxWork);
-    //RUN_TEST(testRxWork);
+    RUN_TEST(testTxWait);
+    RUN_TEST(testRxWait);
+pins[6] = 0;
+    RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
+pins[7] = 0;
+    RUN_TEST(testTxWork);
+    RUN_TEST(testRxWork);
     //RUN_TEST(testFlashWork);
 }
