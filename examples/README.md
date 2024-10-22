@@ -33,3 +33,7 @@ Each application can be built and run independently, e.g.
 
 * `l412r/blink` - blink on-board LED and send some text to serial
 * `l412r/dcf77` - decode DCF77 time pulses using attached radio module
+
+### Nucleo-144 w/ `F413ZH`
+
+* `f413z/blink` - blink on-board LED and send some text to serial
