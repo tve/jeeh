@@ -6,9 +6,9 @@ template< uint32_t A >
 struct Poll {
     static constexpr IoReg<A> UART {};
 #if STM32F1 | STM32F4
-    enum { SR=0x00,RDR=0x04,TDR=0x04,BRR=0x08,CR1=0x0C,CR3=0x14 };
+    enum { SR=0x00,RDR=0x04,TDR=0x04,BRR=0x08,CR1=0x0C,CR3=0x14,UE=13 };
 #else
-    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,ICR=0x20,RDR=0x24,TDR=0x28 };
+    enum { CR1=0x00,CR3=0x08,BRR=0x0C,SR=0x1C,ICR=0x20,RDR=0x24,TDR=0x28,UE=0 };
 #endif
 
     struct Config {
@@ -27,7 +27,8 @@ struct Poll {
         RCC (cfg.ena,1) = 1;
         baudRate(baud);
 
-        UART[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<0);  // FIFOEN TE RE UE
+        //UART[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<UE);  // FIFOEN TE RE UE
+        UART[CR1] = (1<<3) | (1<<2) | (1<<UE);  // TE RE UE
     }
 
     void deinit () {
@@ -38,9 +39,9 @@ struct Poll {
         auto n = SystemCoreClock;
         while (n > cfg.mhz * 1'000'000)
             n /= 2;
-        UART[CR1](0) = 0; // ~UE
+        UART[CR1](UE) = 0; // ~UE
         UART[BRR] = n / bd;
-        UART[CR1](0) = 1; // UE
+        UART[CR1](UE) = 1; // UE
     }
 
     void transfer (bool w, uint8_t* p, uint16_t n) const {
@@ -91,14 +92,18 @@ struct Sync : Poll<A> {
     void transfer (bool w, uint8_t* p, uint16_t n) const {
         if (n > 0) {
             startReq(w, p, n);
-            while (dma.isRunning())
+            while (true) {
+                BlockIRQ irq;
+                if (!dma.isRunning())
+                    break;
                 if (dma.completed() == 0)
                     asm ("wfe");
+            }
+            dma.completed();
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
             Worker::irqClear(cfg.rxIrq);
-            if (!w)
-                cache::inval(p, n);
+            finishReq(w, p, n);
         }
     }
 
@@ -108,6 +113,11 @@ protected:
             dma.txStart(p, n);
         else
             dma.rxStart(p, n);
+    }
+
+    void finishReq (uint8_t w, void* p, uint16_t n) const {
+        if (!w)
+            cache::inval(p, n);
     }
 };
 
@@ -140,6 +150,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     void write (void const* buf, uint16_t len, Event out) {
         assert(len > 0);
         txPending = out;
+        txPending.eVal = len;
         BASE::startReq(true, (void*) buf, len);
     }
 
@@ -166,8 +177,8 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void idleIrq () {
 #if STM32F1 | STM32F4
-        +UART[BASE::SR];
-        +UART[BASE::RDR]; // clear idle and error flags
+        (void) +UART[BASE::SR];
+        (void) +UART[BASE::RDR]; // clear idle and error flags
 #else
         UART[BASE::ICR] = 0x1F; // clear idle and error flags
 #endif
@@ -176,7 +187,7 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     void dmaIrq () {
         auto f = dma.completed();
-        assert(f != 0);
+        //assert(f != 0);
         if (f == dma.RXHALF)
             trigger(RXHALF);
         else if (f == dma.RXFULL)

@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "blink"
+#define PIOENV  "uarts"
 
 //CG[ board leds
 #define LED  "B0"
@@ -14,9 +14,67 @@ const Pin led (LED,"P");
 
 //CG[ board uart
 #define UART_NAME  USART3
-#define UART_PINS  "D8:7,D9"
+#define UART_PINS  "D8:U7,D9"
 #define UART_FREQ  50
-#define UART_CONF  Irq::DMA1_Stream3,Irq::DMA1_Stream1,1-1,3-0,1-0,4,4
+#define UART_TYPE  USART3.ADDR, DMA1.ADDR, 3-0, 1-0
+#define UART_CONF  { ena::USART3, 50, Irq::USART3, \
+                     Irq::DMA1_Stream3, Irq::DMA1_Stream1, 1-1, 4,4 }
+//CG]
+//CG[ board uart1
+#define UART1_NAME  USART1
+#define UART1_PINS  "A9:U7,A10"
+#define UART1_FREQ  100
+#define UART1_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 2-0
+#define UART1_CONF  { ena::USART1, 100, Irq::USART1, \
+                      Irq::DMA2_Stream7, Irq::DMA2_Stream2, 2-1, 4,4 }
+//CG]
+//CG[ board uart2
+#define UART2_NAME  USART2
+#define UART2_PINS  "A2:U7,A3"
+#define UART2_FREQ  50
+#define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 6-0, 5-0
+#define UART2_CONF  { ena::USART2, 50, Irq::USART2, \
+                      Irq::DMA1_Stream6, Irq::DMA1_Stream5, 1-1, 4,4 }
+//CG]
+//CG[ board uart4
+#define UART4_NAME  UART4
+#define UART4_PINS  "A0:U8,A1"
+#define UART4_FREQ  50
+#define UART4_TYPE  UART4.ADDR, DMA1.ADDR, 4-0, 2-0
+#define UART4_CONF  { ena::UART4, 50, Irq::UART4, \
+                      Irq::DMA1_Stream4, Irq::DMA1_Stream2, 1-1, 4,4 }
+//CG]
+//CG[ board uart5
+#define UART5_NAME  UART5
+#define UART5_PINS  "C12:U8,D2"
+#define UART5_FREQ  50
+#define UART5_TYPE  UART5.ADDR, DMA1.ADDR, 7-0, 0-0
+#define UART5_CONF  { ena::UART5, 50, Irq::UART5, \
+                      Irq::DMA1_Stream7, Irq::DMA1_Stream0, 1-1, 8,4 }
+//CG]
+//CG[ board uart6
+#define UART6_NAME  USART6
+#define UART6_PINS  "G14:U8,G9"
+#define UART6_FREQ  100
+#define UART6_TYPE  USART6.ADDR, DMA2.ADDR, 6-0, 1-0
+#define UART6_CONF  { ena::USART6, 100, Irq::USART6, \
+                      Irq::DMA2_Stream6, Irq::DMA2_Stream1, 2-1, 5,5 }
+//CG]
+//CG[ board uart9
+#define UART9_NAME  UART9
+#define UART9_PINS  "D15:U11,D14"
+#define UART9_FREQ  50
+#define UART9_TYPE  UART9.ADDR, DMA2.ADDR, 0-0, 7-0
+#define UART9_CONF  { ena::UART9, 50, Irq::UART9, \
+                      Irq::DMA2_Stream0, Irq::DMA2_Stream7, 2-1, 1,0 }
+//CG]
+//CG[ board uart10
+#define UART10_NAME  UART10
+#define UART10_PINS  "E3:U11,E2"
+#define UART10_FREQ  100
+#define UART10_TYPE  UART10.ADDR, DMA2.ADDR, 5-0, 3-0
+#define UART10_CONF  { ena::UART10, 100, Irq::UART10, \
+                       Irq::DMA2_Stream5, Irq::DMA2_Stream3, 2-1, 9,9 }
 //CG]
 
 namespace serio {
@@ -24,20 +82,20 @@ namespace serio {
 
     void init () {
         Pin::config("D8:7");
-        RCC(ena::USART3,1) = 1;
+        RCC(ena::UART_NAME,1) = 1;
         // SystemCoreClock mixup? gcc inits as 16 MHz, but Nucleo-144 is 8 MHz
         //  (normally, this next divider should be 100/2)
         // TODO can probably also be fixed by using HSI16 iso HSE8
-        USART3[BRR] = SystemCoreClock / 4 / 1'000'000; // 100/4 MHz APB bus
-        USART3[CR1] = (1<<13) | (1<<3); // UE TE
+        UART_NAME[BRR] = SystemCoreClock / 4 / 1'000'000; // 100/4 MHz APB bus
+        UART_NAME[CR1] = (1<<13) | (1<<3); // UE TE
     }
 
     void write (void const* ptr, int len) {
         for (auto i = 0; i < len; ++i) {
-            while (!USART3[ISR](7)) {} // TXE
-            USART3[TDR] = ((uint8_t const*) ptr)[i];
+            while (!UART_NAME[ISR](7)) {} // TXE
+            UART_NAME[TDR] = ((uint8_t const*) ptr)[i];
         }
-        //while (!USART2[serio::ISR](6)) {} // TC
+        //while (!UART_NAME[serio::ISR](6)) {} // TC
     }
 }
 

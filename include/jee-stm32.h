@@ -27,8 +27,12 @@ enum : uint16_t {
 namespace ena {
     enum : uint16_t {
         //CG: svd enables
+// missing info, not properly auto-generated from SVD:
 #if STM32F3
         GPIOA         = 17 + 8 * AHBENR,
+#elif STM32F4 // F413
+        UART9         =  6 + 8 * APB2ENR,
+        UART10        =  7 + 8 * APB2ENR,
 #elif STM32G0
         GPIOA         =  0 + 8 * 0x34,
 #elif STM32G4

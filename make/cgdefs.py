@@ -49,9 +49,13 @@ def BOARD(block, name, suffix=''):
         if 'V' in f:
             r.append(f'#define UART{suffix}_VERS  {f["V"]}')
         if 'D' in f:
-            t = Template('Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R,'
-                         '$D-1,$T-$O,$R-$O,$C').substitute(f)
-            r.append(f'#define UART{suffix}_CONF  ' + t)
+            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
+            t1 = Template('ena::$N, $F, Irq::$N')
+            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, $D-1, $C')
+            skip = len(suffix) * ' '
+            r.append(f'#define UART{suffix}_TYPE  {t0.substitute(f)}')
+            r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)}, \\')
+            r.append(f'                    {skip} {t2.substitute(f)} }}')
         return r
 
     if name.startswith('i2c'):
@@ -67,10 +71,10 @@ def BOARD(block, name, suffix=''):
              f'#define I2C{suffix}_PINS  "{f["P"]}"',
              f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
-            c = '{ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER}, {$D-1,$C}'
-            r.append(f'#define I2C{suffix}_TYPE  ' + Template(t).substitute(f))
-            r.append(f'#define I2C{suffix}_CONF  ' + Template(c).substitute(f))
+            t = Template('$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O')
+            c = Template('{ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER}, {$D-1,$C}')
+            r.append(f'#define I2C{suffix}_TYPE  ' + t.substitute(f))
+            r.append(f'#define I2C{suffix}_CONF  ' + c.substitute(f))
         return r
 
     if name.startswith('spi'):
