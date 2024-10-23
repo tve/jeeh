@@ -45,7 +45,7 @@ IRQ_HANDLER(DMA2_Stream5, uart10.dmaIrq)
 IRQ_HANDLER(DMA2_Stream3, uart10.dmaIrq)
 
 struct Matrix : Worker {
-    enum TAG { START, R1, T1, R2, T2, R4, T4, R5, T5, R6, T6, R10 };
+    enum TAG { START, R1, R2, R4, R5, R6, R10, T1, T2, T4, T5, T6 };
 
     enum { NR=200 };
     uint8_t buf1 [NR], buf2 [NR], buf4 [NR], buf5 [NR], buf6 [NR], buf10 [NR];
