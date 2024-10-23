@@ -53,7 +53,7 @@ struct Matrix : Worker {
     Event process (Event in, Event out, void*) {
         logf("mx %d %d", in.eTag, in.eVal);
         switch (in.eTag) {
-            case START:
+            case START: // issue read requests on all UARTs
                 uart1.read(0, { wId, R1 });
                 uart2.read(0, { wId, R2 });
                 uart4.read(0, { wId, R4 });
@@ -62,9 +62,9 @@ struct Matrix : Worker {
                 uart10.read(0, { wId, R10 });
                 break;
             case R1:
-                memcpy(buf1, uart1.rxPtr, in.eVal);
-                uart1.read(in.eVal, { wId, R1 });
-                uart1.write(buf1, in.eVal, { wId, T1 });
+                memcpy(buf1, uart1.rxPtr, in.eVal); // keep copy of recv'd data
+                uart1.read(in.eVal, { wId, R1 }); // consume and start new read
+                uart1.write(buf1, in.eVal, { wId, T1 }); // send data out again
                 break;
             case R2:
                 memcpy(buf2, uart2.rxPtr, in.eVal);
@@ -95,7 +95,7 @@ struct Matrix : Worker {
             case T4:
             case T5:
             case T6:
-                logf(" t %d", in.eVal);
+                logf(" t %d", in.eVal); // transmission completed
                 break;
             default:
                 fail();
