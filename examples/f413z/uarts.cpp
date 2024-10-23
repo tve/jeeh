@@ -109,13 +109,13 @@ int main () {
     logf("scb %x %x", SCB.byte(0x1F), SCB.byte(0x22));
     SCB.byte(0x22) = 0xFF; // PendSV prio
 
-    uart1.init(UART1_PINS, 500'000);    // tx: A9  rx: A10 < D15 #9
-    uart2.init(UART2_PINS, 500'000);    // tx: A2  rx: A3  < A9  #1
-    uart4.init(UART4_PINS, 500'000);    // tx: A0  rx: A1  < A2  #2
-    uart5.init(UART5_PINS, 500'000);    // tx: C12 rx: D2  < A0  #4
-    uart6.init(UART6_PINS, 500'000);    // tx: G14 rx: G9  < C12 #5
-    uart9.init(UART9_PINS, 500'000);    // tx: D15 rx: D14
-    uart10.init(UART10_PINS, 500'000);  // tx: E3  rx: E2  < G14 #6
+    uart1.init(UART1_PINS, 1'000'000);    // tx: A9  rx: A10 < D15 #9
+    uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < A9  #1
+    uart4.init(UART4_PINS, 1'000'000);    // tx: A0  rx: A1  < A2  #2
+    uart5.init(UART5_PINS, 1'000'000);    // tx: C12 rx: D2  < A0  #4
+    uart6.init(UART6_PINS, 1'000'000);    // tx: G14 rx: G9  < C12 #5
+    uart9.init(UART9_PINS, 1'000'000);    // tx: D15 rx: D14
+    uart10.init(UART10_PINS, 1'000'000);  // tx: E3  rx: E2  < G14 #6
 
     auto s = " abcdefghijklmnopqrstuvwxyz + ABCDEFGHIJKLMNOPQRSTUVWXYZ /\n";
     auto n = strlen(s);
