@@ -12,12 +12,6 @@ TICKER_INSTALL(ticker)
 
 uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 
-// TODO these updated definitions are needed for jee/uart.h
-#define UART_TYPE  UART_NAME.ADDR,DMA1.ADDR,1-1,2-1
-#undef UART_CONF
-#define UART_CONF  { ena::UART_NAME, 170, Irq::UART_NAME, \
-                     Irq::DMA1_CH1, Irq::DMA1_CH2, 1-1, 25, 24 }
-
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
 
 uart::Work<UART_TYPE> uartWork (UART_CONF);

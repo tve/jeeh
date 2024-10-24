@@ -10,7 +10,9 @@
 #define UART_NAME  USART2
 #define UART_PINS  "A2:7,A15:3"
 #define UART_FREQ  80
-#define UART_CONF  Irq::DMA1_Channel7,Irq::DMA1_Channel6,1-1,7-1,6-1,2,2
+#define UART_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
+#define UART_CONF  { ena::USART2, 80, Irq::USART2, \
+                     Irq::DMA1_Channel7, Irq::DMA1_Channel6, 1-1, 2,2 }
 //CG]
 
 //CG[ board spi
