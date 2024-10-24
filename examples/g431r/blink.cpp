@@ -7,6 +7,8 @@ int main () {
     initBoard();
 
     while (true) {
+        logf("%d ms", rtc::getDate().todMillis());
+
         led = 1;
         cycles::msBusy(100);
         led = 0;
