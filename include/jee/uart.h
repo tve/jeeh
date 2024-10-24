@@ -198,7 +198,7 @@ struct Work : Sync<A,D,T,R>, Worker {
 
     uint8_t const* rxPtr = rxBuf;
 private:
-    enum { RX_MAX = 256 };
+    enum { RX_MAX = 64 };
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
 
     uint32_t rxAvail () const {

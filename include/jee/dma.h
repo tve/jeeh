@@ -56,6 +56,7 @@ struct DmaConfig {
         DRX[CCR] = (rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 //DTX[0x24](2) = 1; // DMDIS
+//DRX[0x24](2) = 1; // DMDIS
 
         DTX[CPAR] = txAddr;
         DRX[CPAR] = rxAddr;

@@ -8,6 +8,11 @@
 using namespace jeeh;
 #include "defs.h"
 
+uart::Work<UART_TYPE> uart3 (UART_CONF);
+IRQ_HANDLER(USART3, uart3.idleIrq)
+IRQ_HANDLER(DMA1_Stream3, uart3.dmaIrq)
+IRQ_HANDLER(DMA1_Stream1, uart3.dmaIrq)
+
 uart::Work<UART1_TYPE> uart1 (UART1_CONF);
 IRQ_HANDLER(USART1, uart1.idleIrq)
 IRQ_HANDLER(DMA2_Stream7, uart1.dmaIrq)
@@ -33,7 +38,6 @@ IRQ_HANDLER(USART6, uart6.idleIrq)
 IRQ_HANDLER(DMA2_Stream6, uart6.dmaIrq)
 IRQ_HANDLER(DMA2_Stream1, uart6.dmaIrq)
 
-//uart::Poll<UART9_NAME.ADDR> uart9 (ena::UART9_NAME, UART9_FREQ);
 uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
 //IRQ_HANDLER(UART9, uart9.idleIrq)
 //IRQ_HANDLER(DMA2_Stream0, uart9.dmaIrq)
@@ -45,21 +49,31 @@ IRQ_HANDLER(DMA2_Stream5, uart10.dmaIrq)
 IRQ_HANDLER(DMA2_Stream3, uart10.dmaIrq)
 
 struct Matrix : Worker {
-    enum TAG { START, R1, R2, R4, R5, R6, R10, T1, T2, T4, T5, T6 };
+    enum TAG { START, R1, R2, R3, R4, R5, R6, R10, T1, T2, T3, T4, T5, T6, NE };
+    static constexpr char const* names [] = {
+        " S","R1","R2","R3","R4","R5","R6","R10","T1","T2","T3","T4","T5","T6"
+    };
 
     enum { NR=200 };
-    uint8_t buf1 [NR], buf2 [NR], buf4 [NR], buf5 [NR], buf6 [NR], buf10 [NR];
+    uint8_t buf1 [NR], buf2 [NR], buf3 [NR], buf4 [NR], buf5 [NR], buf6 [NR], buf10 [NR];
+    uint32_t counts [NE] ={}, bytes [NE] ={};
+    bool verbose =true;
 
     Event process (Event in, Event out, void*) {
-        logf("mx %d %d", in.eTag, in.eVal);
-        switch (in.eTag) {
+        auto tag = in.eTag;
+        ++counts[tag];
+        bytes[tag] += in.eVal;
+        if (verbose && tag < T1)
+            logf("%s %d", names[tag], in.eVal);
+        switch (tag) {
             case START: // issue read requests on all UARTs
                 uart1.read(0, { wId, R1 });
                 uart2.read(0, { wId, R2 });
+                uart3.read(0, { wId, R3 });
                 uart4.read(0, { wId, R4 });
                 uart5.read(0, { wId, R5 });
                 uart6.read(0, { wId, R6 });
-                uart10.read(0, { wId, R10 });
+                //uart10.read(0, { wId, R10 });
                 break;
             case R1:
                 memcpy(buf1, uart1.rxPtr, in.eVal); // keep copy of recv'd data
@@ -70,6 +84,18 @@ struct Matrix : Worker {
                 memcpy(buf2, uart2.rxPtr, in.eVal);
                 uart2.read(in.eVal, { wId, R2 });
                 uart2.write(buf2, in.eVal, { wId, T2 });
+                break;
+            case R3: // console input
+                memcpy(buf3, uart3.rxPtr, in.eVal);
+                uart3.read(in.eVal, { wId, R3 });
+                switch (buf3[0]) {
+                    case 'q': verbose = false; break;
+                    case 'v': verbose = true; break;
+                    case 's': for (auto i = 0; i < NE; ++i)
+                                logf("%3s %8d %8d",
+                                        names[i], counts[i], bytes[i]);
+                              break;
+                }
                 break;
             case R4:
                 memcpy(buf4, uart4.rxPtr, in.eVal);
@@ -95,7 +121,8 @@ struct Matrix : Worker {
             case T4:
             case T5:
             case T6:
-                logf(" t %d", in.eVal); // transmission completed
+                if (verbose)
+                    logf("%s %d", names[tag], in.eVal); // transmission completed
                 break;
             default:
                 fail();
@@ -107,11 +134,13 @@ struct Matrix : Worker {
 int main () {
     initBoard();
     logf("scb %x %x", SCB.byte(0x1F), SCB.byte(0x22));
+    SCB.byte(0x1F) = 0xFF; // SVC prio
     SCB.byte(0x22) = 0xFF; // PendSV prio
 
-    uart1.init(UART1_PINS, 1'000'000);    // tx: A9  rx: A10 < D15 #9
-    uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < A9  #1
-    uart4.init(UART4_PINS, 1'000'000);    // tx: A0  rx: A1  < A2  #2
+    uart1.init(UART1_PINS, 1'000'000);    // tx: B6  rx: B3  < D15 #9
+    uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < B6  #1
+    uart3.init(UART_PINS, 2'000'000); // TODO probably 8/16 MHz xtal mixup
+    uart4.init(UART4_PINS, 1'000'000);    // tx: A0  rx: C11 < A2  #2
     uart5.init(UART5_PINS, 1'000'000);    // tx: C12 rx: D2  < A0  #4
     uart6.init(UART6_PINS, 1'000'000);    // tx: G14 rx: G9  < C12 #5
     uart9.init(UART9_PINS, 1'000'000);    // tx: D15 rx: D14
@@ -122,7 +151,7 @@ int main () {
 
     Matrix matrix;
     auto mxId = matrix.init();
-    Worker::send({ mxId });
+    Worker::send({ mxId, matrix.START });
 
     while (true) {
         //auto start = cycles::count();
@@ -130,7 +159,7 @@ int main () {
         //logf("%d cy", cycles::count()-start);
 
         led = 1;
-        cycles::usBusy(100);
+        cycles::usBusy(10000);
         led = 0;
         //cycles::msBusy(50);
     }

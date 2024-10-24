@@ -22,7 +22,7 @@ const Pin led (LED,"P");
 //CG]
 //CG[ board uart1
 #define UART1_NAME  USART1
-#define UART1_PINS  "A9:U7,A10"
+#define UART1_PINS  "B6:U7,B3"
 #define UART1_FREQ  100
 #define UART1_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 2-0
 #define UART1_CONF  { ena::USART1, 100, Irq::USART1, \
@@ -38,7 +38,7 @@ const Pin led (LED,"P");
 //CG]
 //CG[ board uart4
 #define UART4_NAME  UART4
-#define UART4_PINS  "A0:U8,A1"
+#define UART4_PINS  "A0:U8,C11"
 #define UART4_FREQ  50
 #define UART4_TYPE  UART4.ADDR, DMA1.ADDR, 4-0, 2-0
 #define UART4_CONF  { ena::UART4, 50, Irq::UART4, \
@@ -63,9 +63,9 @@ const Pin led (LED,"P");
 //CG[ board uart9
 #define UART9_NAME  UART9
 #define UART9_PINS  "D15:U11,D14"
-#define UART9_FREQ  50
+#define UART9_FREQ  100
 #define UART9_TYPE  UART9.ADDR, DMA2.ADDR, 0-0, 7-0
-#define UART9_CONF  { ena::UART9, 50, Irq::UART9, \
+#define UART9_CONF  { ena::UART9, 100, Irq::UART9, \
                       Irq::DMA2_Stream0, Irq::DMA2_Stream7, 2-1, 1,0 }
 //CG]
 //CG[ board uart10
