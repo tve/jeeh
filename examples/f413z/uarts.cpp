@@ -91,7 +91,8 @@ struct Matrix : Worker {
                 switch (buf3[0]) {
                     case 'q': verbose = false; break;
                     case 'v': verbose = true; break;
-                    case 's': for (auto i = 0; i < NE; ++i)
+                    case 's': showStats(); break;
+                    case 'c': for (auto i = 0; i < NE; ++i)
                                 logf("%3s %8d %8d",
                                         names[i], counts[i], bytes[i]);
                               break;
