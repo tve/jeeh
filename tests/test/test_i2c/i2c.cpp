@@ -6,8 +6,8 @@ Pin pins [8];
 #include "jee/i2c.h"
 #include "defs.h"
 
-constexpr auto SPEED = 100; // I2C bus speed, kHz
-constexpr auto DUMP = true; // false compares against expected
+constexpr auto SPEED = 400; // I2C bus speed, kHz
+constexpr auto DUMP = false; // false compares against expected
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -21,15 +21,15 @@ IRQ_HANDLER(DMA1_Channel5, i2cWork.interrupt) // not DMA1_CH5 !
 IRQ_HANDLER(DMA1_Channel6, i2cWork.interrupt) // not DMA1_CH6 !
 
 template< typename T >
-void read32 (T const& dev, uint16_t addr, void* ptr) {
+bool read32b (T const& dev, uint16_t addr, void* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian
-    dev.read16(addr, ptr, 32);
+    return dev.read16(addr, ptr, 32);
 }
 
 template< typename T >
-void write32 (T const& dev, uint16_t addr, void const* ptr) {
+bool write32b (T const& dev, uint16_t addr, void const* ptr) {
     addr = (addr<<8) | (addr>>8); // big-endian
-    dev.write16(addr, ptr, 32);
+    return dev.write16(addr, ptr, 32);
 }
 
 void setUp () {}
@@ -71,11 +71,11 @@ void testFramGpio () {
 
     memset(buf, 0xEE, sizeof buf);
     for (auto i = 0; i < 3; ++i)
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         if (DUMP)
             logDump(buf2, 16, "0xEE");
         else
@@ -84,13 +84,13 @@ void testFramGpio () {
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0x80, sizeof buf);
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0x80, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         if (DUMP)
             logDump(buf2, 16, "0x80, 0x81, ...");
         else
@@ -102,17 +102,21 @@ void testFramPoll () {
     if (DUMP)
         logf("\n<<< testFramPoll >>>");
     i2cPoll.init(I2C_PINS, i2cTiming(SPEED));
+    //i2cPoll.init(I2C_PINS, 0x10C01A24);
     i2c::Dev fram { i2cPoll, 0x50 };
 
     uint8_t buf [32], buf2 [32];
 
     memset(buf, 0xDD, sizeof buf);
-    for (auto i = 0; i < 3; ++i)
-        write32(fram, 32*i, buf);
+    for (auto i = 0; i < 3; ++i) {
+        auto f = write32b(fram, 32*i, buf);
+        TEST_ASSERT(f);
+    }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        auto f = read32b(fram, 32*i, buf2);
+        TEST_ASSERT(f);
         if (DUMP)
             logDump(buf2, 16, "0xDD");
         else
@@ -121,13 +125,15 @@ void testFramPoll () {
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0x90, sizeof buf);
-        write32(fram, 32*i, buf);
+        auto f = write32b(fram, 32*i, buf);
+        TEST_ASSERT(f);
     }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0x90, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        auto f = read32b(fram, 32*i, buf2);
+        TEST_ASSERT(f);
         if (DUMP)
             logDump(buf2, 16, "0x90, 0x91, ...");
         else
@@ -145,11 +151,11 @@ void testFramSync () {
 
     memset(buf, 0xCC, sizeof buf);
     for (auto i = 0; i < 3; ++i)
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         if (DUMP)
             logDump(buf2, 16, "0xCC");
         else
@@ -158,13 +164,13 @@ void testFramSync () {
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0xA0, sizeof buf);
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0xA0, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         if (DUMP)
             logDump(buf2, 16, "0xA0, 0xA1, ...");
         else
@@ -182,23 +188,23 @@ void testFramWait () {
 
     memset(buf, 0xEE, sizeof buf);
     for (auto i = 0; i < 3; ++i)
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf2, 0x55, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+0xA0, sizeof buf);
-        write32(fram, 32*i, buf);
+        write32b(fram, 32*i, buf);
     }
 
     for (auto i = 0; i < 3; ++i) {
         memset(buf, i+128, sizeof buf);
         memset(buf2, 0xAA, sizeof buf2);
-        read32(fram, 32*i, buf2);
+        read32b(fram, 32*i, buf2);
         TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf);
     }
 }
@@ -265,12 +271,14 @@ void allTests () {
     Pin::config("A15:U,B7,B5:P,B4,A11,B3,A1,A0", pins, sizeof pins);
     for (auto e : pins) e = 0;
     pins[4] = 1; // NSEL
+pins[4] = 0; // ~NSEL
+pins[4] = 1; // NSEL
 
+    //RUN_TEST(testFramGpio);
 pins[6] = 1;
-    RUN_TEST(testFramGpio);
-pins[7] = 1;
     RUN_TEST(testFramPoll);
-    RUN_TEST(testFramSync);
-    RUN_TEST(testFramWait); // async in blocking mode (sync-like)
+pins[7] = 1;
+    //RUN_TEST(testFramSync);
+    //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
 }

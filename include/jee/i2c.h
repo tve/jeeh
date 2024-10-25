@@ -229,6 +229,7 @@ struct Poll {
                 if (I2C[ISR](2)) // RXNE
                     *q++ = I2C[RXDR];
 
+if (m == W2) cycles::usBusy(1);
         return true;
     }
 
