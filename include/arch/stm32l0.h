@@ -1,16 +1,16 @@
 // see https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
 
-extern "C" uint32_t __atomic_fetch_or_4 (void volatile* p, uint32_t v, int) {
+extern "C" uint32_t __atomic_fetch_or_4 (uint32_t* p, uint32_t v, int) {
     BlockIRQ irq;
-    auto t = *(uint32_t volatile*) p;
-    *(uint32_t volatile*) p |= v;
+    auto t = *p;
+    *p |= v;
     return t;
 }
 
-extern "C" uint32_t __atomic_exchange_4 (void volatile* p, uint32_t v, int) {
+extern "C" uint32_t __atomic_exchange_4 (uint32_t* p, uint32_t v, int) {
     BlockIRQ irq;
-    auto t = *(uint32_t volatile*) p;
-    *(uint32_t volatile*) p = v;
+    auto t = *p;
+    *p = v;
     return t;
 }
 
