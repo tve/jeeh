@@ -122,11 +122,13 @@ enum { CSR=0x50 };
 enum { BDCR=0x90, CSR=0x94 };
 #endif
 
+#if !STM32L0
 void reset () {
     RCC[BDCR](16) = 1; // BDRST
     //sys::wait(2);
     RCC[BDCR](16) = 0; // ~BDRST
 }
+#endif
 
 void init (bool lse) {
 #if !(STM32F3 | STM32F4 | STM32F7 | STM32L0)
@@ -177,7 +179,9 @@ void init (bool lse) {
 }
 
 void deinit () {
+#if !STM32L0
     RCC[BDCR](15) = 0; // ~RTCEN
+#endif
 }
 
 uint8_t fromBcd (uint8_t v) {

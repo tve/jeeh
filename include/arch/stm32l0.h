@@ -14,6 +14,23 @@ extern "C" uint32_t __atomic_exchange_4 (void volatile* p, uint32_t v, int) {
     return t;
 }
 
+extern "C" uint8_t __atomic_compare_exchange_1 (uint8_t* p, uint8_t* e, uint8_t d, bool, int, int) {
+    BlockIRQ irq;
+    if (*p == *e) {
+        *p = d;
+        return true;
+    }
+    *e = *p;
+    return false;
+}
+
+extern "C" uint8_t __atomic_fetch_add_1 (uint8_t* p, uint8_t v, int) {
+    BlockIRQ irq;
+    auto t = *p;
+    *p += v;
+    return t;
+}
+
 void swoWrite (void const* ptr, size_t len) {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28 };
 

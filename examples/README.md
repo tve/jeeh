@@ -21,12 +21,18 @@ Each application can be built and run independently, e.g.
 * `g431k/oled`: show a test pattern on 128x64 or 128x32 I2C OLEDs
 * `g431k/imu`: read out the values of a 9-DOF I2C IMU sensor
 * `g431k/pulses`: generate pulses to check the logic-analyser hookup
+* `g431k/tick`: blink on-board LED via periodic timer and worker
 
 **`nucleo_g431rb` @ 160 MHz**
 
 * `g431r/blink` - blink on-board LED and send some text to serial
 * `g431r/lcd` - graphics and text on a 480x320 LCD shield
 * `g431r/sdspi` - connect to the µSD card on the LCD shield
+
+**`nucleo_l031k6` @ 32 MHz**
+
+* `l031k/blink` - blink on-board LED and send some text to serial
+* `l031k/tick`: blink on-board LED via periodic timer and worker
 
 **`nucleo_l412kb` @ 80 MHz**
 
