@@ -210,32 +210,23 @@ struct Poll {
     enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        assert(n > 0);
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;
-        if (m != R2)
-            while ((I2C[ISR] & (0b111<<5)) == 0) { // ~TCR ~TC ~STOPF
-                if (I2C[ISR](12) || I2C[ISR](4)) { // TIMEOUT NACKF
-                    I2C[ICR] = I2C[ISR];
-                    return false;
-                }
-                if (!I2C[ISR](15) || I2C[ISR](5)) // ~BUSY or STOPF
-                    break;
-                if (I2C[ISR](1)) // TXIS
-                    I2C[TXDR] = *q++;
-            }
-        else // R2
-            while (!I2C[ISR](5)) // ~STOPF
-                if (I2C[ISR](2)) // RXNE
-                    *q++ = I2C[RXDR];
+        while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
+            if (I2C[ISR](2)) // RXNE
+                *q++ = I2C[RXDR];
+            else if (I2C[ISR](1)) // TXIS
+                I2C[TXDR] = *q++;
 
-if (m == W2) cycles::usBusy(1);
-        return true;
+        auto ok = !I2C[ISR](12) && ~I2C[ISR](4); // ~TIMEOUT ~NACKF
+        I2C[ICR] = I2C[ISR];
+        return ok;
     }
 
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
-        I2C[ICR] = (1<<5); // STOPCF
         if (n == 0)
             m |= AE;
         I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
@@ -281,24 +272,19 @@ struct Sync : Poll<A> {
         startReq(a, m, p, n);
         while (true) {
             BlockIRQ irq;
+cycles::usBusy(40);
             if (!dma.isRunning())
                 break;
-            uint32_t isr = I2C[BASE::ISR];
-            if (m != BASE::R2) {
-                // TIMEOUT TCR TC NACKF
-                if ((isr & (1<<12)) || (isr & (0b1101<<4))) {
-                    //I2C[BASE::ICR] = I2C[BASE::ISR];
-                    break; // TODO assume finish will return false?
-                }
-            }
-            if (!(isr & (1<<15)) || (isr & (1<<5))) // ~BUSY or STOPF
-                break;
-            auto dc = dma.completed();
-            if (dc == 0)
+            if (dma.completed() == 0)
                 asm ("wfe");
+            uint32_t isr = I2C[BASE::ISR];
+            if ((isr & 0x10F0) != 0) // TIMEOUT TCR TC STOPF NACKF
+                break;
         }
         Worker::irqClear(cfg.evIrq);
         //Worker::irqClear(cfg.erIrq);
+Worker::irqClear(Irq::DMA1_CH5);
+Worker::irqClear(Irq::DMA1_CH6);
         return finishReq(m, p, n);
     }
 
@@ -311,17 +297,18 @@ protected:
             dma.rxStart(p, n);
 
         BASE::startReq(a, m, n);
-        I2C[BASE::CR1](4,3) = 0b111; // TCIE STOPIE NACKIE
+        I2C[BASE::CR1](4,4) = 0b1111; // ERRIE TCIE STOPIE NACKIE
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
         //dma.done();
+dma.completed();
+        I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
         if (m == BASE::R2)
             cache::inval(p, n);
-        bool nak = I2C[BASE::ISR](4); // NACKF
+        auto ok = !I2C[BASE::ISR](12) && ~I2C[BASE::ISR](4); // ~TIMEOUT ~NACKF
         I2C[BASE::ICR] = I2C[BASE::ISR];
-        return !nak;
+        return ok;
     }
 };
 

@@ -102,7 +102,7 @@ void testFramPoll () {
     if (DUMP)
         logf("\n<<< testFramPoll >>>");
     i2cPoll.init(I2C_PINS, i2cTiming(SPEED));
-    //i2cPoll.init(I2C_PINS, 0x10C01A24);
+    //i2cPoll.init(I2C_PINS, 0x20B03844);
     i2c::Dev fram { i2cPoll, 0x50 };
 
     uint8_t buf [32], buf2 [32];
@@ -277,8 +277,9 @@ pins[4] = 1; // NSEL
     //RUN_TEST(testFramGpio);
 pins[6] = 1;
     RUN_TEST(testFramPoll);
-pins[7] = 1;
-    //RUN_TEST(testFramSync);
+pins[6] = 0;
+    RUN_TEST(testFramSync);
     //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
     //RUN_TEST(testFramWork);
+logf("99");
 }
