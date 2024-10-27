@@ -167,9 +167,9 @@ void PendSV_Handler () {
         " sub sp,#32 \n"
 #if STM32G0 | STM32L0
         " mov r0,pc \n"
-        " add r0,#14 \n"
+        " add r0,#1f-.-2 \n" // yuck
 #else
-        " addw r0,pc,#16 \n"
+        " addw r0,pc,#1f-.-4 \n" // yuck
 #endif
         " str r0,[sp,#24] \n"
         " ldr r0,=0x01000000 \n"
@@ -177,19 +177,16 @@ void PendSV_Handler () {
         " ldr r0,=0xFFFFFFF9 \n"
         " mov lr,r0 \n"
         " bx lr \n"
+        "1: \n"
 #if STM32G0 | STM32L0
-        " blx %0 \n" // target of add above
+        " ldr r3,=%0 \n"
+        " blx r3 \n"
 #else
-        " bl %0 \n" // target of addw above
+        " bl %0 \n"
 #endif
         " svc 0 \n"
         " b . \n"   // never reached
-#if STM32G0 | STM32L0
-    :: "r" (Worker::irqPendSV)
-#else
-    :: "i" (Worker::irqPendSV)
-#endif
-    );
+    :: "i" (Worker::irqPendSV));
 }
 
 //------------------------------------------------------------------------- SVC
