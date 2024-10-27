@@ -44,6 +44,11 @@ Each application can be built and run independently, e.g.
 * `g431r/lcd` - graphics and text on a 480x320 LCD shield
 * `g431r/sdspi` - connect to the µSD card on the LCD shield
 
+**`nucleo_h743zi` @ 480 MHz**
+
+* `h743z/blink` - blink on-board LED and send some text to serial
+* `h743z/tick`: blink on-board LED via periodic timer and worker
+
 **`nucleo_l031k6` @ 32 MHz**
 
 * `l031k/blink` - blink on-board LED and send some text to serial
