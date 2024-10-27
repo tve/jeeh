@@ -39,6 +39,7 @@ Each application can be built and run independently, e.g.
 * `l412k/blink` - blink on-board LED and send some text to serial
 * `l412k/i2c` - scan for attached devices on the I2C bus
 * `l412k/spi` - read out the BMP390 sensor using its SPI pins
+* `l412k/tick`: blink on-board LED via periodic timer and worker
 
 **`nucleo_l412rb_p` @ 80 MHz**
 
