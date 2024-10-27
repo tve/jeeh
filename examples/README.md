@@ -39,6 +39,11 @@ Each application can be built and run independently, e.g.
 * `g431k/pulses`: generate pulses to check the logic-analyser hookup
 * `g431k/tick`: blink on-board LED via periodic timer and worker
 
+**`disco_g031j6` @ 64 MHz**
+
+* `g031d/blink` - blink on-board LED and send some text to serial
+* `g031d/tick`: blink on-board LED via periodic timer and worker
+
 **`nucleo_g431rb` @ 160 MHz**
 
 * `g431r/blink` - blink on-board LED and send some text to serial
