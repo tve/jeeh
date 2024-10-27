@@ -21,6 +21,11 @@ Each application can be built and run independently, e.g.
 * `f413z/blink` - blink on-board LED and send some text to serial
 * `f413z/uarts` - send data through multiple uarts using async driver
 
+**`nucleo_f746zg` @ 216 MHz**
+
+* `f746z/blink` - blink on-board LED and send some text to serial
+* `f746z/tick`: blink on-board LED via periodic timer and worker
+
 **`nucleo_g431kb` @ 160 MHz**
 
 * `g431k/blink`: minimal blink of on-board LED
