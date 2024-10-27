@@ -2,8 +2,8 @@
 
 Each application can be built and run independently, e.g.
 
-    cd l412k
-    pio run -e blink -t upload
+    cd g431k
+    pio run -e tick -t upload
     pio device monitor          # to view serial output
 
 **`f103rb` - Nucleo-64 @ 72 MHz**
