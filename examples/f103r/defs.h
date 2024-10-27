@@ -12,9 +12,9 @@ namespace serio {
     enum { ISR=0x00, TDR=0x04, BRR=0x08, CR1=0x0C };
 
     void init () {
-        Pin::config("A2:U7");
+        Pin::config("A2:1");
         RCC(ena::USART2,1) = 1;
-        USART2[BRR] = SystemCoreClock / 1'000'000;
+        USART2[BRR] = SystemCoreClock / 500'000;
         USART2[CR1] = (1<<13) | (1<<3); // UE TE
     }
 

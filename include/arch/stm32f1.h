@@ -1,3 +1,7 @@
+#ifndef XTAL
+#define XTAL 8
+#endif
+
 static void enableClkWithPll (int freq) {
     auto div = freq/8 - 2;
     FLASH[0x00] = 0x12;           // flash acr, two wait states
@@ -12,7 +16,7 @@ static void enableClkWithPll (int freq) {
 #endif
     RCC[0x00](24) = 1;            // rcc cr, set PLLON
     while (RCC[0x00](25) == 0) {} // wait for PLLRDY
-    RCC[0x00](0,2) = 2;           // SW = PLLON
+    RCC[0x04](0,2) = 2;           // SW = PLL
 }
 
 uint32_t fastClock (bool pll) {
@@ -66,20 +70,6 @@ uint32_t get250hz () {
             return lo | (hi<<16);
         // if low word changed, try again
     }
-}
-
-bool sleep250hz (uint32_t ticks, int mode) {
-    (void) ticks; (void) mode;
-    // TODO use the alarm feature for both short and long sleeps
-    return true;
-}
-
-bool shortSleep (uint16_t ms, int mode) {
-    return sleep250hz(ms/4 + 1, mode);
-}
-
-bool longSleep (uint32_t sec, int mode) {
-    return sleep250hz(250 * sec, mode);
 }
 
 DateTime getDate () {
