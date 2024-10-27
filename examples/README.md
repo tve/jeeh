@@ -6,6 +6,11 @@ Each application can be built and run independently, e.g.
     pio run -e blink -t upload
     pio device monitor          # to view serial output
 
+**`nucleo_f103kb` @ 72 MHz**
+
+* `f103r/blink` - blink on-board LED and send some text to serial
+* `f103r/tick`: blink on-board LED via periodic timer and worker
+
 **`nucleo_f413zh` @ 100 MHz**
 
 * `f413z/blink` - blink on-board LED and send some text to serial
