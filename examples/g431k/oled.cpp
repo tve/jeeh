@@ -8,18 +8,13 @@
 using namespace jeeh;
 #include "defs.h"
 
-i2c::Gpio i2cBus;
-//i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+//i2c::Gpio i2cBus;
+i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+//i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 
 int main () {
     initBoard();
-    i2cBus.init(I2C_PINS, 1000);
-
-#if 0 // TODO
-    i2c::Wrap<decltype(i2cBus)> vi2cBus;
-    auto& i2cBus = (i2c::Base&) vi2cBus;
-    vi2cBus.init(I2C_PINS, 1000);
-#endif
+    i2cBus.init(I2C_PINS, i2cTiming(1000));
 
     // two I2C devices
     i2c::Dev dev1 {i2cBus, 0x3D};
