@@ -22,6 +22,13 @@ Each application can be built and run independently, e.g.
 * `f413z/uarts` - send data through multiple uarts using async driver
 * `f103r/tick` - blink on-board LED via periodic timer and worker
 
+**`f429zi` - Haoyu w/ 5" TFT @ 180 MHz**
+
+* `f429h/gpio` - check presence of I2C, SPI, and LCD peripherals
+* `f429h/font` - write 8x16 font as a screen full of 100x30 chars
+* `f429h/life` - run Conway's "Game of Life" on a 400x240 grid
+* `f429h/ram` - test on-board 4 MB PSRAM and 32 MB SDRAM memory
+
 **`f746zg` - Nucleo-144 @ 216 MHz**
 
 * `f746z/blink` - blink on-board LED and send some text to serial

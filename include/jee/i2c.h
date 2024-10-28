@@ -283,8 +283,8 @@ cycles::usBusy(40);
         }
         Worker::irqClear(cfg.evIrq);
         //Worker::irqClear(cfg.erIrq);
-Worker::irqClear(Irq::DMA1_CH5);
-Worker::irqClear(Irq::DMA1_CH6);
+//Worker::irqClear(Irq::DMA1_CH5);
+//Worker::irqClear(Irq::DMA1_CH6);
         return finishReq(m, p, n);
     }
 
