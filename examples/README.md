@@ -25,6 +25,7 @@ Each application can be built and run independently, e.g.
 **`f429zi` - Haoyu w/ 5" TFT @ 180 MHz**
 
 * `f429h/gpio` - check presence of I2C, SPI, and LCD peripherals
+* `f429h/lcd` - draw a transparency test pattern on the 800x480 LCD
 * `f429h/font` - write 8x16 font as a screen full of 100x30 chars
 * `f429h/life` - run Conway's "Game of Life" on a 400x240 grid
 * `f429h/ram` - test on-board 4 MB PSRAM and 32 MB SDRAM memory

@@ -1,7 +1,11 @@
 // Interface to the 800x480 LCD on the HAOYU STM32F429GI board.
 
 #include <jee.h>
-#include <jee/hal.h>
+#include <jee/cycles.h>
+#include <jee/dma.h>
+#include <jee/i2c.h>
+#include <jee/spi.h>
+#include <jee/uart.h>
 using namespace jeeh;
 #include "defs.h"
 #include "lcd.h"
@@ -35,6 +39,6 @@ int main () {
 
     while (true) {
         ledL.toggle();
-        sys::wait(500);
+        cycles::msBusy(500);
     }
 }
