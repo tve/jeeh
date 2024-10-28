@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "lcd"
+#define PIOENV  "gpio"
 
 //CG[ board leds
 #define LED  "B0"
@@ -33,7 +33,7 @@ void initBoard () {
     ledC.mode("P"); ledC = 1; // inverted logic
     ledB.mode("P");
 
-    console.init(UART_PINS, 115'200);
+    console.init(UART_PINS, 912'600);
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
