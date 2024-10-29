@@ -12,6 +12,10 @@ using namespace jeeh;
 //i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
 i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 
+//i2c::Work<I2C_TYPE> i2cBus (I2C_CONF);
+//IRQ_HANDLER(DMA1_Channel3, i2cBus.interrupt) // not DMA1_CH3 !
+//IRQ_HANDLER(DMA1_Channel4, i2cBus.interrupt) // not DMA1_CH4 !
+
 int main () {
     initBoard();
     i2cBus.init(I2C_PINS, i2cTiming(1000));

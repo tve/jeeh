@@ -271,7 +271,7 @@ struct Sync : Poll<A> {
         startReq(a, m, p, n);
         while (true) {
             BlockIRQ irq;
-cycles::usBusy(40);
+cycles::usBusy(15);
             if (!cfg.dma.isRunning())
                 break;
             if (cfg.dma.completed() == 0)
