@@ -63,28 +63,26 @@ struct Sync : Poll<A> {
 
     struct Config : BASE::Config {
         Irq idleIrq, txIrq, rxIrq;
-        uint8_t Xdma, XtxReq, XrxReq; // 0-based
+        DmaConfig<D,T,R> dma;
     };
 
-    DmaConfig<D,T,R> dma;
     Config const cfg;
 
     Sync (Config const& c)
-        : BASE (c.ena, c.mhz),
-          dma { c.Xdma, c.XtxReq, c.XrxReq }, cfg (c) {}
+        : BASE (c.ena, c.mhz), cfg (c) {}
 
     void init (char const* defs, int baud) {
         BASE::init(defs, baud);
         UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
 
         // peripheral address config and interrupt vector setup
-        dma.init(A + BASE::TDR, A + BASE::RDR);
+        cfg.dma.init(A + BASE::TDR, A + BASE::RDR);
 
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
     void deinit () {
-        dma.deinit();
+        cfg.dma.deinit();
         BASE::deinit();
     }
 
@@ -94,12 +92,12 @@ struct Sync : Poll<A> {
             startReq(w, p, n);
             while (true) {
                 BlockIRQ irq;
-                if (!dma.isRunning())
+                if (!cfg.dma.isRunning())
                     break;
-                if (dma.completed() == 0)
+                if (cfg.dma.completed() == 0)
                     asm ("wfe");
             }
-            dma.completed();
+            cfg.dma.completed();
             Worker::irqClear(cfg.idleIrq);
             Worker::irqClear(cfg.txIrq);
             Worker::irqClear(cfg.rxIrq);
@@ -110,9 +108,9 @@ struct Sync : Poll<A> {
 protected:
     void startReq (bool w, void* p, uint16_t n) const {
         if (w)
-            dma.txStart(p, n);
+            cfg.dma.txStart(p, n);
         else
-            dma.rxStart(p, n);
+            cfg.dma.rxStart(p, n);
     }
 
     void finishReq (uint8_t w, void* p, uint16_t n) const {
@@ -124,7 +122,7 @@ protected:
 template< uint32_t A, uint32_t D, int T, int R >
 struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg, BASE::dma, BASE::UART;
+    using BASE::Sync, BASE::cfg, BASE::UART;
 
     enum TAG { RXIDLE, RXHALF, RXFULL, TXDONE };
 
@@ -155,16 +153,16 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void read (uint16_t skip, Event out) {
-        if (!dma.DRX[dma.CCR](0)) { // start circular rx lazily
+        if (!cfg.dma.DRX[cfg.dma.CCR](0)) { // start circular rx lazily
             UART[BASE::CR1](4) = 1; // IDLEIE
 
 #if STM32F1 | STM32F3 | STM32G4
-            dma.DRX[dma.CCR](5) = 1; // CIRC
+            cfg.dma.DRX[cfg.dma.CCR](5) = 1; // CIRC
 #else
-            dma.DRX[dma.CCR](8) = 1; // CIRC
+            cfg.dma.DRX[cfg.dma.CCR](8) = 1; // CIRC
 #endif
-            dma.DRX[dma.CCR](2) = 1; // HTIE
-            dma.rxStart(rxBuf, RX_MAX);
+            cfg.dma.DRX[cfg.dma.CCR](2) = 1; // HTIE
+            cfg.dma.rxStart(rxBuf, RX_MAX);
         }
         // TODO flush when skip is large, and deal with empty out
         rxPtr = rxBuf + (rxPtr - rxBuf + skip) % RX_MAX;
@@ -186,13 +184,13 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void dmaIrq () {
-        auto f = dma.completed();
+        auto f = cfg.dma.completed();
         //assert(f != 0);
-        if (f == dma.RXHALF)
+        if (f == cfg.dma.RXHALF)
             trigger(RXHALF);
-        else if (f == dma.RXFULL)
+        else if (f == cfg.dma.RXFULL)
             trigger(RXFULL);
-        else if (f == dma.TXDONE)
+        else if (f == cfg.dma.TXDONE)
             trigger(TXDONE);
     }
 
@@ -202,7 +200,7 @@ private:
     uint8_t rxBuf [RX_MAX]; // TODO dynamic alloc & 32-byte cache-line aligned
 
     uint32_t rxAvail () const {
-        auto end = RX_MAX - dma.DRX[dma.CNDTR];
+        auto end = RX_MAX - cfg.dma.DRX[cfg.dma.CNDTR];
         assert(0 <= end && end < RX_MAX);
         auto pos = rxPtr - rxBuf;
         assert(0 <= pos && pos < RX_MAX);

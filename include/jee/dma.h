@@ -17,10 +17,10 @@ struct DmaConfig {
     static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
     static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
 
-    uint8_t dma, txReq, rxReq; // 0-based
+    uint8_t idx, txReq, rxReq; // 0-based
 
     void init (uint32_t txAddr, uint32_t rxAddr) const {
-        RCC(ena::DMA1+dma,1) = 1;
+        RCC(ena::DMA1+idx,1) = 1;
 
         // channel/stream/request setup (confusing naming differences!)
 #if STM32G4 | STM32H7 | STM32WB | STM32WL
@@ -37,8 +37,8 @@ struct DmaConfig {
         #define DMAMUX DMAMUX1
         constexpr auto CHMAP = 8;
 #endif
-        DMAMUX[4*(CHMAP*dma+T)] = txReq;
-        DMAMUX[4*(CHMAP*dma+R)] = rxReq;
+        DMAMUX[4*(CHMAP*idx+T)] = txReq;
+        DMAMUX[4*(CHMAP*idx+R)] = rxReq;
 #elif STM32L0 | STM32L4
         DMA[0xA8](4*T,4) = txReq; // CSELR
         DMA[0xA8](4*R,4) = rxReq; // CSELR

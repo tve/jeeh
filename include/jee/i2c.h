@@ -245,26 +245,26 @@ struct Sync : Poll<A> {
     static constexpr IoReg<A> I2C {};
 
     struct Config : BASE::Config {
-        Irq evIrq, erIrq;
+        Irq evIrq, erIrq, txIrq, rxIrq;
+        DmaConfig<D,T,R> dma;
     };
 
     Config const cfg;
-    DmaConfig<D,T,R> const dma;
 
-    Sync (Config const& c, DmaConfig<D,T,R> d)
-        : BASE (c.ena, c.mhz), cfg (c), dma (d) {}
+    Sync (Config const& c)
+        : BASE (c.ena, c.mhz), cfg (c) {}
 
     void init (char const* defs, uint32_t timing) {
         BASE::init(defs, timing);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         // peripheral address config and interrupt vector setup
-        dma.init(A + BASE::TXDR, A + BASE::RXDR);
+        cfg.dma.init(A + BASE::TXDR, A + BASE::RXDR);
 
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+    // void deinit () // RCC(ena::DMA1+cfg.dma.idx, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
@@ -273,9 +273,9 @@ struct Sync : Poll<A> {
         while (true) {
             BlockIRQ irq;
 cycles::usBusy(40);
-            if (!dma.isRunning())
+            if (!cfg.dma.isRunning())
                 break;
-            if (dma.completed() == 0)
+            if (cfg.dma.completed() == 0)
                 asm ("wfe");
             uint32_t isr = I2C[BASE::ISR];
             if ((isr & 0x10F0) != 0) // TIMEOUT TCR TC STOPF NACKF
@@ -283,8 +283,8 @@ cycles::usBusy(40);
         }
         Worker::irqClear(cfg.evIrq);
         //Worker::irqClear(cfg.erIrq);
-//Worker::irqClear(Irq::DMA1_CH5);
-//Worker::irqClear(Irq::DMA1_CH6);
+        Worker::irqClear(cfg.txIrq);
+        Worker::irqClear(cfg.rxIrq);
         return finishReq(m, p, n);
     }
 
@@ -292,17 +292,17 @@ protected:
     void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
         if (m != BASE::R2)
-            dma.txStart(p, n);
+            cfg.dma.txStart(p, n);
         else
-            dma.rxStart(p, n);
+            cfg.dma.rxStart(p, n);
 
         BASE::startReq(a, m, n);
         I2C[BASE::CR1](4,4) = 0b1111; // ERRIE TCIE STOPIE NACKIE
     }
 
     bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        //dma.done();
-dma.completed();
+        //cfg.dma.done();
+cfg.dma.completed();
         I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
         if (m == BASE::R2)
             cache::inval(p, n);
@@ -315,14 +315,14 @@ dma.completed();
 template< uint32_t A, uint32_t D, int T, int R >
 struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg, BASE::dma;
+    using BASE::Sync, BASE::cfg;
 
     enum TAG { RXDONE, TXDONE };
 
     Event pending;
 
-    uint8_t init (char const* defs, int khz) {
-        BASE::init(defs, khz);
+    uint8_t init (char const* defs, int timing) {
+        BASE::init(defs, timing);
         irqEnable(cfg.evIrq);
         //irqEnable(cfg.erIrq);
         return Worker::init();

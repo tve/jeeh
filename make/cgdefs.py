@@ -50,11 +50,11 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define UART{suffix}_VERS  {f["V"]}')
         if 'D' in f:
             t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
-            t1 = Template('ena::$N, $F, Irq::$N')
-            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, $D-1, $C')
+            t1 = Template('ena::$N, $F, Irq::$N,')
+            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
             skip = len(suffix) * ' '
             r.append(f'#define UART{suffix}_TYPE  {t0.substitute(f)}')
-            r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)}, \\')
+            r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)} \\')
             r.append(f'                    {skip} {t2.substitute(f)} }}')
         return r
 
@@ -71,10 +71,13 @@ def BOARD(block, name, suffix=''):
              f'#define I2C{suffix}_PINS  "{f["P"]}"',
              f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t = Template('$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O')
-            c = Template('{ena::$N,$F,Irq::${N}_EV,Irq::${N}_ER}, {$D-1,$C}')
-            r.append(f'#define I2C{suffix}_TYPE  ' + t.substitute(f))
-            r.append(f'#define I2C{suffix}_CONF  ' + c.substitute(f))
+            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
+            t1 = Template('ena::$N, $F, Irq::${N}_EV, Irq::${N}_ER,')
+            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
+            skip = len(suffix) * ' '
+            r.append(f'#define I2C{suffix}_TYPE  ' + t0.substitute(f))
+            r.append(f'#define I2C{suffix}_CONF  {{ {t1.substitute(f)} \\')
+            r.append(f'                   {skip} {t2.substitute(f)} }}')
         return r
 
     if name.startswith('spi'):
@@ -89,10 +92,13 @@ def BOARD(block, name, suffix=''):
              f'#define SPI{suffix}_PINS  "{f["P"]}"',
              f'#define SPI{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t = '$N.ADDR,DMA$D.ADDR,$T-$O,$R-$O'
-            c = '{ena::$N,$F,Irq::DMA${D}_$L$T,Irq::DMA${D}_$L$R}, {$D-1,$C}'
-            r.append(f'#define SPI{suffix}_TYPE  ' + Template(t).substitute(f))
-            r.append(f'#define SPI{suffix}_CONF  ' + Template(c).substitute(f))
+            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
+            t1 = Template('ena::$N, $F,')
+            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
+            skip = len(suffix) * ' '
+            r.append(f'#define SPI{suffix}_TYPE  ' + t0.substitute(f))
+            r.append(f'#define SPI{suffix}_CONF  {{ {t1.substitute(f)} \\')
+            r.append(f'                   {skip} {t2.substitute(f)} }}')
         return r
 
     # catch-all: "board_foo = bar:123 baz:xyz" will generate:

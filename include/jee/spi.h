@@ -145,25 +145,25 @@ struct Sync : Poll<A> {
 
     struct Config : BASE::Config {
         Irq txIrq, rxIrq;
+        DmaConfig<D,T,R> dma;
     };
 
     Config const cfg;
-    DmaConfig<D,T,R> const dma;
 
-    Sync (Config const& c, DmaConfig<D,T,R> d)
-        : BASE (c.ena, c.mhz), cfg (c), dma (d) {}
+    Sync (Config const& c)
+        : BASE (c.ena, c.mhz), cfg (c) {}
 
     void init (char const* defs, int khz) {
         BASE::init(defs, khz);
         SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
 
         // peripheral address config and interrupt vector setup
-        dma.init(A + BASE::DR, A + BASE::DR);
+        cfg.dma.init(A + BASE::DR, A + BASE::DR);
 
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma, 1) = 0; // may be shared
+    // void deinit () // RCC(ena::DMA1+cfg.dma.idx, 1) = 0; // may be shared
 
     // sync version, dma with wfe
     uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
@@ -173,9 +173,9 @@ struct Sync : Poll<A> {
         startReq(w, p, n);
         while (true) {
             BlockIRQ irq;
-            if (!dma.isRunning())
+            if (!cfg.dma.isRunning())
                 break;
-            if (dma.completed() == 0)
+            if (cfg.dma.completed() == 0)
                 asm ("wfe");
         }
         Worker::irqClear(cfg.txIrq);
@@ -192,11 +192,11 @@ protected:
         assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
 
         if (w)
-            dma.txStart(p, n);
+            cfg.dma.txStart(p, n);
         else {
             SPI[BASE::CR1](6) = 0; // ~SPE
             SPI[BASE::CR1](10) = 1; // RXONLY
-            dma.rxStart(p, n);
+            cfg.dma.rxStart(p, n);
             SPI[BASE::CR1](6) = 1; // SPE needed to reaffirm?
         }
     }
@@ -230,7 +230,7 @@ protected:
 template< uint32_t A, uint32_t D, int T, int R >
 struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg, BASE::dma;
+    using BASE::Sync, BASE::cfg;
 
     enum TAG { RXDONE, TXDONE };
 
@@ -257,9 +257,9 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
     void interrupt () {
-        auto f = dma.completed();
+        auto f = cfg.dma.completed();
         if (f != 0)
-            trigger(f == dma.TXDONE ? TXDONE : RXDONE);
+            trigger(f == cfg.dma.TXDONE ? TXDONE : RXDONE);
     }
 
 private:
