@@ -68,8 +68,7 @@ struct Sync : Poll<A> {
 
     Config const cfg;
 
-    Sync (Config const& c)
-        : BASE (c.ena, c.mhz), cfg (c) {}
+    Sync (Config const& c) : BASE (c.ena, c.mhz), cfg (c) {}
 
     void init (char const* defs, int baud) {
         BASE::init(defs, baud);

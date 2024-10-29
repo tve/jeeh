@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "gpio"
+#define PIOENV  "ram"
 
 //CG[ board leds
 #define LED  "B0"
@@ -19,7 +19,7 @@ constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
 #define UART_FREQ  90
 #define UART_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 5-0
 #define UART_CONF  { ena::USART1, 90, Irq::USART1, \
-                     Irq::DMA2_Stream7, Irq::DMA2_Stream5, 2-1, 4,4 }
+                     Irq::DMA2_Stream7, Irq::DMA2_Stream5, { 2-1,4,4 } }
 //CG]
 
 uart::Sync<UART_TYPE> console (UART_CONF);

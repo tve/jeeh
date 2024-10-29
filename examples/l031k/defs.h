@@ -14,7 +14,7 @@ const Pin led (LED,"P");
 #define UART_FREQ  32
 #define UART_TYPE  USART2.ADDR, DMA1.ADDR, 4-1, 5-1
 #define UART_CONF  { ena::USART2, 32, Irq::USART2, \
-                     Irq::DMA1_Channel4, Irq::DMA1_Channel5, 1-1, 4,4 }
+                     Irq::DMA1_Channel4, Irq::DMA1_Channel5, { 1-1,4,4 } }
 //CG]
 
 namespace serio {
