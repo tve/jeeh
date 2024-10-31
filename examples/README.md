@@ -6,6 +6,11 @@ Each application can be built and run independently, e.g.
     pio run -e tick -t upload
     pio device monitor          # to view serial output
 
+**`f103c8` - Blue Pill w/ BMP @ 72 MHz**
+
+* `f103b/blink` - blink on-board LED and send some text to serial
+* `f103b/tick` - blink on-board LED via periodic timer and worker
+
 **`f103rb` - Nucleo-64 @ 72 MHz**
 
 * `f103r/blink` - blink on-board LED and send some text to serial
@@ -16,7 +21,7 @@ Each application can be built and run independently, e.g.
 * `f303k/blink` - blink on-board LED and send some text to serial
 * `f303k/tick` - blink on-board LED via periodic timer and worker
 
-**`f303rc` - Olimexino @ 72 MHz**
+**`f303rc` - Olimexino w/ ST-Link @ 72 MHz**
 
 * `f303o/blink` - blink on-board LED and send some text to serial
 * `f303o/tick` - blink on-board LED via periodic timer and worker

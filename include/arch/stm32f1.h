@@ -9,7 +9,7 @@ static void enableClkWithPll (int freq) {
 #if XTAL == 0
     RCC[0x04] = (div<<18) | (0<<16) | (2<<14) | (4<<8); // HSI
 #else
-    RCC[0x00](18) = 1;            // HSEBYP
+    //RCC[0x00](18) = 1;            // HSEBYP
     RCC[0x00](16) = 1;            // HSEON
     while (RCC[0x00](17) == 0) {} // wait for HSERDY
     RCC[0x04] = (div<<18) | (1<<16) | (2<<14) | (4<<8); // HSE
