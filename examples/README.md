@@ -31,7 +31,7 @@ Each application can be built and run independently, e.g.
 
 * `f413z/blink` - blink on-board LED and send some text to serial
 * `f413z/uarts` - send data through multiple uarts using async driver
-* `f103r/tick` - blink on-board LED via periodic timer and worker
+* `f413z/tick` - blink on-board LED via periodic timer and worker
 
 **`f429zi` - Haoyu w/ 5" TFT @ 180 MHz**
 
