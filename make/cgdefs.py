@@ -56,6 +56,14 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define UART{suffix}_TYPE  {t0.substitute(f)}')
             r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)} \\')
             r.append(f'                    {skip} {t2.substitute(f)} }}')
+            f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
+            x1 = 'extern "C" void ${N}_IRQHandler () {{ name.idleIrq(); }}'
+            x2 = 'extern "C" void DMA${D}_$X${T}_IRQHandler () {{ name.dmaIrq(); }}'
+            x3 = 'extern "C" void DMA${D}_$X${R}_IRQHandler () {{ name.dmaIrq(); }}'
+            r.append(f'#define UART{suffix}_IRQS(name) \\')
+            r.append(f'    {Template(x1).substitute(f)} \\')
+            r.append(f'    {Template(x2).substitute(f)} \\')
+            r.append(f'    {Template(x3).substitute(f)}')
         return r
 
     if name.startswith('i2c'):

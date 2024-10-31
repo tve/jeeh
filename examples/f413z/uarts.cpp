@@ -9,44 +9,29 @@ using namespace jeeh;
 #include "defs.h"
 
 uart::Work<UART_TYPE> uart3 (UART_CONF);
-IRQ_HANDLER(USART3, uart3.idleIrq)
-IRQ_HANDLER(DMA1_Stream3, uart3.dmaIrq)
-IRQ_HANDLER(DMA1_Stream1, uart3.dmaIrq)
+UART_IRQS(uart3)
 
 uart::Work<UART1_TYPE> uart1 (UART1_CONF);
-IRQ_HANDLER(USART1, uart1.idleIrq)
-IRQ_HANDLER(DMA2_Stream7, uart1.dmaIrq)
-IRQ_HANDLER(DMA2_Stream2, uart1.dmaIrq)
+UART1_IRQS(uart1)
 
 uart::Work<UART2_TYPE> uart2 (UART2_CONF);
-IRQ_HANDLER(USART2, uart2.idleIrq)
-IRQ_HANDLER(DMA1_Stream6, uart2.dmaIrq)
-IRQ_HANDLER(DMA1_Stream5, uart2.dmaIrq)
+UART2_IRQS(uart2)
 
 uart::Work<UART4_TYPE> uart4 (UART4_CONF);
-IRQ_HANDLER(UART4, uart4.idleIrq)
-IRQ_HANDLER(DMA1_Stream4, uart4.dmaIrq)
-IRQ_HANDLER(DMA1_Stream2, uart4.dmaIrq)
+UART4_IRQS(uart4)
 
 uart::Work<UART5_TYPE> uart5 (UART5_CONF);
-IRQ_HANDLER(UART5, uart5.idleIrq)
-IRQ_HANDLER(DMA1_Stream7, uart5.dmaIrq)
-IRQ_HANDLER(DMA1_Stream0, uart5.dmaIrq)
+UART5_IRQS(uart5)
 
 uart::Work<UART6_TYPE> uart6 (UART6_CONF);
-IRQ_HANDLER(USART6, uart6.idleIrq)
-IRQ_HANDLER(DMA2_Stream6, uart6.dmaIrq)
-IRQ_HANDLER(DMA2_Stream1, uart6.dmaIrq)
+UART6_IRQS(uart6)
 
 uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
-//IRQ_HANDLER(UART9, uart9.idleIrq)
-//IRQ_HANDLER(DMA2_Stream0, uart9.dmaIrq)
-//IRQ_HANDLER(DMA2_Stream7, uart9.dmaIrq) // conflicts with uart1 tx
+//UART9_IRQS(uart9)
 
 uart::Work<UART10_TYPE> uart10 (UART10_CONF);
-IRQ_HANDLER(USART10, uart10.idleIrq)
-IRQ_HANDLER(DMA2_Stream5, uart10.dmaIrq)
-IRQ_HANDLER(DMA2_Stream3, uart10.dmaIrq)
+#define UART10_IRQHandler USART10_IRQHandler 
+UART10_IRQS(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
 struct Matrix : Worker {
     enum TAG { START, R1, R2, R3, R4, R5, R6, R10, T1, T2, T3, T4, T5, T6, NE };
