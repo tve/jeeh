@@ -19,7 +19,7 @@ const Pin led (LED,"P");
 #define UART_TYPE  USART3.ADDR, DMA1.ADDR, 3-0, 1-0
 #define UART_CONF  { ena::USART3, 50, Irq::USART3, \
                      Irq::DMA1_Stream3, Irq::DMA1_Stream1, { 1-1,4,4 } }
-#define UART_IRQS(name) extern "C" { \
+#define UART_INSTALL(name) extern "C" { \
     void USART3_IRQHandler () { name.idleIrq(); } \
     void DMA1_Stream3_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Stream1_IRQHandler () { name.dmaIrq(); } \
@@ -32,7 +32,7 @@ const Pin led (LED,"P");
 #define UART1_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 2-0
 #define UART1_CONF  { ena::USART1, 100, Irq::USART1, \
                       Irq::DMA2_Stream7, Irq::DMA2_Stream2, { 2-1,4,4 } }
-#define UART1_IRQS(name) extern "C" { \
+#define UART1_INSTALL(name) extern "C" { \
     void USART1_IRQHandler () { name.idleIrq(); } \
     void DMA2_Stream7_IRQHandler () { name.dmaIrq(); } \
     void DMA2_Stream2_IRQHandler () { name.dmaIrq(); } \
@@ -45,7 +45,7 @@ const Pin led (LED,"P");
 #define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 6-0, 5-0
 #define UART2_CONF  { ena::USART2, 50, Irq::USART2, \
                       Irq::DMA1_Stream6, Irq::DMA1_Stream5, { 1-1,4,4 } }
-#define UART2_IRQS(name) extern "C" { \
+#define UART2_INSTALL(name) extern "C" { \
     void USART2_IRQHandler () { name.idleIrq(); } \
     void DMA1_Stream6_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Stream5_IRQHandler () { name.dmaIrq(); } \
@@ -58,7 +58,7 @@ const Pin led (LED,"P");
 #define UART4_TYPE  UART4.ADDR, DMA1.ADDR, 4-0, 2-0
 #define UART4_CONF  { ena::UART4, 50, Irq::UART4, \
                       Irq::DMA1_Stream4, Irq::DMA1_Stream2, { 1-1,4,4 } }
-#define UART4_IRQS(name) extern "C" { \
+#define UART4_INSTALL(name) extern "C" { \
     void UART4_IRQHandler () { name.idleIrq(); } \
     void DMA1_Stream4_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Stream2_IRQHandler () { name.dmaIrq(); } \
@@ -71,7 +71,7 @@ const Pin led (LED,"P");
 #define UART5_TYPE  UART5.ADDR, DMA1.ADDR, 7-0, 0-0
 #define UART5_CONF  { ena::UART5, 50, Irq::UART5, \
                       Irq::DMA1_Stream7, Irq::DMA1_Stream0, { 1-1,8,4 } }
-#define UART5_IRQS(name) extern "C" { \
+#define UART5_INSTALL(name) extern "C" { \
     void UART5_IRQHandler () { name.idleIrq(); } \
     void DMA1_Stream7_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Stream0_IRQHandler () { name.dmaIrq(); } \
@@ -84,7 +84,7 @@ const Pin led (LED,"P");
 #define UART6_TYPE  USART6.ADDR, DMA2.ADDR, 6-0, 1-0
 #define UART6_CONF  { ena::USART6, 100, Irq::USART6, \
                       Irq::DMA2_Stream6, Irq::DMA2_Stream1, { 2-1,5,5 } }
-#define UART6_IRQS(name) extern "C" { \
+#define UART6_INSTALL(name) extern "C" { \
     void USART6_IRQHandler () { name.idleIrq(); } \
     void DMA2_Stream6_IRQHandler () { name.dmaIrq(); } \
     void DMA2_Stream1_IRQHandler () { name.dmaIrq(); } \
@@ -97,7 +97,7 @@ const Pin led (LED,"P");
 #define UART9_TYPE  UART9.ADDR, DMA2.ADDR, 0-0, 7-0
 #define UART9_CONF  { ena::UART9, 100, Irq::UART9, \
                       Irq::DMA2_Stream0, Irq::DMA2_Stream7, { 2-1,1,0 } }
-#define UART9_IRQS(name) extern "C" { \
+#define UART9_INSTALL(name) extern "C" { \
     void UART9_IRQHandler () { name.idleIrq(); } \
     void DMA2_Stream0_IRQHandler () { name.dmaIrq(); } \
     void DMA2_Stream7_IRQHandler () { name.dmaIrq(); } \
@@ -110,7 +110,7 @@ const Pin led (LED,"P");
 #define UART10_TYPE  UART10.ADDR, DMA2.ADDR, 5-0, 3-0
 #define UART10_CONF  { ena::UART10, 100, Irq::UART10, \
                        Irq::DMA2_Stream5, Irq::DMA2_Stream3, { 2-1,9,9 } }
-#define UART10_IRQS(name) extern "C" { \
+#define UART10_INSTALL(name) extern "C" { \
     void UART10_IRQHandler () { name.idleIrq(); } \
     void DMA2_Stream5_IRQHandler () { name.dmaIrq(); } \
     void DMA2_Stream3_IRQHandler () { name.dmaIrq(); } \

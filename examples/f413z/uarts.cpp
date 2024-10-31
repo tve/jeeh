@@ -9,29 +9,29 @@ using namespace jeeh;
 #include "defs.h"
 
 uart::Work<UART_TYPE> uart3 (UART_CONF);
-UART_IRQS(uart3)
+UART_INSTALL(uart3)
 
 uart::Work<UART1_TYPE> uart1 (UART1_CONF);
-UART1_IRQS(uart1)
+UART1_INSTALL(uart1)
 
 uart::Work<UART2_TYPE> uart2 (UART2_CONF);
-UART2_IRQS(uart2)
+UART2_INSTALL(uart2)
 
 uart::Work<UART4_TYPE> uart4 (UART4_CONF);
-UART4_IRQS(uart4)
+UART4_INSTALL(uart4)
 
 uart::Work<UART5_TYPE> uart5 (UART5_CONF);
-UART5_IRQS(uart5)
+UART5_INSTALL(uart5)
 
 uart::Work<UART6_TYPE> uart6 (UART6_CONF);
-UART6_IRQS(uart6)
+UART6_INSTALL(uart6)
 
 uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
-//UART9_IRQS(uart9)
+//UART9_INSTALL(uart9)
 
 uart::Work<UART10_TYPE> uart10 (UART10_CONF);
 #define UART10_IRQHandler USART10_IRQHandler 
-UART10_IRQS(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
+UART10_INSTALL(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
 struct Matrix : Worker {
     enum TAG { START, R1, R2, R3, R4, R5, R6, R10, T1, T2, T3, T4, T5, T6, NE };
