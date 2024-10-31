@@ -13,10 +13,11 @@
 #define UART_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
 #define UART_CONF  { ena::USART2, 80, Irq::USART2, \
                      Irq::DMA1_Channel7, Irq::DMA1_Channel6, { 1-1,2,2 } }
-#define UART_IRQS(name) \
-    extern "C" void USART2_IRQHandler () {{ name.idleIrq(); }} \
-    extern "C" void DMA1_Stream7_IRQHandler () {{ name.dmaIrq(); }} \
-    extern "C" void DMA1_Stream6_IRQHandler () {{ name.dmaIrq(); }}
+#define UART_IRQS(name) extern "C" { \
+    void USART2_IRQHandler () { name.idleIrq(); } \
+    void DMA1_Stream7_IRQHandler () { name.dmaIrq(); } \
+    void DMA1_Stream6_IRQHandler () { name.dmaIrq(); } \
+}
 //CG]
 
 //CG[ board spi

@@ -20,10 +20,11 @@ constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
 #define UART_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 5-0
 #define UART_CONF  { ena::USART1, 90, Irq::USART1, \
                      Irq::DMA2_Stream7, Irq::DMA2_Stream5, { 2-1,4,4 } }
-#define UART_IRQS(name) \
-    extern "C" void USART1_IRQHandler () {{ name.idleIrq(); }} \
-    extern "C" void DMA2_Stream7_IRQHandler () {{ name.dmaIrq(); }} \
-    extern "C" void DMA2_Stream5_IRQHandler () {{ name.dmaIrq(); }}
+#define UART_IRQS(name) extern "C" { \
+    void USART1_IRQHandler () { name.idleIrq(); } \
+    void DMA2_Stream7_IRQHandler () { name.dmaIrq(); } \
+    void DMA2_Stream5_IRQHandler () { name.dmaIrq(); } \
+}
 //CG]
 
 uart::Sync<UART_TYPE> console (UART_CONF);
