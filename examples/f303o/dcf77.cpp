@@ -31,7 +31,7 @@ int synchronise () {
     stepSync();
     for (auto i = 0; i < 10; ++i) {
         for (auto j = 0; j < NUM; ++j) {
-            led = +dcfData;
+            led = +dcfDat;
             tally[j] += led;
             if (tally[j] > max) {
                 pos = j;
@@ -57,7 +57,7 @@ DateTime decode () {
         constexpr auto MS = 5;
         int n = 0;
         for (auto j = 0U; j < ms; j += MS) {
-            led = +dcfData;
+            led = +dcfDat;
             n += MS * led;
             stepWait(MS);
         }
@@ -85,6 +85,7 @@ DateTime decode () {
 
 int main () {
     initBoard();
+    dcfVcc = 1;
 
     auto n = synchronise();
     logf("wait %d clicks", n);

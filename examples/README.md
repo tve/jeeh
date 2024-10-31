@@ -16,6 +16,12 @@ Each application can be built and run independently, e.g.
 * `f303k/blink` - blink on-board LED and send some text to serial
 * `f303k/tick` - blink on-board LED via periodic timer and worker
 
+**`f303rc` - Olimexino @ 72 MHz**
+
+* `f303o/blink` - blink on-board LED and send some text to serial
+* `f303o/tick` - blink on-board LED via periodic timer and worker
+* `f303o/dcf77` - decode DCF77 time pulses using attached radio module
+
 **`f413zh` - Nucleo-144 @ 100 MHz**
 
 * `f413z/blink` - blink on-board LED and send some text to serial
@@ -74,8 +80,3 @@ Each application can be built and run independently, e.g.
 * `l412k/i2c` - scan for attached devices on the I2C bus
 * `l412k/spi` - read out the BMP390 sensor using its SPI pins
 * `l412k/tick` - blink on-board LED via periodic timer and worker
-
-**`l412rb_p` - Nucleo-64 @ 80 MHz**
-
-* `l412r/blink` - blink on-board LED and send some text to serial
-* `l412r/dcf77` - decode DCF77 time pulses using attached radio module

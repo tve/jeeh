@@ -4,42 +4,41 @@
 #define PIOENV  "dcf77"
 
 //CG1 board leds
-#define LED  "B13"
+#define LED  "A1"
 
 Pin led (LED,"P");
 
-Pin dcfData {"C0","U"}, dcfPon {"C1","P"};
+Pin dcfPon {"B7","P"}, // D9
+    dcfDat {"A4","U"}, // D10
+    dcfGnd {"A7","P"}, // D11
+    dcfVcc {"A6","P"}; // D12
 
 namespace serio {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28 };
 
     void init () {
-        Pin::config("A2:8");
-        RCC(ena::LPUART1,1) = 1;
-        // 1 Mbaud with extra ÷256 divider, but avoid 32-bit overflow
-        LPUART1[BRR] = 4 * SystemCoreClock / (1'000'000 / 64);
-        LPUART1[CR1] = (1<<3) | (1<<2) | (1<<0); // TE RE UE
+        Pin::config("A2:7");
+        RCC(ena::USART2,1) = 1;
+        auto hz = SystemCoreClock;
+        while (hz > 36'000'000)
+            hz /= 2;
+        USART2[BRR] = hz / 2'000'000;
+        USART2[CR1] = (1<<3) | (1<<0); // TE UE
     }
 
     void write (void const* ptr, int len) {
         for (auto i = 0; i < len; ++i) {
-            while (!LPUART1[ISR](7)) {} // TXE
-            LPUART1[TDR] = ((uint8_t const*) ptr)[i];
+            while (!USART2[ISR](7)) {} // TXE
+            USART2[TDR] = ((uint8_t const*) ptr)[i];
         }
-        while (!LPUART1[serio::ISR](6)) {} // TC
+        while (!USART2[serio::ISR](6)) {} // TC
     }
 }
 
 void initBoard () {
+    fastClock(); // 72 MHz MSI
     cycles::init();
     rtc::init();
-#if 1
-    RCC[0x00](2) = 1; // MSIPLLEN
-    fastClock(false); // 48 MHz MSI
-    cycles::msBusy(3); // let MSI PLL stabilise
-#else
-    fastClock(); // 80 MHz
-#endif
 
     serio::init();
 
