@@ -9,12 +9,12 @@
 const Pin led (LED,"P");
 
 //CG[ board uart
-#define UART_NAME  USART1
-#define UART_PINS  "A9:U7,A10"
+#define UART_NAME  USART2
+#define UART_PINS  "A2:U7,A3"
 #define UART_FREQ  170
-#define UART_TYPE  USART1.ADDR, DMA1.ADDR, 1-1, 2-1
-#define UART_CONF  { ena::USART1, 170, Irq::USART1, \
-                     Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,25,24 } }
+#define UART_TYPE  USART2.ADDR, DMA1.ADDR, 1-1, 2-1
+#define UART_CONF  { ena::USART2, 170, Irq::USART2, \
+                     Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,27,26 } }
 //CG]
 
 //CG[ board spi

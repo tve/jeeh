@@ -4,7 +4,6 @@ Use any of these commands to verify that PlatformIO works properly:
 
     pio run -e blink     # blink the on-board LED with busy waiting
     pio run -e fast      # increase the clock from 16 to 160 MHz
-    pio run -e serial    # send test output to USB via the ST-Link
     pio run -e i2c       # list any devices connected to I2C via PB7+PA15
 
 

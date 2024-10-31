@@ -55,7 +55,7 @@ Each application can be built and run independently, e.g.
 
 * `g431k/blink` - minimal blink of on-board LED
 * `g431k/fast` - blink with system clock at 160 MHz
-* `g431k/serial` - send text to srial port @ 10 Mbaud
+* `g431k/serial` - send text to serial port @ 10 Mbaud
 * `g431k/i2c` - scan for attached devices on the I2C bus
 * `g431k/dog` - kick the watchdog less and less, until it resets
 * `g431k/oled` - show a test pattern on 128x64 or 128x32 I2C OLEDs
