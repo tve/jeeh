@@ -1,4 +1,4 @@
-// Capture and decode MSF60 pulses.
+// Echo incoming GPS messages to the serial console.
 
 #include <jee.h>
 #include <jee/cycles.h>
@@ -16,8 +16,6 @@ struct Echo : Worker {
                 gps.read(0, { wId, RECV });
                 break;
             case RECV:
-                led.toggle();
-//logf("got %d", in.eVal);
                 _write(1, (char*) gps.rxPtr, in.eVal);
                 gps.read(in.eVal, { wId, RECV });
                 break;
@@ -35,8 +33,7 @@ int main () {
     Echo echo;
     auto id = echo.init();
     Worker::send({ id, echo.START });
-//gps.write("abcdefghijklmnopqrstuvwxyz\n", 27, {});
 
     while (true)
-        asm ("wfi");
+        led = +gpsPps;
 }

@@ -25,6 +25,8 @@ Pin led (LED,"P");
 uart::Work<UART_TYPE> gps (UART_CONF);
 UART_INSTALL(gps)
 
+Pin gpsPps {"A8","U"}; // D6
+
 Pin dcfPon {"B7","P"}, // D9
     dcfDat {"A4","U"}, // D10
     dcfGnd {"A7","P"}, // D11
