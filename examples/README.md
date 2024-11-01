@@ -25,7 +25,8 @@ Each application can be built and run independently, e.g.
 
 * `f303o/blink` - blink on-board LED and send some text to serial
 * `f303o/tick` - blink on-board LED via periodic timer and worker
-* `f303o/dcf77` - decode DCF77 time pulses using attached radio module
+* `f303o/dcf77` - decode DCF77 time pulses using 1st radio module
+* `f303o/msf60` - decode MSF60 time pulses using 2nd radio module
 
 **`f413zh` - Nucleo-144 @ 100 MHz**
 
