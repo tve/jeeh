@@ -44,7 +44,7 @@ struct Matrix : Worker {
     uint32_t counts [NE] ={}, bytes [NE] ={};
     bool verbose =true;
 
-    Event process (Event in, Event out, void*) {
+    Event process (Event in, Event out) {
         auto tag = in.eTag;
         ++counts[tag];
         bytes[tag] += in.eVal;

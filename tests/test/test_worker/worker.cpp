@@ -12,7 +12,7 @@ struct SimpleWorker : Worker {
     using Worker::init;
 
 private:
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
         lastTag = in.eTag;
         lastVal = in.eVal;

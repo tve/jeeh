@@ -9,7 +9,7 @@ TICKER_INSTALL(ticker)
 struct Blinker : Worker {
     enum TAG { START, TICK };
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 ticker.periodic(500, TICK);

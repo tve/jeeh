@@ -46,7 +46,7 @@ private:
     uint8_t tLast =0;             // last timer slot used so far
     uint8_t tRate =0;             // current SysTick rate in ms
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         switch (in.eTag) {
             case TICK:
                 while (expired())

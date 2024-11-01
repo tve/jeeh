@@ -105,7 +105,7 @@ struct UartWorker : Worker {
     using Worker::init;
 
 private:
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
 
         switch (in.eTag) {
@@ -161,7 +161,7 @@ struct LoopWorker : Worker {
     using Worker::init;
 
 private:
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
 
         switch (in.eTag) {

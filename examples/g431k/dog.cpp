@@ -16,7 +16,7 @@ struct Kicker : Worker {
 
     uint16_t ms =1500;
 
-    Event process (Event in, Event out, void*) {
+    Event process (Event in, Event out) {
         switch (in.eTag) {
             case TICK:
                 logf("kick %4d @ %d ms", ms, rtc::getDate().todMillis()-start);

@@ -93,15 +93,15 @@ struct Worker {
         return wId;
     }
 
-    static void send (Event evt, Event done ={}, void* arg =nullptr) {
+    static void send (Event evt, Event done ={}) {
         assert(irqState() == 0); // may not be called from an IRQ handler
         assert(evt.eDst > level);
-        dispatch(evt.eDst, evt, done, arg);
+        dispatch(evt.eDst, evt, done);
     }
 
     static void irqPendSV () {
-        assert(irqState() == 0);                  // PendSV magic ...
-        dispatch(MAX_WORKERS-1, {}, {}, nullptr); // TODO worst case
+        assert(irqState() == 0);         // PendSV magic ...
+        dispatch(MAX_WORKERS-1, {}, {}); // TODO worst case
     }
 
 #if NOSTATS
@@ -133,7 +133,7 @@ struct Worker {
 protected:
     uint8_t wId =0; // index (and priority) of this worker
 
-    virtual Event process (Event in, Event out, void* arg) =0;
+    virtual Event process (Event in, Event out) =0;
 
     static void irqEnable (Irq irq, uint8_t prio =0x80) {
         auto num = (uint16_t) irq;
@@ -182,7 +182,7 @@ private:
         return ipsr; // current IRQ, or zero if none
     }
 
-    static void dispatch (uint8_t up, Event evt, Event done, void* arg) {
+    static void dispatch (uint8_t up, Event evt, Event done) {
         // this is the only place where the level changes up and down
         auto prev = level;
         level = up;
@@ -190,7 +190,7 @@ private:
             auto w = workers[level];
             assert(w != nullptr);
             w->stats(S_SEND);
-            reply(w->process(evt, done, arg));
+            reply(w->process(evt, done));
         }
         while (level > prev && workers[level] != nullptr) {
             workers[level]->unpend();
@@ -205,7 +205,7 @@ private:
         if (evt.eDst != 0) {
             unpend(); // use recursion to process in FIFO iso LIFO order
             stats(S_DELAY);
-            process(evt, {}, nullptr);
+            process(evt, {});
         }
     }
 };

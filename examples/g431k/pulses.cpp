@@ -8,7 +8,7 @@ constexpr Pin pin0 ("A15"), pin1 ("B7"), pin2 ("B5"), pin3 ("B4"),
 Pin pins [] = { pin0, pin1, pin2, pin3, pin4, pin5, pin6, pin7 };
 
 struct Replier : Worker {
-    Event process (Event, Event out, void*) {
+    Event process (Event, Event out) override {
         pin1 = 1; // 37 µs
         pin1 = 0; // 39 µs
         return out;
@@ -18,7 +18,7 @@ struct Replier : Worker {
 struct Sender : Worker {
     enum TAG { START, REPLY };
 
-    Event process (Event in, Event out, void*) {
+    Event process (Event in, Event out) override {
         pin5 = 1; // 30 & 77 µs
         switch (in.eTag) {
             case START:

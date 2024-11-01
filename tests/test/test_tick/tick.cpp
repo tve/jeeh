@@ -44,7 +44,7 @@ struct Sequential : Worker {
 
     Sequential () : Worker ("Sequential") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 start = ticker.millis();
@@ -98,7 +98,7 @@ struct Parallel : Worker {
 
     Parallel () : Worker ("Parallel") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
         switch (in.eTag) {
             case START:
@@ -156,7 +156,7 @@ struct Cancelled : Worker {
 
     Cancelled () : Worker ("Cancelled") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
         switch (in.eTag) {
             case START:
@@ -216,7 +216,7 @@ struct Periodic : Worker {
 
     Periodic () : Worker ("Periodic") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
         switch (in.eTag) {
             case START:
@@ -282,7 +282,7 @@ struct Postpone : Worker {
 
     Postpone () : Worker ("Postpone") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         capture[calls++] = '0' + in.eTag;
         TEST_ASSERT_LESS_OR_EQUAL(sizeof capture, calls+1); // trailing zero
 

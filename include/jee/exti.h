@@ -65,7 +65,7 @@ struct ExtIrq : Worker {
 private:
     Event events [16];
 
-    Event process (Event in, Event, void*) override {
+    Event process (Event in, Event) override {
         switch (in.eTag) {
             case FIRED:
                 for (auto i = 0; in.eVal != 0; ++i, in.eVal >>= 1)

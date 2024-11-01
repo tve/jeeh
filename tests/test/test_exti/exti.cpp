@@ -33,7 +33,7 @@ struct ExtIinterrupt : Worker {
 
     ExtIinterrupt () : Worker ("ExtIinterrupt"), outPin ("A9","P") {}
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         capture[calls++] = '0' + in.eTag;
         TEST_ASSERT_LESS_OR_EQUAL(sizeof capture, calls+1); // trailing zero
 

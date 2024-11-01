@@ -262,7 +262,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     }
 
 private:
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         switch (in.eTag) {
             case RXDONE:
                 pending.eVal = BASE::finishReq(false, nullptr, 0);

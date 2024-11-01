@@ -206,7 +206,7 @@ private:
         return (end >= pos ? end : RX_MAX) - pos;
     }
 
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         switch (in.eTag) {
             case RXIDLE:
             case RXHALF:

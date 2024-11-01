@@ -273,7 +273,7 @@ struct SpiWorker : Worker {
     using Worker::init;
 
 private:
-    Event process (Event in, Event out, void*) override {
+    Event process (Event in, Event out) override {
         ++calls;
 
         switch (in.eTag) {
