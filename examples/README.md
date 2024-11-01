@@ -28,6 +28,7 @@ Each application can be built and run independently, e.g.
 * `f303o/dcf77` - decode DCF77 time pulses using 1st radio module
 * `f303o/msf60` - decode MSF60 time pulses using 2nd radio module
 * `f303o/gps` - show messages coming from attached GPS module
+* `f303o/stream` - capture DCF77 at 1 kHz and strean as 16-bit ints
 
 **`f413zh` - Nucleo-144 @ 100 MHz**
 
