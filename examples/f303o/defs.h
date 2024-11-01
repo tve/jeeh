@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "dcf77"
+#define PIOENV  "msf60"
 
 //CG1 board leds
 #define LED  "A1"
@@ -12,6 +12,11 @@ Pin dcfPon {"B7","P"}, // D9
     dcfDat {"A4","U"}, // D10
     dcfGnd {"A7","P"}, // D11
     dcfVcc {"A6","P"}; // D12
+
+Pin msfVcc {"C3","P"}, // A3
+    msfDat {"C2","U"}, // A2
+    msfPon {"C1","P"}, // A1
+    msfGnd {"C0","P"}; // A0
 
 namespace serio {
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28 };
