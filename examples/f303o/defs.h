@@ -1,12 +1,29 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "msf60"
+#define PIOENV  "gps"
 
 //CG1 board leds
 #define LED  "A1"
 
 Pin led (LED,"P");
+
+//CG[ board uart
+#define UART_NAME  USART1
+#define UART_PINS  "A9:7,A10"
+#define UART_FREQ  72
+#define UART_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
+#define UART_CONF  { ena::USART1, 72, Irq::USART1, \
+                     Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
+#define UART_INSTALL(name) extern "C" { \
+    void USART1_IRQHandler () { name.idleIrq(); } \
+    void DMA1_Channel4_IRQHandler () { name.dmaIrq(); } \
+    void DMA1_Channel5_IRQHandler () { name.dmaIrq(); } \
+}
+//CG]
+
+uart::Work<UART_TYPE> gps (UART_CONF);
+UART_INSTALL(gps)
 
 Pin dcfPon {"B7","P"}, // D9
     dcfDat {"A4","U"}, // D10
