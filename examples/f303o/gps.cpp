@@ -17,7 +17,7 @@ struct Echo : Worker {
                 break;
             case RECV:
                 led.toggle();
-                logf("got %d", in.eVal);
+//logf("got %d", in.eVal);
                 _write(1, (char*) gps.rxPtr, in.eVal);
                 gps.read(in.eVal, { wId, RECV });
                 break;
@@ -35,6 +35,7 @@ int main () {
     Echo echo;
     auto id = echo.init();
     Worker::send({ id, echo.START });
+//gps.write("abcdefghijklmnopqrstuvwxyz\n", 27, {});
 
     while (true)
         asm ("wfi");

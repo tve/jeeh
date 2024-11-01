@@ -119,9 +119,6 @@ struct Matrix : Worker {
 
 int main () {
     initBoard();
-    logf("scb %x %x", SCB.byte(0x1F), SCB.byte(0x22));
-    SCB.byte(0x1F) = 0xFF; // SVC prio
-    SCB.byte(0x22) = 0xFF; // PendSV prio
 
     uart1.init(UART1_PINS, 1'000'000);    // tx: B6  rx: B3  < D15 #9
     uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < B6  #1

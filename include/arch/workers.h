@@ -15,6 +15,12 @@ struct Event {
 struct EventList {
     constexpr static auto MAX_EVENTS = 100;
 
+    EventList () {
+        // adjust priorities before they might interfere with "real" IRQs
+        SCB.byte(0x1F) = 0xFF; // irq #11: SVC
+        SCB.byte(0x22) = 0xFF; // irq #14: PendSV
+    }
+
     void push (Event evt) {
         // safely find a free event slot
         uint8_t slot = free;
