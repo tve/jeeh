@@ -34,18 +34,18 @@ void testSimpleWorker () {
     TEST_ASSERT_EQUAL(0, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send ({ id1, 11 });
+    Worker::send({ id1, 11 });
     TEST_ASSERT_EQUAL(1, w1.calls);
     TEST_ASSERT_EQUAL(11, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send ({ id1, 22, 1111 });
+    Worker::send({ id1, 22, 1111 });
     TEST_ASSERT_EQUAL(2, w1.calls);
     TEST_ASSERT_EQUAL(22, w1.lastTag);
     TEST_ASSERT_EQUAL(1111, w1.lastVal); // no change in incoming value
 
     // request a reply, which also gets sent to w1 in this case
-    Worker::send ({ id1, 33, 2222 }, { id1, 44, 3333 });
+    Worker::send({ id1, 33, 2222 }, { id1, 44, 3333 });
     TEST_ASSERT_EQUAL(4, w1.calls);
     TEST_ASSERT_EQUAL(44, w1.lastTag);
     TEST_ASSERT_EQUAL(6666, w1.lastVal); // reply value was doubled
@@ -58,7 +58,7 @@ void testSimpleWorker () {
     TEST_ASSERT_NOT_EQUAL(id1, id2);
 
     // request a reply, which now gets sent from w1 to w2
-    Worker::send ({ id1, 55, 321 }, { id2, 66, 123 });
+    Worker::send({ id1, 55, 321 }, { id2, 66, 123 });
     TEST_ASSERT_EQUAL(5, w1.calls);
     TEST_ASSERT_EQUAL(55, w1.lastTag);
     TEST_ASSERT_EQUAL(321, w1.lastVal);

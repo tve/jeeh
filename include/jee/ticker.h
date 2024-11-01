@@ -32,7 +32,7 @@ struct Ticker : Worker {
         send({ wId, PERIOD, ms }, { level, tag });
     }
 
-    void cancel (uint16_t tag) const {
+    void cancel (uint8_t tag) const {
         send({ wId, CANCEL, (uint16_t) ((level<<8) | tag) });
     }
 
