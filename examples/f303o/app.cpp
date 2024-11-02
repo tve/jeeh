@@ -1,21 +1,21 @@
-// Echo incoming GPS messages to the serial console.
+// Main application code, combines all sorts of time-related functionality.
 
 #include <jee.h>
 #include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
-struct Echo : Worker {
-    enum TAG { START, RECV };
+struct Console : Worker {
+    enum TAG { START, TTYIN };
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                gps.read(0, { wId, RECV });
+                console.read(0, { wId, TTYIN });
                 break;
-            case RECV:
-                _write(1, (char*) gps.rxPtr, in.eVal);
-                gps.read(in.eVal, { wId, RECV });
+            case TTYIN:
+                logf("%d: '%c'", in.eVal, *(char*) gps.rxPtr);
+                console.read(1, { wId, TTYIN });
                 break;
             default:
                 fail();
@@ -28,9 +28,9 @@ int main () {
     initBoard();
     gps.init(UART1_PINS, 9600);
 
-    Echo echo;
-    auto id = echo.init();
-    Worker::send({ id, echo.START });
+    Console console;
+    auto id = console.init();
+    Worker::send({ id, console.START });
 
     while (true)
         led = +gpsPps;

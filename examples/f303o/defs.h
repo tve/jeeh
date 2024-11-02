@@ -1,29 +1,46 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "stream"
+#define PIOENV  "app"
 
 //CG1 board leds
 #define LED  "A1"
 
 Pin led (LED,"P");
 
-//CG[ board uart
-#define UART_NAME  USART1
-#define UART_PINS  "A9:7,A10"
-#define UART_FREQ  72
-#define UART_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
-#define UART_CONF  { ena::USART1, 72, Irq::USART1, \
-                     Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
-#define UART_INSTALL(name) extern "C" { \
+//CG[ board uart1
+#define UART1_NAME  USART1
+#define UART1_PINS  "A9:7,A10"
+#define UART1_FREQ  72
+#define UART1_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
+#define UART1_CONF  { ena::USART1, 72, Irq::USART1, \
+                      Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
+#define UART1_INSTALL(name) extern "C" { \
     void USART1_IRQHandler () { name.idleIrq(); } \
     void DMA1_Channel4_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Channel5_IRQHandler () { name.dmaIrq(); } \
 }
 //CG]
 
-uart::Work<UART_TYPE> gps (UART_CONF);
-UART_INSTALL(gps)
+uart::Work<UART1_TYPE> gps (UART1_CONF);
+UART1_INSTALL(gps)
+
+//CG[ board uart2
+#define UART2_NAME  USART2
+#define UART2_PINS  "A2:7,A3"
+#define UART2_FREQ  36
+#define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
+#define UART2_CONF  { ena::USART2, 36, Irq::USART2, \
+                      Irq::DMA1_CH7, Irq::DMA1_CH6, { 1-1,2,2 } }
+#define UART2_INSTALL(name) extern "C" { \
+    void USART2_IRQHandler () { name.idleIrq(); } \
+    void DMA1_Channel7_IRQHandler () { name.dmaIrq(); } \
+    void DMA1_Channel6_IRQHandler () { name.dmaIrq(); } \
+}
+//CG]
+
+uart::Work<UART2_TYPE> console (UART2_CONF);
+UART2_INSTALL(console)
 
 Pin gpsPps {"A8","U"}; // D6
 
@@ -37,34 +54,12 @@ Pin msfVcc {"C3","P"}, // A3
     msfPon {"C1","P"}, // A1
     msfGnd {"C0","P"}; // A0
 
-namespace serio {
-    enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28 };
-
-    void init () {
-        Pin::config("A2:7");
-        RCC(ena::USART2,1) = 1;
-        auto hz = SystemCoreClock;
-        while (hz > 36'000'000)
-            hz /= 2;
-        USART2[BRR] = hz / 2'000'000;
-        USART2[CR1] = (1<<3) | (1<<0); // TE UE
-    }
-
-    void write (void const* ptr, int len) {
-        for (auto i = 0; i < len; ++i) {
-            while (!USART2[ISR](7)) {} // TXE
-            USART2[TDR] = ((uint8_t const*) ptr)[i];
-        }
-        while (!USART2[serio::ISR](6)) {} // TC
-    }
-}
-
 void initBoard () {
     fastClock(); // 72 MHz MSI
     cycles::init();
     rtc::init();
 
-    serio::init();
+    console.init(UART2_PINS, 2'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running
@@ -77,10 +72,10 @@ void initBoard () {
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1)
-        serio::write(buf, len);
+        console.transfer(true, (uint8_t*) buf, len);
     return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    serio::write(ptr, len);
+    console.transfer(true, (uint8_t*) ptr, len);
 }
