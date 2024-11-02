@@ -1,10 +1,7 @@
 // Capture and decode DCF77 pulses.
 
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/ticker.h>
-#include <jee/uart.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

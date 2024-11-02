@@ -1,9 +1,7 @@
 // Capture and decode MSF60 pulses.
 
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/uart.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
