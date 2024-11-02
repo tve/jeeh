@@ -13,18 +13,15 @@ struct Convolution {
     int cnt =0, high =0, low =0, prev =0, pos =0;
 
     int wrap (int n) const {
-        return sig[(n + 1000) % 1000];
+        return sig[(n+1000) % 1000];
     }
 
     void feed (bool f) {
         auto idx = ++cnt % 1000;
         sig[idx] = f;
-        // track count in (-900,-100]
-        low -= wrap(idx - 900);
-        low += wrap(idx - 100);
-        // track count in (-100,0]
-        high -= wrap(idx - 100);
-        high += wrap(idx - 0);
+        // track low count in (-900,-100] and high count in (-100,0]
+        low += wrap(idx-100) - wrap(idx-900);
+        high += wrap(idx-0) - wrap(idx-100);
         auto sum = (800 - low) + 8 * high;
         if (sum > prev)
             pos = cnt;
