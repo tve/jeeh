@@ -17,8 +17,8 @@ struct Shell : Worker {
                 console.read(0, { wId, TTYIN });
                 break;
             case TTYIN:
-                logf("%d: '%c'", in.eVal, *(char*) gps.rxPtr);
-                console.read(1, { wId, TTYIN });
+                logf("%d: '%c'", in.eVal, *(char*) console.rxPtr);
+                console.read(in.eVal, { wId, TTYIN });
                 break;
             default:
                 fail();
