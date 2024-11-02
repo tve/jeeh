@@ -1,8 +1,6 @@
 // Explore convolution of DCF77 signal sampled at 1 kHz.
 
-#include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 
 const int16_t capture [] = {
 #include "conv.h"
