@@ -55,7 +55,7 @@ Pin msfVcc {"C3","P"}, // A3
     msfGnd {"C0","P"}; // A0
 
 void initBoard () {
-    fastClock(); // 72 MHz MSI
+    fastClock(); // 72 MHz
     cycles::init();
     rtc::init();
 

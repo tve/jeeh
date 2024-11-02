@@ -5,7 +5,10 @@
 using namespace jeeh;
 #include "defs.h"
 
-struct Console : Worker {
+Ticker ticker;
+TICKER_INSTALL(ticker)
+
+struct Shell : Worker {
     enum TAG { START, TTYIN };
 
     Event process (Event in, Event out) override {
@@ -26,12 +29,16 @@ struct Console : Worker {
 
 int main () {
     initBoard();
-    gps.init(UART1_PINS, 9600);
 
-    Console console;
-    auto id = console.init();
-    Worker::send({ id, console.START });
+    Shell shell;
+
+    // start workers, in decreasing priority
+    auto tkId = ticker.init();
+    auto shId = shell.init();
+
+    Worker::send({ tkId, ticker.RATE, 1 });
+    Worker::send({ shId, shell.START });
 
     while (true)
-        led = +gpsPps;
+        asm ("wfi");
 }
