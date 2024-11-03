@@ -211,17 +211,15 @@ private:
             case RXIDLE:
             case RXHALF:
             case RXFULL:
-                if (rxPending)
+                if (rxPending.eDst != 0)
                     if (auto n = rxAvail(); n > 0) {
                         cache::inval(rxPtr, n);
                         rxPending.eVal = n;
-                        reply(rxPending);
-                        rxPending = {};
+                        reply(take(rxPending));
                     }
                 break;
             case TXDONE:
-                reply(txPending);
-                txPending = {};
+                reply(take(txPending));
                 break;
             default:
                 fail();
