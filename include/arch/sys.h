@@ -179,7 +179,7 @@ namespace dog {
 }
 
 namespace cache {
-#if STM32F7 || STM32H7
+#if STM32F7 | STM32H7
     constexpr auto align = 32;
 
     void enable (); // enables both I and D caches

@@ -5,10 +5,10 @@ namespace jeeh {
 template< uint32_t D, int T, int R >
 struct DmaConfig {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-    enum X { ISR=0x00, IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
+    enum { ISR=0x00,IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
     enum { CHAN_STEP=0x14 };
 #else
-    enum { ISR=0x00, IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
+    enum { ISR=0x00,IFCR=0x08,CCR=0x10,CNDTR=0x14,CPAR=0x18,CMAR=0x1C };
     enum { CHAN_STEP=0x18 };
 #endif
     enum { NONE, RXHALF, RXFULL, TXDONE };
