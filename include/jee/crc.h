@@ -4,14 +4,14 @@ namespace jeeh::crc {
     enum { DR=0x00, CR=0x08, INIT=0x10, POL=0x14 };
 
     void init () {
-        RCC(ena::CRC, 1) = 1;
+        RCC(ena::CRC,1) = 1;
         //CRC[INIT] = ini;
         //CRC[POL] = pol;
         CRC[CR](0) = 1; // RESET
     }
 
     void deinit () {
-        RCC(ena::CRC, 1) = 0;
+        RCC(ena::CRC,1) = 0;
     }
 
     void update8 (uint8_t d) { CRC.byte(DR) = d; }

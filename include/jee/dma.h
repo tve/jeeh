@@ -25,17 +25,17 @@ struct DmaConfig {
         // channel/stream/request setup (confusing naming differences!)
 #if STM32G4 | STM32H7 | STM32WB | STM32WL
 #if STM32G4
-        RCC(ena::DMAMUX, 1) = 1;
+        RCC(ena::DMAMUX,1) = 1;
     #if STM32G431xx | STM32G441xx
         constexpr auto CHMAP = 6;
     #else
         constexpr auto CHMAP = 8;
     #endif
-#elif STM32WB | STM32WL
-        constexpr auto CHMAP = 7;
 #elif STM32H7
-        #define DMAMUX DMAMUX1
+    #define DMAMUX DMAMUX1
         constexpr auto CHMAP = 8;
+#else // STM32WB | STM32WL
+        constexpr auto CHMAP = 7;
 #endif
         DMAMUX[4*(CHMAP*idx+T)] = txReq;
         DMAMUX[4*(CHMAP*idx+R)] = rxReq;
@@ -84,7 +84,11 @@ struct DmaConfig {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*R+2)) { // HTIF
             DMA[IFCR] = 1<<(4*R+2);
+#if STM32F1 | STM32F3 | STM32G4
             if (DRX[CCR](5)) // only report if circular
+#else
+            if (DRX[CCR](8)) // only report if circular
+#endif
                 return RXHALF;
         }
         if (DMA[ISR](4*R)) { // GIF

@@ -69,10 +69,10 @@ struct Eth : Device {
     }
 
     void init (uint8_t const mac [6]) {
-        RCC(ena::ETHMAC, 1) = 1;
-        RCC(ena::ETHMACRX, 1) = 1;
-        RCC(ena::ETHMACTX, 1) = 1;
-        RCC(ena::SYSCFG, 1) = 1;
+        RCC(ena::ETHMAC,1) = 1;
+        RCC(ena::ETHMACRX,1) = 1;
+        RCC(ena::ETHMACTX,1) = 1;
+        RCC(ena::SYSCFG,1) = 1;
         SYSCFG[0x04](23) = 1; // RMII_SEL in PMC
 
         DMA[BMR](0) = 1; // SR

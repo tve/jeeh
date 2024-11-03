@@ -105,8 +105,8 @@ struct Pin {
 
     int mode (int m) const {
 #if STM32F1
-        RCC(ena::IOPA+port(), 1) = 1;
-        RCC(ena::AFIO, 1) = 1;
+        RCC(ena::IOPA+port(),1) = 1;
+        RCC(ena::AFIO,1) = 1;
         // messy code to keep the mode encoding the same as other families
         auto cr = 0, mm = m&3, t = (m>>2)&1, ss = (m>>3)&3, pp = (m>>5)&3;
         switch (mm) {
@@ -129,7 +129,7 @@ struct Pin {
 #else
         enum { TYPER=0x04, OSPEEDR=0x08, PUPDR=0x0C, AFRL=0x20, AFRH=0x24 };
 
-        RCC(ena::GPIOA + port(), 1) = 1;
+        RCC(ena::GPIOA+port(),1) = 1;
 
         auto p = pin();
         reg(AFRL)   (4*p,4) = m >> 8;

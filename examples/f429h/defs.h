@@ -52,7 +52,7 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 }
 
 void initFmcPins () {
-    RCC(ena::FMC, 1) = 1;
+    RCC(ena::FMC,1) = 1;
     Pin::config("B7:V12,C0,C3,"
                 "D0,D1,D4,D5,D6,D7,D8,D9,D10,D11,D12,D13,D14,D15,"
                 "E0,E1,E2,E3,E4,E5,E7,E8,E9,E10,E11,E12,E13,E14,E15,"

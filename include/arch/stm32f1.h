@@ -39,9 +39,9 @@ enum {
 uint32_t offSecs; // offset, since the RTC will run at 250 Hz iso 1 Hz
 
 void init (bool lse) {
-    RCC(ena::PWR, 1) = 1;
+    RCC(ena::PWR,1) = 1;
     PWR[0x00](8) = 1; // DBP
-    RCC(ena::BKP, 1) = 1;
+    RCC(ena::BKP,1) = 1;
 
     if (lse) {
         RCC[BDCR](0) = 1;            // LSEON

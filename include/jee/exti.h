@@ -18,7 +18,7 @@ struct ExtIrq : Worker {
 
     uint8_t init () {
 #if !(STM32L0 | STM32WL)
-        RCC(ena::SYSCFG, 1) = 1;
+        RCC(ena::SYSCFG,1) = 1;
 #endif
 #if STM32G0 | STM32L0
         irqEnable(Irq::EXTI0_1);

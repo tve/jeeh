@@ -1,7 +1,7 @@
 namespace lcd {
 
 void initPins () {
-    RCC(ena::FMC, 1) = 1;
+    RCC(ena::FMC,1) = 1;
     Pin::config("F10:V14,G6,G7,G11,"
                 "H9,H10,H11,H12,H13,H14,H15,"
                 "I0,I1,I2,I4,I5,I6,I7,I9,I10");
@@ -15,7 +15,7 @@ constexpr auto hv (uint16_t h, uint16_t l) { return (h << 16) | l; }
 void init () {
     initPins();
 
-    RCC(ena::LTDC, 1) = 1;
+    RCC(ena::LTDC,1) = 1;
     RCC[0x88] = (3<<28) | (7<<24) | (192<<6); // PLLSAICFGR
     RCC[0x8C] = 0;
 
