@@ -30,6 +30,8 @@ struct Convolution {
 
 int main () {
     Convolution conv;
+
+    // read stream from stdin, see stream.cpp for info about the RLE encoding
     int rept, bits, count = 0, peaks = 0;
     while (scanf("%d %d", &rept, &bits) == 2) {
         for (auto r = 0; r < rept; ++r)
