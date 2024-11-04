@@ -1,4 +1,4 @@
-**Drive a 480x320 LCD display in 8-bit parallel mode with Nucleo-64 G431.**
+**Drive a 480x320 LCD display in 8-bit parallel mode with Nucleo-64 G474.**
 
 The drawback is that those 8 bits are mixed up across different GPIO ports.  
 In normal mode (using a loop over 8 pins), this takes 430 ms.  

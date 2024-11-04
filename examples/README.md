@@ -67,11 +67,11 @@ Each application can be built and run independently, e.g.
 * `g431k/pulses` - generate pulses to check the logic-analyser hookup
 * `g431k/tick` - blink on-board LED via periodic timer and worker
 
-**`g431rb` - Nucleo-64 @ 160 MHz**
+**`g474re` - Nucleo-64 @ 160 MHz**
 
-* `g431r/blink` - blink on-board LED and send some text to serial
-* `g431r/lcd` - graphics and text on a 480x320 LCD shield
-* `g431r/sdspi` - connect to the µSD card on the LCD shield
+* `g474r/blink` - blink on-board LED and send some text to serial
+* `g474r/lcd` - graphics and text on a 480x320 LCD shield
+* `g474r/sdspi` - connect to the µSD card on the LCD shield
 
 **`h743zi` - Nucleo-144 @ 480 MHz**
 
