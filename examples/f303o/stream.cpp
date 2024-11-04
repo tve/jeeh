@@ -9,10 +9,11 @@ Ticker ticker;
 TICKER_INSTALL(ticker)
 
 struct Stream : Worker {
-    enum TAG { START, TICK };
+    enum TAG { START, TICK, SENT };
 
-    uint16_t bits;
+    uint16_t bits, repeat =0, prev =0;
     uint8_t count =0;
+    char buf [20];
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -25,10 +26,18 @@ struct Stream : Worker {
                 bits |= led<<15;
                 if (++count >= 16) {
                     count = 0;
-                    char buf [12];
-                    auto len = snprintf(buf, sizeof buf, "%d,", (int16_t) bits);
-                    _write(1, buf, len);
+                    if (bits == prev && repeat < 99)
+                        ++repeat;
+                    else {
+                        auto n = snprintf(buf, sizeof buf, "%2d %d\n",
+                                            repeat, (int16_t) prev);
+                        console.write(buf, n, { wId, SENT });
+                        repeat = 1;
+                        prev = bits;
+                    }
                 }
+                break;
+            case SENT:
                 break;
             default:
                 fail();
