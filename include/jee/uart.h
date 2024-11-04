@@ -142,13 +142,21 @@ struct Work : Sync<A,D,T,R>, Worker {
         BASE::deinit();
     }
 
+    // TODO maybe keep this as wrapper for the blocking variants?
+    void transfer (bool w, uint8_t* p, uint16_t n) const =delete;
+
     // async interface
 
-    void write (void const* buf, uint16_t len, Event out) {
+    void write (void const* buf, uint16_t len, Event out ={}) {
         assert(len > 0);
         txPending = out;
         txPending.eVal = len;
         BASE::startReq(true, (void*) buf, len);
+        if (!out) { // blocking mode
+            while (cfg.dma.DTX[cfg.dma.CCR](0))
+                asm ("wfi");
+            BASE::finishReq(true, (void*) buf, len);
+        }
     }
 
     void read (uint16_t skip, Event out) {
@@ -211,7 +219,7 @@ private:
             case RXIDLE:
             case RXHALF:
             case RXFULL:
-                if (rxPending.eDst != 0)
+                if (rxPending)
                     if (auto n = rxAvail(); n > 0) {
                         cache::inval(rxPtr, n);
                         rxPending.eVal = n;

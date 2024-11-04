@@ -52,10 +52,10 @@ void initBoard () {
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1)
-        console.transfer(true, (uint8_t*) buf, len);
+        console.write(buf, len);
     return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    console.transfer(true, (uint8_t*) ptr, len);
+    console.write(ptr, len);
 }

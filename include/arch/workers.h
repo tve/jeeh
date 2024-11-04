@@ -136,9 +136,8 @@ struct Worker {
         NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
     }
 
-protected:
     uint8_t wId =0; // index (and priority) of this worker
-
+protected:
     virtual Event process (Event in, Event out) =0;
 
     static void irqEnable (Irq irq, uint8_t prio =0x80) {

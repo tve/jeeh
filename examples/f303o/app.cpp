@@ -17,7 +17,7 @@ struct Shell : Worker {
                 console.read(0, { wId, TTYIN });
                 break;
             case TTYIN:
-                logf("%d: '%c'", in.eVal, *(char*) console.rxPtr);
+                logf("%d: '%c'", in.eVal, *console.rxPtr);
                 console.read(in.eVal, { wId, TTYIN });
                 break;
             default:
