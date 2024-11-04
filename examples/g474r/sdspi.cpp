@@ -1,7 +1,5 @@
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/spi.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

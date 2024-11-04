@@ -1,5 +1,5 @@
 #include <jee.h>
-#include <jee/cycles.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

@@ -1,7 +1,7 @@
 // Hook to a 480x320 LCD shield using 8-bit parallel over GPIO.
 
 #include <jee.h>
-#include <jee/cycles.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

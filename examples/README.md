@@ -70,8 +70,10 @@ Each application can be built and run independently, e.g.
 **`g474re` - Nucleo-64 @ 160 MHz**
 
 * `g474r/blink` - blink on-board LED and send some text to serial
+* `g474r/tick` - blink on-board LED via periodic timer and worker
 * `g474r/lcd` - graphics and text on a 480x320 LCD shield
 * `g474r/sdspi` - connect to the µSD card on the LCD shield
+* `g474r/shell` - explore the use of a command-line shell
 
 **`h743zi` - Nucleo-144 @ 480 MHz**
 

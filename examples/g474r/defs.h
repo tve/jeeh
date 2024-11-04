@@ -1,26 +1,29 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "lcd"
+#define PIOENV  "shell"
 
 //CG1 board leds
 #define LED  "A5"
 
 Pin led (LED,"P");
 
-//CG[ board uart
-#define UART_NAME  USART2
-#define UART_PINS  "A2:7,A3"
-#define UART_FREQ  170
-#define UART_TYPE  USART2.ADDR, DMA1.ADDR, 1-1, 2-1
-#define UART_CONF  { ena::USART2, 170, Irq::USART2, \
-                     Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,27,26 } }
-#define UART_INSTALL(name) extern "C" { \
+//CG[ board uart2
+#define UART2_NAME  USART2
+#define UART2_PINS  "A2:7,A3"
+#define UART2_FREQ  170
+#define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 1-1, 2-1
+#define UART2_CONF  { ena::USART2, 170, Irq::USART2, \
+                      Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,27,26 } }
+#define UART2_INSTALL(name) extern "C" { \
     void USART2_IRQHandler () { name.idleIrq(); } \
     void DMA1_Channel1_IRQHandler () { name.dmaIrq(); } \
     void DMA1_Channel2_IRQHandler () { name.dmaIrq(); } \
 }
 //CG]
+
+uart::Work<UART2_TYPE> console (UART2_CONF);
+UART2_INSTALL(console)
 
 //CG[ board spi
 #define SPI_NAME  SPI1
@@ -31,30 +34,12 @@ Pin led (LED,"P");
                     Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,11,10 } }
 //CG]
 
-namespace serio {
-    enum { CR1=0x00, BRR=0x0C, ISR=0x1C, RDR=0x24, TDR=0x28 };
-
-    void init () {
-        Pin::config(UART_PINS);
-        RCC(ena::UART_NAME,1) = 1;
-        UART_NAME[BRR] = SystemCoreClock / 10'000'000; // 160 MHz CPU clock
-        UART_NAME[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<0); // FIFOEN TE RE UE
-    }
-
-    void write (void const* ptr, int len) {
-        for (auto i = 0; i < len; ++i) {
-            while (!UART_NAME[ISR](7)) {} // TXE
-            UART_NAME[TDR] = ((uint8_t const*) ptr)[i];
-        }
-        //while (!UART_NAME[serio::ISR](6)) {} // TC
-    }
-}
-
 void initBoard () {
     fastClock(); // 160 MHz
-    serio::init();
     cycles::init();
     rtc::init();
+
+    console.init(UART2_PINS, 10'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running
@@ -67,10 +52,10 @@ void initBoard () {
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1)
-        serio::write(buf, len);
+        console.transfer(true, (uint8_t*) buf, len);
     return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    _write(1, (char*) ptr, len);
+    console.transfer(true, (uint8_t*) ptr, len);
 }
