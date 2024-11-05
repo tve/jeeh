@@ -3,44 +3,48 @@
 #include <cstdio>
 #include <cstdlib>
 
-void test1 () {
-    struct Convolution {
-        bool sig [1000] {};
-        int cnt =0, high =0, low =0, prev =0, pos =0;
+struct Convolution_1 {
+    bool sig [1000] {};
+    int high =0, low =0, prev =0, pos =0;
 
-        int wrap (int n) const {
-            return sig[(n+1000) % 1000];
+    bool feed (bool val, int num) {
+        sig[num % 1000] = val;
+        // track low count in (-900,-100] and high count in (-100,0]
+        low += wrap(num-100) - wrap(num-900);
+        high += wrap(num-0) - wrap(num-100);
+        auto sum = (800 - low) + 8 * high;
+        if (sum > prev)
+            pos = num;
+        else if (pos == num-1 && prev > 1500) {
+            printf("%d,%d\n", pos%1000, prev);
+            return true;
         }
+        prev = sum;
+        return false;
+    }
 
-        bool feed (bool f) {
-            auto idx = ++cnt % 1000;
-            sig[idx] = f;
-            // track low count in (-900,-100] and high count in (-100,0]
-            low += wrap(idx-100) - wrap(idx-900);
-            high += wrap(idx-0) - wrap(idx-100);
-            auto sum = (800 - low) + 8 * high;
-            if (sum > prev)
-                pos = cnt;
-            else if (pos == cnt-1 && prev > 1500) {
-                printf("%d,%d\n", pos%1000, prev);
-                return true;
-            }
-            prev = sum;
-            return false;
-        }
-    };
+    int wrap (int n) const {
+        return sig[(n+1000) % 1000];
+    }
+};
 
-    Convolution conv;
+struct Convolution_2 {
+    bool feed (bool val, int) {
+        return val;
+    }
+};
 
-    // read stream from stdin, see stream.cpp for info about the RLE encoding
+// read stream from stdin, see stream.cpp for info about the RLE encoding
+template< typename T >
+void feeder () {
+    T conv;
     int rept, bits, count = 0, peaks = 0;
     while (scanf("%d %d", &rept, &bits) == 2) {
         for (auto r = 0; r < rept; ++r)
             for (auto i = 0; i < 16; ++i)
-                peaks += conv.feed((bits >> i) & 1);
-        count += rept;
+                peaks += conv.feed((bits >> i) & 1, count++);
     }
-    fprintf(stderr, "peaks %d, count %d\n", peaks, count*16/1000);
+    fprintf(stderr, "%d peaks in %.3f seconds\n", peaks, count/1000.0);
 }
 
 int main () {
@@ -48,12 +52,13 @@ int main () {
     auto t = e != nullptr ? atoi(e) : 0;
     if (t > 0) {
         char buf [20];
-        snprintf(buf, sizeof buf, "out-%d.txt", t);
+        snprintf(buf, sizeof buf, "out-%d.csv", t);
         freopen(buf, "w", stdout);
     }
 
     switch (t) {
-        case 1:  test1(); break;
+        case 1:  feeder<Convolution_1>(); break;
+        case 2:  feeder<Convolution_2>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
