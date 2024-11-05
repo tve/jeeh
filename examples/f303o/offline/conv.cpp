@@ -80,6 +80,30 @@ struct Convolution_3 : Convolution_1 {
     }
 };
 
+// 4: show actual signal vs convolution result for a 10-sec range
+struct Convolution_4 : Convolution_1 {
+    int offset =0, avg =0;
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > prev) {
+            prev = sum;
+            pos = num;
+        }
+        if (offset > 0 && num - offset < 10000)
+            printf("%d,%d,%d\n", num-offset, 1000*val+600, sum);
+        if (sum <= 1500)
+            return false;
+        // now at a fairly close match
+        if (offset == 0 && num > 2500 && num > pos+50) {
+            fprintf(stderr, "sync at %d ms\n", num);
+            offset = pos; // found a good starting peak
+            avg = 100 * 500;
+        }
+        return true;
+    }
+};
+
 // read stream from stdin, see stream.cpp for info about the RLE encoding
 template< typename T >
 void feeder () {
@@ -106,6 +130,7 @@ int main () {
         case 1:  feeder<Convolution_1>(); break;
         case 2:  feeder<Convolution_2>(); break;
         case 3:  feeder<Convolution_3>(); break;
+        case 4:  feeder<Convolution_4>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
