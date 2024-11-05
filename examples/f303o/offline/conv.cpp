@@ -3,16 +3,21 @@
 #include <cstdio>
 #include <cstdlib>
 
+// 1: find all peaks > 1500 and mark the ms offset in the second
 struct Convolution_1 {
     bool sig [1000] {};
     int high =0, low =0, prev =0, pos =0;
 
-    bool feed (bool val, int num) {
+    int convolve (bool val, int num) {
         sig[num % 1000] = val;
         // track low count in (-900,-100] and high count in (-100,0]
         low += wrap(num-100) - wrap(num-900);
         high += wrap(num-0) - wrap(num-100);
-        auto sum = (800 - low) + 8 * high;
+        return (800 - low) + 8 * high;
+    }
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
         if (sum > prev)
             pos = num;
         else if (pos == num-1 && prev > 1500) {
@@ -28,9 +33,20 @@ struct Convolution_1 {
     }
 };
 
-struct Convolution_2 {
-    bool feed (bool val, int) {
-        return val;
+// 2: find peak, but stick to fixed 1000 ms intervals to find each max
+struct Convolution_2 : Convolution_1 {
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > prev) {
+            prev = sum;
+            pos = num;
+        }
+        bool step = num % 1000 == 999;
+        if (step) {
+            printf("%d,%d\n", pos%1000, prev);
+            prev = 0;
+        }
+        return step;
     }
 };
 
