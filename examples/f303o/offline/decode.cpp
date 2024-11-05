@@ -121,14 +121,14 @@ uint8_t fromBcd (uint8_t v) {
 
 void decode (uint64_t bits) {
     //printf("%07X%08X\n", (uint32_t) (bits >> 32), (uint32_t) bits);
-    uint8_t d [] = { fromBcd((bits >> 50) & 0xFF),
-                     fromBcd((bits >> 45) & 0x1F),
-                     fromBcd((bits >> 36) & 0x3F),
-                     fromBcd((bits >> 29) & 0x3F),
-                     fromBcd((bits >> 21) & 0x7F) };
-    if (d[0] == 24 && d[1] == 11 && (d[2] == 4 || d[2] == 5) &&
-       (d[3] == 21 || d[3] == 22 || d[3] == 23 || d[3] == 0) && (d[4] < 60))
-            printf("%02d %02d %02d %02d %02d\n", d[0], d[1], d[2], d[3], d[4]);
+    uint8_t yy = fromBcd((bits >> 50) & 0xFF),
+            mm = fromBcd((bits >> 45) & 0x1F),
+            dd = fromBcd((bits >> 36) & 0x3F),
+            HH = fromBcd((bits >> 29) & 0x3F),
+            MM = fromBcd((bits >> 21) & 0x7F);
+    if (yy == 24 && mm == 11 && (dd == 4 || dd == 5) &&
+            (HH == 21 || HH == 22 || HH == 23 || HH == 0) && MM < 60)
+        printf("%02d %02d %02d %02d %02d\n", yy, mm, dd, HH, MM);
 }
 
 int main () {
