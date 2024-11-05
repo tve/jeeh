@@ -1,6 +1,7 @@
 // Explore convolution of DCF77 signal sampled at 1 kHz.
 
 #include <cstdio>
+#include <cstdlib>
 
 struct Convolution {
     bool sig [1000] {};
@@ -28,7 +29,7 @@ struct Convolution {
     }
 };
 
-int main () {
+void test1 () {
     Convolution conv;
 
     // read stream from stdin, see stream.cpp for info about the RLE encoding
@@ -40,4 +41,14 @@ int main () {
         count += rept;
     }
     printf("peaks %d, count %d\n", peaks, count*16/1000);
+}
+
+int main () {
+    auto e = getenv("T");
+    auto t = e != nullptr ? atoi(e) : 0;
+
+    switch (t) {
+        case 1:  test1(); break;
+        default: fprintf(stderr, "oops, try: T=1 make\n");
+    }
 }
