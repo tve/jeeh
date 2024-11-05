@@ -82,7 +82,7 @@ struct Convolution_3 : Convolution_1 {
 
 // 4: show actual signal vs convolution result for a 10-sec range
 struct Convolution_4 : Convolution_1 {
-    int offset =0, avg =0;
+    int offset =0;
 
     bool feed (bool val, int num) {
         auto sum = convolve(val, num);
@@ -98,7 +98,57 @@ struct Convolution_4 : Convolution_1 {
         if (offset == 0 && num > 2500 && num > pos+50) {
             fprintf(stderr, "sync at %d ms\n", num);
             offset = pos; // found a good starting peak
+        }
+        return true;
+    }
+};
+
+// 5: capture decoded DCF77 bit stream, relative to the convolution peaks
+struct Convolution_5 : Convolution_1 {
+    int offset =0, avg =-1, head =0, tail =0;
+    uint64_t bits =0;
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > prev) {
+            prev = sum;
+            pos = num;
+        }
+        if (avg >= 0) {
+            auto rel = (num - offset - avg/100 + 1500) % 1000;
+            //auto rel = (num - avg/100 + 1500) % 1000;
+            if (901 <= rel && rel <= 999) {
+                head += val;
+                if (rel == 999) {
+                    if (head < 49)
+                        printf("\n");
+                    head = 0;
+                }
+            } else if (1 <= rel && rel <= 99) {
+                tail += val;
+                if (rel == 99) {
+                    printf("%d", tail >= 49);
+                    tail = 0;
+                }
+            }
+        }
+        if (sum <= 1500)
+            return false;
+        // now at a fairly close match
+        if (avg < 0 && (num - offset) > 2500 && num > pos+50) {
+            fprintf(stderr, "sync at %d ms\n", num);
+            offset = pos; // found a good starting peak
             avg = 100 * 500;
+        }
+        if (avg >= 0 && (num - offset) % 1000 == 50) {
+            auto rel = (pos - offset + 500) % 1000;
+            if (450 < rel && rel < 550)
+                avg = (99 * avg + 100 * rel) / 100;
+            else if (num - offset > 10'000) {
+                avg = -1;
+                offset = num;
+            }
+            prev = 0;
         }
         return true;
     }
@@ -131,6 +181,7 @@ int main () {
         case 2:  feeder<Convolution_2>(); break;
         case 3:  feeder<Convolution_3>(); break;
         case 4:  feeder<Convolution_4>(); break;
+        case 5:  feeder<Convolution_5>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
