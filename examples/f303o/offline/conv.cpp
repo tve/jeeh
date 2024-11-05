@@ -50,6 +50,36 @@ struct Convolution_2 : Convolution_1 {
     }
 };
 
+// 3: find peak within (950,1050), ignore all others (incl the 1-min mark)
+struct Convolution_3 : Convolution_1 {
+    int offset =0, avg =0;
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > prev) {
+            prev = sum;
+            pos = num;
+        }
+        if (sum <= 1500)
+            return false;
+        // now at a fairly close match
+        if (offset == 0 && num > 2500 && num > pos+50) {
+            fprintf(stderr, "sync at %d ms\n", num);
+            offset = pos; // found a good starting peak
+            avg = 100 * 500;
+        }
+        if (offset > 0 && (num - offset) % 1000 == 50) {
+            auto rel = (pos - offset + 500) % 1000;
+            if (450 < rel && rel < 550) {
+                avg = (99 * avg + 100 * rel) / 100;
+                printf("%d,%d,%d\n", pos, rel, avg/100);
+            }
+            prev = 0;
+        }
+        return true;
+    }
+};
+
 // read stream from stdin, see stream.cpp for info about the RLE encoding
 template< typename T >
 void feeder () {
@@ -61,7 +91,7 @@ void feeder () {
                 peaks += conv.feed((bits >> i) & 1, count++);
     }
     fprintf(stderr, "%d peaks in %.3f seconds\n", peaks, count/1000.0);
-}
+};
 
 int main () {
     auto e = getenv("T");
@@ -75,6 +105,7 @@ int main () {
     switch (t) {
         case 1:  feeder<Convolution_1>(); break;
         case 2:  feeder<Convolution_2>(); break;
+        case 3:  feeder<Convolution_3>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
