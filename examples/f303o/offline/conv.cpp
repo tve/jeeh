@@ -283,7 +283,7 @@ struct Convolution_8 {
 // 9: best sync so far, now matching 500+100 ms iso 700+100 ms
 struct Convolution_9 {
     bool sig [1000] {};
-    int high =0, low =0, max =0, pos =0, offset =0, qAvg =0;
+    int high =0, low =0, max =0, pos =0, offset =0, start =0, avg =0;
     bool inSync = false;
 
     int convolve (bool val, int num) {
@@ -301,10 +301,10 @@ struct Convolution_9 {
             pos = num;
         }
         if (!inSync) {
-            inSync = num-offset > 3000 && max > 950 && num-pos > 50;
+            inSync = num-offset > 3000 && max > 950 && sum < max-50;
             if (inSync) {
-                offset = pos;
-                qAvg = 500*1000;
+                offset = start = pos;
+                avg = 0;
                 fprintf(stderr, "sync %d\n", pos);
             }
         } else {
@@ -312,17 +312,17 @@ struct Convolution_9 {
             if (rel == 495)
                 max = 0;
             else if (rel == 505 && max > 800) {
-                auto diff = (pos-offset+500)%1000;
+                auto diff = (pos-start+500)%1000-500;
                 auto gap = (num-offset)/100;
                 if (gap > 300) {
                     inSync = false;
                     max = 0;
                 } else
                     printf("%d,%d,%d,%d,%d\n",
-                            (num+500)%1000, (diff-500)*10+500, max-600,
-                            gap, (qAvg-500'000)+800);
+                            (num+500)%1000, diff+500, max-600,
+                            gap, avg/1000+500);
                 offset = pos;
-                qAvg = ((255*qAvg) + diff*1000) / 256;
+                avg = (255*avg + diff*1000) / 256;
                 return true;
             }
         }
