@@ -280,7 +280,7 @@ struct Convolution_8 {
     }
 };
 
-// 9: best sync so far, now matching 600+100 ms iso 700+100 ms
+// 9: best sync so far, now matching 500+100 ms iso 700+100 ms
 struct Convolution_9 {
     bool sig [1000] {};
     int high =0, low =0, max =0, pos =0, offset =0, qAvg =0;
@@ -288,10 +288,10 @@ struct Convolution_9 {
 
     int convolve (bool val, int num) {
         sig[num % 1000] = val;
-        // track low count in (-800,-100] and high count in (-100,0]
-        low += wrap(num-100) - wrap(num-700);
+        // track low count in (-600,-100] and high count in (-100,0]
+        low += wrap(num-100) - wrap(num-600);
         high += wrap(num-0) - wrap(num-100);
-        return (600 - low) + 6 * high;
+        return (500 - low) + 5 * high;
     }
 
     bool feed (bool val, int num) {
@@ -301,7 +301,7 @@ struct Convolution_9 {
             pos = num;
         }
         if (!inSync) {
-            inSync = num-offset > 3000 && max > 1150 && num-pos > 50;
+            inSync = num-offset > 3000 && max > 950 && num-pos > 50;
             if (inSync) {
                 offset = pos;
                 qAvg = 500<<8; // q23.8
@@ -311,7 +311,7 @@ struct Convolution_9 {
             auto rel = (num-offset+500) % 1000;
             if (rel == 495)
                 max = 0;
-            else if (rel == 505 && max > 1000) {
+            else if (rel == 505 && max > 800) {
                 auto diff = (pos-offset+500)%1000;
                 auto gap = (num-offset)/100;
                 if (gap > 300) {
@@ -319,8 +319,8 @@ struct Convolution_9 {
                     max = 0;
                 } else
                     printf("%d,%d,%d,%d,%d\n",
-                            (num+500)%1000, (diff-500)*10+500, max-900,
-                            gap, (qAvg-(500<<8))+900);
+                            (num+500)%1000, (diff-500)*10+500, max-600,
+                            gap, (qAvg-(500<<8))+700);
                 offset = pos;
                 qAvg = ((119*qAvg) + (diff<<8)) / 120; // q23.8
                 return true;
@@ -357,7 +357,7 @@ char const* const desc [] = {
     "6: not sure this makes sense, trying to calculate the synchronised drift",
     "7: some variation of 6, I guess ...",
     "8: best sync so far, looking only for peaks in (950,1050) past last one",
-    "9: best sync so far, now matching 600+100 ms iso 700+100 ms",
+    "9: best sync so far, now matching 500+100 ms iso 700+100 ms",
 };
 
 int main () {
