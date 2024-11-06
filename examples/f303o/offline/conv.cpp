@@ -313,14 +313,14 @@ struct Convolution_9 {
                 max = 0;
             else if (rel == 505 && max > 800) {
                 auto diff = (pos-start+500)%1000-500;
-                auto gap = (num-offset)/100;
-                if (gap > 300) {
+                auto gap = num - offset;
+                if (gap > 30'000) {
                     inSync = false;
                     max = 0;
                 } else
                     printf("%d,%d,%d,%d,%d\n",
                             (num+500)%1000, diff+500, max-600,
-                            gap, avg/1000+500);
+                            gap/100, avg/1000+500);
                 offset = pos;
                 avg = (255*avg + diff*1000) / 256;
                 return true;
