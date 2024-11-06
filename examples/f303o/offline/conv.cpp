@@ -189,6 +189,43 @@ struct Convolution_6 : Convolution_1 {
     }
 };
 
+// 7: not sure this makes sense, trying to calculate the synchronised drift
+struct Convolution_7 : Convolution_1 {
+    int offset =0, avg =-1, head =0, tail =0;
+    uint64_t bits =0;
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > prev) {
+            prev = sum;
+            pos = num;
+        }
+        if (avg < 0 && (num - offset) > 1500 && num > pos+50 && prev > 1500) {
+            // > 1.5s scanned, > 50 ms past last peak, peak > 1500
+            fprintf(stderr, "sync at %d ms\n", num);
+            offset = pos; // found a good starting peak
+            avg = 100 * 500;
+        }
+        if (avg >= 0 && (num - offset) % 1000 == 50) {
+            auto rel = (pos - offset + 500) % 1000;
+            if (prev > 1500)
+                printf("%d,%d,%d,%d\n",
+                        num/1000, (num-offset)/100, prev-900, (avg/100-500)*50+100);
+            if (450 < rel && rel < 550) {
+                avg = (99 * avg + 100 * rel) / 100;
+                offset = pos;
+            } else if (num - offset > 60'000) {
+                avg = -1;
+                offset = num;
+                prev = 0;
+                return true;
+            }
+            prev = 0;
+        }
+        return false;
+    }
+};
+
 // read stream from stdin, see stream.cpp for info about the RLE encoding
 template< typename T >
 void feeder () {
@@ -218,6 +255,7 @@ int main () {
         case 4:  feeder<Convolution_4>(); break;
         case 5:  feeder<Convolution_5>(); break;
         case 6:  feeder<Convolution_6>(); break;
+        case 7:  feeder<Convolution_7>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
