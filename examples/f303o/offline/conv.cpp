@@ -156,7 +156,7 @@ struct Convolution_5 : Convolution_1 {
 
 // 6: not sure this makes sense, trying to calculate the synchronised drift
 struct Convolution_6 : Convolution_1 {
-    int offset =0, avg =-1, head =0, tail =0;
+    int offset =0, avg =-1;
     uint64_t bits =0;
 
     bool feed (bool val, int num) {
@@ -191,7 +191,7 @@ struct Convolution_6 : Convolution_1 {
 
 // 7: not sure this makes sense, trying to calculate the synchronised drift
 struct Convolution_7 : Convolution_1 {
-    int offset =0, avg =-1, head =0, tail =0;
+    int offset =0, avg =-1;
     uint64_t bits =0;
 
     bool feed (bool val, int num) {
@@ -226,6 +226,59 @@ struct Convolution_7 : Convolution_1 {
     }
 };
 
+// 8: best sync so far, looking only for peaks in (950,1050) past last one
+struct Convolution_8 {
+    bool sig [1000] {};
+    int high =0, low =0, max =0, pos =0, offset =0, qAvg =0;
+    bool inSync = false;
+
+    int convolve (bool val, int num) {
+        sig[num % 1000] = val;
+        // track low count in (-800,-100] and high count in (-100,0]
+        low += wrap(num-100) - wrap(num-800);
+        high += wrap(num-0) - wrap(num-100);
+        return (700 - low) + 7 * high;
+    }
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > max) {
+            max = sum;
+            pos = num;
+        }
+        if (!inSync) {
+            inSync = num-offset > 3000 && max > 1300 && num-pos > 50;
+            if (inSync) {
+                offset = pos;
+                qAvg = 500<<8; // q23.8
+                fprintf(stderr, "sync %d\n", pos);
+            }
+        } else {
+            auto rel = (num-offset+500) % 1000;
+            if (rel == 450)
+                max = 0;
+            else if (rel == 550 && max > 1300) {
+                auto diff = (pos-offset+500)%1000;
+                auto gap = (num-offset)/100;
+                if (gap > 300) {
+                    inSync = false;
+                    max = 0;
+                } else
+                    printf("%d,%d,%d,%d\n",
+                            (num+500)%1000, diff, max-1100, gap);
+                offset = pos;
+                qAvg = ((99*qAvg) + (diff<<8)) / 100; // q23.8
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int wrap (int n) const {
+        return sig[(n+1000) % 1000];
+    }
+};
+
 // read stream from stdin, see stream.cpp for info about the RLE encoding
 template< typename T >
 void feeder () {
@@ -256,6 +309,7 @@ int main () {
         case 5:  feeder<Convolution_5>(); break;
         case 6:  feeder<Convolution_6>(); break;
         case 7:  feeder<Convolution_7>(); break;
+        case 8:  feeder<Convolution_8>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
