@@ -189,7 +189,7 @@ struct Convolution_6 : Convolution_1 {
     }
 };
 
-// 7: not sure this makes sense, trying to calculate the synchronised drift
+// 7: some variation of 6, I guess ...
 struct Convolution_7 : Convolution_1 {
     int offset =0, avg =-1;
     uint64_t bits =0;
@@ -247,7 +247,7 @@ struct Convolution_8 {
             pos = num;
         }
         if (!inSync) {
-            inSync = num-offset > 3000 && max > 1300 && num-pos > 50;
+            inSync = num-offset > 3000 && max > 1350 && num-pos > 50;
             if (inSync) {
                 offset = pos;
                 qAvg = 500<<8; // q23.8
@@ -255,9 +255,9 @@ struct Convolution_8 {
             }
         } else {
             auto rel = (num-offset+500) % 1000;
-            if (rel == 450)
+            if (rel == 495)
                 max = 0;
-            else if (rel == 550 && max > 1300) {
+            else if (rel == 505 && max > 1200) {
                 auto diff = (pos-offset+500)%1000;
                 auto gap = (num-offset)/100;
                 if (gap > 300) {
@@ -265,7 +265,61 @@ struct Convolution_8 {
                     max = 0;
                 } else
                     printf("%d,%d,%d,%d,%d\n",
-                            (num+500)%1000, diff, max-1100,
+                            (num+500)%1000, (diff-500)*10+500, max-1100,
+                            gap, (qAvg-(500<<8))+900);
+                offset = pos;
+                qAvg = ((119*qAvg) + (diff<<8)) / 120; // q23.8
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int wrap (int n) const {
+        return sig[(n+1000) % 1000];
+    }
+};
+
+// 9: best sync so far, now matching 600+100 ms iso 700+100 ms
+struct Convolution_9 {
+    bool sig [1000] {};
+    int high =0, low =0, max =0, pos =0, offset =0, qAvg =0;
+    bool inSync = false;
+
+    int convolve (bool val, int num) {
+        sig[num % 1000] = val;
+        // track low count in (-800,-100] and high count in (-100,0]
+        low += wrap(num-100) - wrap(num-700);
+        high += wrap(num-0) - wrap(num-100);
+        return (600 - low) + 6 * high;
+    }
+
+    bool feed (bool val, int num) {
+        auto sum = convolve(val, num);
+        if (sum > max) {
+            max = sum;
+            pos = num;
+        }
+        if (!inSync) {
+            inSync = num-offset > 3000 && max > 1150 && num-pos > 50;
+            if (inSync) {
+                offset = pos;
+                qAvg = 500<<8; // q23.8
+                fprintf(stderr, "sync %d\n", pos);
+            }
+        } else {
+            auto rel = (num-offset+500) % 1000;
+            if (rel == 495)
+                max = 0;
+            else if (rel == 505 && max > 1000) {
+                auto diff = (pos-offset+500)%1000;
+                auto gap = (num-offset)/100;
+                if (gap > 300) {
+                    inSync = false;
+                    max = 0;
+                } else
+                    printf("%d,%d,%d,%d,%d\n",
+                            (num+500)%1000, (diff-500)*10+500, max-900,
                             gap, (qAvg-(500<<8))+900);
                 offset = pos;
                 qAvg = ((119*qAvg) + (diff<<8)) / 120; // q23.8
@@ -293,6 +347,19 @@ void feeder () {
     fprintf(stderr, "%d peaks in %.3f seconds\n", peaks, count/1000.0);
 };
 
+char const* const desc [] = {
+    "N make    # to build and run test N",
+    "1: find all peaks > 1500 and mark the ms offset in the second",
+    "2: find peak, but stick to fixed 1000 ms intervals to find each max",
+    "3: find peak within (950,1050), ignore all others (incl the 1-min mark)",
+    "4: show actual signal vs convolution result for a 10-sec range",
+    "5: capture decoded DCF77 bit stream, relative to the convolution peaks",
+    "6: not sure this makes sense, trying to calculate the synchronised drift",
+    "7: some variation of 6, I guess ...",
+    "8: best sync so far, looking only for peaks in (950,1050) past last one",
+    "9: best sync so far, now matching 600+100 ms iso 700+100 ms",
+};
+
 int main () {
     auto e = getenv("T");
     auto t = e != nullptr ? atoi(e) : 0;
@@ -303,6 +370,7 @@ int main () {
     }
 
     switch (t) {
+        case 0:  for (auto e : desc) printf("  T=%s\n", e); break;
         case 1:  feeder<Convolution_1>(); break;
         case 2:  feeder<Convolution_2>(); break;
         case 3:  feeder<Convolution_3>(); break;
@@ -311,6 +379,7 @@ int main () {
         case 6:  feeder<Convolution_6>(); break;
         case 7:  feeder<Convolution_7>(); break;
         case 8:  feeder<Convolution_8>(); break;
+        case 9:  feeder<Convolution_9>(); break;
         default: fprintf(stderr, "oops, try: T=1 make\n");
     }
 }
