@@ -304,7 +304,7 @@ struct Convolution_9 {
             inSync = num-offset > 3000 && max > 950 && num-pos > 50;
             if (inSync) {
                 offset = pos;
-                qAvg = 500<<8; // q23.8
+                qAvg = 500*1000;
                 fprintf(stderr, "sync %d\n", pos);
             }
         } else {
@@ -320,9 +320,9 @@ struct Convolution_9 {
                 } else
                     printf("%d,%d,%d,%d,%d\n",
                             (num+500)%1000, (diff-500)*10+500, max-600,
-                            gap, (qAvg-(500<<8))+700);
+                            gap, (qAvg-500'000)+800);
                 offset = pos;
-                qAvg = ((119*qAvg) + (diff<<8)) / 120; // q23.8
+                qAvg = ((255*qAvg) + diff*1000) / 256;
                 return true;
             }
         }
