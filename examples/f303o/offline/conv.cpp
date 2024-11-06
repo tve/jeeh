@@ -264,10 +264,11 @@ struct Convolution_8 {
                     inSync = false;
                     max = 0;
                 } else
-                    printf("%d,%d,%d,%d\n",
-                            (num+500)%1000, diff, max-1100, gap);
+                    printf("%d,%d,%d,%d,%d\n",
+                            (num+500)%1000, diff, max-1100,
+                            gap, (qAvg-(500<<8))+900);
                 offset = pos;
-                qAvg = ((99*qAvg) + (diff<<8)) / 100; // q23.8
+                qAvg = ((119*qAvg) + (diff<<8)) / 120; // q23.8
                 return true;
             }
         }
