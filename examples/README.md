@@ -80,6 +80,11 @@ Each application can be built and run independently, e.g.
 * `h743z/blink` - blink on-board LED and send some text to serial
 * `h743z/tick` - blink on-board LED via periodic timer and worker
 
+**`l011k4` - Nucleo-32 @ 32 MHz**
+
+* `l011k/blink` - blink on-board LED and send some text to serial
+* `l011k/tick` - blink on-board LED via periodic timer and worker
+
 **`l031k6` - Nucleo-32 @ 32 MHz**
 
 * `l031k/blink` - blink on-board LED and send some text to serial
