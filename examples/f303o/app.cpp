@@ -9,20 +9,42 @@ Ticker ticker;
 TICKER_INSTALL(ticker)
 
 struct RushWorker : Worker {
-    enum TAG { START, TICK };
+    enum TAG { START, TRACK, TICK };
+
+    char ledSel =0;         // which signal to display on the LED
+    uint8_t dcfNow, msfNow; // values captured during last tick
+    Event tracker;          // worker to notify on each edge change
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 ticker.periodic(1, TICK);
                 break;
+            case TRACK:
+                tracker = take(out); // side-effect: clear "out"
+                break;
             case TICK:
-                // TODO
+                ++tracker.eVal; // keep track of current tick count
+                out = ticked();
+                // show signal on LED if enabled
+                switch (ledSel) {
+                    case 'd': led = dcfNow; break;
+                    case 'm': led = msfNow; break;
+                }
                 break;
             default:
                 fail();
         }
         return out;
+    }
+
+    Event ticked () {
+        auto dcfPrev = dcfNow, msfPrev = msfNow;
+        dcfNow = dcfDat;
+        msfNow = !msfDat; // inverted signal
+        if (dcfNow == dcfPrev && msfNow == msfPrev)
+            return {};
+        return tracker;
     }
 } rusher;
 
@@ -80,9 +102,27 @@ struct CmdWorker : Worker {
             case TTYIN:
                 logf("%d: '%c'", in.eVal, *console.rxPtr);
                 switch (*console.rxPtr) {
-                    case 'g': gpser.dump = !gpser.dump; break;
-                    case 'l': blinker.enable = !blinker.enable; break;
-                    case 's': showStats(); break;
+                    case 'd':
+                        blinker.enable = false;
+                        rusher.ledSel = 'd';
+                        break;
+                    case 'm':
+                        blinker.enable = false;
+                        rusher.ledSel = 'm';
+                        break;
+                    case 'g':
+                        gpser.dump = !gpser.dump;
+                        break;
+                    case 'l':
+                        blinker.enable = !blinker.enable;
+                        if (blinker.enable)
+                            rusher.ledSel = 0; // stop tracking DCF or MSF
+                        break;
+                    case 's':
+                        showStats();
+                        break;
+                    default:
+                        logf("?");
                 }
                 console.read(1, { wId, TTYIN });
                 break;
@@ -113,11 +153,16 @@ struct WatchWorker : Worker {
 } watcher;
 
 struct IdleWorker : Worker {
-    enum TAG { START };
+    enum TAG { START, EDGE };
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
+                send({ rusher.wId, rusher.TRACK }, { wId, EDGE });
+                break;
+            case EDGE:
+                // TODO triggered each time the DCF or MSF signal changes
+                logf("E %d", in.eVal);
                 break;
             default:
                 fail();
@@ -128,6 +173,7 @@ struct IdleWorker : Worker {
 
 int main () {
     initBoard();
+
     switch (dog::resetCause()) {
         default: logf("reset cause?"); break;
         case 0:  logf("watchdog"); break;
@@ -135,6 +181,8 @@ int main () {
         case 2:  logf("system reset"); break;
     }
 
+    dcfVcc = 1;
+    msfVcc = 1;
     gps.init(UART1_PINS, 9600);
 
     // start workers in decreasing priority
