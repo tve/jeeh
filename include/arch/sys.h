@@ -170,7 +170,7 @@ namespace rtc {
 } // namespace rtc
 
 namespace dog {
-    int resetCause (); // power: 2, nrst: 1, other: 0, watchdog: -1
+    int resetCause (); // nrst: 2, power: 1, watchdog: 0, other: -1
 
     void init (int rate =6);   // max timeout, 0 ≈ 500 ms, 6 ≈ 32 s
 

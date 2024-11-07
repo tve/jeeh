@@ -282,13 +282,13 @@ int resetCause () {
         RCC[CSR](RMVF) = 1; // clears all reset-cause flags
     }
 #if STM32H7
-    return cause & (1<<26) ? -1 :     // iwdg
-           cause & (5<<21) ? 2 :      // por/bor
-           cause & (1<<17) ? 1 : 0;   // nrst, or other
+    return cause & (1<<26) ? 0 :      // iwdg
+           cause & (5<<21) ? 1 :      // por/bor
+           cause & (1<<17) ? 2 : -1;  // nrst, or other
 #else
-    return cause & (1<<29) ? -1 :     // iwdg
-           cause & (1<<27) ? 2 :      // por/bor
-           cause & (1<<26) ? 1 : 0;   // nrst, or other
+    return cause & (1<<29) ? 0 :      // iwdg
+           cause & (1<<27) ? 1 :      // por/bor
+           cause & (1<<26) ? 2 : -1;  // nrst, or other
 #endif
 }
 

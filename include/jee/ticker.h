@@ -2,7 +2,7 @@ namespace jeeh {
 
 struct Ticker : Worker {
     constexpr static auto MAX_TIMERS = 20;
-    enum TAG { TICK, RATE, DELAY, PERIOD, CANCEL };
+    enum TAG { START, TICK, RATE, DELAY, PERIOD, CANCEL };
 
     Ticker () : Worker ("Ticker") {}
 
@@ -48,6 +48,8 @@ private:
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
+            case START: // TODO not meaningful, added for consistency
+                break;
             case TICK:
                 while (expired())
                     timeout();
@@ -141,7 +143,7 @@ private:
     }
 };
 
-#define TICKER_INSTALL(name) \
-    extern "C" void SysTick_Handler () { name.irqSysTick(); }
+#define TICKER_INSTALL(w) \
+    extern "C" void SysTick_Handler () { (w).irqSysTick(); }
 
 } // namespace jeeh

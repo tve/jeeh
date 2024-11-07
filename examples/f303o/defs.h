@@ -15,10 +15,10 @@ Pin led (LED,"P");
 #define UART1_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
 #define UART1_CONF  { ena::USART1, 72, Irq::USART1, \
                       Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
-#define UART1_INSTALL(name) extern "C" { \
-    void USART1_IRQHandler () { name.idleIrq(); } \
-    void DMA1_Channel4_IRQHandler () { name.dmaIrq(); } \
-    void DMA1_Channel5_IRQHandler () { name.dmaIrq(); } \
+#define UART1_INSTALL(w) extern "C" { \
+    void USART1_IRQHandler () { (w).irqIdle(); } \
+    void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel5_IRQHandler () { (w).irqDma(); } \
 }
 //CG]
 
@@ -32,10 +32,10 @@ UART1_INSTALL(gps)
 #define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
 #define UART2_CONF  { ena::USART2, 36, Irq::USART2, \
                       Irq::DMA1_CH7, Irq::DMA1_CH6, { 1-1,2,2 } }
-#define UART2_INSTALL(name) extern "C" { \
-    void USART2_IRQHandler () { name.idleIrq(); } \
-    void DMA1_Channel7_IRQHandler () { name.dmaIrq(); } \
-    void DMA1_Channel6_IRQHandler () { name.dmaIrq(); } \
+#define UART2_INSTALL(w) extern "C" { \
+    void USART2_IRQHandler () { (w).irqIdle(); } \
+    void DMA1_Channel7_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel6_IRQHandler () { (w).irqDma(); } \
 }
 //CG]
 

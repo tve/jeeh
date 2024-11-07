@@ -180,7 +180,7 @@ struct Work : Sync<A,D,T,R>, Worker {
             rxPending = out;
     }
 
-    void idleIrq () {
+    void irqIdle () {
 #if STM32F1 | STM32F4
         (void) +UART[BASE::SR];
         (void) +UART[BASE::RDR]; // clear idle and error flags
@@ -190,7 +190,7 @@ struct Work : Sync<A,D,T,R>, Worker {
         trigger(RXIDLE);
     }
 
-    void dmaIrq () {
+    void irqDma () {
         auto f = cfg.dma.completed();
         //assert(f != 0);
         if (f == cfg.dma.RXHALF)
