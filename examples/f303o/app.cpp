@@ -24,13 +24,7 @@ struct RushWorker : Worker {
                 tracker = take(out); // side-effect: clear "out"
                 break;
             case TICK:
-                ++tracker.eVal; // keep track of current tick count
-                out = ticked();
-                // show signal on LED if enabled
-                switch (ledSel) {
-                    case 'd': led = dcfNow; break;
-                    case 'm': led = msfNow; break;
-                }
+                out = ticked(); // may have a reply for tracking worker
                 break;
             default:
                 fail();
@@ -38,12 +32,22 @@ struct RushWorker : Worker {
         return out;
     }
 
+private:
     Event ticked () {
+        ++tracker.eVal; // keep track of current tick count
+
         auto dcfPrev = dcfNow, msfPrev = msfNow;
         dcfNow = dcfDat;
         msfNow = !msfDat; // inverted signal
         if (dcfNow == dcfPrev && msfNow == msfPrev)
             return {};
+
+        // show signal on LED if enabled
+        switch (ledSel) {
+            case 'd': led = dcfNow; break;
+            case 'm': led = msfNow; break;
+        }
+
         return tracker;
     }
 } rusher;
@@ -52,6 +56,7 @@ struct GpsWorker : Worker {
     enum TAG { START, RECV };
 
     bool dump =false;
+    char buf [100];
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -59,9 +64,12 @@ struct GpsWorker : Worker {
                 gps.read(0, { wId, RECV });
                 break;
             case RECV:
-                if (dump)
-                    _write(1, (char*) gps.rxPtr, in.eVal);
+                if (in.eVal > sizeof buf)
+                    in.eVal = sizeof buf;
+                memcpy(buf, gps.rxPtr, in.eVal);
                 gps.read(in.eVal, { wId, RECV });
+                if (dump)
+                    _write(1, buf, in.eVal);
                 break;
             default:
                 fail();
@@ -183,7 +191,26 @@ int main () {
 
     dcfVcc = 1;
     msfVcc = 1;
+
     gps.init(UART1_PINS, 9600);
+
+#if 1
+    // UBX message constructed using "pygpsclient" app
+    const uint8_t hiSpeed [] = { // UART1: 1 Mbaud
+#if 0 // NMEA on
+        0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
+        0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x7e, 0x8a
+#else // NMEA off, UBX on
+        0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
+        0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x76, 0x4e
+#endif
+    };
+    gps.write(hiSpeed, sizeof hiSpeed);
+    cycles::msBusy(10);
+    gps.baudRate(1'000'000);
+#endif
 
     // start workers in decreasing priority
     ticker.init();  ticker.wName = "tick";
