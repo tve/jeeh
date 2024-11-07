@@ -24,9 +24,7 @@ struct RushWorker : Worker {
         }
         return out;
     }
-};
-
-RushWorker rusher;
+} rusher;
 
 struct GpsWorker : Worker {
     enum TAG { START, RECV };
@@ -48,9 +46,7 @@ struct GpsWorker : Worker {
         }
         return out;
     }
-};
-
-GpsWorker gpser;
+} gpser;
 
 struct BlinkWorker : Worker {
     enum TAG { START, TICK };
@@ -71,9 +67,7 @@ struct BlinkWorker : Worker {
         }
         return out;
     }
-};
-
-BlinkWorker blinker;
+} blinker;
 
 struct CmdWorker : Worker {
     enum TAG { START, TTYIN };
@@ -97,9 +91,7 @@ struct CmdWorker : Worker {
         }
         return out;
     }
-};
-
-CmdWorker cmder;
+} cmder;
 
 struct WatchWorker : Worker {
     enum TAG { START, TICK };
@@ -118,9 +110,7 @@ struct WatchWorker : Worker {
         }
         return out;
     }
-};
-
-WatchWorker watcher;
+} watcher;
 
 struct IdleWorker : Worker {
     enum TAG { START };
@@ -134,9 +124,7 @@ struct IdleWorker : Worker {
         }
         return out;
     }
-};
-
-IdleWorker idler;
+} idler;
 
 int main () {
     initBoard();
