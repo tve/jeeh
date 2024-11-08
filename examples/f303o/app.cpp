@@ -141,9 +141,9 @@ struct CmdWorker : Worker {
                         gpser.dump = !gpser.dump;
                         if (!gpser.dump) {
                             char buf [10];
-                            logf("loc %d %d, maidenhead %s",
-                                    gpser.lat, gpser.lon,
-                                    ubx::maidenhead(buf, gpser.lat, gpser.lon));
+                            ubx::maidenhead(buf, gpser.lat, gpser.lon);
+                            logf("latitude %d, longitude %d, maidenhead %s",
+                                    gpser.lat, gpser.lon, buf);
                         }
                         break;
                     case 'l':

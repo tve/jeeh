@@ -99,20 +99,19 @@ struct Parser {
 };
 
 // see https://en.wikipedia.org/wiki/Maidenhead_Locator_System
-char* maidenhead (char* buf, int32_t lat, int32_t lon) {
-    auto fill = 0;
+void maidenhead (char* buf, int32_t lat, int32_t lon) {
     constexpr uint32_t e7 = 10'000'000;
     uint32_t scale = 180*e7;
-    uint32_t ulon = lon + 180*e7,  ulat = lat + 90*e7; // e-7
+    uint32_t ulon = lon + 180*e7,  ulat = lat + 90*e7;
+
     for (auto i = 0; i < 4; ++i) {
         auto radix = i == 0 ? 18 : i & 1 ? 10 : 24;
         auto base = radix == 10 ? '0' : 'A';
         scale /= radix;
-        buf[fill++] = base + (ulon / (2*scale)) % radix;
-        buf[fill++] = base + (ulat / scale) % radix;
+        buf[2*i] = base + (ulon / (2*scale)) % radix;
+        buf[2*i+1] = base + (ulat / scale) % radix;
     }
-    buf[fill] = 0;
-    return buf;
+    buf[8] = 0;
 }
 
 } // namespace ubx
