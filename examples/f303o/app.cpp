@@ -53,9 +53,10 @@ private:
     }
 } rusher;
 
-struct GpsWorker : Worker, ubx::Parser<100> {
+struct GpsWorker : Worker {
     enum TAG { START, RECV };
 
+    ubx::Parser<100> ubx;
     bool dump =false;
 
     Event process (Event in, Event out) override {
@@ -66,10 +67,10 @@ struct GpsWorker : Worker, ubx::Parser<100> {
             case RECV: {
                 auto i = 0U;
                 while (i < in.eVal)
-                    if (parse(gpsUart.rxPtr[i++])) {
+                    if (ubx.parse(gpsUart.rxPtr[i++])) {
                         if (dump) {
-                            if (pktClass == 0x01 && pktMsgId == 0x07) {
-                                auto& pvt = *(ubx::NavPvt*) payload;
+                            if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07) {
+                                auto& pvt = *(ubx::NavPvt*) ubx.payload;
                                 logf("fix %d lon %d lat %d hacc %d sv %d"
                                      " %04d-%02d-%02d %02d:%02d:%02d acc %d",
                                         pvt.fixType, pvt.lon, pvt.lat,
@@ -77,8 +78,9 @@ struct GpsWorker : Worker, ubx::Parser<100> {
                                         pvt.year, pvt.month, pvt.day,
                                         pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
                             } else {
-                                logf("GPS %02x %02x", pktClass, pktMsgId);
-                                logDump(payload, pktLen);
+                                logf("GPS %02x %02x",
+                                        ubx.pktClass, ubx.pktMsgId);
+                                logDump(ubx.payload, ubx.pktLen);
                             }
                         }
                         break;
