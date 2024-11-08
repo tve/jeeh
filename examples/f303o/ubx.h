@@ -100,21 +100,22 @@ struct Parser {
 
 // see https://en.wikipedia.org/wiki/Maidenhead_Locator_System
 struct Maidenhead {
-    char buf [11];
+    char buf [15]; // 7 levels, the maximum possible with 1E-7 degrees
 
     Maidenhead (int32_t lat, int32_t lon) {
         constexpr uint32_t e7 = 10'000'000;
         uint32_t scale = 180*e7;
         uint32_t ulon = lon + 180*e7,  ulat = lat + 90*e7;
 
-        for (auto i = 0; i < 5; ++i) {
+        for (auto i = 0; i < 7; ++i) {
             auto radix = i == 0 ? 18 : i & 1 ? 10 : 24;
             auto base = radix == 10 ? '0' : 'A';
             scale /= radix;
             buf[2*i] = base + (ulon / (2*scale)) % radix;
             buf[2*i+1] = base + (ulat / scale) % radix;
         }
-        buf[10] = 0;
+logf("22 %d", scale);
+        buf[14] = 0;
     }
 };
 
