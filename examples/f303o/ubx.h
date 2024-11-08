@@ -79,8 +79,8 @@ struct Parser {
                     ++state; // empty payload
                 break;
             case PAYLOAD:
-                assert(pktFill < sizeof payload);
-                payload[pktFill++] = ch;
+                if (pktFill < sizeof payload)
+                    payload[pktFill++] = ch;
                 if (pktFill >= pktLen)
                     ++state;
                 break;
