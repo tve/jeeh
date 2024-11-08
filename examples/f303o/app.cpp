@@ -58,6 +58,7 @@ struct GpsWorker : Worker {
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
+    DateTime now;
     bool dump =false;
 
     Event process (Event in, Event out) override {
@@ -74,11 +75,12 @@ struct GpsWorker : Worker {
                                 auto& pvt = *(ubx::NavPvt*) ubx.payload;
                                 lon = pvt.lon;
                                 lat = pvt.lat;
-                                logf("fix %d lon %d lat %d hacc %d sv %d"
-                                     " %04d-%02d-%02d %02d:%02d:%02d acc %d",
+                                now = { pvt.year % 100, pvt.month, pvt.day,
+                                        pvt.hour, pvt.min, pvt.sec };
+                                auto dt = now.asText();
+                                logf("fix %d pos %d %d acc %d sv %d  %s acc %d",
                                         pvt.fixType, lon, lat, pvt.hAcc,
-                                        pvt.numSV, pvt.year, pvt.month, pvt.day,
-                                        pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
+                                        pvt.numSV, dt.buf, pvt.tAcc);
                             } else {
                                 logf("GPS %02x %02x",
                                         ubx.pktClass, ubx.pktMsgId);
@@ -140,10 +142,9 @@ struct CmdWorker : Worker {
                     case 'g':
                         gpser.dump = !gpser.dump;
                         if (!gpser.dump) {
-                            char buf [10];
-                            ubx::maidenhead(buf, gpser.lat, gpser.lon);
+                            ubx::Maidenhead mh (gpser.lat, gpser.lon);
                             logf("latitude %d, longitude %d, maidenhead %s",
-                                    gpser.lat, gpser.lon, buf);
+                                    gpser.lat, gpser.lon, mh.buf);
                         }
                         break;
                     case 'l':

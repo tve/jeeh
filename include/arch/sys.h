@@ -149,6 +149,19 @@ public:
     uint32_t todMillis () {
         return (todTicks() * 125U) / 32U; // avoid 32-bit overflow
     }
+
+    struct Text {
+        char buf [24]; // yyyy-mm-dd hh:mm:ss.fff
+
+        Text (DateTime const& dt) {
+            snprintf(buf, sizeof buf, "20%02d-%02d-%02d %02d:%02d:%02d.%03d",
+                    dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff*1000)/256);
+        }
+    };
+
+    Text asText () const {
+        return *this;
+    }
 };
 
 namespace rtc {

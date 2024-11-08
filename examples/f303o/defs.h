@@ -64,10 +64,9 @@ void initBoard () {
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running
 
-    auto dt = rtc::getDate();
-    logf("\n%s: %s @ %d MHz - 20%02d-%02d-%02d %02d:%02d:%02d.%03d",
-            PIOENV, SVDNAME, SystemCoreClock / 1'000'000,
-            dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff * 1000) / 256);
+    auto dt = rtc::getDate().asText();
+    logf("\n%s: %s @ %d MHz - %s",
+            PIOENV, SVDNAME, SystemCoreClock / 1'000'000, dt.buf);
 }
 
 extern "C" int _write (int fd, char* buf, int len) {
