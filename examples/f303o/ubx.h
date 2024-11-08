@@ -80,8 +80,8 @@ struct Parser {
                 break;
             case PAYLOAD:
                 if (pktFill < sizeof payload)
-                    payload[pktFill++] = ch;
-                if (pktFill >= pktLen)
+                    payload[pktFill] = ch;
+                if (++pktFill >= pktLen)
                     ++state;
                 break;
             case CRC1:
