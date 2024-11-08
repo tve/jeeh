@@ -4,6 +4,7 @@
 #include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
+#include "ubx.h"
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -54,28 +55,92 @@ private:
 
 struct GpsWorker : Worker {
     enum TAG { START, RECV };
+    enum { SYNC1, SYNC2, CLASS, MSGID, LEN1, LEN2, PAYLOAD, CRC1, CRC2 };
 
     bool dump =false;
-    char buf [100];
+    uint8_t buf [10];
+    uint8_t state =SYNC1, pktClass, pktMsgId, pktCkA, pktCkB;
+    uint16_t pktLen, pktFill;
+    uint8_t payload [100];
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                gps.read(0, { wId, RECV });
+                gpsUart.read(0, { wId, RECV });
                 break;
             case RECV:
-                if (in.eVal > sizeof buf)
-                    in.eVal = sizeof buf;
-                memcpy(buf, gps.rxPtr, in.eVal);
-                gps.read(in.eVal, { wId, RECV });
-                if (dump)
-                    _write(1, buf, in.eVal);
+                if (dump) {
+                    if (in.eVal > sizeof buf)
+                        in.eVal = sizeof buf;
+                    memcpy(buf, gpsUart.rxPtr, in.eVal);
+                    gpsUart.read(in.eVal, { wId, RECV });
+                    if (buf[0] == 0xB5)
+                        printf("\n");
+                    for (auto i = 0U; i < in.eVal; ++i)
+                        printf("%02x", buf[i]);
+                } else {
+                    auto i = 0U;
+                    while (i < in.eVal)
+                        if (parse(gpsUart.rxPtr[i++])) {
+                            logf("GOT %02x %02x: %d b",
+                                    pktClass, pktMsgId, pktLen);
+                            break;
+                        }
+                    gpsUart.read(i, { wId, RECV });
+                }
                 break;
             default:
                 fail();
         }
         return out;
     }
+
+private:
+    bool parse (uint8_t ch) {
+        if (CLASS <= state && state < CRC1) {
+            pktCkA += ch;
+            pktCkB += pktCkA;
+        }
+        switch (state) {
+            case SYNC1:
+                if (ch == 0xB5)
+                    ++state;
+                break;
+            case SYNC2:
+                if (ch == 0x62)
+                    ++state;
+                else
+                    state = SYNC1;
+                pktFill = pktCkA = pktCkB = 0;
+                break;
+            case CLASS: pktClass = ch; ++state; break;
+            case MSGID: pktMsgId = ch; ++state; break;
+            case LEN1:  pktLen = ch; ++state; break;
+            case LEN2:
+                pktLen |= ch<<8;
+                ++state;
+                if (pktLen == 0)
+                    ++state; // empty payload
+                break;
+            case PAYLOAD:
+                assert(pktFill < sizeof payload);
+                payload[pktFill++] = ch;
+                if (pktFill >= pktLen)
+                    ++state;
+                break;
+            case CRC1:
+                if (pktCkA != ch)
+                    state = SYNC1;
+                else
+                    ++state;
+                break;
+            case CRC2:
+                state = SYNC1;
+                return pktCkB == ch;
+        }
+        return false;
+    }
+
 } gpser;
 
 struct BlinkWorker : Worker {
@@ -192,24 +257,20 @@ int main () {
     dcfVcc = 1;
     msfVcc = 1;
 
-    gps.init(UART1_PINS, 9600);
+    gpsUart.init(UART1_PINS, 9600);
 
 #if 1
-    // UBX message constructed using "pygpsclient" app
-    const uint8_t hiSpeed [] = { // UART1: 1 Mbaud
-#if 0 // NMEA on
-        0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
-        0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x07, 0x00, 0x03, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x7e, 0x8a
-#else // NMEA off, UBX on
+    const uint8_t gpsConfig [] = { // UART1: 1 Mbaud
+        // enable NAV-PVT
+        0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x07, 0x01, 0x13, 0x51,
+        // NMEA off, UBX on, 1 Mbaud
         0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
         0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x76, 0x4e
-#endif
+        0x00, 0x00, 0x76, 0x4e,
     };
-    gps.write(hiSpeed, sizeof hiSpeed);
+    gpsUart.write(gpsConfig, sizeof gpsConfig);
     cycles::msBusy(10);
-    gps.baudRate(1'000'000);
+    gpsUart.baudRate(1'000'000);
 #endif
 
     // start workers in decreasing priority

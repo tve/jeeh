@@ -22,8 +22,8 @@ Pin led (LED,"P");
 }
 //CG]
 
-uart::Work<UART1_TYPE> gps (UART1_CONF);
-UART1_INSTALL(gps)
+uart::Work<UART1_TYPE> gpsUart (UART1_CONF);
+UART1_INSTALL(gpsUart)
 
 //CG[ board uart2
 #define UART2_NAME  USART2
@@ -59,7 +59,7 @@ void initBoard () {
     cycles::init();
     rtc::init();
 
-    console.init(UART2_PINS, 2'000'000);
+    console.init(UART2_PINS, 1'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running
