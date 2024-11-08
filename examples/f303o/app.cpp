@@ -78,7 +78,7 @@ struct GpsWorker : Worker {
                                 now = { pvt.year % 100, pvt.month, pvt.day,
                                         pvt.hour, pvt.min, pvt.sec };
                                 auto dt = now.asText();
-                                logf("fix %d pos %d %d acc %d sv %d  %s acc %d",
+                                logf("fix %d pos %d %d ha %d sv %d %s ta %d",
                                         pvt.fixType, lon, lat, pvt.hAcc,
                                         pvt.numSV, dt.buf, pvt.tAcc);
                             } else {
