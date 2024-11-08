@@ -114,7 +114,6 @@ struct Maidenhead {
             buf[2*i] = base + (ulon / (2*scale)) % radix;
             buf[2*i+1] = base + (ulat / scale) % radix;
         }
-logf("22 %d", scale);
         buf[14] = 0;
     }
 };
