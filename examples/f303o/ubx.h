@@ -44,4 +44,58 @@ struct NavPvt {
 };
 static_assert(sizeof (NavPvt) == 92);
 
+template< uint16_t MAX >
+struct Parser {
+    enum { SYNC1, SYNC2, CLASS, MSGID, LEN1, LEN2, PAYLOAD, CRC1, CRC2 };
+
+    uint16_t pktLen, pktFill;
+    uint8_t state =SYNC1, pktClass, pktMsgId, pktCkA, pktCkB;
+    uint8_t payload [MAX] alignas(4);
+
+    bool parse (uint8_t ch) {
+        if (CLASS <= state && state < CRC1) {
+            pktCkA += ch;
+            pktCkB += pktCkA;
+        }
+        switch (state) {
+            case SYNC1:
+                if (ch == 0xB5)
+                    ++state;
+                break;
+            case SYNC2:
+                if (ch == 0x62)
+                    ++state;
+                else
+                    state = SYNC1;
+                pktFill = pktCkA = pktCkB = 0;
+                break;
+            case CLASS: pktClass = ch; ++state; break;
+            case MSGID: pktMsgId = ch; ++state; break;
+            case LEN1:  pktLen = ch; ++state; break;
+            case LEN2:
+                pktLen |= ch<<8;
+                ++state;
+                if (pktLen == 0)
+                    ++state; // empty payload
+                break;
+            case PAYLOAD:
+                assert(pktFill < sizeof payload);
+                payload[pktFill++] = ch;
+                if (pktFill >= pktLen)
+                    ++state;
+                break;
+            case CRC1:
+                if (pktCkA != ch)
+                    state = SYNC1;
+                else
+                    ++state;
+                break;
+            case CRC2:
+                state = SYNC1;
+                return pktCkB == ch;
+        }
+        return false;
+    }
+};
+
 } // namespace ubx

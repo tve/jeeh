@@ -53,94 +53,41 @@ private:
     }
 } rusher;
 
-struct GpsWorker : Worker {
+struct GpsWorker : Worker, ubx::Parser<100> {
     enum TAG { START, RECV };
-    enum { SYNC1, SYNC2, CLASS, MSGID, LEN1, LEN2, PAYLOAD, CRC1, CRC2 };
 
     bool dump =false;
-    uint8_t buf [10];
-    uint8_t state =SYNC1, pktClass, pktMsgId, pktCkA, pktCkB;
-    uint16_t pktLen, pktFill;
-    uint8_t payload [100];
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 gpsUart.read(0, { wId, RECV });
                 break;
-            case RECV:
-                if (dump) {
-                    if (in.eVal > sizeof buf)
-                        in.eVal = sizeof buf;
-                    memcpy(buf, gpsUart.rxPtr, in.eVal);
-                    gpsUart.read(in.eVal, { wId, RECV });
-                    if (buf[0] == 0xB5)
-                        printf("\n");
-                    for (auto i = 0U; i < in.eVal; ++i)
-                        printf("%02x", buf[i]);
-                } else {
-                    auto i = 0U;
-                    while (i < in.eVal)
-                        if (parse(gpsUart.rxPtr[i++])) {
-                            logf("GOT %02x %02x: %d b",
-                                    pktClass, pktMsgId, pktLen);
-                            break;
+            case RECV: {
+                auto i = 0U;
+                while (i < in.eVal)
+                    if (parse(gpsUart.rxPtr[i++])) {
+                        if (dump) {
+                            logf("GPS class %02x id %02x", pktClass, pktMsgId);
+                            logDump(payload, pktLen);
+                            auto& pvt = *(ubx::NavPvt*) payload;
+                            logf("  fix %d lon %d lat %d hacc %d sv %d",
+                                    pvt.fixType, pvt.lon, pvt.lat,
+                                    pvt.hAcc, pvt.numSV);
+                            logf("%04d-%02d-%02d %02d:%02d:%02d acc %d",
+                                    pvt.year, pvt.month, pvt.day,
+                                    pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
                         }
-                    gpsUart.read(i, { wId, RECV });
-                }
+                        break;
+                    }
+                gpsUart.read(i, { wId, RECV });
                 break;
+            }
             default:
                 fail();
         }
         return out;
     }
-
-private:
-    bool parse (uint8_t ch) {
-        if (CLASS <= state && state < CRC1) {
-            pktCkA += ch;
-            pktCkB += pktCkA;
-        }
-        switch (state) {
-            case SYNC1:
-                if (ch == 0xB5)
-                    ++state;
-                break;
-            case SYNC2:
-                if (ch == 0x62)
-                    ++state;
-                else
-                    state = SYNC1;
-                pktFill = pktCkA = pktCkB = 0;
-                break;
-            case CLASS: pktClass = ch; ++state; break;
-            case MSGID: pktMsgId = ch; ++state; break;
-            case LEN1:  pktLen = ch; ++state; break;
-            case LEN2:
-                pktLen |= ch<<8;
-                ++state;
-                if (pktLen == 0)
-                    ++state; // empty payload
-                break;
-            case PAYLOAD:
-                assert(pktFill < sizeof payload);
-                payload[pktFill++] = ch;
-                if (pktFill >= pktLen)
-                    ++state;
-                break;
-            case CRC1:
-                if (pktCkA != ch)
-                    state = SYNC1;
-                else
-                    ++state;
-                break;
-            case CRC2:
-                state = SYNC1;
-                return pktCkB == ch;
-        }
-        return false;
-    }
-
 } gpser;
 
 struct BlinkWorker : Worker {
