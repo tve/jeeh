@@ -57,6 +57,7 @@ struct GpsWorker : Worker {
     enum TAG { START, RECV };
 
     ubx::Parser<100> ubx;
+    int32_t lon =0, lat =0;
     bool dump =false;
 
     Event process (Event in, Event out) override {
@@ -71,11 +72,12 @@ struct GpsWorker : Worker {
                         if (dump) {
                             if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07) {
                                 auto& pvt = *(ubx::NavPvt*) ubx.payload;
+                                lon = pvt.lon;
+                                lat = pvt.lat;
                                 logf("fix %d lon %d lat %d hacc %d sv %d"
                                      " %04d-%02d-%02d %02d:%02d:%02d acc %d",
-                                        pvt.fixType, pvt.lon, pvt.lat,
-                                        pvt.hAcc, pvt.numSV,
-                                        pvt.year, pvt.month, pvt.day,
+                                        pvt.fixType, lon, lat, pvt.hAcc,
+                                        pvt.numSV, pvt.year, pvt.month, pvt.day,
                                         pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
                             } else {
                                 logf("GPS %02x %02x",
@@ -137,6 +139,12 @@ struct CmdWorker : Worker {
                         break;
                     case 'g':
                         gpser.dump = !gpser.dump;
+                        if (!gpser.dump) {
+                            char buf [10];
+                            logf("loc %d %d, maidenhead %s",
+                                    gpser.lat, gpser.lon,
+                                    ubx::maidenhead(buf, gpser.lat, gpser.lon));
+                        }
                         break;
                     case 'l':
                         blinker.enable = !blinker.enable;
