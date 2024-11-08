@@ -68,15 +68,18 @@ struct GpsWorker : Worker, ubx::Parser<100> {
                 while (i < in.eVal)
                     if (parse(gpsUart.rxPtr[i++])) {
                         if (dump) {
-                            logf("GPS class %02x id %02x", pktClass, pktMsgId);
-                            logDump(payload, pktLen);
-                            auto& pvt = *(ubx::NavPvt*) payload;
-                            logf("  fix %d lon %d lat %d hacc %d sv %d",
-                                    pvt.fixType, pvt.lon, pvt.lat,
-                                    pvt.hAcc, pvt.numSV);
-                            logf("%04d-%02d-%02d %02d:%02d:%02d acc %d",
-                                    pvt.year, pvt.month, pvt.day,
-                                    pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
+                            if (pktClass == 0x01 && pktMsgId == 0x07) {
+                                auto& pvt = *(ubx::NavPvt*) payload;
+                                logf("fix %d lon %d lat %d hacc %d sv %d"
+                                     " %04d-%02d-%02d %02d:%02d:%02d acc %d",
+                                        pvt.fixType, pvt.lon, pvt.lat,
+                                        pvt.hAcc, pvt.numSV,
+                                        pvt.year, pvt.month, pvt.day,
+                                        pvt.hour, pvt.min, pvt.sec, pvt.tAcc);
+                            } else {
+                                logf("GPS %02x %02x", pktClass, pktMsgId);
+                                logDump(payload, pktLen);
+                            }
                         }
                         break;
                     }
