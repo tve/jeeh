@@ -270,7 +270,6 @@ struct Sync : Poll<A> {
         assert(n > 0);
         startReq(a, m, p, n);
         while (true) {
-            BlockIRQ irq;
 cycles::usBusy(15);
             if (!cfg.dma.isRunning())
                 break;

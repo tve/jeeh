@@ -90,7 +90,6 @@ struct Sync : Poll<A> {
         if (n > 0) {
             startReq(w, p, n);
             while (true) {
-                BlockIRQ irq;
                 if (!cfg.dma.isRunning())
                     break;
                 if (cfg.dma.completed() == 0)

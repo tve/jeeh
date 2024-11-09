@@ -192,17 +192,6 @@ uint8_t toBcd (uint8_t v) {
     return v + 6 * (v/10);
 }
 
-#if 0
-void sleepNow (int mode) {
-    assert(mode >= sys::STOP0);
-    BlockIRQ irq;
-    PWR[0x00](0, 3) = mode - sys::STOP0; // CR1: LPMS
-    SCB[0x10](2) = 1; // SLEEPDEEP
-    asm ("sev; wfe; wfe");
-    SCB[0x10](2) = 0; // ~SLEEPDEEP
-}
-#endif
-
 DateTime getDate () {
     uint32_t ssr, tod, doy;
     do { // loop until SSR is stable during all reads
