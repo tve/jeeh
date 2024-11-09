@@ -142,11 +142,11 @@ struct CmdWorker : Worker {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                console.read(0, { wId, TTYIN });
+                ttyUart.read(0, { wId, TTYIN });
                 break;
             case TTYIN:
-                logf("%d: '%c'", in.eVal, *console.rxPtr);
-                switch (*console.rxPtr) {
+                logf("%d: '%c'", in.eVal, *ttyUart.rxPtr);
+                switch (*ttyUart.rxPtr) {
                     case 'd':
                         rusher.ledSel = 'd';
                         blinker.enable = false;
@@ -176,7 +176,7 @@ struct CmdWorker : Worker {
                     default:
                         logf("?");
                 }
-                console.read(1, { wId, TTYIN });
+                ttyUart.read(1, { wId, TTYIN });
                 break;
             default:
                 fail();
@@ -262,8 +262,8 @@ int main () {
     watcher.init(); watcher.wName = "watch";
     idler.init();   idler.wName = "idle";
 
-    console.wName = "uart-tty";
-    gpsUart.wName = "uart-gps";
+    ttyUart.wName = "tty-uart";
+    gpsUart.wName = "gps-uart";
 
     Worker::send({ ticker.wId, ticker.RATE, 1 }); // TODO no START?
 

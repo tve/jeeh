@@ -39,8 +39,8 @@ UART1_INSTALL(gpsUart)
 }
 //CG]
 
-uart::Work<UART2_TYPE> console (UART2_CONF);
-UART2_INSTALL(console)
+uart::Work<UART2_TYPE> ttyUart (UART2_CONF);
+UART2_INSTALL(ttyUart)
 
 Pin gpsPps {"A8","U"}; // D6
 
@@ -59,7 +59,7 @@ void initBoard () {
     cycles::init();
     rtc::init();
 
-    console.init(UART2_PINS, 1'000'000);
+    ttyUart.init(UART2_PINS, 1'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running
@@ -71,10 +71,10 @@ void initBoard () {
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1)
-        console.write(buf, len);
+        ttyUart.write(buf, len);
     return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    console.write(ptr, len);
+    ttyUart.write(ptr, len);
 }

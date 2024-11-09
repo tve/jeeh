@@ -1,4 +1,4 @@
-// Echo incoming GPS messages to the serial console.
+// Bidierctional bridge between the tty and GPS serial ports.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -48,24 +48,24 @@ struct Echo : Worker {
         switch (in.eTag) {
             case START:
                 gpsUart.read(0, { wId, GPS_RX });
-                console.read(0, { wId, TTY_RX });
+                ttyUart.read(0, { wId, TTY_RX });
                 break;
 
             case GPS_RX: // gps data received
                 if (ttyPool.add(gpsUart.rxPtr, in.eVal))
-                    ttyBusy = feed(ttyPool, console, TTY_TX);
+                    ttyBusy = feed(ttyPool, ttyUart, TTY_TX);
                 gpsUart.read(in.eVal, { wId, GPS_RX });
                 break;
 
-            case TTY_TX: // console data send done
+            case TTY_TX: // ttyUart data send done
                 if (ttyPool.remove())
-                    ttyBusy = feed(ttyPool, console, TTY_TX);
+                    ttyBusy = feed(ttyPool, ttyUart, TTY_TX);
                 break;
 
-            case TTY_RX: // console data received
-                if (gpsPool.add(console.rxPtr, in.eVal))
+            case TTY_RX: // tty data received
+                if (gpsPool.add(ttyUart.rxPtr, in.eVal))
                     gpsBusy = feed(gpsPool, gpsUart, GPS_TX);
-                console.read(in.eVal, { wId, TTY_RX });
+                ttyUart.read(in.eVal, { wId, TTY_RX });
                 break;
 
             case GPS_TX: // gps data send done

@@ -35,7 +35,7 @@ struct Stream : Worker {
                     else {
                         auto n = snprintf(buf, sizeof buf, "%2d %d\n",
                                             repeat, (int16_t) prev);
-                        console.write(buf, n, { wId, SENT });
+                        ttyUart.write(buf, n, { wId, SENT });
                         repeat = 1;
                         prev = bits;
                     }
