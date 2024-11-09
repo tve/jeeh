@@ -96,6 +96,7 @@ struct Worker {
                 assert(wId > 0);
             workers[wId] = this;
         }
+        send({ wId, 0 }); // send START event (always zero)
         return wId;
     }
 

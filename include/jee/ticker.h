@@ -2,12 +2,12 @@ namespace jeeh {
 
 struct Ticker : Worker {
     constexpr static auto MAX_TIMERS = 20;
-    enum TAG { START, TICK, RATE, DELAY, PERIOD, CANCEL };
+    enum TAG { START, TICK, DELAY, PERIOD, CANCEL };
 
-    Ticker () : Worker ("Ticker") {}
+    Ticker () : Worker ("tick") {}
 
     uint8_t init () {
-        setRate(100);
+        setRate(1);
         return Worker::init();
     }
 
@@ -56,10 +56,12 @@ private:
                 // can't return as reply, multiple timers may have expired
                 assert(out.eDst == 0);
                 break;
+#if 0
             case RATE:
                 out.eVal = tRate;
                 setRate(in.eVal);
                 break;
+#endif
             case DELAY:
             case PERIOD:
                 add(in.eVal, out, in.eTag == PERIOD);

@@ -264,7 +264,7 @@ logDump(snBuf, sizeof snBuf);
 }
 
 struct SpiWorker : Worker {
-    enum TAG { TX, TX1, TX2, TX3, RX, DONE };
+    enum TAG { START, TX, TX1, TX2, TX3, RX, DONE };
 
     uint8_t calls =0;
     bool done =false;
@@ -277,6 +277,8 @@ private:
         ++calls;
 
         switch (in.eTag) {
+            case START:
+                break;
             case TX:
                 spiWork.start(true, (uint8_t*) "x", 1, { wId, TX1 });
                 break;

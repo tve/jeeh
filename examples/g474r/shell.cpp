@@ -61,10 +61,6 @@ int main () {
     blinker.init();
     shell.init();
 
-    Worker::send({ ticker.wId, ticker.RATE, 1 });
-    Worker::send({ blinker.wId, blinker.START });
-    Worker::send({ shell.wId, shell.START });
-
     while (true)
         asm ("wfi");
 }

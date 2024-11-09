@@ -133,8 +133,7 @@ int main () {
     auto n = strlen(s);
 
     Matrix matrix;
-    auto mxId = matrix.init();
-    Worker::send({ mxId, matrix.START });
+    matrix.init();
 
     while (true) {
         //auto start = cycles::count();

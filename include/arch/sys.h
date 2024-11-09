@@ -6,6 +6,8 @@ void fail (void const* addr =__builtin_return_address(0),
            int line =__builtin_LINE());
 [[noreturn]]
 void hardFaultHandler (uint32_t* sp); // weak, can be redefined
+[[noreturn]]
+void systemReset ();
 
 void logf (char const* fmt ...);
 void logDump (void const* ptr, int len =16, char const* msg =nullptr);

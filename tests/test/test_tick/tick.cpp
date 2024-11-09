@@ -10,7 +10,7 @@ void setUp () {}
 void tearDown () {}
 
 void testTicker () {
-    auto tkId = ticker.init();
+auto tkId = ticker.init();
     TEST_ASSERT_GREATER_THAN(0, tkId);
 
     // 250x 1 ms busy is 250 ms elapsed, even with a ticker rate of 100 ms
@@ -18,8 +18,6 @@ void testTicker () {
         cycles::msBusy(1);
         TEST_ASSERT_INT_WITHIN(1, i, ticker.millis());
     }
-
-    Worker::send({ tkId, ticker.RATE, 1 });
 
     // the simpler case is 50x 1 ms when the ticker rate is also 1 ms
     auto start = ticker.millis();
@@ -77,10 +75,8 @@ void testSequential () {
     TEST_ASSERT_GREATER_THAN(0, sdId);
     TEST_ASSERT_GREATER_THAN(sdId, tkId);
 
-    Worker::send({ tkId, ticker.RATE, 1 });
-
     // start 3 delays in sequence, for 5, 10, and 20 ms, respectively
-    Worker::send({ sdId, worker.START });
+    // FIXME Worker::send({ sdId, worker.START });
 
     int n = 0;
     do { asm ("wfi"); ++n; } while (!worker.done);
@@ -133,8 +129,6 @@ void testParallel () {
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
-
-    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
     Worker::send({ pdId, worker.START });
@@ -191,8 +185,6 @@ void testCancelled () {
 
     TEST_ASSERT_GREATER_THAN(0, cdId);
     TEST_ASSERT_GREATER_THAN(cdId, tkId);
-
-    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
     // after 5 ms, the 15 ms delay is cancelled so it won't trigger
@@ -254,8 +246,6 @@ void testPeriodic () {
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
-
-    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start 3 delays in parallel, one of them is periodic
     // another delay cancels the periodic one
@@ -321,8 +311,6 @@ void testPostpone () {
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
-
-    Worker::send({ tkId, ticker.RATE, 1 });
 
     // start two periodic timers and verify the sequence in which they fired
     Worker::send({ pdId, worker.START });

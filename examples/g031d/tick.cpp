@@ -29,9 +29,7 @@ int main () {
 
     Blinker blinker;
     ticker.init();
-    auto id = blinker.init();
-
-    Worker::send({ id, blinker.START });
+    blinker.init();
 
     while (true)
         asm ("wfi");

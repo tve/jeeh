@@ -77,11 +77,8 @@ int main () {
     msfVcc = 1;
 
     Stream stream;
-    auto tId = ticker.init();
-    auto sId = stream.init();
-
-    Worker::send({ tId, ticker.RATE, 1 });
-    Worker::send({ sId, stream.START });
+    ticker.init();
+    stream.init();
 
     while (true)
         asm ("wfi");

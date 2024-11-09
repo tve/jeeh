@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "app"
+#define PIOENV  "stream"
 
 //CG1 board leds
 #define LED  "A1"
@@ -60,6 +60,7 @@ void initBoard () {
     rtc::init();
 
     ttyUart.init(UART2_PINS, 1'000'000);
+    ttyUart.wName = "tty-uart";
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running

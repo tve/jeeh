@@ -11,10 +11,10 @@ namespace jeeh {
 #endif
 
 struct ExtIrq : Worker {
-    enum TAG { FIRED };
+    enum TAG { START, FIRED };
     enum MODE { NONE, RISE, FALL, BOTH };
 
-    ExtIrq () : Worker ("ExtIrq") {}
+    ExtIrq () : Worker ("exti") {}
 
     uint8_t init () {
 #if !(STM32L0 | STM32WL)
@@ -69,6 +69,8 @@ private:
 
     Event process (Event in, Event) override {
         switch (in.eTag) {
+            case START:
+                break;
             case FIRED:
                 for (auto i = 0; in.eVal != 0; ++i, in.eVal >>= 1)
                     if (in.eVal & 1) {

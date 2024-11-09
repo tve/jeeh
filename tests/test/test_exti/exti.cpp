@@ -75,10 +75,8 @@ void testExti () {
     TEST_ASSERT_GREATER_THAN(wkId, exId);
     TEST_ASSERT_GREATER_THAN(exId, tkId);
 
-    Worker::send({ tkId, ticker.RATE, 1 });
-
     // start 3 delays and set up an EXTI pin interrupt
-    Worker::send({ wkId, worker.START });
+    // FIXME Worker::send({ wkId, worker.START });
 
     int n = 0;
     do { asm ("wfi"); ++n; } while (!worker.done);

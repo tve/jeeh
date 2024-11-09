@@ -315,7 +315,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg;
 
-    enum TAG { RXDONE, TXDONE };
+    enum TAG { START, RXDONE, TXDONE };
 
     Event pending;
 
@@ -366,6 +366,8 @@ struct Work : Sync<A,D,T,R>, Worker {
 private:
     Event process (Event in, Event out) override {
         switch (in.eTag) {
+            case START:
+                break;
             case RXDONE:
                 pending.eVal = BASE::finishReq(false, nullptr, 0);
                 reply(pending);

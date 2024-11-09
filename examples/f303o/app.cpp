@@ -22,6 +22,8 @@ struct RushWorker : Worker {
     uint16_t ppsPrev =0;    // cycle count of last PPS pulse
     bool dump =false;
 
+    RushWorker () : Worker ("rush") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -77,6 +79,8 @@ struct GpsWorker : Worker {
     DateTime now;
     bool dump =false;
 
+    GpsWorker () : Worker ("gps") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -120,6 +124,8 @@ struct BlinkWorker : Worker {
 
     bool enable =false;
 
+    BlinkWorker () : Worker ("blink") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -139,6 +145,8 @@ struct BlinkWorker : Worker {
 struct CmdWorker : Worker {
     enum TAG { START, TTYIN };
 
+    CmdWorker () : Worker ("cmd") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -147,6 +155,8 @@ struct CmdWorker : Worker {
             case TTYIN:
                 logf("%d: '%c'", in.eVal, *ttyUart.rxPtr);
                 switch (*ttyUart.rxPtr) {
+                    case 'R':
+                        systemReset();
                     case 'd':
                         rusher.ledSel = 'd';
                         blinker.enable = false;
@@ -188,6 +198,8 @@ struct CmdWorker : Worker {
 struct WatchWorker : Worker {
     enum TAG { START, TICK };
 
+    WatchWorker () : Worker ("watch") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -207,6 +219,8 @@ struct WatchWorker : Worker {
 struct IdleWorker : Worker {
     enum TAG { START, EDGE };
 
+    IdleWorker () : Worker ("idle") {}
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
@@ -223,6 +237,22 @@ struct IdleWorker : Worker {
     }
 } idler;
 
+void initGps () {
+    gpsUart.init(UART1_PINS, 9600);
+    gpsUart.wName = "gps-uart";
+
+    const uint8_t config [] = {
+        // enable NAV-PVT
+        0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x07, 0x01, 0x13, 0x51,
+        // UART1: NMEA off, UBX on, switch to 1 Mbaud
+        0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
+        0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x76, 0x4e,
+    };
+    gpsUart.write(config, sizeof config);
+    gpsUart.baudRate(1'000'000);
+}
+
 int main () {
     initBoard();
 
@@ -233,46 +263,20 @@ int main () {
         case 2:  logf("system reset"); break;
     }
 
-    dcfVcc = 1;
-    msfVcc = 1;
+    dcfVcc = 1; // enable DCF77 module
+    msfVcc = 1; // enable MSF60 module
 
-    gpsUart.init(UART1_PINS, 9600);
-
-#if 1
-    const uint8_t gpsConfig [] = { // UART1: 1 Mbaud
-        // enable NAV-PVT
-        0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x07, 0x01, 0x13, 0x51,
-        // NMEA off, UBX on, 1 Mbaud
-        0xb5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc0, 0x08,
-        0x00, 0x00, 0x40, 0x42, 0x0f, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x76, 0x4e,
-    };
-    gpsUart.write(gpsConfig, sizeof gpsConfig);
-    cycles::msBusy(10);
-    gpsUart.baudRate(1'000'000);
-#endif
+    initGps ();
 
     // start workers in decreasing priority
-    ticker.init();  ticker.wName = "tick";
-    extier.init();  extier.wName = "exti";
-    rusher.init();  rusher.wName = "rush";
-    gpser.init();   gpser.wName = "gps";
-    blinker.init(); blinker.wName = "blink";
-    cmder.init();   cmder.wName = "cmd";
-    watcher.init(); watcher.wName = "watch";
-    idler.init();   idler.wName = "idle";
-
-    ttyUart.wName = "tty-uart";
-    gpsUart.wName = "gps-uart";
-
-    Worker::send({ ticker.wId, ticker.RATE, 1 }); // TODO no START?
-
-    Worker::send({ rusher.wId, rusher.START });
-    Worker::send({ gpser.wId, gpser.START });
-    Worker::send({ blinker.wId, blinker.START });
-    Worker::send({ cmder.wId, cmder.START });
-    Worker::send({ watcher.wId, watcher.START });
-    Worker::send({ idler.wId, idler.START });
+    extier.init();
+    ticker.init();
+    rusher.init();
+    gpser.init();
+    blinker.init();
+    cmder.init();
+    watcher.init();
+    idler.init();
 
     while (true)
         asm ("wfi");

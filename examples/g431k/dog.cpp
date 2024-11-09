@@ -41,11 +41,8 @@ int main () {
     dog::init(2);  // will fire approx. every 2 secs
     Kicker kicker;
 
-    auto tkId = ticker.init();
-    auto kkId = kicker.init();
-
-    Worker::send({ tkId, ticker.RATE, 1 });
-    Worker::send({ kkId, kicker.START });
+    ticker.init();
+    kicker.init();
 
     int i = 0;
     while (true) {

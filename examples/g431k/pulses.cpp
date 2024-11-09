@@ -68,7 +68,7 @@ int main () {
     auto rId = replier.init();
     auto sId = sender.init();
     pin3 = 1; // 23 µs
-    Worker::send({ sId, sender.START, rId });
+    // FIXME Worker::send({ sId, sender.START, rId });
     pin3 = 0; // 85 µs
     pin2 = 0; // 86 µs
         

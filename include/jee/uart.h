@@ -45,12 +45,13 @@ struct Poll {
     }
 
     void transfer (bool w, uint8_t* p, uint16_t n) const {
-        if (w)
+        if (w) {
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
                 UART[TDR] = *p;
-if (*p++ == '\n' || 1) while (!UART[SR](6)) {} // ~TC FIXME
             }
+            while (!UART[SR](6)) {} // ~TC
+        }
     }
 };
 
@@ -112,7 +113,9 @@ protected:
     }
 
     void finishReq (uint8_t w, void* p, uint16_t n) const {
-        if (!w)
+        if (w)
+            while (!UART[BASE::SR](6)) {} // ~TC
+        else            
             cache::inval(p, n);
     }
 };
@@ -122,7 +125,7 @@ struct Work : Sync<A,D,T,R>, Worker {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg, BASE::UART;
 
-    enum TAG { RXIDLE, RXHALF, RXFULL, TXDONE };
+    enum TAG { START, RXIDLE, RXHALF, RXFULL, TXDONE };
 
     Event rxPending, txPending;
 
@@ -215,6 +218,8 @@ private:
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
+            case START:
+                break;
             case RXIDLE:
             case RXHALF:
             case RXFULL:

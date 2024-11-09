@@ -1,4 +1,4 @@
-// Bidierctional bridge between the tty and GPS serial ports.
+// Bidirectional bridge between the tty and GPS serial ports.
 
 #include <jee.h>
 #include <jee/hal.h>
@@ -94,8 +94,7 @@ int main () {
     gpsUart.init(UART1_PINS, 9600);
 
     Echo echo;
-    auto id = echo.init();
-    Worker::send({ id, echo.START });
+    echo.init();
 
     while (true)
         led = +gpsPps;
