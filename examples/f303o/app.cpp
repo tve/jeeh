@@ -99,7 +99,7 @@ struct GpsWorker : Worker {
                                         pvt.hour, pvt.min, pvt.sec };
                                 auto dt = now.asText();
                                 logf("fix %d pos %d %d ha %d sv %d %s ta %d",
-                                        pvt.fixType, lon, lat, pvt.hAcc,
+                                        pvt.fixType, lat, lon, pvt.hAcc,
                                         pvt.numSV, dt.buf, pvt.tAcc);
                             } else {
                                 logf("GPS %02x %02x",
