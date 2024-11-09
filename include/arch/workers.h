@@ -13,7 +13,7 @@ struct Event {
 };
 
 struct EventList {
-    constexpr static auto MAX_EVENTS = 25;
+    constexpr static auto MAX_EVENTS = 50;
 
     EventList () {
         // adjust priorities before they might interfere with "real" IRQs
@@ -79,7 +79,7 @@ private:
 };
 
 struct Worker {
-    constexpr static auto MAX_WORKERS = 10;
+    constexpr static auto MAX_WORKERS = 20;
     enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
 
     char const* wName;

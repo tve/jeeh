@@ -39,6 +39,7 @@ struct ExtIrq : Worker {
     void irqExti () {
         uint16_t pr = EXTI[PR];
         EXTI[PR] = pr; // clear
+        cycle = cycles::count();
         trigger(FIRED, pr);
     }
 
@@ -64,13 +65,17 @@ struct ExtIrq : Worker {
 
 private:
     Event events [16];
+    uint16_t cycle;
 
     Event process (Event in, Event) override {
         switch (in.eTag) {
             case FIRED:
                 for (auto i = 0; in.eVal != 0; ++i, in.eVal >>= 1)
-                    if (in.eVal & 1)
-                        reply(events[i]);
+                    if (in.eVal & 1) {
+                        auto evt = events[i];
+                        evt.eVal = cycle;
+                        reply(evt);
+                    }
                 break;
             default:
                 fail();

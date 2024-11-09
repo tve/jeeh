@@ -11,16 +11,9 @@ struct NavPvt {
     int8_t   valid;      //       Validity Flags (see graphic below)
     uint32_t tAcc;       // ns    Time accuracy estimate (UTC)
     int32_t  nano;       // ns    Fraction of second, range -1e9 .. 1e9 (UTC)
-    uint8_t  fixType;    //       GNSSfix Type, range 0..5
-                         //       0x00 = No Fix
-                         //       0x01 = Dead Reckoning only
-                         //       0x02 = 2D-Fix
-                         //       0x03 = 3D-Fix
-                         //       0x04 = GNSS + dead reckoning combined
-                         //       0x05 = Time only fix
-                         //       0x06..0xff: reserved
-    int8_t   flags;      //       Fix Status Flags (see graphic below)
-    uint8_t  reserved1;  //       Reserved
+    uint8_t  fixType;    //       0: No 1: DR 2: 2D 3: 3D 4: GNSS+DR 5: Time
+    int8_t   flags;      //       Fix Status Flags
+    uint8_t  _1;         //       Reserved
     uint8_t  numSV;      //       Number of satellites used in Nav Solution
     int32_t  lon;        // deg   Longitude (1e-7)
     int32_t  lat;        // deg   Latitude (1e-7)
@@ -36,8 +29,8 @@ struct NavPvt {
     uint32_t sAcc;       // mm/s  Speed Accuracy Estimate
     uint32_t headingAcc; // deg   Heading Accuracy Estimate (1e-5)
     uint16_t pDOP;       //       Position DOP (0.01)
-    int16_t  reserved2;  //       Reserved
-    uint32_t reserved3;  //       Reserved
+    int16_t  _2;         //       Reserved
+    uint32_t _3;         //       Reserved
     int32_t  headVeh;    // deg   Heading of vehicle
     int16_t  magDec;     // deg   Magnetic declination
     uint16_t magAcc;     // deg   Magnetic declination accuracy

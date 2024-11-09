@@ -9,23 +9,38 @@ using namespace jeeh;
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
+ExtIrq extier;
+EXTIRQ_INSTALL(extier)
+
 struct RushWorker : Worker {
-    enum TAG { START, TRACK, TICK };
+    enum TAG { START, TRACK, TICK, PPS };
 
     char ledSel =0;         // which signal to display on the LED
     uint8_t dcfNow, msfNow; // values captured during last tick
     Event tracker;          // worker to notify on each edge change
+    Pin ppsPin {"A8","D"};  // 1PPS signal from the GPS module
+    uint16_t ppsPrev =0;    // cycle count of last PPS pulse
+    bool dump =false;
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 ticker.periodic(1, TICK);
+                extier.enable(ppsPin, extier.RISE, PPS);
                 break;
             case TRACK:
                 tracker = take(out); // side-effect: clear "out"
                 break;
             case TICK:
                 out = ticked(); // may have a reply for tracking worker
+                break;
+            case PPS:
+                if (dump) {
+                    uint16_t lag = cycles::count() - in.eVal;
+                    uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
+                    logf("pps lag %d cy, clk diff %d cy", lag, diff);
+                }
+                ppsPrev = in.eVal;
                 break;
             default:
                 fail();
@@ -47,6 +62,7 @@ private:
         switch (ledSel) {
             case 'd': led = dcfNow; break;
             case 'm': led = msfNow; break;
+            case 'g': led = +ppsPin; break;
         }
 
         return tracker;
@@ -132,16 +148,18 @@ struct CmdWorker : Worker {
                 logf("%d: '%c'", in.eVal, *console.rxPtr);
                 switch (*console.rxPtr) {
                     case 'd':
-                        blinker.enable = false;
                         rusher.ledSel = 'd';
+                        blinker.enable = false;
                         break;
                     case 'm':
-                        blinker.enable = false;
                         rusher.ledSel = 'm';
+                        blinker.enable = false;
                         break;
                     case 'g':
+                        rusher.ledSel = 'g';
                         gpser.dump = !gpser.dump;
                         if (!gpser.dump) {
+                            rusher.dump = !rusher.dump;
                             ubx::Maidenhead mh (gpser.lat, gpser.lon);
                             logf("latitude %d, longitude %d, maidenhead %s",
                                     gpser.lat, gpser.lon, mh.buf);
@@ -150,7 +168,7 @@ struct CmdWorker : Worker {
                     case 'l':
                         blinker.enable = !blinker.enable;
                         if (blinker.enable)
-                            rusher.ledSel = 0; // stop tracking DCF or MSF
+                            rusher.ledSel = 0; // stop tracking other signals
                         break;
                     case 's':
                         showStats();
@@ -236,6 +254,7 @@ int main () {
 
     // start workers in decreasing priority
     ticker.init();  ticker.wName = "tick";
+    extier.init();  extier.wName = "exti";
     rusher.init();  rusher.wName = "rush";
     gpser.init();   gpser.wName = "gps";
     blinker.init(); blinker.wName = "blink";
@@ -243,7 +262,11 @@ int main () {
     watcher.init(); watcher.wName = "watch";
     idler.init();   idler.wName = "idle";
 
+    console.wName = "uart-tty";
+    gpsUart.wName = "uart-gps";
+
     Worker::send({ ticker.wId, ticker.RATE, 1 }); // TODO no START?
+
     Worker::send({ rusher.wId, rusher.START });
     Worker::send({ gpser.wId, gpser.START });
     Worker::send({ blinker.wId, blinker.START });
