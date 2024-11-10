@@ -92,33 +92,12 @@ struct GpsWorker : Worker {
                 auto i = 0U;
                 while (i < in.eVal)
                     if (ubx.parse(gpsUart.rxPtr[i++])) {
-                        if (dump) {
-                            if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07) {
-                                auto& pvt = *(ubx::NavPvt*) ubx.payload;
-                                lon = pvt.flags & 1 ? pvt.lon : 0;
-                                lat = pvt.flags & 1 ? pvt.lat : 0;
-
-                                // now will only be exact when ss != || ff != 0
-                                now = { pvt.year % 100, pvt.month, pvt.day,
-                                        pvt.hour, pvt.min, pvt.sec };
-                                if (pvt.nano < 0 && now.ss > 0) {
-                                    --now.ss;
-                                    pvt.nano += 1'000'000'000;
-                                }
-                                if (pvt.nano > 0)
-                                    now.ff = pvt.nano / (1'000'000'000 / 256);
-                                if ((pvt.valid & 3) != 3)
-                                    now.yr = 0; // flag as invalid
-
-                                auto dt = now.asText();
-                                logf("fix %d pos %d %d ha %d sv %d %s ta %d",
-                                        pvt.fixType, lat, lon, pvt.hAcc,
-                                        pvt.numSV, dt.buf, pvt.tAcc);
-                            } else {
-                                logf("GPS %02x %02x",
-                                        ubx.pktClass, ubx.pktMsgId);
-                                logDump(ubx.payload, ubx.pktLen);
-                            }
+                        if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07)
+                            getPvtInfo();
+                        else if (dump) {
+                            logf("GPS %02x %02x",
+                                    ubx.pktClass, ubx.pktMsgId);
+                            logDump(ubx.payload, ubx.pktLen);
                         }
                         break;
                     }
@@ -130,6 +109,32 @@ struct GpsWorker : Worker {
         }
         return out;
     }
+
+private:
+    void getPvtInfo () {
+        auto& pvt = *(ubx::NavPvt*) ubx.payload;
+        lon = pvt.flags & 1 ? pvt.lon : 0;
+        lat = pvt.flags & 1 ? pvt.lat : 0;
+
+        // now will only be exact when ss != || ff != 0
+        now = { pvt.year % 100, pvt.month, pvt.day,
+                pvt.hour, pvt.min, pvt.sec };
+        if (pvt.nano < 0 && now.ss > 0) {
+            --now.ss;
+            pvt.nano += 1'000'000'000;
+        }
+        if (pvt.nano > 0)
+            now.ff = pvt.nano / (1'000'000'000 / 256);
+        if ((pvt.valid & 3) != 3)
+            now.yr = 0; // flag as invalid
+        if (dump) {
+            auto dt = now.asText();
+            logf("fix %d pos %d %d ha %d sv %d %s ta %d",
+                    pvt.fixType, lat, lon, pvt.hAcc,
+                    pvt.numSV, dt.buf, pvt.tAcc);
+        }
+    }
+
 } gpser;
 
 struct BlinkWorker : Worker {
