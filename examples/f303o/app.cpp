@@ -18,7 +18,6 @@ struct RushWorker : Worker {
     char ledSel =0;         // which signal to display on the LED
     uint8_t dcfNow, msfNow; // values captured during last tick
     Event tracker;          // worker to notify on each edge change
-    Pin ppsPin {"A8","D"};  // 1PPS signal from the GPS module
     uint16_t ppsPrev =0;    // cycle count of last PPS pulse
     bool dump =false;
 
@@ -28,8 +27,8 @@ struct RushWorker : Worker {
         switch (in.eTag) {
             case START:
                 ticker.periodic(1, TICK);
-                extier.enable(ppsPin, extier.RISE, PPS);
-                assert(ppsPin.pin() == 8); // TODO hard-coded for "A8"
+                extier.enable(gpsPps, extier.RISE, PPS);
+                assert(gpsPps.pin() == 8);  // TODO hard-coded for "A8"
                 irqEnable(Irq::EXTI9_5, 0); // set PPS pin to highest IRQ prio
                 break;
             case TRACK:
@@ -66,7 +65,7 @@ private:
         switch (ledSel) {
             case 'd': led = dcfNow; break;
             case 'm': led = msfNow; break;
-            case 'g': led = +ppsPin; break;
+            case 'g': led = +gpsPps; break;
         }
 
         return tracker;
