@@ -72,12 +72,14 @@ private:
             case START:
                 break;
             case FIRED:
-                for (auto i = 0; in.eVal != 0; ++i, in.eVal >>= 1)
-                    if (in.eVal & 1) {
-                        auto evt = events[i];
-                        evt.eVal = cycle;
-                        reply(evt);
-                    }
+                // count leading zeros as quick way to iterate through "1" bits
+                for (uint32_t v = in.eVal; v != 0; ) {
+                    auto i = 31 - __builtin_clz(v); // find next bit
+                    v ^= 1 << i;                    // and clear it
+                    auto evt = events[i];
+                    evt.eVal = cycle;
+                    reply(evt);
+                }
                 break;
             default:
                 fail();

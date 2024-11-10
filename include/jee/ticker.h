@@ -7,6 +7,7 @@ struct Ticker : Worker {
     Ticker () : Worker ("tick") {}
 
     uint8_t init () {
+        SCB.byte(0x23) = 0xBF; // irq #15: SysTick prio lowered slightly
         setRate(1);
         return Worker::init();
     }

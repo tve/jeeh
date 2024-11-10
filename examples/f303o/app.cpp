@@ -29,6 +29,8 @@ struct RushWorker : Worker {
             case START:
                 ticker.periodic(1, TICK);
                 extier.enable(ppsPin, extier.RISE, PPS);
+                assert(ppsPin.pin() == 8); // TODO hard-coded for "A8"
+                irqEnable(Irq::EXTI9_5, 0); // set PPS pin to highest IRQ prio
                 break;
             case TRACK:
                 tracker = take(out); // side-effect: clear "out"
