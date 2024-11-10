@@ -38,6 +38,7 @@ struct RushWorker : Worker {
                 out = ticked(); // may have a reply for tracking worker
                 break;
             case PPS:
+assert((uint16_t) (cycles::count() - in.eVal) < 10000);
                 if (dump) {
                     uint16_t lag = cycles::count() - in.eVal;
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
@@ -160,7 +161,10 @@ struct BlinkWorker : Worker {
 } blinker;
 
 struct CmdWorker : Worker {
-    enum TAG { START, TTYIN };
+    enum TAG { START, TTYIN, PERIOD };
+
+    uint32_t regs [26] ={}; // 'A'..'Z'
+    uint32_t value =0, lastVal =0;
 
     CmdWorker () : Worker ("cmd") {}
 
@@ -170,46 +174,84 @@ struct CmdWorker : Worker {
                 ttyUart.read(0, { wId, TTYIN });
                 break;
             case TTYIN:
-                logf("%d: '%c'", in.eVal, *ttyUart.rxPtr);
-                switch (*ttyUart.rxPtr) {
-                    case 'R':
-                        systemReset();
-                    case 'd':
-                        rusher.ledSel = 'd';
-                        blinker.enable = false;
-                        break;
-                    case 'm':
-                        rusher.ledSel = 'm';
-                        blinker.enable = false;
-                        break;
-                    case 'g':
-                        rusher.ledSel = 'g';
-                        gpser.dump = !gpser.dump;
-                        if (!gpser.dump) {
-                            rusher.dump = !rusher.dump;
-                            ubx::Maidenhead mh (gpser.lat, gpser.lon);
-                            logf("latitude %d, longitude %d, maidenhead %s",
-                                    gpser.lat, gpser.lon, mh.buf);
-                        }
-                        break;
-                    case 'l':
-                        blinker.enable = !blinker.enable;
-                        if (blinker.enable)
-                            rusher.ledSel = 0; // stop tracking other signals
-                        break;
-                    case 's':
-                        showStats();
-                        break;
-                    default:
-                        logf("?");
-                }
+                doCmd(*ttyUart.rxPtr);
                 ttyUart.read(1, { wId, TTYIN });
+                break;
+            case PERIOD:
+                logf("bingo");
                 break;
             default:
                 fail();
         }
         return out;
     }
+
+    void doCmd (char ch) {
+        // digits are collected as decimal number
+        if ('0' <= ch && ch <= '9') {
+            value = 10 * value + (ch - '0');
+            return;
+        }
+        // upper case stores the current value in register A..Z
+        if ('A' <= ch && ch <= 'Z') {
+            regs[ch-'A'] = value;
+            value = 0;
+            return;
+        }
+        // other commands can still get the value as lastVal
+        lastVal = value;
+        value = 0;
+
+        // dispatch on all other characters as cmd code
+        switch (ch) {
+            case '!':
+                systemReset();
+            case 'd':
+                rusher.ledSel = 'd';
+                blinker.enable = false;
+                break;
+            case 'm':
+                rusher.ledSel = 'm';
+                blinker.enable = false;
+                break;
+            case 'g':
+                rusher.ledSel = 'g';
+                gpser.dump = !gpser.dump;
+                if (!gpser.dump) {
+                    rusher.dump = !rusher.dump;
+                    ubx::Maidenhead mh (gpser.lat, gpser.lon);
+                    logf("latitude %d, longitude %d, maidenhead %s",
+                            gpser.lat, gpser.lon, mh.buf);
+                }
+                break;
+            case 'l':
+                blinker.enable = !blinker.enable;
+                if (blinker.enable)
+                    rusher.ledSel = 0; // stop tracking other signals
+                break;
+            case 's':
+                showStats();
+                break;
+            case 'h':
+                showHistory();
+                break;
+            case 'p':
+                if (lastVal != 0)
+                    ticker.periodic(100*lastVal, PERIOD);
+                else
+                    ticker.cancel(PERIOD);
+                break;
+            case 'r':
+                for (auto c = 'A'; c <= 'Z'; ++c)
+                    if (regs[c-'A'] != 0)
+                        logf("  %c = %u", c, regs[c-'A']);
+                break;
+            default:
+                logf("? !=reset d)cf m)sf g)ps l)ed s)tats h)istory p)eriod"
+                              " r)egs");
+        }
+    }
+
 } cmder;
 
 struct WatchWorker : Worker {
@@ -279,6 +321,8 @@ int main () {
         case 1:  logf("power up"); break;
         case 2:  logf("system reset"); break;
     }
+    //Worker::showHistory(); // if called here, no names will be shown ...
+
 
     dcfVcc = 1; // enable DCF77 module
     msfVcc = 1; // enable MSF60 module
@@ -294,6 +338,9 @@ int main () {
     cmder.init();
     watcher.init();
     idler.init();
+
+    Worker::showHistory(); // a bit late, but now all workers have names
+    cmder.doCmd('?'); // shows a help msg
 
     while (true)
         asm ("wfi");

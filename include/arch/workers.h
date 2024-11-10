@@ -79,8 +79,10 @@ private:
 };
 
 struct Worker {
-    constexpr static auto MAX_WORKERS = 20;
+    constexpr static auto MAX_WORKERS = 20, MAX_HISTORY = 16;
+    constexpr static auto HIST_BASE = 0x2000'4000; // TODO not cleared on reset
     enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
+    enum HISTS { H_SEND, H_REPLY, H_IRQ, H_PULL };
 
     char const* wName;
 
@@ -103,6 +105,7 @@ struct Worker {
     static void send (Event evt, Event done ={}) {
         assert(irqState() == 0); // may not be called from an IRQ handler
         assert(evt.eDst > level);
+        saveInHist(H_SEND, evt);
         dispatch(evt.eDst, evt, done);
     }
 
@@ -132,6 +135,42 @@ struct Worker {
     }
 #endif // NOSTATS
 
+#if NOHISTS
+    static void showHistory () {}
+#else
+    static inline Event* history;
+    static inline uint8_t histPos;
+
+    static void showHistory () {
+        Event histBuf [MAX_HISTORY];
+        memcpy(histBuf, (Event*) HIST_BASE, sizeof histBuf);
+
+        // find first entry not preceded by an empty entry
+        auto first = 0;
+        for (auto i = 1; i < MAX_HISTORY; ++i)
+            if (histBuf[i] && !histBuf[i-1])
+                first = i;
+        // show entries, wrap around at end
+        logf("history: max %d", MAX_HISTORY-1);
+        for (auto i = 0; i < MAX_HISTORY; ++i) {
+            auto evt = histBuf[(first+i) % MAX_HISTORY];
+            if (!evt)
+                break;
+            auto id = evt.eDst & 0x3F;
+            auto name = id < MAX_WORKERS && workers[id] != nullptr ?
+                                workers[id]->wName : "";
+            logf("%4d: [%c] dst %-3d tag %-3d val %-5d %s", 
+                    i, "SRIP"[evt.eDst>>6], id, evt.eTag, evt.eVal, name);
+        }
+
+        // enable history logging once shown
+        if (history == nullptr) {
+            memset((Event*) HIST_BASE, 0, MAX_HISTORY * sizeof (Event));
+            history = (Event*) HIST_BASE;
+        }
+    }
+#endif // NOHISTS
+
     static void irqClear (Irq irq) {
         auto num = (uint16_t) irq;
         NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
@@ -154,7 +193,9 @@ protected:
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler
-        wPend.push({ wId, tag, val });
+        Event evt { wId, tag, val };
+        saveInHist(H_IRQ, evt);
+        wPend.push(evt);
         if (wId > level) {
             SCB[0x04](28) = 1; // ICSR PENDSVSET
             stats(S_PREEMPT);
@@ -167,6 +208,7 @@ protected:
             auto w = workers[dst];
             assert(dst <= level && w != nullptr);
             w->stats(S_REPLY);
+            saveInHist(H_REPLY, evt);
             w->wPend.push(evt);
         }
     }
@@ -181,6 +223,19 @@ private:
 #else
     void stats (STATS s) { ++wStats[s]; }
 #endif
+
+    static void saveInHist (HISTS type, Event evt) {
+#if NOHISTS
+        (void) type, (void) evt;
+#else
+        if (history != nullptr) {
+            evt.eDst |= type << 6;
+            history[histPos] = evt;
+            histPos = (histPos+1) % MAX_HISTORY;
+            history[histPos] = {}; // clear next entry to mark the end
+        }
+#endif
+    }
 
     static uint32_t irqState () {
         uint32_t ipsr;
@@ -211,6 +266,7 @@ private:
         if (evt.eDst != 0) {
             unpend(); // use recursion to process in FIFO iso LIFO order
             stats(S_DELAY);
+            saveInHist(H_PULL, evt);
             process(evt, {});
         }
     }
