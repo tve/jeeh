@@ -136,7 +136,7 @@ private:
 } gpser;
 
 struct Adjuster : Worker {
-    enum TAG { START };
+    enum TAG { START, ADJUST };
 
     Adjuster () : Worker ("adjust") {}
 
@@ -146,9 +146,10 @@ struct Adjuster : Worker {
         // use F303RC's TIM3 in ext clock mode 1, count 1 PPS up to 32
         RCC(ena::TIM3,1) = 1;
         TIM3[SMCR] = (6<<4) | (7<<0); // TS=TI2FP2 SMS=ExtClk1
-        TIM3[ARR] = 31;     // auto-reload
-        TIM3[CR2] = (2<<4); // MMS update
-        TIM3[CR1] = 1;      // CEN
+        TIM3[ARR] = 31;      // auto-reload
+        TIM3[CR2] = (2<<4);  // MMS update
+        TIM3[DIER] = (1<<0); // UIE
+        TIM3[CR1] = 1;       // CEN
 
         // use TIM2 as counter for the lseIn pin, as slave reset by TIM3
         RCC(ena::TIM2,1) = 1;
@@ -157,6 +158,7 @@ struct Adjuster : Worker {
         TIM2[CCER] = (1<<4);  // CC2E
         TIM2[CR1] = 1;        // CEN
 
+        irqEnable(Irq::TIM3);
         return Worker::init();
     }
 
@@ -168,15 +170,25 @@ struct Adjuster : Worker {
         switch (in.eTag) {
             case START:
                 break;
+            case ADJUST:
+                if (flag("Ga"))
+                    logf("adjust %d", lseDiff());
+                break;
             default:
                 fail();
         }
         return out;
     }
 
-    enum { CR1=0x00,CR2=0x04,SMCR=0x08,CCMR1=0x18,CCER=0x20,
+    void irqCapture () {
+        TIM3[SR] = 0; // clear interrupt
+        trigger(ADJUST);
+    }
+
+    enum { CR1=0x00,CR2=0x04,SMCR=0x08,DIER=0x0C,SR=0x10,CCMR1=0x18,CCER=0x20,
             CNT=0x24,ARR=0x2C,CCR2=0x38 };
 } adjuster;
+IRQ_HANDLER(TIM3, adjuster.irqCapture)
 
 struct Blinker : Worker {
     enum TAG { START, TICK };
