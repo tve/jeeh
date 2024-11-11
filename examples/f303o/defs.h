@@ -42,7 +42,7 @@ UART1_INSTALL(gpsUart)
 uart::Work<UART2_TYPE> ttyUart (UART2_CONF);
 UART2_INSTALL(ttyUart)
 
-Pin gpsPps {"A8","U"}; // D6
+Pin gpsPps {"A8","U10"}; // D6
 
 Pin dcfPon {"B7","P"}, // D9
     dcfDat {"A4","U"}, // D10

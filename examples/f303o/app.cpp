@@ -6,13 +6,21 @@ using namespace jeeh;
 #include "defs.h"
 #include "ubx.h"
 
+constexpr IoReg<0x4000'0800> TIM4;
+// irq TIM4 = 30
+namespace jeeh::ena {
+    enum {
+        TIM4          =  2 + 8 * APB1ENR,
+    };
+}
+
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
 
-struct RushWorker : Worker {
+struct Rusher : Worker {
     enum TAG { START, TRACK, TICK, PPS };
 
     char ledSel =0;         // which signal to display on the LED
@@ -20,7 +28,7 @@ struct RushWorker : Worker {
     Event tracker;          // worker to notify on each edge change
     uint16_t ppsPrev =0;    // cycle count of last PPS pulse
 
-    RushWorker () : Worker ("rush") {}
+    Rusher () : Worker ("rush") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -72,14 +80,42 @@ private:
     }
 } rusher;
 
-struct GpsWorker : Worker {
+struct Adjuster : Worker {
+    enum TAG { START };
+
+    Adjuster () : Worker ("adjust") {}
+
+    uint8_t init () {
+        // use F303RC's TIM4 in external clock mode 2, count 1 PPS up to 32
+        RCC(ena::TIM4,1) = 1;
+        TIM4[SMCR](14) = 1; // ECE
+        TIM4[ARR] = 31; // auto-reload
+        TIM4[CR1](0) = 1; // CEN
+
+        return Worker::init();
+    }
+
+    Event process (Event in, Event out) override {
+        switch (in.eTag) {
+            case START:
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+
+    enum { CR1=0x00, SMCR=0x08, CNT=0x24, ARR=0x2C };
+} adjuster;
+
+struct Gpser : Worker {
     enum TAG { START, RECV };
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
     DateTime now;
 
-    GpsWorker () : Worker ("gps") {}
+    Gpser () : Worker ("gps") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -135,12 +171,12 @@ private:
 
 } gpser;
 
-struct BlinkWorker : Worker {
+struct Blinker : Worker {
     enum TAG { START, TICK };
 
     bool enable =false;
 
-    BlinkWorker () : Worker ("blink") {}
+    Blinker () : Worker ("blink") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -158,13 +194,13 @@ struct BlinkWorker : Worker {
     }
 } blinker;
 
-struct CmdWorker : Worker {
+struct Cmder : Worker {
     enum TAG { START, TTYIN, REPORT };
 
     uint32_t value =0, lastVal =0;
     char lastCh =0;
 
-    CmdWorker () : Worker ("cmd") {}
+    Cmder () : Worker ("cmd") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -176,7 +212,7 @@ struct CmdWorker : Worker {
                 ttyUart.read(1, { wId, TTYIN });
                 break;
             case REPORT:
-                logf("bingo");
+                logf("bingo %d", +TIM4[0x24]);
                 break;
             default:
                 fail();
@@ -272,10 +308,10 @@ struct CmdWorker : Worker {
 
 } cmder;
 
-struct WatchWorker : Worker {
+struct Watcher : Worker {
     enum TAG { START, TICK };
 
-    WatchWorker () : Worker ("watch") {}
+    Watcher () : Worker ("watch") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -293,10 +329,10 @@ struct WatchWorker : Worker {
     }
 } watcher;
 
-struct IdleWorker : Worker {
+struct Idler : Worker {
     enum TAG { START, EDGE };
 
-    IdleWorker () : Worker ("idle") {}
+    Idler () : Worker ("idle") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -351,6 +387,7 @@ int main () {
     extier.init();
     ticker.init();
     rusher.init();
+    adjuster.init();
     gpser.init();
     blinker.init();
     cmder.init();
