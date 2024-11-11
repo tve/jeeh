@@ -15,9 +15,7 @@ uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
 
 uart::Work<UART_TYPE> uartWork (UART_CONF);
-IRQ_HANDLER(USART1, uartWork.idleIrq)
-IRQ_HANDLER(DMA1_Channel1, uartWork.dmaIrq) // not DMA1_CH1 !
-IRQ_HANDLER(DMA1_Channel2, uartWork.dmaIrq) // not DMA1_CH2 !
+UART_INSTALL(uartWork)
 
 void setUp () {}
 
@@ -80,19 +78,19 @@ void testWait () {
     uartWork.init(UART_PINS, 1'000'000);
 
     auto start = cycles::micros();
-    uartWork.transfer(true, (uint8_t*) "x", 1);
+    uartWork.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.transfer(true, (uint8_t*) "abcde", 5);
+    uartWork.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 51, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.transfer(true, (uint8_t*) "1234567890", 10);
+    uartWork.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 99, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    uartWork.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 300, cycles::micros()-start);
 }
 
