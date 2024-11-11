@@ -27,7 +27,7 @@ struct Rusher : Worker {
             case START:
                 ticker.periodic(1, TICK);
                 extier.enable(gpsPps, extier.RISE, PPS);
-                assert(gpsPps.pin() == 8);  // TODO hard-coded for "A8"
+                assert(gpsPps.pin() == 5);  // TODO hard-coded for "B5"
                 irqEnable(Irq::EXTI9_5, 0); // set PPS pin to highest IRQ prio
                 break;
             case TRACK:
@@ -71,38 +71,6 @@ private:
         return tracker;
     }
 } rusher;
-
-struct Adjuster : Worker {
-    enum TAG { START };
-
-    Adjuster () : Worker ("adjust") {}
-
-    uint8_t init () {
-        // use F303RC's TIM1 in external clock mode 2, count 1 PPS up to 32
-        RCC(ena::TIM1,1) = 1;
-        TIM1[CCMR1](0,1) = 1; // CC1S
-        TIM1[SMCR](0,3) = 0b111; // SMS
-        TIM1[SMCR](4,3) = 5; // TS
-        TIM1[CCER](1) = 0; // CC1P
-        TIM1[CCER](3) = 0; // CC1NP
-        TIM1[ARR] = 31; // auto-reload
-        TIM1[CR1](0) = 1; // CEN
-
-        return Worker::init();
-    }
-
-    Event process (Event in, Event out) override {
-        switch (in.eTag) {
-            case START:
-                break;
-            default:
-                fail();
-        }
-        return out;
-    }
-
-    enum { CR1=0x00, SMCR=0x08, CCMR1=0x18, CCER=0x20, CNT=0x24, ARR=0x2C };
-} adjuster;
 
 struct Gpser : Worker {
     enum TAG { START, RECV };
@@ -167,6 +135,50 @@ private:
 
 } gpser;
 
+struct Adjuster : Worker {
+    enum TAG { START };
+
+    Adjuster () : Worker ("adjust") {}
+
+    uint8_t init () {
+        RCC[0x04](24,3) = 3; // CFGR MCO=LSE
+                             //
+        // use F303RC's TIM3 in ext clock mode 1, count 1 PPS up to 32
+        RCC(ena::TIM3,1) = 1;
+        TIM3[SMCR](0,3) = 7; // SMS = extclk1
+        TIM3[SMCR](4,3) = 6; // TS = TI2FP2
+        TIM3[ARR] = 31;      // auto-reload
+        TIM3[CR2](4,3) = 2;  // MMS update
+        TIM3[CR1](0) = 1;    // CEN
+
+        // use TIM2 as counter for the lseIn pin, as slave reset by TIM3
+        RCC(ena::TIM2,1) = 1;
+        TIM2[SMCR] = (1<<16) | (1<<14) | (2<<4); // ECE SMS[3] TS=TIM3
+        TIM2[CCMR1](8,2) = 3; // CC2S = TCR
+        TIM2[CCER](4) = 1;    // CC2E
+        TIM2[CR1](0) = 1;     // CEN
+
+        return Worker::init();
+    }
+
+    int lseDiff () const {
+        return TIM2[CCR2] - (1<<20); // difference from 32x 32 kHz counts
+    }
+
+    Event process (Event in, Event out) override {
+        switch (in.eTag) {
+            case START:
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+
+    enum { CR1=0x00,CR2=0x04,SMCR=0x08,CCMR1=0x18,CCER=0x20,
+            CNT=0x24,ARR=0x2C,CCR2=0x38 };
+} adjuster;
+
 struct Blinker : Worker {
     enum TAG { START, TICK };
 
@@ -208,7 +220,10 @@ struct Cmder : Worker {
                 ttyUart.read(1, { wId, TTYIN });
                 break;
             case REPORT:
-                logf("bingo %d", +TIM1[0x24]);
+                logf("lse %2d: cnt %08x diff %d",
+                        +TIM3[adjuster.CNT],
+                        +TIM2[adjuster.CNT],
+                        adjuster.lseDiff());
                 break;
             default:
                 fail();
@@ -383,8 +398,8 @@ int main () {
     extier.init();
     ticker.init();
     rusher.init();
-    adjuster.init();
     gpser.init();
+    adjuster.init();
     blinker.init();
     cmder.init();
     watcher.init();
