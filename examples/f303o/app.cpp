@@ -145,18 +145,17 @@ struct Adjuster : Worker {
                              //
         // use F303RC's TIM3 in ext clock mode 1, count 1 PPS up to 32
         RCC(ena::TIM3,1) = 1;
-        TIM3[SMCR](0,3) = 7; // SMS = extclk1
-        TIM3[SMCR](4,3) = 6; // TS = TI2FP2
-        TIM3[ARR] = 31;      // auto-reload
-        TIM3[CR2](4,3) = 2;  // MMS update
-        TIM3[CR1](0) = 1;    // CEN
+        TIM3[SMCR] = (6<<4) | (7<<0); // TS=TI2FP2 SMS=ExtClk1
+        TIM3[ARR] = 31;     // auto-reload
+        TIM3[CR2] = (2<<4); // MMS update
+        TIM3[CR1] = 1;      // CEN
 
         // use TIM2 as counter for the lseIn pin, as slave reset by TIM3
         RCC(ena::TIM2,1) = 1;
         TIM2[SMCR] = (1<<16) | (1<<14) | (2<<4); // SMS[3] ECE TS=TIM3
-        TIM2[CCMR1](8,2) = 3; // CC2S = TCR
-        TIM2[CCER](4) = 1;    // CC2E
-        TIM2[CR1](0) = 1;     // CEN
+        TIM2[CCMR1] = (3<<8); // CC2S = TCR
+        TIM2[CCER] = (1<<4);  // CC2E
+        TIM2[CR1] = 1;        // CEN
 
         return Worker::init();
     }
