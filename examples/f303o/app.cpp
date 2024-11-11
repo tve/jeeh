@@ -6,14 +6,6 @@ using namespace jeeh;
 #include "defs.h"
 #include "ubx.h"
 
-constexpr IoReg<0x4000'0800> TIM4;
-// irq TIM4 = 30
-namespace jeeh::ena {
-    enum {
-        TIM4          =  2 + 8 * APB1ENR,
-    };
-}
-
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
@@ -86,11 +78,15 @@ struct Adjuster : Worker {
     Adjuster () : Worker ("adjust") {}
 
     uint8_t init () {
-        // use F303RC's TIM4 in external clock mode 2, count 1 PPS up to 32
-        RCC(ena::TIM4,1) = 1;
-        TIM4[SMCR](14) = 1; // ECE
-        TIM4[ARR] = 31; // auto-reload
-        TIM4[CR1](0) = 1; // CEN
+        // use F303RC's TIM1 in external clock mode 2, count 1 PPS up to 32
+        RCC(ena::TIM1,1) = 1;
+        TIM1[CCMR1](0,1) = 1; // CC1S
+        TIM1[SMCR](0,3) = 0b111; // SMS
+        TIM1[SMCR](4,3) = 5; // TS
+        TIM1[CCER](1) = 0; // CC1P
+        TIM1[CCER](3) = 0; // CC1NP
+        TIM1[ARR] = 31; // auto-reload
+        TIM1[CR1](0) = 1; // CEN
 
         return Worker::init();
     }
@@ -105,7 +101,7 @@ struct Adjuster : Worker {
         return out;
     }
 
-    enum { CR1=0x00, SMCR=0x08, CNT=0x24, ARR=0x2C };
+    enum { CR1=0x00, SMCR=0x08, CCMR1=0x18, CCER=0x20, CNT=0x24, ARR=0x2C };
 } adjuster;
 
 struct Gpser : Worker {
@@ -212,7 +208,7 @@ struct Cmder : Worker {
                 ttyUart.read(1, { wId, TTYIN });
                 break;
             case REPORT:
-                logf("bingo %d", +TIM4[0x24]);
+                logf("bingo %d", +TIM1[0x24]);
                 break;
             default:
                 fail();
