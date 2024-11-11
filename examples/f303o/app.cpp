@@ -142,7 +142,7 @@ struct Adjuster : Worker {
 
     uint8_t init () {
         RCC[0x04](24,3) = 3; // CFGR MCO=LSE
-                             //
+
         // use F303RC's TIM3 in ext clock mode 1, count 1 PPS up to 32
         RCC(ena::TIM3,1) = 1;
         TIM3[SMCR] = (6<<4) | (7<<0); // TS=TI2FP2 SMS=ExtClk1
