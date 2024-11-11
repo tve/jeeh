@@ -1,17 +1,25 @@
 // Header file for the the central system types and functions.
 
 [[noreturn]]
-void fail (void const* addr =__builtin_return_address(0),
-           char const* file =__builtin_FILE(),
-           int line =__builtin_LINE());
+void fail (void const* =__builtin_return_address(0),
+            char const* =__builtin_FILE(), int =__builtin_LINE());
 [[noreturn]]
-void hardFaultHandler (uint32_t* sp); // weak, can be redefined
+void hardFaultHandler (uint32_t*); // weak, can be redefined
 [[noreturn]]
 void systemReset ();
 
 void logf (char const* fmt ...);
 void logDump (void const* ptr, int len =16, char const* msg =nullptr);
 void logWriter (void const* ptr, size_t len); // weak, can be redefined
+
+#define NOFLAGS 0
+#if NOFLAGS
+constexpr uint32_t flagsAtoZ [26] = {}; // A..Z: settings for global use
+constexpr uint32_t flag (char const*) { return 0; }
+#else
+extern uint32_t flagsAtoZ [26]; // A..Z: settings for global use
+uint32_t flag (char const* match);
+#endif
 
 template <typename T>
 T take (T& x) { T r = x; x = {}; return r; }

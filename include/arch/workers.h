@@ -151,7 +151,6 @@ struct Worker {
             if (histBuf[i] && !histBuf[i-1])
                 first = i;
         // show entries, wrap around at end
-        logf("history: max %d", MAX_HISTORY-1);
         for (auto i = 0; i < MAX_HISTORY; ++i) {
             auto evt = histBuf[(first+i) % MAX_HISTORY];
             if (!evt)

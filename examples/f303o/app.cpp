@@ -12,8 +12,6 @@ TICKER_INSTALL(ticker)
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
 
-uint32_t flags [26]; // A..Z: settings for global use
-
 struct RushWorker : Worker {
     enum TAG { START, TRACK, TICK, PPS };
 
@@ -21,7 +19,6 @@ struct RushWorker : Worker {
     uint8_t dcfNow, msfNow; // values captured during last tick
     Event tracker;          // worker to notify on each edge change
     uint16_t ppsPrev =0;    // cycle count of last PPS pulse
-    bool dump =false;
 
     RushWorker () : Worker ("rush") {}
 
@@ -41,7 +38,7 @@ struct RushWorker : Worker {
                 break;
             case PPS:
 assert((uint16_t) (cycles::count() - in.eVal) < 10000);
-                if (dump) {
+                if (flag("Gp")) {
                     uint16_t lag = cycles::count() - in.eVal;
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
                     logf("pps lag %d cy, clk diff %d cy", lag, diff);
@@ -81,7 +78,6 @@ struct GpsWorker : Worker {
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
     DateTime now;
-    bool dump =false;
 
     GpsWorker () : Worker ("gps") {}
 
@@ -96,7 +92,7 @@ struct GpsWorker : Worker {
                     if (ubx.parse(gpsUart.rxPtr[i++])) {
                         if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07)
                             getPvtInfo();
-                        else if (dump) {
+                        else {
                             logf("GPS %02x %02x",
                                     ubx.pktClass, ubx.pktMsgId);
                             logDump(ubx.payload, ubx.pktLen);
@@ -129,7 +125,7 @@ private:
             now.ff = pvt.nano / (1'000'000'000 / 256);
         if ((pvt.valid & 3) != 3)
             now.yr = 0; // flag as invalid
-        if (dump) {
+        if (flag("Gf")) {
             auto dt = now.asText();
             logf("fix %d pos %d %d ha %d sv %d %s ta %d",
                     pvt.fixType, lat, lon, pvt.hAcc,
@@ -189,13 +185,24 @@ struct CmdWorker : Worker {
     }
 
     void doCmd (char ch) {
-        auto modifier = lastCh == '+' || lastCh == '-' || lastCh == '=';
-        if (modifier && 'A' <= ch && ch <= 'Z') {
-            switch (take(lastCh)) {
-                case '+': flags[ch-'A'] |= 1 << lastVal; break;
-                case '-': flags[ch-'A'] &= ~(1 << lastVal); break;
+        // upper case sets, modifies, or shows flags
+        if ('A' <= lastCh && lastCh <= 'Z') {
+            if ('a' <= ch && ch <= 'z')
+                lastVal |= 1 << (ch-'a');
+            else if (ch == '*')
+                lastVal |= (1<<26) - 1; // all
+            else {
+                auto& f = flagsAtoZ[lastCh-'A'];
+#if !NOFLAGS
+                switch (ch) {
+                    case '+': f |= lastVal; break;
+                    case '-': f &= ~lastVal; break;
+                    case '=': f = lastVal; break;
+                }
+#endif
+                logf("  %c = 0x%08x = %u", lastCh, f, f);
+                lastCh = 0;
             }
-            logf("  %c = 0x%08x = %u", ch, flags[ch-'A'], flags[ch-'A']);
             return;
         }
         // digits are collected as decimal number
@@ -203,26 +210,17 @@ struct CmdWorker : Worker {
             value = 10 * value + (ch - '0');
             return;
         }
-        // upper case stores the current value in register A..Z
-        if ('A' <= ch && ch <= 'Z') {
-            flags[ch-'A'] = value;
-            value = 0;
-            return;
-        }
         // other commands can still get the value as lastVal
-        lastVal = value;
-        value = 0;
+        lastVal = take(value);
         // ignore non-printable characters
         if (ch < ' ' || ch > '~')
             return;
 
         // dispatch on all other characters as cmd code
         lastCh = ch;
+        if ('A' <= ch && ch <= 'Z')
+            return; // will act on next incoming char
         switch (ch) {
-            case '+':
-            case '-':
-            case '=':
-                break; // will act on next incoming char
             case '!':
                 systemReset();
             case 'd':
@@ -235,9 +233,7 @@ struct CmdWorker : Worker {
                 break;
             case 'g':
                 rusher.ledSel = 'g';
-                gpser.dump = !gpser.dump;
-                if (!gpser.dump) {
-                    rusher.dump = !rusher.dump;
+                if (flag("Gm")) {
                     ubx::Maidenhead mh (gpser.lat, gpser.lon);
                     logf("latitude %d, longitude %d, maidenhead %s",
                             gpser.lat, gpser.lon, mh.buf);
@@ -252,6 +248,7 @@ struct CmdWorker : Worker {
                 showStats();
                 break;
             case 'h':
+                logf("history: max %d", Worker::MAX_HISTORY-1);
                 showHistory();
                 break;
             case 'r':
@@ -261,9 +258,10 @@ struct CmdWorker : Worker {
                     ticker.cancel(REPORT);
                 break;
             case 'f':
+                logf("flags: A-Z");
                 for (auto c = 'A'; c <= 'Z'; ++c)
-                    if (flags[c-'A'] != 0)
-                        logf("  %c = 0x%08x = %u", c, flags[c-'A'], flags[c-'A']);
+                    if (auto f = flagsAtoZ[c-'A']; f != 0)
+                        logf("  %c = 0x%08x = %u", c, f, f);
                 break;
             default:
                 logf("? !=reset d)cf m)sf g)ps l)ed s)tats h)istory r)eport"

@@ -21,11 +21,30 @@ inline namespace {
 
 } // inline namespace
 
+//----------------------------------------------------------------------- flags
+
+#if !NOFLAGS
+
+uint32_t jeeh::flagsAtoZ [26]; // A..Z: settings for global use
+
+[[gnu::weak]] uint32_t jeeh::flag (char const* match) {
+    assert('A' <= *match && *match <= 'Z');
+    auto f = flagsAtoZ[*match++ - 'A'];
+    if (*match == 0)
+        return f;
+    while ('a' <= *match && *match <= 'z')
+        if ((f >> (*match++ - 'a')) & 1)
+            return 1;
+    return 0;
+}
+
+#endif
+
+//------------------------------------------------------------------------ logf
+
 [[gnu::weak]] void jeeh::logWriter (void const* ptr, size_t len) {
     swoWrite(ptr, len);
 }
-
-//------------------------------------------------------------------------ logf
 
 void jeeh::logf (char const* fmt ...) {
 #if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
