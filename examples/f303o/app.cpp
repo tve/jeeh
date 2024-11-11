@@ -153,7 +153,7 @@ struct Adjuster : Worker {
 
         // use TIM2 as counter for the lseIn pin, as slave reset by TIM3
         RCC(ena::TIM2,1) = 1;
-        TIM2[SMCR] = (1<<16) | (1<<14) | (2<<4); // ECE SMS[3] TS=TIM3
+        TIM2[SMCR] = (1<<16) | (1<<14) | (2<<4); // SMS[3] ECE TS=TIM3
         TIM2[CCMR1](8,2) = 3; // CC2S = TCR
         TIM2[CCER](4) = 1;    // CC2E
         TIM2[CR1](0) = 1;     // CEN
