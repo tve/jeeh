@@ -15,10 +15,10 @@ const Pin led (LED,"P");
 #define UART_TYPE  USART2.ADDR, DMA1.ADDR, 4-1, 5-1
 #define UART_CONF  { ena::USART2, 32, Irq::USART2, \
                      Irq::DMA1_Channel4, Irq::DMA1_Channel5, { 1-1,4,4 } }
-#define UART_INSTALL(name) extern "C" { \
-    void USART2_IRQHandler () { name.idleIrq(); } \
-    void DMA1_Stream4_IRQHandler () { name.dmaIrq(); } \
-    void DMA1_Stream5_IRQHandler () { name.dmaIrq(); } \
+#define UART_INSTALL(w) extern "C" { \
+    void USART2_IRQHandler () { (w).irqIdle(); } \
+    void DMA1_Stream4_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Stream5_IRQHandler () { (w).irqDma(); } \
 }
 //CG]
 

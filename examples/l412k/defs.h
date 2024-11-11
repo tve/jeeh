@@ -13,10 +13,10 @@
 #define UART_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
 #define UART_CONF  { ena::USART2, 80, Irq::USART2, \
                      Irq::DMA1_Channel7, Irq::DMA1_Channel6, { 1-1,2,2 } }
-#define UART_INSTALL(name) extern "C" { \
-    void USART2_IRQHandler () { name.idleIrq(); } \
-    void DMA1_Stream7_IRQHandler () { name.dmaIrq(); } \
-    void DMA1_Stream6_IRQHandler () { name.dmaIrq(); } \
+#define UART_INSTALL(w) extern "C" { \
+    void USART2_IRQHandler () { (w).irqIdle(); } \
+    void DMA1_Stream7_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Stream6_IRQHandler () { (w).irqDma(); } \
 }
 //CG]
 

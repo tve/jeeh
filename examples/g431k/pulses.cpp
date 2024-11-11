@@ -13,7 +13,7 @@ struct Replier : Worker {
         pin1 = 0; // 39 µs
         return out;
     }
-};
+} replier;
 
 struct Sender : Worker {
     enum TAG { START, REPLY };
@@ -23,7 +23,7 @@ struct Sender : Worker {
         switch (in.eTag) {
             case START:
                 pin6 = 1; // 31 µs
-                send({ (uint8_t) in.eVal }, { wId, REPLY });
+                send({ replier.wId }, { wId, REPLY });
                 pin6 = 0; // 56 µs
                 break;
             case REPLY:
@@ -36,7 +36,7 @@ struct Sender : Worker {
         pin5 = 0; // 57 & 81 µs
         return out;
     }
-};
+} sender;
 
 int main () {
     Pin::config(":P,,,,,,,", pins, sizeof pins);
@@ -63,12 +63,9 @@ int main () {
     pin4 = 1; // NSEL
 
     pin2 = 1; // 0 µs
-    Replier replier;
-    Sender sender;
-    auto rId = replier.init();
-    auto sId = sender.init();
+    replier.init();
+    sender.init();
     pin3 = 1; // 23 µs
-    // FIXME Worker::send({ sId, sender.START, rId });
     pin3 = 0; // 85 µs
     pin2 = 0; // 86 µs
         
