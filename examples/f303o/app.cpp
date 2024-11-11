@@ -12,6 +12,8 @@ TICKER_INSTALL(ticker)
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
 
+uint32_t flags [26]; // A..Z: settings for global use
+
 struct RushWorker : Worker {
     enum TAG { START, TRACK, TICK, PPS };
 
@@ -161,10 +163,10 @@ struct BlinkWorker : Worker {
 } blinker;
 
 struct CmdWorker : Worker {
-    enum TAG { START, TTYIN, PERIOD };
+    enum TAG { START, TTYIN, REPORT };
 
-    uint32_t regs [26] ={}; // 'A'..'Z'
     uint32_t value =0, lastVal =0;
+    char lastCh =0;
 
     CmdWorker () : Worker ("cmd") {}
 
@@ -177,7 +179,7 @@ struct CmdWorker : Worker {
                 doCmd(*ttyUart.rxPtr);
                 ttyUart.read(1, { wId, TTYIN });
                 break;
-            case PERIOD:
+            case REPORT:
                 logf("bingo");
                 break;
             default:
@@ -187,6 +189,15 @@ struct CmdWorker : Worker {
     }
 
     void doCmd (char ch) {
+        auto modifier = lastCh == '+' || lastCh == '-' || lastCh == '=';
+        if (modifier && 'A' <= ch && ch <= 'Z') {
+            switch (take(lastCh)) {
+                case '+': flags[ch-'A'] |= 1 << lastVal; break;
+                case '-': flags[ch-'A'] &= ~(1 << lastVal); break;
+            }
+            logf("  %c = 0x%08x = %u", ch, flags[ch-'A'], flags[ch-'A']);
+            return;
+        }
         // digits are collected as decimal number
         if ('0' <= ch && ch <= '9') {
             value = 10 * value + (ch - '0');
@@ -194,16 +205,24 @@ struct CmdWorker : Worker {
         }
         // upper case stores the current value in register A..Z
         if ('A' <= ch && ch <= 'Z') {
-            regs[ch-'A'] = value;
+            flags[ch-'A'] = value;
             value = 0;
             return;
         }
         // other commands can still get the value as lastVal
         lastVal = value;
         value = 0;
+        // ignore non-printable characters
+        if (ch < ' ' || ch > '~')
+            return;
 
         // dispatch on all other characters as cmd code
+        lastCh = ch;
         switch (ch) {
+            case '+':
+            case '-':
+            case '=':
+                break; // will act on next incoming char
             case '!':
                 systemReset();
             case 'd':
@@ -235,20 +254,20 @@ struct CmdWorker : Worker {
             case 'h':
                 showHistory();
                 break;
-            case 'p':
-                if (lastVal != 0)
-                    ticker.periodic(100*lastVal, PERIOD);
-                else
-                    ticker.cancel(PERIOD);
-                break;
             case 'r':
+                if (lastVal != 0)
+                    ticker.periodic(100 * lastVal, REPORT);
+                else
+                    ticker.cancel(REPORT);
+                break;
+            case 'f':
                 for (auto c = 'A'; c <= 'Z'; ++c)
-                    if (regs[c-'A'] != 0)
-                        logf("  %c = %u", c, regs[c-'A']);
+                    if (flags[c-'A'] != 0)
+                        logf("  %c = 0x%08x = %u", c, flags[c-'A'], flags[c-'A']);
                 break;
             default:
-                logf("? !=reset d)cf m)sf g)ps l)ed s)tats h)istory p)eriod"
-                              " r)egs");
+                logf("? !=reset d)cf m)sf g)ps l)ed s)tats h)istory r)eport"
+                              " f)lags");
         }
     }
 
