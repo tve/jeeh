@@ -233,6 +233,7 @@ struct CmdWorker : Worker {
                 break;
             case 'g':
                 rusher.ledSel = 'g';
+                blinker.enable = false;
                 if (flag("Gm")) {
                     ubx::Maidenhead mh (gpser.lat, gpser.lon);
                     logf("latitude %d, longitude %d, maidenhead %s",
