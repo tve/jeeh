@@ -134,7 +134,7 @@ private:
         }
 
         // set once an hour, but only when GPS has proper info
-        if (now > lastSet + 3600 && now.yr != 0 && now.ss != 0 &&
+        if (now >= lastSet + 3600 && now.yr != 0 && now.ss != 0 &&
                                     lon != 0 && lat != 0 && pvt.tAcc < 100) {
             if (flag("Gs")) {
                 auto dt1 = rtc::getDate().asText();
