@@ -41,7 +41,7 @@ struct Rusher : Worker {
                 if (flag("Gp")) {
                     uint16_t lag = cycles::count() - in.eVal;
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
-                    logf("pps lag %d cy, clk diff %d cy", lag, diff);
+                    logf("G pps lag %d cy, clk diff %d cy", lag, diff);
                 }
                 ppsPrev = in.eVal;
                 break;
@@ -93,8 +93,8 @@ struct Gpser : Worker {
                     if (ubx.parse(gpsUart.rxPtr[i++])) {
                         if (ubx.pktClass == 0x01 && ubx.pktMsgId == 0x07)
                             getPvtInfo();
-                        else {
-                            logf("GPS %02x %02x",
+                        else if (flag("Gu")) {
+                            logf("G ubx %02x %02x",
                                     ubx.pktClass, ubx.pktMsgId);
                             logDump(ubx.payload, ubx.pktLen);
                         }
@@ -128,18 +128,18 @@ private:
             now.yr = 0; // flag as invalid
         if (flag("Gf")) {
             auto dt = now.asText();
-            logf("fix %d pos %d %d ha %d sv %d %s ta %d",
+            logf("G fix %d pos %d %d ha %d sv %d %s ta %d",
                     pvt.fixType, lat, lon, pvt.hAcc,
                     pvt.numSV, dt.buf, pvt.tAcc);
         }
 
-        // set every 1000s, but only when GPS has proper info
-        if (now > lastSet + 1000 && now.yr != 0 && now.ss != 0 &&
+        // set once an hour, but only when GPS has proper info
+        if (now > lastSet + 3600 && now.yr != 0 && now.ss != 0 &&
                                     lon != 0 && lat != 0 && pvt.tAcc < 100) {
-            if (flag("Gr")) {
+            if (flag("Gs")) {
                 auto dt1 = rtc::getDate().asText();
                 auto dt2 = now.asText();
-                logf("set rtc %s gps %s", dt1.buf, dt2.buf);
+                logf("G set rtc %s gps %s", dt1.buf, dt2.buf);
             }
             rtc::set(now);
             lastSet = now;
@@ -194,7 +194,7 @@ struct Adjuster : Worker {
                 if (flag("Ga")) {
                     auto dt1 = rtc::getDate().asText();
                     auto dt2 = gpser.now.asText();
-                    logf("adjust %d rtc %s gps %s", diff, dt1.buf, dt2.buf);
+                    logf("G adjust %d rtc %s gps %s", diff, dt1.buf, dt2.buf);
                 }
                 break;
             }
@@ -319,8 +319,8 @@ struct Cmder : Worker {
                 gpser.lastSet = 0; // request an RTC date & time set
                 if (flag("Gm")) {
                     ubx::Maidenhead mh (gpser.lat, gpser.lon);
-                    logf("latitude %d, longitude %d, maidenhead %s",
-                            gpser.lat, gpser.lon, mh.buf);
+                    logf("G maidenhead %s latitude %d, longitude %d",
+                            mh.buf, gpser.lat, gpser.lon);
                 }
                 break;
             }
