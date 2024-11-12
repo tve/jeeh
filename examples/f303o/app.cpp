@@ -77,8 +77,8 @@ struct Gpser : Worker {
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
+    uint32_t lastSet =0; // UTC time in seconds
     DateTime now;
-    bool setRtc =false;
 
     Gpser () : Worker ("gps") {}
 
@@ -115,7 +115,7 @@ private:
         lon = pvt.flags & 1 ? pvt.lon : 0;
         lat = pvt.flags & 1 ? pvt.lat : 0;
 
-        // now will only be exact when ss != || ff != 0
+        // now will only be exact when ss != 0 || ff != 0
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
         if (pvt.nano < 0 && now.ss > 0) {
@@ -126,17 +126,23 @@ private:
             now.ff = pvt.nano / (1'000'000'000 / 256);
         if ((pvt.valid & 3) != 3)
             now.yr = 0; // flag as invalid
-        else if (take(setRtc)) {
-            auto dt1 = rtc::getDate().asText();
-            auto dt2 = now.asText();
-            logf("set rtc %s gps %s", dt1.buf, dt2.buf);
-            rtc::set(now);
-        }
         if (flag("Gf")) {
             auto dt = now.asText();
             logf("fix %d pos %d %d ha %d sv %d %s ta %d",
                     pvt.fixType, lat, lon, pvt.hAcc,
                     pvt.numSV, dt.buf, pvt.tAcc);
+        }
+
+        // set every 1000s, but only when GPS has proper info
+        if (now > lastSet + 1000 && now.yr != 0 && now.ss != 0 &&
+                                    lon != 0 && lat != 0 && pvt.tAcc < 100) {
+            if (flag("Gr")) {
+                auto dt1 = rtc::getDate().asText();
+                auto dt2 = now.asText();
+                logf("set rtc %s gps %s", dt1.buf, dt2.buf);
+            }
+            rtc::set(now);
+            lastSet = now;
         }
     }
 
@@ -310,7 +316,7 @@ struct Cmder : Worker {
             case 'g': {
                 rusher.ledSel = 'g';
                 blinker.enable = false;
-                gpser.setRtc = true;
+                gpser.lastSet = 0; // request an RTC date & time set
                 if (flag("Gm")) {
                     ubx::Maidenhead mh (gpser.lat, gpser.lon);
                     logf("latitude %d, longitude %d, maidenhead %s",
