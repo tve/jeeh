@@ -119,7 +119,7 @@ enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
 enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
         WPR=0x24,SSR=0x28,BKPR=0x50 };
 #endif
-enum { ALRMAR=0x1C, ALRMASSR=0x44 };
+enum { ALRMAR=0x1C, SHIFTR=0x2C, ALRMASSR=0x44 };
 
 #if STM32F3
 enum { BDCR=0x20, CSR=0x24 };
@@ -234,10 +234,25 @@ void set (DateTime const& dt) {
     RTC[ISR](9) = 1;            // BIN 1x, mixed mode
 #endif
     RTC[ISR](7) = 0;            // clear INIT
+
+#if 0 // does this work?
+    auto diff = dt.ff - (255-RTC[SSR]);
+    if (diff <= 0)
+        RTC[SHIFTR] = -diff; // SUBFS
+    else
+        RTC[SHIFTR] = (1<<31) | (256-diff); // ADD1S SUBFS
+#endif
 }
 
 void set (uint32_t t) {
     set(DateTime (t));
+}
+
+void calibrate (int diff) {
+    assert(-480 < diff && diff < 480);
+    if (diff < 0)
+        diff = (1<<15) | (diff+512); // CALP CALM
+    RTC[0x3C] = diff; // CALR
 }
 
 uint32_t getReg (int reg) {

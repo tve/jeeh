@@ -187,6 +187,7 @@ namespace rtc {
 
     void set (DateTime const& dt);
     void set (uint32_t t);
+    void calibrate (int diff);
 
     uint32_t getReg (int reg);
     void setReg (int reg, uint32_t val);

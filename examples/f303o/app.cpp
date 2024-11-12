@@ -37,7 +37,7 @@ struct Rusher : Worker {
                 out = ticked(); // may have a reply for tracking worker
                 break;
             case PPS:
-assert((uint16_t) (cycles::count() - in.eVal) < 10000);
+//assert((uint16_t) (cycles::count() - in.eVal) < 10000);
                 if (flag("Gp")) {
                     uint16_t lag = cycles::count() - in.eVal;
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
@@ -78,6 +78,7 @@ struct Gpser : Worker {
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
     DateTime now;
+    bool setRtc =false;
 
     Gpser () : Worker ("gps") {}
 
@@ -125,6 +126,12 @@ private:
             now.ff = pvt.nano / (1'000'000'000 / 256);
         if ((pvt.valid & 3) != 3)
             now.yr = 0; // flag as invalid
+        else if (take(setRtc)) {
+            auto dt1 = rtc::getDate().asText();
+            auto dt2 = now.asText();
+            logf("set rtc %s gps %s", dt1.buf, dt2.buf);
+            rtc::set(now);
+        }
         if (flag("Gf")) {
             auto dt = now.asText();
             logf("fix %d pos %d %d ha %d sv %d %s ta %d",
@@ -137,6 +144,8 @@ private:
 
 struct Adjuster : Worker {
     enum TAG { START, ADJUST };
+
+    int8_t lsePrev =0;
 
     Adjuster () : Worker ("adjust") {}
 
@@ -170,10 +179,19 @@ struct Adjuster : Worker {
         switch (in.eTag) {
             case START:
                 break;
-            case ADJUST:
-                if (flag("Ga"))
-                    logf("adjust %d", lseDiff());
+            case ADJUST: {
+                auto diff = lseDiff();
+                if (diff != lsePrev && -100 < diff && diff < 100) {
+                    lsePrev = diff;
+                    rtc::calibrate(diff);
+                }
+                if (flag("Ga")) {
+                    auto dt1 = rtc::getDate().asText();
+                    auto dt2 = gpser.now.asText();
+                    logf("adjust %d rtc %s gps %s", diff, dt1.buf, dt2.buf);
+                }
                 break;
+            }
             default:
                 fail();
         }
@@ -289,15 +307,17 @@ struct Cmder : Worker {
                 rusher.ledSel = 'm';
                 blinker.enable = false;
                 break;
-            case 'g':
+            case 'g': {
                 rusher.ledSel = 'g';
                 blinker.enable = false;
+                gpser.setRtc = true;
                 if (flag("Gm")) {
                     ubx::Maidenhead mh (gpser.lat, gpser.lon);
                     logf("latitude %d, longitude %d, maidenhead %s",
                             gpser.lat, gpser.lon, mh.buf);
                 }
                 break;
+            }
             case 'l':
                 blinker.enable = !blinker.enable;
                 if (blinker.enable)
