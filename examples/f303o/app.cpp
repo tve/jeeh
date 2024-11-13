@@ -15,17 +15,18 @@ EXTIRQ_INSTALL(extier)
 struct Rusher : Worker {
     enum TAG { START, TRACK, TICK, PPS };
 
-    char ledSel =0;         // which signal to display on the LED
-    uint8_t dcfNow, msfNow; // values captured during last tick
-    Event tracker;          // worker to notify on each edge change
-    uint16_t ppsPrev =0;    // cycle count of last PPS pulse
+    char ledSel =0;                  // which signal to display on the LED
+    uint8_t dcfNow, msfNow;          // values captured during last tick
+    Event tracker;                   // worker to notify on each edge change
+    uint16_t ppsPrev =0;             // cycle count of last PPS pulse
+    uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms, that is)
 
     Rusher () : Worker ("rush") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                ticker.periodic(1, TICK);
+                ticker.periodic(4, TICK);
                 extier.enable(gpsPps, extier.RISE, PPS);
                 assert(gpsPps.pin() == 5);  // TODO hard-coded for "B5"
                 irqEnable(Irq::EXTI9_5, 0); // set PPS pin to highest IRQ prio
@@ -34,6 +35,7 @@ struct Rusher : Worker {
                 tracker = take(out); // side-effect: clear "out"
                 break;
             case TICK:
+                ++ticks; // keep track of current tick count
                 out = ticked(); // may have a reply for tracking worker
                 break;
             case PPS:
@@ -53,21 +55,33 @@ struct Rusher : Worker {
 
 private:
     Event ticked () {
-        ++tracker.eVal; // keep track of current tick count
-
         auto dcfPrev = dcfNow, msfPrev = msfNow;
         dcfNow = dcfDat;
         msfNow = !msfDat; // inverted signal
+
+        // show signal on LED and report changes if enabled
+        switch (ledSel) {
+            case 'g':
+                led = +gpsPps;
+                break;
+            case 'd':
+                led = dcfNow;
+                break;
+            case 'm':
+                led = msfNow;
+                break;
+        }
+
         if (dcfNow == dcfPrev && msfNow == msfPrev)
             return {};
 
-        // show signal on LED if enabled
-        switch (ledSel) {
-            case 'd': led = dcfNow; break;
-            case 'm': led = msfNow; break;
-            case 'g': led = +gpsPps; break;
-        }
+        auto elapsed = (ticks - prevTicks) & 0x3FFF;
+        prevTicks = ticks;
 
+        if (flag("Rt"))
+            logf("R track d%d m%d elapsed %d", dcfPrev, msfPrev, elapsed);
+
+        tracker.eVal = (dcfPrev<<15) | (msfPrev<<14) | elapsed;
         return tracker;
     }
 } rusher;
@@ -314,10 +328,12 @@ struct Cmder : Worker {
             case 'd':
                 rusher.ledSel = 'd';
                 blinker.enable = false;
+                dcfOff.toggle(); // DCF77 enable on/off
                 break;
             case 'm':
                 rusher.ledSel = 'm';
                 blinker.enable = false;
+                msfOff.toggle(); // MSF60 enable on/off
                 break;
             case 'g': {
                 rusher.ledSel = 'g';
@@ -394,13 +410,19 @@ struct Idler : Worker {
                 send({ rusher.wId, rusher.TRACK }, { wId, EDGE });
                 break;
             case EDGE:
-                // TODO triggered each time the DCF or MSF signal changes
-                logf("E %d", in.eVal);
+                // triggered each time the DCF or MSF signal changes
+                decode((in.eVal>>15) & 1, (in.eVal>>14) & 1, in.eVal & 0x3FFF);
                 break;
             default:
                 fail();
         }
         return out;
+    }
+
+private:
+    void decode (bool dcf, bool msf, uint16_t ticks) {
+        if (0)
+            logf("decode %d %d %d", dcf, msf, ticks);
     }
 } idler;
 
@@ -431,9 +453,10 @@ int main () {
     }
     //Worker::showHistory(); // if called here, no names will be shown ...
 
-
-    dcfVcc = 1; // enable DCF77 module
-    msfVcc = 1; // enable MSF60 module
+    dcfVcc = 1; // power up DCF77 module
+    dcfOff = 1; // ... but keep it disabled
+    msfVcc = 1; // power up MSF60 module
+    msfOff = 1; // ... but keep it disabled
 
     initGps ();
 

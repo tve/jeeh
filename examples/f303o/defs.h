@@ -46,14 +46,14 @@ Pin gpsPps {"B5","U2"}; // D4 TIM3-CH2
 Pin lseOut {"A8","P0"}; // D6 MCO
 Pin lseIn  {"A0","U1"}; // D2 TIM2-ETR
 
-Pin dcfPon {"B7","P"}, // D9
+Pin dcfOff {"B7","P"}, // D9
     dcfDat {"A4","U"}, // D10
     dcfGnd {"A7","P"}, // D11
     dcfVcc {"A6","P"}; // D12
 
 Pin msfVcc {"C3","P"}, // A3
     msfDat {"C2","U"}, // A2
-    msfPon {"C1","P"}, // A1
+    msfOff {"C1","P"}, // A1
     msfGnd {"C0","P"}; // A0
 
 void initBoard () {

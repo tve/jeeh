@@ -266,7 +266,7 @@ private:
             unpend(); // use recursion to process in FIFO iso LIFO order
             stats(S_DELAY);
             saveInHist(H_PULL, evt);
-            process(evt, {});
+            reply(process(evt, {}));
         }
     }
 };
