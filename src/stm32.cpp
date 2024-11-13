@@ -235,7 +235,7 @@ void set (DateTime const& dt) {
 #endif
     RTC[ISR](7) = 0;            // clear INIT
 
-    // also uodate the fractional seconds
+    // also update the fractional seconds
     auto diff = dt.ff - (255-RTC[SSR]);
     if (diff <= 0)
         RTC[SHIFTR] = -diff; // SUBFS

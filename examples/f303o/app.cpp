@@ -124,8 +124,10 @@ private:
             --now.ss;
             pvt.nano += 1'000'000'000;
         }
-        if (pvt.nano > 0)
-            now.ff = pvt.nano / (1'000'000'000 / 256);
+        if (pvt.nano > 0) {
+            auto nsRtcTick = 1'000'000'000 / 256;
+            now.ff = (pvt.nano + nsRtcTick/2) / nsRtcTick; // rounded
+        }
 
         if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
@@ -139,9 +141,11 @@ private:
         if (now >= lastSet + 3600 && pvt.tAcc < 100 &&
                         now.yr != 0 && now.ss != 0 && (lon != 0 || lat != 0)) {
             if (flag("Gs")) {
-                auto dt1 = rtc::getDate().asText();
-                auto dt2 = now.asText();
-                logf("G set rtc %s gps %s", dt1.buf, dt2.buf);
+                auto dt = rtc::getDate();
+                auto t1 = dt.asText();
+                auto t2 = now.asText();
+                logf("G set rtc %s gps %s diff %d ms",
+                        t1.buf, t2.buf, dt.todMillis() - now.todMillis());
             }
             rtc::set(now);
             lastSet = now;
