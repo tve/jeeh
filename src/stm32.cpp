@@ -235,13 +235,12 @@ void set (DateTime const& dt) {
 #endif
     RTC[ISR](7) = 0;            // clear INIT
 
-#if 0 // does this work?
+    // also uodate the fractional seconds
     auto diff = dt.ff - (255-RTC[SSR]);
     if (diff <= 0)
         RTC[SHIFTR] = -diff; // SUBFS
     else
         RTC[SHIFTR] = (1<<31) | (256-diff); // ADD1S SUBFS
-#endif
 }
 
 void set (uint32_t t) {

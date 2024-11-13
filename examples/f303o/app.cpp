@@ -118,24 +118,26 @@ private:
         // now will only be exact when ss != 0 || ff != 0
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
+
+        // fractional seconds correction, but don't decrease when on 00-second
         if (pvt.nano < 0 && now.ss > 0) {
             --now.ss;
             pvt.nano += 1'000'000'000;
         }
         if (pvt.nano > 0)
             now.ff = pvt.nano / (1'000'000'000 / 256);
-        if ((pvt.valid & 3) != 3)
+
+        if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
         if (flag("Gf")) {
             auto dt = now.asText();
             logf("G fix %d pos %d %d ha %d sv %d %s ta %d",
-                    pvt.fixType, lat, lon, pvt.hAcc,
-                    pvt.numSV, dt.buf, pvt.tAcc);
+                 pvt.fixType, lat, lon, pvt.hAcc, pvt.numSV, dt.buf, pvt.tAcc);
         }
 
-        // set once an hour, but only when GPS has proper info
-        if (now >= lastSet + 3600 && now.yr != 0 && now.ss != 0 &&
-                                    lon != 0 && lat != 0 && pvt.tAcc < 100) {
+        // set once an hour, but only when GPS has accurate info
+        if (now >= lastSet + 3600 && pvt.tAcc < 100 &&
+                        now.yr != 0 && now.ss != 0 && (lon != 0 || lat != 0)) {
             if (flag("Gs")) {
                 auto dt1 = rtc::getDate().asText();
                 auto dt2 = now.asText();
