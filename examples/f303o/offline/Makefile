@@ -6,5 +6,8 @@ all: conv capt.gz
 deco: decode
 	./decode
 
+track: pulses
+	./pulses
+
 clean:
-	rm -f conv decode
+	rm -f conv decode pulses

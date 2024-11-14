@@ -1,3 +1,5 @@
 /conv
 /decode
-/out-*.csv
+/pulses
+/out*.csv
+/ticks.txt
