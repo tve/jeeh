@@ -428,8 +428,9 @@ private:
         if (!dcfOff)
             for (auto i = 0U; i < ticks; ++i)
                 if (dcf.feed(dcfSig)) {
-                    printf("dcf: ");
-                    for (auto i = 0; i < dcf.BANDS; ++i)
+                    auto dt = dcf.decode().asText();
+                    printf("dcf: %s", dt.buf);
+                    for (auto i = 1; i < dcf.BANDS; ++i)
                         printf(" %07x%08x", (uint32_t) (dcf.bits[i]>>32),
                                             (uint32_t) dcf.bits[i]);
                     printf("\n");
@@ -437,8 +438,9 @@ private:
         if (!msfOff)
             for (auto i = 0U; i < ticks; ++i)
                 if (msf.feed(msfSig)) {
-                    printf("msf: ");
-                    for (auto i = 0; i < msf.BANDS; ++i)
+                    auto dt = msf.decode().asText();
+                    printf("msf: %s", dt.buf);
+                    for (auto i = 1; i < msf.BANDS; ++i)
                         printf(" %07x%08x", (uint32_t) (msf.bits[i]>>32),
                                             (uint32_t) msf.bits[i]);
                     printf("\n");

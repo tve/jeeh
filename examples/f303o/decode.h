@@ -60,7 +60,45 @@ struct Convolution {
         return false;
     }
 
+    int check () const {
+        auto v = bits[1];
+        if constexpr (GAP)
+            return ((int) v & 0x01) * 0x10 +
+                   ((int) (~v>>20) & 0x01) * 0x08 +
+                   (parity((v>>21) & 0xFF)) * 0x04 +
+                   (parity((v>>29) & 0x7F)) * 0x02 +
+                   (parity((v>>36) & 0x7FFFFF));
+        else
+            return 0; // TODO
+    }
+
+    // decode DCF or MSF bitstream, but set seconds to the weekday (1..7)
+    DateTime decode () const {
+        auto v = bits[1];
+        if constexpr (GAP)
+            return {
+                bcd((v>>50) & 0xFF), bcd((v>>45) & 0x1F), bcd((v>>36) & 0x3F),
+                bcd((v>>29) & 0x3F), bcd((v>>21) & 0x7F),
+                (uint8_t) (v>>42) & 0x07
+            };
+        else
+            return {
+                bcd((v>>36) & 0xFF), bcd((v>>31) & 0x1F), bcd((v>>25) & 0x3F),
+                bcd((v>>16) & 0x3F), bcd((v>>9) & 0x7F),
+                (uint8_t) (v>>22) & 0x07
+            };
+    }
+
+private:
     int wrap (int n, int s) const {
         return sig[(n+(BINS*s)/10)%BINS]; // careful with int truncation
+    }
+
+    int parity (uint32_t v) const {
+        return __builtin_parity(v);
+    }
+
+    uint8_t bcd (int n) const {
+        return n - 6 * (n>>4);
     }
 };
