@@ -403,8 +403,8 @@ struct Watcher : Task {
 struct Idler : Task {
     enum TAG { START, EDGE };
 
-    Convolution<250,2,1> dcf;
-    Convolution<250,4,0> msf;
+    Convolution<250,1> dcf;
+    Convolution<250,0> msf;
 
     Idler () : Task ("idle") {}
 
@@ -425,13 +425,11 @@ struct Idler : Task {
 
 private:
     void decode (bool dcfSig, bool msfSig, uint16_t ticks) {
-        if (0)
-            logf("decode %d %d %d", dcfSig, msfSig, ticks);
         if (!dcfOff)
             for (auto i = 0U; i < ticks; ++i)
                 if (dcf.feed(dcfSig)) {
                     printf("dcf: ");
-                    for (auto i = 0U; i < 2; ++i)
+                    for (auto i = 0; i < dcf.BANDS; ++i)
                         printf(" %07x%08x", (uint32_t) (dcf.bits[i]>>32),
                                             (uint32_t) dcf.bits[i]);
                     printf("\n");
@@ -440,7 +438,7 @@ private:
             for (auto i = 0U; i < ticks; ++i)
                 if (msf.feed(msfSig)) {
                     printf("msf: ");
-                    for (auto i = 0U; i < 4; ++i)
+                    for (auto i = 0; i < msf.BANDS; ++i)
                         printf(" %07x%08x", (uint32_t) (msf.bits[i]>>32),
                                             (uint32_t) msf.bits[i]);
                     printf("\n");

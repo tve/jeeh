@@ -1,6 +1,6 @@
-template< uint16_t BINS, uint8_t BANDS, bool GAP >
+template< uint16_t BINS, bool GAP >
 struct Convolution {
-    static_assert(1 <= BANDS && BANDS <= 5);
+    enum { BANDS = GAP ? 2 : 4 };
 
     bool sig [BINS] {}, inSync =false;
     int high[BANDS] ={}, low =0, max =0, pos =0, off =0, num =0;
@@ -30,7 +30,7 @@ struct Convolution {
         } else {
             auto rel = (num-off+BINS)%BINS;
             // look for an edge in the first 550 ms of each second
-            if (sum > max && rel < (BINS*11)/20) {
+            if (sum > max && (BINS*24/50) < rel && rel < (BINS*26)/50) {
                 max = sum;
                 pos = num;
             }
