@@ -36,8 +36,15 @@ struct Convolution {
             }
             if (rel == BINS-1) {
                 for (auto i = 0; i < BANDS; ++i) {
-                    bits[i] >>= 1;
-                    bits[i] |= ((uint64_t) (high[i] > BINS/20)) << 59;
+                    auto on = high[i] > BINS/20;
+                    if (GAP) { // DCF sends bits in low-to-high order
+                        bits[i] >>= 1;
+                        bits[i] |= ((uint64_t) (on)) << 59;
+                    } else { // MSF sends bits in high-to-low order
+                        bits[i] <<= 1;
+                        bits[i] &= (1ULL<<60) - 1; // keep bottom 60 bits
+                        bits[i] |= on;
+                    }
                 }
                 if (max > BINS*7/10) {
                     inSync = num-off < 10*BINS;
@@ -45,8 +52,9 @@ struct Convolution {
                 }
                 max = 0;
                 // DCF has a missing pulse, MSF has a long pulse
-                return GAP ? high[0] < BINS/20 :
-                             high[0] + high[1] + high[2] + high[3] > BINS/5;
+                return GAP ? high[0] < BINS/20 && high[1] < BINS/20 :
+                             high[0] > BINS/20 && high[1] > BINS/20 &&
+                             high[2] > BINS/20 && high[3] > BINS/20;
             }
         }
         return false;
