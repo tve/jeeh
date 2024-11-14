@@ -5,6 +5,7 @@
 using namespace jeeh;
 #include "defs.h"
 #include "ubx.h"
+#include "decode.h"
 
 Ticker ticker;
 TICKER_INSTALL(ticker)
@@ -402,6 +403,9 @@ struct Watcher : Task {
 struct Idler : Task {
     enum TAG { START, EDGE };
 
+    Convolution<250,2,1> dcf;
+    Convolution<250,4,0> msf;
+
     Idler () : Task ("idle") {}
 
     Event process (Event in, Event out) override {
@@ -420,9 +424,27 @@ struct Idler : Task {
     }
 
 private:
-    void decode (bool dcf, bool msf, uint16_t ticks) {
+    void decode (bool dcfSig, bool msfSig, uint16_t ticks) {
         if (0)
-            logf("decode %d %d %d", dcf, msf, ticks);
+            logf("decode %d %d %d", dcfSig, msfSig, ticks);
+        if (!dcfOff)
+            for (auto i = 0U; i < ticks; ++i)
+                if (dcf.feed(dcfSig)) {
+                    printf("dcf: ");
+                    for (auto i = 0U; i < 2; ++i)
+                        printf(" %07x%08x", (uint32_t) (dcf.bits[i]>>32),
+                                            (uint32_t) dcf.bits[i]);
+                    printf("\n");
+                }
+        if (!msfOff)
+            for (auto i = 0U; i < ticks; ++i)
+                if (msf.feed(msfSig)) {
+                    printf("msf: ");
+                    for (auto i = 0U; i < 4; ++i)
+                        printf(" %07x%08x", (uint32_t) (msf.bits[i]>>32),
+                                            (uint32_t) msf.bits[i]);
+                    printf("\n");
+                }
     }
 } idler;
 
