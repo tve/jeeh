@@ -22,7 +22,7 @@ void testJumper () {
     TEST_ASSERT_EQUAL(1, inPin);
 }
 
-struct ExtIinterrupt : Worker {
+struct ExtIinterrupt : Task {
     enum TAG { START, ONE, TWO, THREE, FOUR };
 
     Pin outPin;
@@ -31,7 +31,7 @@ struct ExtIinterrupt : Worker {
     uint8_t calls =0;
     bool done =false;
 
-    ExtIinterrupt () : Worker ("ExtIinterrupt"), outPin ("A9","P") {}
+    ExtIinterrupt () : Task ("ExtIinterrupt"), outPin ("A9","P") {}
 
     Event process (Event in, Event out) override {
         capture[calls++] = '0' + in.eTag;
@@ -66,26 +66,26 @@ struct ExtIinterrupt : Worker {
 };
 
 void testExti () {
-    ExtIinterrupt worker;
+    ExtIinterrupt task;
     auto tkId = ticker.init();
     auto exId = exti.init();
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, exId);
     TEST_ASSERT_GREATER_THAN(exId, tkId);
 
     // start 3 delays and set up an EXTI pin interrupt
-    // FIXME Worker::send({ wkId, worker.START });
+    // FIXME Task::send({ wkId, task.START });
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!task.done);
 
-    TEST_ASSERT_EQUAL_STRING("01212121231114", worker.capture);
+    TEST_ASSERT_EQUAL_STRING("01212121231114", task.capture);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
-    Worker::showStats();
+    Task::showStats();
 }
 
 void allTests () {

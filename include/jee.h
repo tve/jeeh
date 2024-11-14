@@ -6,7 +6,10 @@
 #include <cstdlib>
 #include <cstring>
 
-//CG: svd defines
+//CG3 svd defines
+#define STM32   1
+#define STM32G4 1
+#define SVDNAME "STM32G431xx"
 
 #ifdef NASSERT
 #define assert(x) ((void) 0) // don't evaluate x (i.e. prevent side-effects)
@@ -24,7 +27,7 @@ extern "C" {
 namespace jeeh {
 
 //CG1 version
-constexpr auto VERSION = "<stripped>";
+constexpr auto VERSION = "v6.3.0-248-ga0d12826";
 
 #include "arch/sys.h"
 
@@ -34,7 +37,7 @@ constexpr auto VERSION = "<stripped>";
 #include "arch/pin.h"
 #endif
 
-#include "arch/workers.h"
+#include "arch/task.h"
 
 #if TRACE
 #include "trace.h"

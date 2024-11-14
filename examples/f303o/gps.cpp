@@ -37,7 +37,7 @@ struct Pool {
     }
 };
 
-struct Echo : Worker {
+struct Echo : Task {
     enum TAG { START, GPS_RX, GPS_TX, TTY_RX, TTY_TX };
 
     Pool gpsPool, ttyPool;

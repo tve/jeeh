@@ -94,13 +94,13 @@ void testWait () {
     TEST_ASSERT_INT_WITHIN(MARGIN, 300, cycles::micros()-start);
 }
 
-struct UartWorker : Worker {
+struct UartTask : Task {
     enum TAG { START, ONE, TWO, THREE, FOUR };
 
     uint8_t calls =0;
     bool done =false;
 
-    using Worker::init;
+    using Task::init;
 
 private:
     Event process (Event in, Event out) override {
@@ -131,32 +131,32 @@ private:
 };
 
 void testWork () {
-    UartWorker worker;
+    UartTask task;
     auto uwId = uartWork.init(UART_PINS, 1'000'000);
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, uwId);
 
     auto start = cycles::micros();
-    Worker::send({ wkId, worker.START });
-    TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be 2
+    Task::send({ wkId, task.START });
+    TEST_ASSERT_GREATER_OR_EQUAL(1, task.calls); // might already be 2
 
     int n = 0;
-    while (!worker.done) { asm ("wfi"); ++n; }
+    while (!task.done) { asm ("wfi"); ++n; }
     TEST_ASSERT_INT_WITHIN(MARGIN, 456, cycles::micros()-start); // 1+5+10+30 ch
 
-    TEST_ASSERT_EQUAL(5, worker.calls);
+    TEST_ASSERT_EQUAL(5, task.calls);
 }
 
-struct LoopWorker : Worker {
+struct LoopTask : Task {
     enum TAG { START, MORE, SENT, RECV };
 
     uint8_t calls =0, count =0;
     uint16_t sum =0;
     bool txDone =false, rxDone =false;
 
-    using Worker::init;
+    using Task::init;
 
 private:
     Event process (Event in, Event out) override {
@@ -192,25 +192,25 @@ private:
 };
 
 void testLoop () {
-    LoopWorker worker;
+    LoopTask task;
     auto uwId = uartWork.init(UART_PINS, 1'000'000);
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, uwId);
 
-    Worker::send({ wkId, worker.START });
-    TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be > 1
+    Task::send({ wkId, task.START });
+    TEST_ASSERT_GREATER_OR_EQUAL(1, task.calls); // might already be > 1
 
     int n = 0;
-    while (!worker.txDone) { asm ("wfi"); ++n; }
+    while (!task.txDone) { asm ("wfi"); ++n; }
     TEST_ASSERT_EQUAL(28, n);
-    while (!worker.rxDone) { asm ("wfi"); ++n; }
+    while (!task.rxDone) { asm ("wfi"); ++n; }
     TEST_ASSERT_EQUAL(29, n);
 
-    TEST_ASSERT_EQUAL(31, worker.calls);
-    TEST_ASSERT_EQUAL(27*28/2, worker.sum);
-    Worker::showStats();
+    TEST_ASSERT_EQUAL(31, task.calls);
+    TEST_ASSERT_EQUAL(27*28/2, task.sum);
+    Task::showStats();
 }
 
 void allTests () {

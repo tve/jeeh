@@ -8,7 +8,7 @@ using namespace jeeh;
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
-struct Stream : Worker {
+struct Stream : Task {
     enum TAG { START, TICK, SENT };
 
     uint16_t bits, repeat =0, prev =0;

@@ -32,7 +32,7 @@ struct EventList {
             }
         while (!safeSetIfMatch(free, slot, wPending[slot].eDst));
 
-        // safely insert the event in this worker's chain
+        // safely insert the event in this task's chain
         auto next = head;
         do
             wPending[slot] = Event (next, evt.eTag, evt.eVal);
@@ -42,7 +42,7 @@ struct EventList {
     Event pull (uint8_t dst) {
         assert(dst > 0);
 
-        // safely remove the first event from this worker's chain
+        // safely remove the first event from this task's chain
         auto slot = head;
         do
             if (slot == 0)
@@ -78,25 +78,25 @@ private:
     }
 };
 
-struct Worker {
-    constexpr static auto MAX_WORKERS = 20, MAX_HISTORY = 16;
+struct Task {
+    constexpr static auto MAX_taskS = 20, MAX_HISTORY = 16;
     constexpr static auto HIST_BASE = 0x2000'4000; // TODO not cleared on reset
     enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
     enum HISTS { H_SEND, H_REPLY, H_IRQ, H_PULL };
 
     char const* wName;
 
-    static inline uint8_t level; // index of currently active worker
+    static inline uint8_t level; // index of currently active task
 
-    Worker (char const* name =nullptr) : wName (name) {}
-    ~Worker () { workers[wId] = nullptr; }
+    Task (char const* name =nullptr) : wName (name) {}
+    ~Task () { tasks[wId] = nullptr; }
 
     uint8_t init () {
         if (wId == 0) {
-            wId = MAX_WORKERS; // assign id's in decreasing order
-            while (workers[--wId] != nullptr)
+            wId = MAX_taskS; // assign id's in decreasing order
+            while (tasks[--wId] != nullptr)
                 assert(wId > 0);
-            workers[wId] = this;
+            tasks[wId] = this;
         }
         send({ wId, 0 }); // send START event (always zero)
         return wId;
@@ -111,7 +111,7 @@ struct Worker {
 
     static void irqPendSV () {
         assert(irqState() == 0);         // PendSV magic ...
-        dispatch(MAX_WORKERS-1, {}, {}); // TODO worst case
+        dispatch(MAX_taskS-1, {}, {}); // TODO worst case
     }
 
 #if NOSTATS
@@ -121,9 +121,9 @@ struct Worker {
 
     static void showStats () {
         logf("%20s %9s %9s %9s %9s",
-                "WORKER", "SEND", "DELAY", "PREEMPT", "REPLY");
-        for (auto i = 0; i < MAX_WORKERS; ++i) {
-            auto w = workers[i];
+                "TASK", "SEND", "DELAY", "PREEMPT", "REPLY");
+        for (auto i = 0; i < MAX_taskS; ++i) {
+            auto w = tasks[i];
             if (w != nullptr)
                 logf("%15s #%3d %9u %9u %9u %9u",
                     w->wName != nullptr ? w->wName : "", i,
@@ -156,8 +156,8 @@ struct Worker {
             if (!evt)
                 break;
             auto id = evt.eDst & 0x3F;
-            auto name = id < MAX_WORKERS && workers[id] != nullptr ?
-                                workers[id]->wName : "";
+            auto name = id < MAX_taskS && tasks[id] != nullptr ?
+                                tasks[id]->wName : "";
             logf("%4d: [%c] dst %-3d tag %-3d val %-5d %s", 
                     i, "SRIP"[evt.eDst>>6], id, evt.eTag, evt.eVal, name);
         }
@@ -175,7 +175,7 @@ struct Worker {
         NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
     }
 
-    uint8_t wId =0; // index (and priority) of this worker
+    uint8_t wId =0; // index (and priority) of this task
 protected:
     virtual Event process (Event in, Event out) =0;
 
@@ -204,7 +204,7 @@ protected:
     static void reply (Event evt) {
         auto dst = evt.eDst;
         if (dst != 0) {
-            auto w = workers[dst];
+            auto w = tasks[dst];
             assert(dst <= level && w != nullptr);
             w->stats(S_REPLY);
             saveInHist(H_REPLY, evt);
@@ -215,7 +215,7 @@ protected:
 private:
     EventList wPend;  // pending events
 
-    static inline Worker* workers [MAX_WORKERS];
+    static inline Task* tasks [MAX_taskS];
 
 #if NOSTATS
     void stats (STATS) {}
@@ -247,13 +247,13 @@ private:
         auto prev = level;
         level = up;
         if (evt.eDst == level) {
-            auto w = workers[level];
+            auto w = tasks[level];
             assert(w != nullptr);
             w->stats(S_SEND);
             reply(w->process(evt, done));
         }
-        while (level > prev && workers[level] != nullptr) {
-            workers[level]->unpend();
+        while (level > prev && tasks[level] != nullptr) {
+            tasks[level]->unpend();
             --level;
         }
         level = prev;

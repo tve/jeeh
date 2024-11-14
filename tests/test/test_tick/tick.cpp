@@ -31,16 +31,16 @@ auto tkId = ticker.init();
     for (auto i = 1; i <= 25; ++i)
         asm ("wfi");
     TEST_ASSERT_INT_WITHIN(1, 25, ticker.millis()-start);
-    Worker::showStats();
+    Task::showStats();
 }
 
-struct Sequential : Worker {
+struct Sequential : Task {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     bool done =false;
 
-    Sequential () : Worker ("Sequential") {}
+    Sequential () : Task ("Sequential") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -68,31 +68,31 @@ struct Sequential : Worker {
 };
 
 void testSequential () {
-    Sequential worker;
+    Sequential task;
     auto tkId = ticker.init();
-    auto sdId = worker.init();
+    auto sdId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, sdId);
     TEST_ASSERT_GREATER_THAN(sdId, tkId);
 
     // start 3 delays in sequence, for 5, 10, and 20 ms, respectively
-    // FIXME Worker::send({ sdId, worker.START });
+    // FIXME Task::send({ sdId, task.START });
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!task.done);
 
     // since the ticker runs every 1 ms, there will have been 35 interrupts
     TEST_ASSERT_EQUAL(35, n);
-    Worker::showStats();
+    Task::showStats();
 }
 
-struct Parallel : Worker {
+struct Parallel : Task {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     uint8_t calls =0;
 
-    Parallel () : Worker ("Parallel") {}
+    Parallel () : Task ("Parallel") {}
 
     Event process (Event in, Event out) override {
         ++calls;
@@ -123,32 +123,32 @@ struct Parallel : Worker {
 };
 
 void testParallel () {
-    Parallel worker;
+    Parallel task;
     auto tkId = ticker.init();
-    auto pdId = worker.init();
+    auto pdId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
-    Worker::send({ pdId, worker.START });
-    TEST_ASSERT_EQUAL(1, worker.calls);
+    Task::send({ pdId, task.START });
+    TEST_ASSERT_EQUAL(1, task.calls);
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (worker.calls < 4);
+    do { asm ("wfi"); ++n; } while (task.calls < 4);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
-    Worker::showStats();
+    Task::showStats();
 }
 
-struct Cancelled : Worker {
+struct Cancelled : Task {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start;
     uint8_t calls =0;
 
-    Cancelled () : Worker ("Cancelled") {}
+    Cancelled () : Task ("Cancelled") {}
 
     Event process (Event in, Event out) override {
         ++calls;
@@ -179,34 +179,34 @@ struct Cancelled : Worker {
 };
 
 void testCancelled () {
-    Cancelled worker;
+    Cancelled task;
     auto tkId = ticker.init();
-    auto cdId = worker.init();
+    auto cdId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, cdId);
     TEST_ASSERT_GREATER_THAN(cdId, tkId);
 
     // start 3 delays in parallel, for 5, 15, and 30 ms, respectively
     // after 5 ms, the 15 ms delay is cancelled so it won't trigger
-    Worker::send({ cdId, worker.START });
-    TEST_ASSERT_EQUAL(1, worker.calls);
+    Task::send({ cdId, task.START });
+    TEST_ASSERT_EQUAL(1, task.calls);
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (worker.calls < 3);
+    do { asm ("wfi"); ++n; } while (task.calls < 3);
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
-    Worker::showStats();
+    Task::showStats();
 }
 
-struct Periodic : Worker {
+struct Periodic : Task {
     enum TAG { START, ONE, TWO, THREE };
 
     uint16_t start, expect =0;
     uint8_t calls =0;
     bool done =false;
 
-    Periodic () : Worker ("Periodic") {}
+    Periodic () : Task ("Periodic") {}
 
     Event process (Event in, Event out) override {
         ++calls;
@@ -240,9 +240,9 @@ struct Periodic : Worker {
 };
 
 void testPeriodic () {
-    Periodic worker;
+    Periodic task;
     auto tkId = ticker.init();
-    auto pdId = worker.init();
+    auto pdId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
@@ -250,19 +250,19 @@ void testPeriodic () {
     // start 3 delays in parallel, one of them is periodic
     // another delay cancels the periodic one
     // and the last one makes sure the cancellation worked
-    Worker::send({ pdId, worker.START });
-    TEST_ASSERT_EQUAL(1, worker.calls);
+    Task::send({ pdId, task.START });
+    TEST_ASSERT_EQUAL(1, task.calls);
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (!worker.done);
-    TEST_ASSERT_EQUAL(6, worker.calls); // start + 7, 14, 21, 25, 30 ms
+    do { asm ("wfi"); ++n; } while (!task.done);
+    TEST_ASSERT_EQUAL(6, task.calls); // start + 7, 14, 21, 25, 30 ms
 
     // since the ticker runs every 1 ms, there will have been 30 interrupts
     TEST_ASSERT_EQUAL(30, n);
-    Worker::showStats();
+    Task::showStats();
 }
 
-struct Postpone : Worker {
+struct Postpone : Task {
     enum TAG { START, ONE, TWO, THREE, FOUR };
 
     uint16_t start;
@@ -270,7 +270,7 @@ struct Postpone : Worker {
     uint8_t calls =0;
     bool done =false;
 
-    Postpone () : Worker ("Postpone") {}
+    Postpone () : Task ("Postpone") {}
 
     Event process (Event in, Event out) override {
         capture[calls++] = '0' + in.eTag;
@@ -305,27 +305,27 @@ struct Postpone : Worker {
 };
 
 void testPostpone () {
-    Postpone worker;
+    Postpone task;
     auto tkId = ticker.init();
-    auto pdId = worker.init();
+    auto pdId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, pdId);
     TEST_ASSERT_GREATER_THAN(pdId, tkId);
 
     // start two periodic timers and verify the sequence in which they fired
-    Worker::send({ pdId, worker.START });
-    TEST_ASSERT_EQUAL(1, worker.calls);
+    Task::send({ pdId, task.START });
+    TEST_ASSERT_EQUAL(1, task.calls);
 
     int n = 0;
-    do { asm ("wfi"); ++n; } while (!worker.done);
+    do { asm ("wfi"); ++n; } while (!task.done);
 
     TEST_ASSERT_EQUAL_STRING("011121111211112111121111211112131114",
-                                worker.capture);
+                                task.capture);
 
     // since the ticker runs every 1 ms, there were at most 30 interrupts
     TEST_ASSERT_LESS_OR_EQUAL(30, n);
     //TEST_ASSERT_EQUAL(30, n); // TODO why 18 iso 30?
-    Worker::showStats();
+    Task::showStats();
 }
 
 void allTests () {

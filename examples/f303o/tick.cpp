@@ -6,7 +6,7 @@ using namespace jeeh;
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
-struct Blinker : Worker {
+struct Blinker : Task {
     enum TAG { START, TICK };
 
     Event process (Event in, Event out) override {

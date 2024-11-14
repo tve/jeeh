@@ -263,14 +263,14 @@ logDump(snBuf, sizeof snBuf);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(buf, buf2, sizeof buf2);
 }
 
-struct SpiWorker : Worker {
+struct SpiTask : Task {
     enum TAG { START, TX, TX1, TX2, TX3, RX, DONE };
 
     uint8_t calls =0;
     bool done =false;
     uint8_t buf [100];
 
-    using Worker::init;
+    using Task::init;
 
 private:
     Event process (Event in, Event out) override {
@@ -308,53 +308,53 @@ private:
 };
 
 void testTxWork () {
-    SpiWorker worker;
+    SpiTask task;
     auto swId = spiWork.init(SPI_PINS, SPEED);
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, swId);
 
     auto start = cycles::micros();
-    Worker::send({ wkId, worker.TX });
-    TEST_ASSERT_GREATER_OR_EQUAL(1, worker.calls); // might already be 2
+    Task::send({ wkId, task.TX });
+    TEST_ASSERT_GREATER_OR_EQUAL(1, task.calls); // might already be 2
 
     int n = 0;
-    while (!worker.done) { asm ("wfi"); ++n; }
+    while (!task.done) { asm ("wfi"); ++n; }
     TEST_ASSERT_INT_WITHIN(MARGIN, 50, cycles::micros()-start);
 
-    TEST_ASSERT_EQUAL(5, worker.calls);
+    TEST_ASSERT_EQUAL(5, task.calls);
 }
 
 void testRxWork () {
-    SpiWorker worker;
+    SpiTask task;
     auto swId = spiWork.init(SPI_PINS, SPEED);
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, swId);
 
     auto start = cycles::micros();
-    Worker::send({ wkId, worker.RX });
-    TEST_ASSERT_EQUAL(1, worker.calls);
+    Task::send({ wkId, task.RX });
+    TEST_ASSERT_EQUAL(1, task.calls);
 
     int n = 0;
-    while (!worker.done) { asm ("wfi"); ++n; }
+    while (!task.done) { asm ("wfi"); ++n; }
     TEST_ASSERT_INT_WITHIN(MARGIN, 38, cycles::micros()-start);
 
-    TEST_ASSERT_EQUAL(2, worker.calls);
+    TEST_ASSERT_EQUAL(2, task.calls);
 }
 
 void testFlashWork () {
-    SpiWorker worker;
+    SpiTask task;
     auto swId = spiWork.init(SPI_PINS, SPEED);
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, swId);
 
     // TODO flash driver will need to be extended to work in async mode
-    //  i.e. wrap as worker and use periodic ticks to check erase completion
+    //  i.e. wrap as task and use periodic ticks to check erase completion
 
     SpiFlash spif (spiWork);
 

@@ -33,7 +33,7 @@ uart::Work<UART10_TYPE> uart10 (UART10_CONF);
 #define UART10_IRQHandler USART10_IRQHandler 
 UART10_INSTALL(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
-struct Matrix : Worker {
+struct Matrix : Task {
     enum TAG { START, R1, R2, R3, R4, R5, R6, R10, T1, T2, T3, T4, T5, T6, NE };
     static constexpr char const* names [] = {
         " S","R1","R2","R3","R4","R5","R6","R10","T1","T2","T3","T4","T5","T6"

@@ -1,15 +1,15 @@
-// Very basic test of events and workers.
+// Very basic test of events and tasks.
 
 #include "../common.h"
 
 void setUp () {}
 void tearDown () {}
 
-struct SimpleWorker : Worker {
+struct SimpleTask : Task {
     uint8_t calls =0, lastTag =0;
     uint16_t lastVal =0;
 
-    using Worker::init;
+    using Task::init;
 
 private:
     Event process (Event in, Event out) override {
@@ -24,8 +24,8 @@ private:
     }
 };
 
-void testSimpleWorker () {
-    SimpleWorker w1;
+void testSimpleTask () {
+    SimpleTask w1;
 
     auto id1 = w1.init();
     TEST_ASSERT_GREATER_THAN(0, id1);
@@ -34,23 +34,23 @@ void testSimpleWorker () {
     TEST_ASSERT_EQUAL(0, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send({ id1, 11 });
+    Task::send({ id1, 11 });
     TEST_ASSERT_EQUAL(1, w1.calls);
     TEST_ASSERT_EQUAL(11, w1.lastTag);
     TEST_ASSERT_EQUAL(0, w1.lastVal);
 
-    Worker::send({ id1, 22, 1111 });
+    Task::send({ id1, 22, 1111 });
     TEST_ASSERT_EQUAL(2, w1.calls);
     TEST_ASSERT_EQUAL(22, w1.lastTag);
     TEST_ASSERT_EQUAL(1111, w1.lastVal); // no change in incoming value
 
     // request a reply, which also gets sent to w1 in this case
-    Worker::send({ id1, 33, 2222 }, { id1, 44, 3333 });
+    Task::send({ id1, 33, 2222 }, { id1, 44, 3333 });
     TEST_ASSERT_EQUAL(4, w1.calls);
     TEST_ASSERT_EQUAL(44, w1.lastTag);
     TEST_ASSERT_EQUAL(6666, w1.lastVal); // reply value was doubled
 
-    SimpleWorker w2;
+    SimpleTask w2;
 
     auto id2 = w2.init();
     TEST_ASSERT_GREATER_THAN(0, id2);
@@ -58,7 +58,7 @@ void testSimpleWorker () {
     TEST_ASSERT_NOT_EQUAL(id1, id2);
 
     // request a reply, which now gets sent from w1 to w2
-    Worker::send({ id1, 55, 321 }, { id2, 66, 123 });
+    Task::send({ id1, 55, 321 }, { id2, 66, 123 });
     TEST_ASSERT_EQUAL(5, w1.calls);
     TEST_ASSERT_EQUAL(55, w1.lastTag);
     TEST_ASSERT_EQUAL(321, w1.lastVal);
@@ -68,5 +68,5 @@ void testSimpleWorker () {
 }
 
 void allTests () {
-    RUN_TEST(testSimpleWorker);
+    RUN_TEST(testSimpleTask);
 }

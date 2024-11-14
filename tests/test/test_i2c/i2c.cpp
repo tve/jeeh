@@ -210,14 +210,14 @@ void testFramWait () {
 }
 
 #if 0
-struct I2cWorker : Worker {
+struct I2cTask : Task {
     enum TAG { START, TX, TX1, TX2, TX3, RX, DONE };
 
     uint8_t calls =0;
     bool done =false;
     uint8_t buf [100];
 
-    using Worker::init;
+    using Task::init;
 
 private:
     Event process (Event in, Event out) override {
@@ -257,15 +257,15 @@ private:
 void testFramWork () {
     if (DUMP)
         logf("\n<<< testFramWork >>>");
-    I2cWorker worker;
+    I2cTask task;
     auto swId = i2cWork.init(I2C_PINS, i2cTiming(SPEED));
-    auto wkId = worker.init();
+    auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
     TEST_ASSERT_GREATER_THAN(wkId, swId);
 
     // TODO FRAM driver will need to be extended to work in async mode
-    //  i.e. wrap as worker and use periodic ticks to check erase completion
+    //  i.e. wrap as task and use periodic ticks to check erase completion
 }
 #endif
 

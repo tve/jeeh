@@ -279,10 +279,10 @@ cycles::usBusy(15);
             if ((isr & 0x10F0) != 0) // TIMEOUT TCR TC STOPF NACKF
                 break;
         }
-        Worker::irqClear(cfg.evIrq);
-        //Worker::irqClear(cfg.erIrq);
-        Worker::irqClear(cfg.txIrq);
-        Worker::irqClear(cfg.rxIrq);
+        Task::irqClear(cfg.evIrq);
+        //Task::irqClear(cfg.erIrq);
+        Task::irqClear(cfg.txIrq);
+        Task::irqClear(cfg.rxIrq);
         return finishReq(m, p, n);
     }
 
@@ -311,7 +311,7 @@ cfg.dma.completed();
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct Work : Sync<A,D,T,R>, Worker {
+struct Work : Sync<A,D,T,R>, Task {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg;
 
@@ -323,7 +323,7 @@ struct Work : Sync<A,D,T,R>, Worker {
         BASE::init(defs, timing);
         irqEnable(cfg.evIrq);
         //irqEnable(cfg.erIrq);
-        return Worker::init();
+        return Task::init();
     }
 
     void deinit () {

@@ -12,16 +12,16 @@ TICKER_INSTALL(ticker)
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
 
-struct Rusher : Worker {
+struct Rusher : Task {
     enum TAG { START, TRACK, TICK, PPS };
 
     char ledSel =0;                  // which signal to display on the LED
     uint8_t dcfNow, msfNow;          // values captured during last tick
-    Event tracker;                   // worker to notify on each edge change
+    Event tracker;                   // task to notify on each edge change
     uint16_t ppsPrev =0;             // cycle count of last PPS pulse
     uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms, that is)
 
-    Rusher () : Worker ("rush") {}
+    Rusher () : Task ("rush") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -36,7 +36,7 @@ struct Rusher : Worker {
                 break;
             case TICK:
                 ++ticks; // keep track of current tick count
-                out = ticked(); // may have a reply for tracking worker
+                out = ticked(); // may have a reply for tracking task
                 break;
             case PPS:
 //assert((uint16_t) (cycles::count() - in.eVal) < 10000);
@@ -86,7 +86,7 @@ private:
     }
 } rusher;
 
-struct Gpser : Worker {
+struct Gpser : Task {
     enum TAG { START, RECV };
 
     ubx::Parser<100> ubx;
@@ -94,7 +94,7 @@ struct Gpser : Worker {
     uint32_t lastSet =0; // UTC time in seconds
     DateTime now;
 
-    Gpser () : Worker ("gps") {}
+    Gpser () : Task ("gps") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -168,12 +168,12 @@ private:
 
 } gpser;
 
-struct Adjuster : Worker {
+struct Adjuster : Task {
     enum TAG { START, ADJUST };
 
     int8_t lsePrev =0;
 
-    Adjuster () : Worker ("adjust") {}
+    Adjuster () : Task ("adjust") {}
 
     uint8_t init () {
         RCC[0x04](24,3) = 3; // CFGR MCO=LSE
@@ -194,7 +194,7 @@ struct Adjuster : Worker {
         TIM2[CR1] = 1;        // CEN
 
         irqEnable(Irq::TIM3);
-        return Worker::init();
+        return Task::init();
     }
 
     int lseDiff () const {
@@ -234,12 +234,12 @@ struct Adjuster : Worker {
 } adjuster;
 IRQ_HANDLER(TIM3, adjuster.irqCapture)
 
-struct Blinker : Worker {
+struct Blinker : Task {
     enum TAG { START, TICK };
 
     bool enable =false;
 
-    Blinker () : Worker ("blink") {}
+    Blinker () : Task ("blink") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -257,13 +257,13 @@ struct Blinker : Worker {
     }
 } blinker;
 
-struct Cmder : Worker {
+struct Cmder : Task {
     enum TAG { START, TTYIN, REPORT };
 
     uint32_t value =0, lastVal =0;
     char lastCh =0;
 
-    Cmder () : Worker ("cmd") {}
+    Cmder () : Task ("cmd") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -355,7 +355,7 @@ struct Cmder : Worker {
                 showStats();
                 break;
             case 'h':
-                logf("history: max %d", Worker::MAX_HISTORY-1);
+                logf("history: max %d", Task::MAX_HISTORY-1);
                 showHistory();
                 break;
             case 'r':
@@ -378,10 +378,10 @@ struct Cmder : Worker {
 
 } cmder;
 
-struct Watcher : Worker {
+struct Watcher : Task {
     enum TAG { START, TICK };
 
-    Watcher () : Worker ("watch") {}
+    Watcher () : Task ("watch") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -399,10 +399,10 @@ struct Watcher : Worker {
     }
 } watcher;
 
-struct Idler : Worker {
+struct Idler : Task {
     enum TAG { START, EDGE };
 
-    Idler () : Worker ("idle") {}
+    Idler () : Task ("idle") {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
@@ -451,7 +451,7 @@ int main () {
         case 1:  logf("power up"); break;
         case 2:  logf("system reset"); break;
     }
-    //Worker::showHistory(); // if called here, no names will be shown ...
+    //Task::showHistory(); // if called here, no names will be shown ...
 
     dcfVcc = 1; // power up DCF77 module
     dcfOff = 1; // ... but keep it disabled
@@ -460,7 +460,7 @@ int main () {
 
     initGps ();
 
-    // start workers in decreasing priority
+    // start tasks in decreasing priority
     extier.init();
     ticker.init();
     rusher.init();
@@ -471,7 +471,7 @@ int main () {
     watcher.init();
     idler.init();
 
-    Worker::showHistory(); // a bit late, but now all workers have names
+    Task::showHistory(); // a bit late, but now all tasks have names
     cmder.doCmd('?'); // shows a help msg
 
     while (true)

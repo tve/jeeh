@@ -176,8 +176,8 @@ struct Sync : Poll<A> {
             if (cfg.dma.completed() == 0)
                 asm ("wfe");
         }
-        Worker::irqClear(cfg.txIrq);
-        Worker::irqClear(cfg.rxIrq);
+        Task::irqClear(cfg.txIrq);
+        Task::irqClear(cfg.rxIrq);
         return finishReq(w, p, n);
     }
 
@@ -226,7 +226,7 @@ protected:
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct Work : Sync<A,D,T,R>, Worker {
+struct Work : Sync<A,D,T,R>, Task {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg;
 
@@ -238,7 +238,7 @@ struct Work : Sync<A,D,T,R>, Worker {
         BASE::init(defs, khz);
         irqEnable(cfg.txIrq);
         irqEnable(cfg.rxIrq);
-        return Worker::init();
+        return Task::init();
     }
 
     void deinit () {

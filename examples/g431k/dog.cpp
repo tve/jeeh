@@ -11,7 +11,7 @@ TICKER_INSTALL(ticker)
 
 uint32_t start;
 
-struct Kicker : Worker {
+struct Kicker : Task {
     enum TAG { START, TICK };
 
     uint16_t ms =1500;

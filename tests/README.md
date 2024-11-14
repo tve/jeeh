@@ -3,7 +3,7 @@
 Run all tests on the attached board with: **`pio test`**
 
 - **smoke** - quick check that the test setup works
-- **worker** - basic tests for `Event` and `Worker`
+- **task** - basic tests for `Event` and `Task`
 - **rtc** - built-in Real Time Clock test (using LSI, not LSE)
 - **tick** - set up SysTick interrupt and test timer chain in `Ticker`
 - **exti** - set up EXTI interrupts and test `ExtIrq` (needs PA9-PA10 jumper)

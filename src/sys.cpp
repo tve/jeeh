@@ -205,7 +205,7 @@ void PendSV_Handler () {
 #endif
         " svc 0 \n"
         " b . \n"   // never reached
-    :: "i" (Worker::irqPendSV));
+    :: "i" (Task::irqPendSV));
 }
 
 //------------------------------------------------------------------------- SVC

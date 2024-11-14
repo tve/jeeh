@@ -10,11 +10,11 @@ namespace jeeh {
 #define EXTI2       EXTI2_TSC
 #endif
 
-struct ExtIrq : Worker {
+struct ExtIrq : Task {
     enum TAG { START, FIRED };
     enum MODE { NONE, RISE, FALL, BOTH };
 
-    ExtIrq () : Worker ("exti") {}
+    ExtIrq () : Task ("exti") {}
 
     uint8_t init () {
 #if !(STM32L0 | STM32WL)
@@ -33,7 +33,7 @@ struct ExtIrq : Worker {
         irqEnable(Irq::EXTI9_5);
         irqEnable(Irq::EXTI15_10);
 #endif
-        return Worker::init();
+        return Task::init();
     }
 
     void irqExti () {

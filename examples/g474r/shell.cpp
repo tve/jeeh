@@ -6,7 +6,7 @@ using namespace jeeh;
 Ticker ticker;
 TICKER_INSTALL(ticker)
 
-struct Blinker : Worker {
+struct Blinker : Task {
     enum TAG { START, TICK };
 
     bool enable =false;
@@ -29,7 +29,7 @@ struct Blinker : Worker {
 
 Blinker blinker;
 
-struct Shell : Worker {
+struct Shell : Task {
     enum TAG { START, TTYIN };
 
     Event process (Event in, Event out) override {
@@ -56,7 +56,7 @@ Shell shell;
 int main () {
     initBoard();
 
-    // start workers, in decreasing priority
+    // start tasks, in decreasing priority
     ticker.init();
     blinker.init();
     shell.init();

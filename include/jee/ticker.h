@@ -1,15 +1,15 @@
 namespace jeeh {
 
-struct Ticker : Worker {
+struct Ticker : Task {
     constexpr static auto MAX_TIMERS = 20;
     enum TAG { START, TICK, DELAY, PERIOD, CANCEL };
 
-    Ticker () : Worker ("tick") {}
+    Ticker () : Task ("tick") {}
 
     uint8_t init () {
         SCB.byte(0x23) = 0x40; // irq #15: SysTick prio lowered a bit
         setRate(1);
-        return Worker::init();
+        return Task::init();
     }
 
     void irqSysTick () {

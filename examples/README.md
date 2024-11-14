@@ -9,22 +9,22 @@ Each application can be built and run independently, e.g.
 **`f103c8` - Blue Pill w/ BMP @ 72 MHz**
 
 * `f103b/blink` - blink on-board LED and send some text to serial
-* `f103b/tick` - blink on-board LED via periodic timer and worker
+* `f103b/tick` - blink on-board LED via periodic timer and task
 
 **`f103rb` - Nucleo-64 @ 72 MHz**
 
 * `f103r/blink` - blink on-board LED and send some text to serial
-* `f103r/tick` - blink on-board LED via periodic timer and worker
+* `f103r/tick` - blink on-board LED via periodic timer and task
 
 **`f303k8` - Nucleo-32 @ 72 MHz**
 
 * `f303k/blink` - blink on-board LED and send some text to serial
-* `f303k/tick` - blink on-board LED via periodic timer and worker
+* `f303k/tick` - blink on-board LED via periodic timer and task
 
 **`f303rc` - Olimexino w/ ST-Link @ 72 MHz**
 
 * `f303o/blink` - blink on-board LED and send some text to serial
-* `f303o/tick` - blink on-board LED via periodic timer and worker
+* `f303o/tick` - blink on-board LED via periodic timer and task
 * `f303o/dcf77` - decode DCF77 time pulses using 1st radio module
 * `f303o/msf60` - decode MSF60 time pulses using 2nd radio module
 * `f303o/gps` - show messages coming from attached GPS module
@@ -35,7 +35,7 @@ Each application can be built and run independently, e.g.
 
 * `f413z/blink` - blink on-board LED and send some text to serial
 * `f413z/uarts` - send data through multiple uarts using async driver
-* `f413z/tick` - blink on-board LED via periodic timer and worker
+* `f413z/tick` - blink on-board LED via periodic timer and task
 
 **`f429zi` - Haoyu w/ 5" TFT @ 180 MHz**
 
@@ -48,12 +48,12 @@ Each application can be built and run independently, e.g.
 **`f746zg` - Nucleo-144 @ 216 MHz**
 
 * `f746z/blink` - blink on-board LED and send some text to serial
-* `f746z/tick` - blink on-board LED via periodic timer and worker
+* `f746z/tick` - blink on-board LED via periodic timer and task
 
 **`g031j6` - Discovery @ 64 MHz**
 
 * `g031d/blink` - blink on-board LED and send some text to serial
-* `g031d/tick` - blink on-board LED via periodic timer and worker
+* `g031d/tick` - blink on-board LED via periodic timer and task
 
 **`g431kb` - Nucleo-32 @ 160 MHz**
 
@@ -65,12 +65,12 @@ Each application can be built and run independently, e.g.
 * `g431k/oled` - show a test pattern on 128x64 or 128x32 I2C OLEDs
 * `g431k/imu` - read out the values of a 9-DOF I2C IMU sensor
 * `g431k/pulses` - generate pulses to check the logic-analyser hookup
-* `g431k/tick` - blink on-board LED via periodic timer and worker
+* `g431k/tick` - blink on-board LED via periodic timer and task
 
 **`g474re` - Nucleo-64 @ 160 MHz**
 
 * `g474r/blink` - blink on-board LED and send some text to serial
-* `g474r/tick` - blink on-board LED via periodic timer and worker
+* `g474r/tick` - blink on-board LED via periodic timer and task
 * `g474r/lcd` - graphics and text on a 480x320 LCD shield
 * `g474r/sdspi` - connect to the µSD card on the LCD shield
 * `g474r/shell` - explore the use of a command-line shell
@@ -78,21 +78,21 @@ Each application can be built and run independently, e.g.
 **`h743zi` - Nucleo-144 @ 480 MHz**
 
 * `h743z/blink` - blink on-board LED and send some text to serial
-* `h743z/tick` - blink on-board LED via periodic timer and worker
+* `h743z/tick` - blink on-board LED via periodic timer and task
 
 **`l011k4` - Nucleo-32 @ 32 MHz**
 
 * `l011k/blink` - blink on-board LED and send some text to serial
-* `l011k/tick` - blink on-board LED via periodic timer and worker
+* `l011k/tick` - blink on-board LED via periodic timer and task
 
 **`l031k6` - Nucleo-32 @ 32 MHz**
 
 * `l031k/blink` - blink on-board LED and send some text to serial
-* `l031k/tick` - blink on-board LED via periodic timer and worker
+* `l031k/tick` - blink on-board LED via periodic timer and task
 
 **`l412kb` - Nucleo-32 @ 80 MHz**
 
 * `l412k/blink` - blink on-board LED and send some text to serial
 * `l412k/i2c` - scan for attached devices on the I2C bus
 * `l412k/spi` - read out the BMP390 sensor using its SPI pins
-* `l412k/tick` - blink on-board LED via periodic timer and worker
+* `l412k/tick` - blink on-board LED via periodic timer and task
