@@ -139,11 +139,10 @@ private:
             if (now.ss > 0)
                 --now.ss;
             else
-                now = DateTime{ now - 1 };
+                now = DateTime{ now-1 }; // yuck
             pvt.nano += 1'000'000'000;
         }
         now.ms = pvt.nano / 1'000'000;
-//now.ms = now.ss % 20 < 10 ? 125 : 750; // force tricky cases
 
         if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
@@ -154,8 +153,8 @@ private:
         }
 
         // set once an hour, but only when GPS has accurate info
-        if (now >= lastSet + 900 && pvt.tAcc < 100 &&
-                            now.yr != 0 && (lon|lat) != 0) {
+        if (now >= lastSet + 3600 && pvt.tAcc < 100 &&
+                            now.yr != 0 && now.ss != 0 && (lon|lat) != 0) {
             if (flag("Gs")) {
                 auto dt = rtc::getDate();
                 auto t1 = dt.asText(), t2 = now.asText();
@@ -163,7 +162,6 @@ private:
                         t1.buf, t2.buf, dt.todMillis() - now.todMillis());
             }
             rtc::set(now);
-auto dt = rtc::getDate().asText(); logf("11 %s", dt.buf);
             lastSet = now;
         }
     }
