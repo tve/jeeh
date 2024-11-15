@@ -106,7 +106,8 @@ class DateTime {
     }
 
 public:
-    uint8_t yr, mo, dy, hh, mm, ss, ff =0;
+    uint8_t yr, mo, dy, hh, mm, ss;
+    uint16_t ms =0;
 
     constexpr DateTime (int y, int m, int d, int h =0, int i =0, int s =0)
         : yr (y % 100), mo (m), dy (d), hh (h), mm (i), ss (s) {}
@@ -117,7 +118,7 @@ public:
           hh (conv2d(t)), mm (conv2d(t+3)), ss (conv2d(t+6)) {}
 
     explicit DateTime (uint32_t t, uint8_t f =0) {
-        ff = f;
+        ms = f;
         ss = t % 60;
         t /= 60;
         mm = t % 60;
@@ -152,12 +153,8 @@ public:
         return ((days * 24L + hh) * 60 + mm) * 60 + ss;
     }
 
-    uint32_t todTicks () {
-        return ff + 256 * (ss + 60 * (mm + 60 * hh)); // 256 Hz steps
-    }
-
-    uint32_t todMillis () {
-        return (todTicks() * 125U) / 32U; // avoid 32-bit overflow
+    uint32_t todMillis () const {
+        return ms + 1000 * (ss + 60 * (mm + 60 * hh));
     }
 
     struct Text {
@@ -165,7 +162,7 @@ public:
 
         Text (DateTime const& dt) {
             snprintf(buf, sizeof buf, "20%02d-%02d-%02d %02d:%02d:%02d.%03d",
-                    dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff*1000)/256);
+                    dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, dt.ms);
         }
     };
 

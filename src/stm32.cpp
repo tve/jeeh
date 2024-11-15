@@ -210,7 +210,7 @@ DateTime getDate () {
     } while ((int) ssr != RTC[SSR]);
 
     DateTime dt;
-    dt.ff = 255 - ssr; // assumes PREDIV_S is 255
+    dt.ms = ((255-ssr)*1000)/256; // assumes PREDIV_S is 255
     dt.ss = fromBcd(tod);
     dt.mm = fromBcd(tod>>8);
     dt.hh = fromBcd((tod>>16) & 0x3F);
@@ -236,7 +236,7 @@ void set (DateTime const& dt) {
     RTC[ISR](7) = 0; // clear INIT
 
     // also update the fractional seconds
-    int8_t diff = dt.ff - (255-RTC[SSR]);
+    int8_t diff = (dt.ms*256)/1000 - (255-RTC[SSR]);
     if (diff <= 0)
         RTC[SHIFTR] = -diff; // SUBFS
     else

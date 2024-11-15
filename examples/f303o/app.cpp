@@ -130,19 +130,19 @@ private:
         lon = pvt.flags & 1 ? pvt.lon : 0;
         lat = pvt.flags & 1 ? pvt.lat : 0;
 
-        // now will only be exact when ss != 0 || ff != 0
+        // now will only be exact when ss != 0 || ms != 0
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
 
-        // fractional seconds correction, but don't decrease when on 00-second
-        if (pvt.nano < 0 && now.ss > 0) {
-            --now.ss;
+        // fractional seconds correction, careful with 00s wraparound
+        if (pvt.nano < 0) {
+            if (now.ss > 0)
+                --now.ss;
+            else
+                now = DateTime{ now - 1 };
             pvt.nano += 1'000'000'000;
         }
-        if (pvt.nano > 0) {
-            auto nsRtcTick = 1'000'000'000 / 256;
-            now.ff = (pvt.nano + nsRtcTick/2) / nsRtcTick; // rounded
-        }
+        now.ms = pvt.nano / 1'000'000;
 
         if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
@@ -153,12 +153,11 @@ private:
         }
 
         // set once an hour, but only when GPS has accurate info
-        if (now >= lastSet + 3600 && pvt.tAcc < 100 &&
-                        now.yr != 0 && now.ss != 0 && (lon != 0 || lat != 0)) {
+        if (now >= lastSet + 900 && pvt.tAcc < 100 &&
+                            now.yr != 0 && (lon|lat) != 0) {
             if (flag("Gs")) {
                 auto dt = rtc::getDate();
-                auto t1 = dt.asText();
-                auto t2 = now.asText();
+                auto t1 = dt.asText(), t2 = now.asText();
                 logf("G set rtc %s gps %s diff %d ms",
                         t1.buf, t2.buf, dt.todMillis() - now.todMillis());
             }
@@ -213,9 +212,8 @@ struct Adjuster : Task {
                     rtc::calibrate(diff);
                 }
                 if (flag("Ga")) {
-                    auto dt1 = rtc::getDate().asText();
-                    auto dt2 = gpser.now.asText();
-                    logf("G adjust %d rtc %s gps %s", diff, dt1.buf, dt2.buf);
+                    auto t1 = rtc::getDate().asText(), t2 = gpser.now.asText();
+                    logf("G adjust %d rtc %s gps %s", diff, t1.buf, t2.buf);
                 }
                 break;
             }
@@ -230,8 +228,8 @@ struct Adjuster : Task {
         trigger(ADJUST);
     }
 
-    enum { CR1=0x00,CR2=0x04,SMCR=0x08,DIER=0x0C,SR=0x10,CCMR1=0x18,CCER=0x20,
-            CNT=0x24,ARR=0x2C,CCR2=0x38 };
+    enum { CR1=0x00, CR2=0x04, SMCR=0x08, DIER=0x0C, SR=0x10,
+           CCMR1=0x18, CCER=0x20, CNT=0x24, ARR=0x2C, CCR2=0x38 };
 } adjuster;
 IRQ_HANDLER(TIM3, adjuster.irqCapture)
 
