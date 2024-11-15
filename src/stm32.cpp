@@ -210,6 +210,7 @@ DateTime getDate () {
     } while ((int) ssr != RTC[SSR]);
 
     DateTime dt;
+    dt.ms = ((uint8_t) ~ssr * 1000) / 256; // assumes PREDIV_S is 255
     dt.ss = fromBcd(tod);
     dt.mm = fromBcd(tod>>8);
     dt.hh = fromBcd((tod>>16) & 0x3F);
@@ -217,11 +218,6 @@ DateTime getDate () {
     dt.mo = fromBcd((doy>>8) & 0x1F);
     // works until end 2063, will fail (i.e. roll over) in 2064 !
     dt.yr = fromBcd(doy>>16);
-
-    // if SHIFTR has been applied, ssr might be >= 256
-    if (ssr >= 256 && dt.ss > 0)
-        --dt.ss; // FIXME: this corrections is not applied on 0-seconds !
-    dt.ms = ((uint8_t) ~ssr * 1000) / 256; // assumes PREDIV_S is 255
 
     return dt;
 }
@@ -239,18 +235,6 @@ void set (DateTime const& dt) {
     RTC[ISR](9) = 1; // BIN 1x, mixed mode
 #endif
     RTC[ISR](7) = 0; // clear INIT
-
-    // also update the fractional seconds, but there's a major issue with this:
-    // - in the next second, while this fractional setting is being applied,
-    //   the getDate() function will only be correct when NOT on a 0-sec mark
-    // this problem only occurs when setting the RTC to a non-zero sub-second
-    // (and a good workaround is to never set the time & date on a 00-second)
-
-    auto step = (dt.ms*256)/1000;
-    if (step != 0) {
-        RTC[SHIFTR] = (1<<31) | (uint8_t) ~step; // ADD1S SUBFS
-        while (RTC[ISR](3)) {} // SHPF
-    }
 }
 
 void set (uint32_t t) {

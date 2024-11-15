@@ -88,7 +88,7 @@ private:
 } rusher;
 
 struct Gpser : Task {
-    enum TAG { START, RECV };
+    enum TAG { START, RECV, SETRTC };
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
@@ -118,6 +118,15 @@ struct Gpser : Task {
                 gpsUart.read(i, { wId, RECV });
                 break;
             }
+            case SETRTC:
+                if (flag("Gs")) {
+                    auto dt1 = rtc::getDate(), dt2 = DateTime{ lastSet };
+                    auto t1 = dt1.asText(), t2 = dt2.asText();
+                    logf("G set rtc %s gps %s diff %d ms",
+                            t1.buf, t2.buf, dt1.todMillis() - dt2.todMillis());
+                }
+                rtc::set(lastSet);
+                break;
             default:
                 fail();
         }
@@ -153,16 +162,10 @@ private:
         }
 
         // set once an hour, but only when GPS has accurate info
-        if (now >= lastSet + 3600 && pvt.tAcc < 100 &&
-                            now.yr != 0 && now.ss != 0 && (lon|lat) != 0) {
-            if (flag("Gs")) {
-                auto dt = rtc::getDate();
-                auto t1 = dt.asText(), t2 = now.asText();
-                logf("G set rtc %s gps %s diff %d ms",
-                        t1.buf, t2.buf, dt.todMillis() - now.todMillis());
-            }
-            rtc::set(now);
-            lastSet = now;
+        if (now >= lastSet + 300-1 && pvt.tAcc < 100 &&
+                            now.yr != 0 && (lon|lat) != 0) {
+            lastSet = now + 1;
+            ticker.delay(1000 - now.ms, SETRTC); // always an exact second
         }
     }
 
