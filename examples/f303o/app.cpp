@@ -143,12 +143,13 @@ private:
             pvt.nano += 1'000'000'000;
         }
         now.ms = pvt.nano / 1'000'000;
+//now.ms = now.ss % 20 < 10 ? 125 : 750; // force tricky cases
 
         if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
         if (flag("Gf")) {
             auto dt = now.asText();
-            logf("G fix %d pos %d %d ha %d sv %d %s ta %d",
+            logf("G fix %d pos %d %d ha %d sv %-2d %s ta %d",
                  pvt.fixType, lat, lon, pvt.hAcc, pvt.numSV, dt.buf, pvt.tAcc);
         }
 
@@ -162,6 +163,7 @@ private:
                         t1.buf, t2.buf, dt.todMillis() - now.todMillis());
             }
             rtc::set(now);
+auto dt = rtc::getDate().asText(); logf("11 %s", dt.buf);
             lastSet = now;
         }
     }

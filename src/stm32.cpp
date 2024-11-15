@@ -227,20 +227,23 @@ uint32_t getSecs () {
 
 void set (DateTime const& dt) {
     RTC[ISR](7) = 1; // set INIT
-    while (RTC[ISR](6) == 0) {} // wait for INITF
+    while (!RTC[ISR](6)) {} // ~INITF
     RTC[TR] = toBcd(dt.ss) | (toBcd(dt.mm) << 8) | (toBcd(dt.hh) << 16);
     RTC[DR] = toBcd(dt.dy) | (toBcd(dt.mo) << 8) | (toBcd(dt.yr) << 16);
 #if STM32WL
     RTC[ISR](9) = 1; // BIN 1x, mixed mode
 #endif
-    RTC[ISR](7) = 0; // clear INIT
 
     // also update the fractional seconds
-    int8_t diff = (dt.ms*256)/1000 - (255-RTC[SSR]);
+    int8_t diff = (dt.ms*256)/1000 + RTC[SSR] + 1;
+logf("22 %d %d %d", dt.ms, +RTC[SSR], diff);
     if (diff <= 0)
-        RTC[SHIFTR] = -diff; // SUBFS
+        RTC[SHIFTR] = (1<<31) - diff; // ADD1S SUBFS
     else
-        RTC[SHIFTR] = (1<<31) | (256-diff); // ADD1S SUBFS
+        RTC[SHIFTR] = diff; // SUBFS
+
+    RTC[ISR](7) = 0; // clear INIT
+    while (RTC[ISR](3)) {} // SHPF
 }
 
 void set (uint32_t t) {
