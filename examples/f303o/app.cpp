@@ -7,11 +7,11 @@ using namespace jeeh;
 #include "ubx.h"
 #include "decode.h"
 
-Ticker ticker;
-TICKER_INSTALL(ticker)
-
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
+
+Ticker ticker;
+TICKER_INSTALL(ticker)
 
 struct Rusher : Task {
     enum TAG { START, TRACK, TICK, PPS };
@@ -495,6 +495,9 @@ int main () {
     idler.init();
 
     Task::showHistory(); // a bit late, but now all tasks have names
+    logf("tasks: E:%d T:%d R:%d G:%d A:%d B:%d C:%d W:%d I:%d", sizeof extier,
+            sizeof ticker,  sizeof rusher, sizeof gpser, sizeof adjuster,
+            sizeof blinker, sizeof cmder, sizeof watcher, sizeof idler);
     cmder.doCmd('?'); // shows a help msg
 
     while (true)
