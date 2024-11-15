@@ -162,7 +162,7 @@ private:
         }
 
         // set once an hour, but only when GPS has accurate info
-        if (now >= lastSet + 300-1 && pvt.tAcc < 100 &&
+        if (now >= lastSet + 3600-1 && pvt.tAcc < 1000 &&
                             now.yr != 0 && (lon|lat) != 0) {
             lastSet = now + 1;
             ticker.delay(1000 - now.ms, SETRTC); // always an exact second
