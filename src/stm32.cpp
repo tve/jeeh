@@ -114,10 +114,10 @@ namespace jeeh::rtc {
 
 #if STM32G4 | STM32L4 | STM32WL
 enum { TR=0x00,DR=0x04,SSR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
-        CR=0x18,WPR=0x24,SCR=0x5C,BKPR=0x100 };
+        CR=0x18,WPR=0x24,CALR=0x28,SCR=0x5C,BKPR=0x100 };
 #else
 enum { TR=0x00,DR=0x04,CR=0x08,ISR=0x0C,PRER=0x10,WUTR=0x14,
-        WPR=0x24,SSR=0x28,BKPR=0x50 };
+        WPR=0x24,SSR=0x28,CALR=0x3C,BKPR=0x50 };
 #endif
 enum { ALRMAR=0x1C, SHIFTR=0x2C, ALRMASSR=0x44 };
 
@@ -226,17 +226,17 @@ uint32_t getSecs () {
 }
 
 void set (DateTime const& dt) {
-    RTC[ISR](7) = 1;            // set INIT
+    RTC[ISR](7) = 1; // set INIT
     while (RTC[ISR](6) == 0) {} // wait for INITF
     RTC[TR] = toBcd(dt.ss) | (toBcd(dt.mm) << 8) | (toBcd(dt.hh) << 16);
     RTC[DR] = toBcd(dt.dy) | (toBcd(dt.mo) << 8) | (toBcd(dt.yr) << 16);
 #if STM32WL
-    RTC[ISR](9) = 1;            // BIN 1x, mixed mode
+    RTC[ISR](9) = 1; // BIN 1x, mixed mode
 #endif
-    RTC[ISR](7) = 0;            // clear INIT
+    RTC[ISR](7) = 0; // clear INIT
 
     // also update the fractional seconds
-    auto diff = dt.ff - (255-RTC[SSR]);
+    int8_t diff = dt.ff - (255-RTC[SSR]);
     if (diff <= 0)
         RTC[SHIFTR] = -diff; // SUBFS
     else
@@ -251,7 +251,7 @@ void calibrate (int diff) {
     assert(-480 < diff && diff < 480);
     if (diff < 0)
         diff = (1<<15) | (diff+512); // CALP CALM
-    RTC[0x3C] = diff; // CALR
+    RTC[CALR] = diff;
 }
 
 uint32_t getReg (int reg) {
