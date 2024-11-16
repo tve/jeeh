@@ -49,7 +49,7 @@ struct Rusher : Task {
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
                     logf("G pps lag %d cy, clk diff %d cy", lag, diff);
                 }
-                ppsDiff = in.eVal - ppsPrev - SystemCoreClock; // modulo 2^16
+                ppsDiff = in.eVal - ppsPrev;
                 ppsPrev = in.eVal;
                 break;
             default:
@@ -268,7 +268,7 @@ struct Blinker : Task {
 struct Cmder : Task {
     enum TAG { START, TTYIN, REPORT };
 
-    uint32_t value =0, lastVal =0;
+    uint32_t value =0, lastVal =0, seqNum =0;
     char lastCh =0;
 
     Cmder () : Task ("cmd") {}
@@ -283,13 +283,16 @@ struct Cmder : Task {
                 ttyUart.read(1, { wId, TTYIN });
                 break;
             case REPORT: {
-                auto hse = rusher.ppsDiff / (int) (SystemCoreClock/1'000'000);
+                auto hse = (int16_t) (rusher.ppsDiff - SystemCoreClock) /
+                                            (int) (SystemCoreClock/1'000'000);
                 auto t1 = gpser.now.asText();
                 auto t2 = rtc::getDate().asText();
                 auto t3 = DateTime{ gpser.lastSet }.asText();
-                logf("");
+                ubx::Maidenhead mh (gpser.lat, gpser.lon);
+                logf("#%d", ++seqNum);
                 logf("lse %d ppm  hse %d ppm", adjuster.lsePrev, hse);
-                logf("gps %s  lon %d  lat %d", t1.buf, gpser.lon, gpser.lat);
+                logf("gps %s  lon %d  lat %d  mh %s",
+                        t1.buf, gpser.lon, gpser.lat, mh.buf);
                 logf("rtc %s  set %s", t2.buf, t3.buf);
                 break;
             }
@@ -352,11 +355,6 @@ struct Cmder : Task {
                 rusher.ledSel = 'g';
                 blinker.enable = false;
                 gpser.lastSet = 0; // request an RTC date & time set
-                if (flag("Gm")) {
-                    ubx::Maidenhead mh (gpser.lat, gpser.lon);
-                    logf("G maidenhead %s latitude %d, longitude %d",
-                            mh.buf, gpser.lat, gpser.lon);
-                }
                 break;
             }
             case 'l':
@@ -372,12 +370,11 @@ struct Cmder : Task {
                 showHistory();
                 break;
             case 'r':
+                ticker.cancel(REPORT);
                 if (lastVal != 0)
                     ticker.periodic(100 * lastVal, REPORT);
-                else {
-                    ticker.cancel(REPORT);
+                else
                     ticker.delay(1, REPORT);
-                }
                 break;
             case 'f':
                 logf("flags: A-Z");
