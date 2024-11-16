@@ -21,6 +21,7 @@ struct Rusher : Task {
     Event tracker;                   // task to notify on each edge change
     uint16_t ppsPrev =0;             // cycle count of last PPS pulse
     uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms, that is)
+    uint32_t ppsMillis =0;           // ms of last 1PPS pulse
 
     Rusher () : Task ("rush") {}
 
@@ -41,6 +42,7 @@ struct Rusher : Task {
                 break;
             case PPS:
 //assert((uint16_t) (cycles::count() - in.eVal) < 10000);
+                ppsMillis = cycles::millis();
                 if (flag("Gp")) {
                     uint16_t lag = cycles::count() - in.eVal;
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
@@ -143,6 +145,14 @@ private:
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
 
+        // set once an hour, but only when GPS has accurate info
+        auto ppsLag = cycles::millis() - rusher.ppsMillis + pvt.nano/1'000'000;
+        if (now >= lastSet + 3600-1 && 20 < ppsLag && ppsLag < 60 &&
+                        pvt.tAcc < 1000 && now.yr != 0 && (lon|lat) != 0) {
+            lastSet = now + 1;
+            ticker.delay(1000 - ppsLag, SETRTC); // on exact second
+        }
+
         // fractional seconds correction, careful with 00s wraparound
         if (pvt.nano < 0) {
             if (now.ss > 0)
@@ -155,17 +165,11 @@ private:
 
         if ((pvt.valid & 3) != 3) // date & time validity flags
             now.yr = 0; // flag as invalid
+
         if (flag("Gf")) {
             auto dt = now.asText();
-            logf("G fix %d pos %d %d ha %d sv %-2d %s ta %d",
-                 pvt.fixType, lat, lon, pvt.hAcc, pvt.numSV, dt.buf, pvt.tAcc);
-        }
-
-        // set once an hour, but only when GPS has accurate info
-        if (now >= lastSet + 3600-1 && pvt.tAcc < 1000 &&
-                            now.yr != 0 && (lon|lat) != 0) {
-            lastSet = now + 1;
-            ticker.delay(1000 - now.ms, SETRTC); // always an exact second
+            logf("G fix %d lat %d ha %d sv %-2d %s pps %d ta %d",
+                pvt.fixType, lat, pvt.hAcc, pvt.numSV, dt.buf, ppsLag, pvt.tAcc);
         }
     }
 
