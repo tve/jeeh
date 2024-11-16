@@ -19,9 +19,10 @@ struct Rusher : Task {
     char ledSel =0;                  // which signal to display on the LED
     uint8_t dcfNow, msfNow;          // values captured during last tick
     Event tracker;                   // task to notify on each edge change
-    uint16_t ppsPrev =0;             // cycle count of last PPS pulse
-    uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms, that is)
     uint32_t ppsMillis =0;           // ms of last 1PPS pulse
+    uint16_t ppsPrev =0;             // cycle count of last PPS pulse
+    int16_t ppsDiff =0;              // cycle diff from one pulse to the next
+    uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms)
 
     Rusher () : Task ("rush") {}
 
@@ -48,6 +49,7 @@ struct Rusher : Task {
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
                     logf("G pps lag %d cy, clk diff %d cy", lag, diff);
                 }
+                ppsDiff = in.eVal - ppsPrev - SystemCoreClock; // modulo 2^16
                 ppsPrev = in.eVal;
                 break;
             default:
@@ -145,9 +147,9 @@ private:
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
 
-        // set once an hour, but only when GPS has accurate info
+        // set once every 15 min, but only when GPS has accurate info
         auto ppsLag = cycles::millis() - rusher.ppsMillis + pvt.nano/1'000'000;
-        if (now >= lastSet + 3600-1 && 20 < ppsLag && ppsLag < 60 &&
+        if (now >= lastSet + 900-1 && 20 < ppsLag && ppsLag < 60 &&
                         pvt.tAcc < 1000 && now.yr != 0 && (lon|lat) != 0) {
             lastSet = now + 1;
             ticker.delay(1000 - ppsLag, SETRTC); // on exact second
@@ -280,12 +282,17 @@ struct Cmder : Task {
                 doCmd(*ttyUart.rxPtr);
                 ttyUart.read(1, { wId, TTYIN });
                 break;
-            case REPORT:
-                logf("lse %2d: cnt %08x diff %d",
-                        +TIM3[adjuster.CNT],
-                        +TIM2[adjuster.CNT],
-                        adjuster.lseDiff());
+            case REPORT: {
+                auto hse = rusher.ppsDiff / (int) (SystemCoreClock/1'000'000);
+                auto t1 = gpser.now.asText();
+                auto t2 = rtc::getDate().asText();
+                auto t3 = DateTime{ gpser.lastSet }.asText();
+                logf("");
+                logf("lse %d ppm  hse %d ppm", adjuster.lsePrev, hse);
+                logf("gps %s  lon %d  lat %d", t1.buf, gpser.lon, gpser.lat);
+                logf("rtc %s  set %s", t2.buf, t3.buf);
                 break;
+            }
             default:
                 fail();
         }
@@ -367,8 +374,10 @@ struct Cmder : Task {
             case 'r':
                 if (lastVal != 0)
                     ticker.periodic(100 * lastVal, REPORT);
-                else
+                else {
                     ticker.cancel(REPORT);
+                    ticker.delay(1, REPORT);
+                }
                 break;
             case 'f':
                 logf("flags: A-Z");
