@@ -7,6 +7,8 @@ using namespace jeeh;
 #include "ubx.h"
 #include "decode.h"
 
+extern "C" uint8_t* _sbrk (uint32_t);
+
 ExtIrq extier;
 EXTIRQ_INSTALL(extier)
 
@@ -305,12 +307,23 @@ struct Cmder : Task {
                 logf("gps %s  lon %d  lat %d  mh %s",
                         t1.buf, gpser.lon, gpser.lat, mh.buf);
                 logf("rtc %s  set %s", t2.buf, t3.buf);
+                memInfo();
                 break;
             }
             default:
                 fail();
         }
         return out;
+    }
+
+    void memInfo () const {
+        auto heapEnd = _sbrk(0);
+        auto currSp = (uint8_t*) &heapEnd;
+        extern uint8_t g_pfnVectors [], _siccmram [], _sdata [], _sbss [],
+                       _ebss [], _estack [];
+        logf("code %d  data %d  bss %d  heap %d  stack %d  free %d kb",
+                _siccmram-g_pfnVectors, _sbss - _sdata, _ebss - _sbss,
+                heapEnd - _ebss, _estack - currSp, (currSp-heapEnd) >> 10);
     }
 
     void doCmd (char ch) {
@@ -382,10 +395,10 @@ struct Cmder : Task {
                 break;
             case 'r':
                 ticker.cancel(REPORT);
-                if (lastVal > 0)
+                if (lastVal > 0) {
                     ticker.periodic(100 * lastVal, REPORT);
-                if (lastVal > 10)
                     ticker.delay(1, REPORT);
+                }
                 break;
             case 'f':
                 logf("flags: A-Z");
@@ -398,7 +411,6 @@ struct Cmder : Task {
                               " f)lags");
         }
     }
-
 } cmder;
 
 struct Watcher : Task {
