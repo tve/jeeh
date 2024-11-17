@@ -23,6 +23,7 @@ struct Rusher : Task {
     uint16_t ppsPrev =0;             // cycle count of last PPS pulse
     int16_t ppsDiff =0;              // cycle diff from one pulse to the next
     uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms)
+    int16_t hsePpm =0;               // calculated HSE clock error
 
     Rusher () : Task ("rush") {}
 
@@ -51,6 +52,8 @@ struct Rusher : Task {
                 }
                 ppsDiff = in.eVal - ppsPrev;
                 ppsPrev = in.eVal;
+                hsePpm = (int16_t) (ppsDiff - SystemCoreClock) /
+                            (int) (SystemCoreClock/1'000'000);
                 break;
             default:
                 fail();
@@ -96,7 +99,7 @@ struct Gpser : Task {
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
-    uint32_t lastSet =0, hAcc =0, tAcc =0;
+    uint32_t lastSet =0, hAcc =0, tAcc =0, sv =0, fix =0;
     DateTime now;
 
     Gpser () : Task ("gps") {}
@@ -144,6 +147,8 @@ private:
         lat = pvt.flags & 1 ? pvt.lat : 0;
         hAcc = pvt.flags & 1 ? pvt.hAcc : 0;
         tAcc = (pvt.valid & 3) == 3 ? pvt.tAcc : 0;
+        sv = pvt.numSV;
+        fix = pvt.fixType;
 
         // now will only be exact when ss != 0 || ms != 0
         now = { pvt.year % 100, pvt.month, pvt.day,
@@ -182,7 +187,7 @@ private:
 struct Adjuster : Task {
     enum TAG { START, ADJUST };
 
-    int8_t lsePrev =0;
+    int16_t lsePpm =0;
 
     Adjuster () : Task ("adjust") {}
 
@@ -218,8 +223,8 @@ struct Adjuster : Task {
                 break;
             case ADJUST: {
                 auto diff = lseDiff();
-                if (diff != lsePrev && -100 < diff && diff < 100) {
-                    lsePrev = diff;
+                if (diff != lsePpm && -100 < diff && diff < 100) {
+                    lsePpm = diff;
                     rtc::calibrate(diff);
                 }
                 if (flag("Ga")) {
@@ -285,15 +290,18 @@ struct Cmder : Task {
                 ttyUart.read(1, { wId, TTYIN });
                 break;
             case REPORT: {
-                auto hse = (int16_t) (rusher.ppsDiff - SystemCoreClock) /
-                                            (int) (SystemCoreClock/1'000'000);
                 auto t1 = gpser.now.asText();
                 auto t2 = rtc::getDate().asText();
                 auto t3 = DateTime{ gpser.lastSet }.asText();
                 ubx::Maidenhead mh (gpser.lat, gpser.lon);
-                logf("#%d", ++seqNum);
-                logf("lse %d ppm  hse %d ppm  hAcc %d m  tAcc %d ns",
-                        adjuster.lsePrev, hse, gpser.hAcc/1000, gpser.tAcc);
+                logf("#%d %s", ++seqNum, led1 ? "OK" : "");
+                constexpr char const* fixDesc [] = {
+                    "NO", "DRO", "2D", "3D", "GNSS", "TIME"
+                };
+                logf("lse %d ppm, hse %d ppm, hor %d m, tim %d ns, sat %d : %s",
+                        adjuster.lsePpm, rusher.hsePpm,
+                        gpser.hAcc/1000, gpser.tAcc, gpser.sv,
+                        fixDesc[gpser.fix]);
                 logf("gps %s  lon %d  lat %d  mh %s",
                         t1.buf, gpser.lon, gpser.lat, mh.buf);
                 logf("rtc %s  set %s", t2.buf, t3.buf);
@@ -374,9 +382,9 @@ struct Cmder : Task {
                 break;
             case 'r':
                 ticker.cancel(REPORT);
-                if (lastVal != 0)
+                if (lastVal > 0)
                     ticker.periodic(100 * lastVal, REPORT);
-                else
+                if (lastVal > 10)
                     ticker.delay(1, REPORT);
                 break;
             case 'f':
@@ -405,15 +413,13 @@ struct Watcher : Task {
                 dog::init(3); // approx 3.28s
                 break;
             case TICK: {
-                auto lse = adjuster.lsePrev;
-                auto hse = (int16_t) (rusher.ppsDiff - SystemCoreClock) /
-                                            (int) (SystemCoreClock/1'000'000);
+                auto lse = adjuster.lsePpm, hse = rusher.hsePpm;
                 auto hacc = gpser.hAcc/1000, tacc = gpser.tAcc;
                 auto lat = gpser.lat, lon = gpser.lon;
                 // LED is on when all readings are in their acceptable range
                 led1 = (lse * hse * hacc * tacc) != 0 && (lat|lon) != 0 &&
                        (-50 < lse && lse < 50) && (-50 < hse && hse < 50) &&
-                       hacc < 50 && tacc < 100;
+                       hacc < 100 && tacc < 100;
                 dog::kick();
                 break;
             }
