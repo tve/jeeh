@@ -215,8 +215,8 @@ struct Adjuster : Task {
         return Task::init();
     }
 
-    int lseDiff () const {
-        return TIM2[CCR2] - (1<<20); // difference from 32x 32 kHz counts
+    int lseDiff () const { // difference from 32x 32 kHz counts
+        return ((TIM2[CCR2] - (1<<20)) * 512) / 489;
     }
 
     Event process (Event in, Event out) override {
