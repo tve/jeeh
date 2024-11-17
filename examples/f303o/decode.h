@@ -1,6 +1,6 @@
-template< uint16_t BINS, bool GAP >
+template< uint16_t BINS, bool DCF >
 struct Convolution {
-    enum { BANDS = GAP ? 2 : 4 };
+    enum { BANDS = DCF ? 2 : 4 };
 
     bool sig [BINS] {}, inSync =false;
     int high[BANDS] ={}, low =0, max =0, pos =0, off =0, num =0;
@@ -37,7 +37,7 @@ struct Convolution {
             if (rel == BINS-1) {
                 for (auto i = 0; i < BANDS; ++i) {
                     auto on = high[i] > BINS/20;
-                    if (GAP) { // DCF sends bits in low-to-high order
+                    if (DCF) { // DCF sends bits in low-to-high order
                         bits[i] >>= 1;
                         bits[i] |= ((uint64_t) (on)) << 59;
                     } else { // MSF sends bits in high-to-low order
@@ -52,7 +52,7 @@ struct Convolution {
                 }
                 max = 0;
                 // DCF has a missing pulse, MSF has a long pulse
-                return GAP ? high[0] < BINS/20 && high[1] < BINS/20 :
+                return DCF ? high[0] < BINS/20 && high[1] < BINS/20 :
                              high[0] > BINS/20 && high[1] > BINS/20 &&
                              high[2] > BINS/20 && high[3] > BINS/20;
             }
@@ -62,7 +62,7 @@ struct Convolution {
 
     int check () const {
         auto v = bits[1];
-        if constexpr (GAP)
+        if constexpr (DCF)
             return ((int) v & 0x01) * 0x10 +
                    ((int) (~v>>20) & 0x01) * 0x08 +
                    (parity((v>>21) & 0xFF)) * 0x04 +
@@ -75,7 +75,7 @@ struct Convolution {
     // decode DCF or MSF bitstream, but set seconds to the weekday (1..7)
     DateTime decode () const {
         auto v = bits[1];
-        if constexpr (GAP)
+        if constexpr (DCF)
             return {
                 bcd((v>>50) & 0xFF), bcd((v>>45) & 0x1F), bcd((v>>36) & 0x3F),
                 bcd((v>>29) & 0x3F), bcd((v>>21) & 0x7F),

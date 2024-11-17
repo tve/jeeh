@@ -67,13 +67,13 @@ private:
         // show signal on LED and report changes if enabled
         switch (ledSel) {
             case 'g':
-                led = +gpsPps;
+                led2 = +gpsPps;
                 break;
             case 'd':
-                led = dcfNow;
+                led2 = dcfNow;
                 break;
             case 'm':
-                led = msfNow;
+                led2 = msfNow;
                 break;
         }
 
@@ -96,7 +96,7 @@ struct Gpser : Task {
 
     ubx::Parser<100> ubx;
     int32_t lon =0, lat =0;
-    uint32_t lastSet =0; // UTC time in seconds
+    uint32_t lastSet =0, hAcc =0, tAcc =0;
     DateTime now;
 
     Gpser () : Task ("gps") {}
@@ -142,6 +142,8 @@ private:
         auto& pvt = *(ubx::NavPvt*) ubx.payload;
         lon = pvt.flags & 1 ? pvt.lon : 0;
         lat = pvt.flags & 1 ? pvt.lat : 0;
+        hAcc = pvt.flags & 1 ? pvt.hAcc : 0;
+        tAcc = (pvt.valid & 3) == 3 ? pvt.tAcc : 0;
 
         // now will only be exact when ss != 0 || ms != 0
         now = { pvt.year % 100, pvt.month, pvt.day,
@@ -256,7 +258,7 @@ struct Blinker : Task {
                 break;
             case TICK:
                 if (enable)
-                    led.toggle();
+                    led2.toggle();
                 break;
             default:
                 fail();
@@ -290,7 +292,8 @@ struct Cmder : Task {
                 auto t3 = DateTime{ gpser.lastSet }.asText();
                 ubx::Maidenhead mh (gpser.lat, gpser.lon);
                 logf("#%d", ++seqNum);
-                logf("lse %d ppm  hse %d ppm", adjuster.lsePrev, hse);
+                logf("lse %d ppm  hse %d ppm  hAcc %d m  tAcc %d ns",
+                        adjuster.lsePrev, hse, gpser.hAcc/1000, gpser.tAcc);
                 logf("gps %s  lon %d  lat %d  mh %s",
                         t1.buf, gpser.lon, gpser.lat, mh.buf);
                 logf("rtc %s  set %s", t2.buf, t3.buf);
@@ -401,9 +404,19 @@ struct Watcher : Task {
                 ticker.periodic(3000, TICK);
                 dog::init(3); // approx 3.28s
                 break;
-            case TICK:
+            case TICK: {
+                auto lse = adjuster.lsePrev;
+                auto hse = (int16_t) (rusher.ppsDiff - SystemCoreClock) /
+                                            (int) (SystemCoreClock/1'000'000);
+                auto hacc = gpser.hAcc/1000, tacc = gpser.tAcc;
+                auto lat = gpser.lat, lon = gpser.lon;
+                // LED is on when all readings are in their acceptable range
+                led1 = (lse * hse * hacc * tacc) != 0 && (lat|lon) != 0 &&
+                       (-50 < lse && lse < 50) && (-50 < hse && hse < 50) &&
+                       hacc < 50 && tacc < 100;
                 dog::kick();
                 break;
+            }
             default:
                 fail();
         }

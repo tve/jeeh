@@ -8,7 +8,8 @@
 #define LED1 "A5"
 #define LED2 "A1"
 
-Pin led (LED,"P");
+Pin led1 (LED1,"P");   // green
+Pin led2 (LED2,"P"); // orange
 
 //CG[ board uart1
 #define UART1_NAME  USART1
