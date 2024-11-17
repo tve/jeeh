@@ -80,7 +80,7 @@ private:
 
 struct Task {
     constexpr static auto MAX_taskS = 20, MAX_HISTORY = 16;
-    constexpr static auto HIST_BASE = 0x2000'4000; // TODO not cleared on reset
+    constexpr static auto HIST_BASE = 0x1000'1234; // FIXME not cleared on reset
     enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
     enum HISTS { H_SEND, H_REPLY, H_IRQ, H_PULL };
 

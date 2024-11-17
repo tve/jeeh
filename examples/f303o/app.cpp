@@ -395,10 +395,9 @@ struct Cmder : Task {
                 break;
             case 'r':
                 ticker.cancel(REPORT);
-                if (lastVal > 0) {
+                if (lastVal > 0)
                     ticker.periodic(100 * lastVal, REPORT);
-                    ticker.delay(1, REPORT);
-                }
+                ticker.delay(1, REPORT);
                 break;
             case 'f':
                 logf("flags: A-Z");
