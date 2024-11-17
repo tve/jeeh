@@ -22,12 +22,12 @@ struct Stream : Task {
                 break;
             case TICK:
 #if 1
-                led = +dcfDat;
+                led1 = +dcfDat;
 #else
-                led = !msfDat; // inverted logic
+                led1 = !msfDat; // inverted logic
 #endif
                 bits >>= 1;
-                bits |= led<<15;
+                bits |= led1<<15;
                 if (++count >= 16) {
                     count = 0;
                     if (bits == prev && repeat < 99)

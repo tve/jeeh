@@ -15,7 +15,7 @@ struct Blinker : Task {
                 ticker.periodic(500, TICK);
                 break;
             case TICK:
-                led.toggle();
+                led1.toggle();
                 break;
             default:
                 fail();

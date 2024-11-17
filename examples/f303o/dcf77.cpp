@@ -33,8 +33,8 @@ int synchronise () {
     stepSync();
     for (auto i = 0; i < 10; ++i) {
         for (auto j = 0; j < NUM; ++j) {
-            led = +dcfDat;
-            tally[j] += led;
+            led1 = +dcfDat;
+            tally[j] += led1;
             if (tally[j] > max) {
                 pos = j;
                 max = tally[pos];
@@ -59,8 +59,8 @@ DateTime decode () {
         constexpr auto MS = 5;
         int n = 0;
         for (auto j = 0U; j < ms; j += MS) {
-            led = +dcfDat;
-            n += MS * led;
+            led1 = +dcfDat;
+            n += MS * led1;
             stepWait(MS);
         }
         return n;

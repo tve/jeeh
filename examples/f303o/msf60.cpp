@@ -74,8 +74,8 @@ int main () {
 
     while (true) {
         cycles::msBusy(20);
-        led = !msfDat;
-        if (d.step(led)) {
+        led1 = !msfDat;
+        if (d.step(led1)) {
             auto dt = d.msfDecode();
             logf("20%02d-%02d-%02d %02d:%02d %c",
                     dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, "?mtwhfsS"[dt.ss]);

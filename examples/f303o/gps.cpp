@@ -97,5 +97,5 @@ int main () {
     echo.init();
 
     while (true)
-        led = +gpsPps;
+        led1 = +gpsPps;
 }
