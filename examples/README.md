@@ -31,6 +31,12 @@ Each application can be built and run independently, e.g.
 * `f303o/stream` - capture DCF77 at 1 kHz and stream as 16-bit ints
 * `f303o/app` - demo app to explore time-related functionality
 
+**`f303ze` - Nucleo-144 @ 72 MHz**
+
+* `f303z/blink` - blink on-board LED and send some text to serial
+* `f303z/tick` - blink on-board LED via periodic timer and task
+* `f303z/gps` - show messages coming from attached GPS module
+
 **`f413zh` - Nucleo-144 @ 100 MHz**
 
 * `f413z/blink` - blink on-board LED and send some text to serial
