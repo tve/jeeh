@@ -305,7 +305,7 @@ struct Cmder : Task {
                         gpser.hAcc/1000, gpser.tAcc, gpser.sv,
                         fixDesc[gpser.fix]);
                 logf("gps %s  lon %d  lat %d  mh %s",
-                        t1.buf, gpser.lon, gpser.lat, mh.buf);
+                        t1.buf, gpser.lon, gpser.lat, led1 ? mh.buf : "-");
                 logf("rtc %s  set %s", t2.buf, t3.buf);
                 memInfo();
                 break;
@@ -430,7 +430,7 @@ struct Watcher : Task {
                 // LED is on when all readings are in their acceptable range
                 led1 = (lse * hse * hacc * tacc) != 0 && (lat|lon) != 0 &&
                        (-50 < lse && lse < 50) && (-50 < hse && hse < 50) &&
-                       hacc < 100 && tacc < 100;
+                       hacc < 100 && tacc < 1000;
                 dog::kick();
                 break;
             }
