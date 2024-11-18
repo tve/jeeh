@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "gps"
+#define PIOENV  "lcd"
 
 //CG[ board leds
 #define LED  "B0"
@@ -47,6 +47,20 @@ UART1_INSTALL(gpsUart)
 
 uart::Work<UART3_TYPE> ttyUart (UART3_CONF);
 UART3_INSTALL(ttyUart)
+
+//CG[ board spi1
+#define SPI1_NAME  SPI1
+#define SPI1_PINS  "A7:5,A6:P,A5:5,D14:P"
+#define SPI1_FREQ  72
+#define SPI1_TYPE  SPI1.ADDR, DMA1.ADDR, 3-1, 2-1
+#define SPI1_CONF  { ena::SPI1, 72, \
+                     Irq::DMA1_CH3, Irq::DMA1_CH2, { 1-1,1,1 } }
+//CG]
+
+spi::Poll<SPI1_NAME.ADDR> lcdSpi (ena::SPI1_NAME, SPI1_FREQ);
+//Pin lcdCmd {lcdSpi.miso}; // re-used as C/D output pin
+Pin lcdCmd {"A6","P"}; // re-used as C/D output pin
+Pin lcdRst {"D15","P"};
 
 #if 0
 namespace serio {
