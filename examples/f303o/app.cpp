@@ -156,9 +156,9 @@ private:
         now = { pvt.year % 100, pvt.month, pvt.day,
                 pvt.hour, pvt.min, pvt.sec };
 
-        // set once every 15 min, but only when GPS has accurate info
+        // set once every hour, but only when GPS has accurate info
         auto ppsLag = cycles::millis() - rusher.ppsMillis + pvt.nano/1'000'000;
-        if (now >= lastSet + 900-1 && 20 < ppsLag && ppsLag < 60 &&
+        if (now >= lastSet + 3600-1 && 20 < ppsLag && ppsLag < 60 &&
                         pvt.tAcc < 1000 && now.yr != 0 && (lon|lat) != 0) {
             lastSet = now + 1;
             ticker.delay(1000 - ppsLag, SETRTC); // on exact second
