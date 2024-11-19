@@ -37,6 +37,54 @@ struct NavPvt {
 };
 static_assert(sizeof (NavPvt) == 92);
 
+struct CfgNav5 {
+    uint16_t mask;
+    uint8_t  dynModel;
+    uint8_t  fixMode;
+    int32_t  fixedAlt;
+    uint32_t fixedAltVar;
+    int8_t   minElev;
+    uint8_t  drLimit;
+    uint16_t pDop;
+    uint16_t tDop;
+    uint16_t pAcc;
+    uint16_t tAcc;
+    uint8_t  staticHold;
+    uint8_t  dgpsTimeOut;
+    uint8_t  cnoThreshNumSVs;
+    uint8_t  cnoThresh;
+    uint16_t _1;
+    uint32_t _2;
+    uint32_t _3;
+};
+static_assert(sizeof (CfgNav5) == 36);
+
+template< typename T >
+struct Packet {
+    uint16_t _1; // filler
+    uint8_t sync1 =0xB5;
+    uint8_t sync2 =0x62;
+    uint8_t mClass;
+    uint8_t mId;
+    uint16_t len;
+    T data ={};
+    uint8_t ckA =0;
+    uint8_t ckB =0;
+    uint8_t _2; // filler
+
+    Packet (uint8_t cl, uint8_t id) : mClass (cl), mId (id), len (sizeof (T)) {}
+
+    auto wrapper () {
+        uint8_t* ptr = &mClass;
+        for (auto i = 0; i < len+4; ++i) {
+            ckA += ptr[i];
+            ckB += ckA;
+        }
+        struct Result { uint8_t const* ptr; uint16_t len; };
+        return Result{ &sync1, (uint16_t) (len + 8) };
+    }
+};
+
 template< uint16_t MAX >
 struct Parser {
     enum { SYNC1, SYNC2, CLASS, MSGID, LEN1, LEN2, PAYLOAD, CRC1, CRC2 };

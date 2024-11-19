@@ -405,9 +405,18 @@ struct Cmder : Task {
                     if (auto f = flagsAtoZ[c-'A']; f != 0)
                         logf("  %c = 0x%08x = %u", c, f, f);
                 break;
+            case 't': {
+                ubx::Packet<ubx::CfgNav5> pkt (0x06, 0x24);
+                pkt.data.mask = 0b1; // dyn
+                pkt.data.dynModel = 2; // stationary
+                auto [p, n] = pkt.wrapper();
+                logf("11 %p %d", p, n);
+                gpsUart.write(p, n);
+                break;
+            }
             default:
                 logf("? !=reset d)cf m)sf g)ps l)ed s)tats h)istory r)eport"
-                              " f)lags");
+                              " f)lags t)est");
         }
     }
 } cmder;
