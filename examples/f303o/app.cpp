@@ -406,7 +406,7 @@ struct Cmder : Task {
                         logf("  %c = 0x%08x = %u", c, f, f);
                 break;
             case 't': {
-                ubx::Packet<ubx::CfgNav5> pkt (0x06, 0x24);
+                ubx::Packet<ubx::CfgNav5> pkt;
                 pkt.data.mask = 0b1; // dyn
                 pkt.data.dynModel = 2; // stationary
                 auto [p, n] = pkt.wrapper();

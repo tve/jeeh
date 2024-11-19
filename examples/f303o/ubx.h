@@ -38,6 +38,8 @@ struct NavPvt {
 static_assert(sizeof (NavPvt) == 92);
 
 struct CfgNav5 {
+    enum { CLASS=0x06, ID=0x24 };
+
     uint16_t mask;
     uint8_t  dynModel;
     uint8_t  fixMode;
@@ -72,7 +74,7 @@ struct Packet {
     uint8_t ckB =0;
     uint8_t _2; // filler
 
-    Packet (uint8_t cl, uint8_t id) : mClass (cl), mId (id), len (sizeof (T)) {}
+    Packet () : mClass (T::CLASS), mId (T::ID), len (sizeof (T)) {}
 
     auto wrapper () {
         uint8_t* ptr = &mClass;
