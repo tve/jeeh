@@ -43,7 +43,8 @@ void cmdEnd () {
 void init () {
     static uint8_t const config [] = {
         // cmd, count, data bytes ...
-        0xFF,  1,       // 120 ms reset delay
+      //0x01,  0,       // Soft reset
+      //0xFF,  120,     // reset delay
         0x3A,  1, 0x05, // Set pixel format
 #if 0
         0x26,  1, 0x04, // Set Gamma curve 3
@@ -160,7 +161,7 @@ int main () {
 
     lcdSpi.init(SPI1_PINS, 10'000'000);
     lcdCmd = 1;
-    lcdRst = 1;
+    //lcdRst = 1;
 
     auto start = cycles::micros();
     init();
@@ -183,7 +184,7 @@ int main () {
     gfx.fg = 0x07E0; // green
 
     gfx.fg = 0xFFE0; // yellow
-    gfx.cFill({100, 80}, 20);
+    gfx.cFill({107, 80}, 20);
 
     gfx.fg = 0xF800; // red
     gfx.rFill({0, 0}, 50, 30, 5);

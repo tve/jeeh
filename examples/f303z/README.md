@@ -3,11 +3,11 @@
 1.44" LCD 128x128 w/ ST7735S
 
 ```text
-LED     (tied to VCC)
+LED                           (tied to VCC)
 SCK     SCLK    A5:5    D13
 SDA     MOSI    A7:5    D11
-A0      C/D     A6      D12
-RESET   -       D15     D9
+A0      C/D     A6      D12   (not used as MISO)
+RESET   -       D15     D9    (no, tied to VCC)
 CS      NSEL    D14     D10
 GND     -               GND
 VCC     3.3-5V          3.3V
