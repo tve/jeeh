@@ -64,15 +64,10 @@ static_assert(sizeof (CfgNav5) == 36);
 template< typename T >
 struct Packet {
     uint16_t _1; // filler
-    uint8_t sync1 =0xB5;
-    uint8_t sync2 =0x62;
-    uint8_t mClass;
-    uint8_t mId;
+    uint8_t sync1 =0xB5, sync2 =0x62, mClass, mId;
     uint16_t len;
     T data ={};
-    uint8_t ckA =0;
-    uint8_t ckB =0;
-    uint8_t _2; // filler
+    uint8_t ckA =0, ckB =0;
 
     Packet () : mClass (T::CLASS), mId (T::ID), len (sizeof (T)) {}
 
