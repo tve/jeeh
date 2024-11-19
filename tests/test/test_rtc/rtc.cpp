@@ -13,10 +13,10 @@ void tearDown () {
 
 void rtc_isRunning () {
     auto dt = rtc::getDate();
-    TEST_ASSERT_EQUAL(dt.ff, rtc::getDate().ff);
+    TEST_ASSERT_EQUAL(dt.ms, rtc::getDate().ms);
 
     cycles::msBusy(5); // wait slightly longer than one 256 Hz clock tick
-    TEST_ASSERT_NOT_EQUAL(dt.ff, rtc::getDate().ff);
+    TEST_ASSERT_NOT_EQUAL(dt.ms, rtc::getDate().ms);
 }
 
 void rtc_todMillis () {
@@ -30,10 +30,10 @@ void rtc_todMillis () {
 
 void rtc_oneSecond () {
     auto dt = rtc::getDate();
-    while (rtc::getDate().ff == dt.ff) {} // wait until RTC clock advances
+    while (rtc::getDate().ms == dt.ms) {} // wait until RTC clock advances
 
     cycles::clear();
-    while (rtc::getDate().ff != dt.ff) {} // wait until it has stepped 256x
+    while (rtc::getDate().ms != dt.ms) {} // wait until it has stepped 256x
     auto ms = cycles::millis();
 
     TEST_ASSERT_INT_WITHIN(40, 1000, ms); // LSI clock is not very accurate

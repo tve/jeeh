@@ -77,7 +77,6 @@ DateTime decode () {
         }
     }
 
-    // uint8_t yr, mo, dy, hh, mm, ss, ff;
     return { fromBcd((bits >> 50) & 0xFF),
              fromBcd((bits >> 45) & 0x1F),
              fromBcd((bits >> 36) & 0x3F),
