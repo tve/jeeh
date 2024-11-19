@@ -1,4 +1,4 @@
-// Hook to a 480x320 LCD shield using 8-bit parallel over GPIO.
+// Drive a 1.44" 128x128 LCD display using polled SPI.
 
 #include <jee.h>
 #include <jee/hal.h>
