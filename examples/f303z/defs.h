@@ -28,7 +28,7 @@ const Pin led3 (LED3,"P");
 }
 //CG]
 
-uart::Work<UART1_TYPE> gpsUart (UART1_CONF);
+uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
 UART1_INSTALL(gpsUart)
 
 //CG[ board uart3
@@ -45,7 +45,7 @@ UART1_INSTALL(gpsUart)
 }
 //CG]
 
-uart::Work<UART3_TYPE> ttyUart (UART3_CONF);
+uart::Async<UART3_TYPE> ttyUart (UART3_CONF);
 UART3_INSTALL(ttyUart)
 
 //CG[ board spi1

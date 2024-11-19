@@ -25,7 +25,7 @@ Pin led2 (LED2,"P"); // orange
 }
 //CG]
 
-uart::Work<UART1_TYPE> gpsUart (UART1_CONF);
+uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
 UART1_INSTALL(gpsUart)
 
 //CG[ board uart2
@@ -42,7 +42,7 @@ UART1_INSTALL(gpsUart)
 }
 //CG]
 
-uart::Work<UART2_TYPE> ttyUart (UART2_CONF);
+uart::Async<UART2_TYPE> ttyUart (UART2_CONF);
 UART2_INSTALL(ttyUart)
 
 Pin gpsPps {"B5","U2"}; // D4 TIM3-CH2

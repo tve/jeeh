@@ -8,28 +8,28 @@
 using namespace jeeh;
 #include "defs.h"
 
-uart::Work<UART_TYPE> uart3 (UART_CONF);
+uart::Async<UART_TYPE> uart3 (UART_CONF);
 UART_INSTALL(uart3)
 
-uart::Work<UART1_TYPE> uart1 (UART1_CONF);
+uart::Async<UART1_TYPE> uart1 (UART1_CONF);
 UART1_INSTALL(uart1)
 
-uart::Work<UART2_TYPE> uart2 (UART2_CONF);
+uart::Async<UART2_TYPE> uart2 (UART2_CONF);
 UART2_INSTALL(uart2)
 
-uart::Work<UART4_TYPE> uart4 (UART4_CONF);
+uart::Async<UART4_TYPE> uart4 (UART4_CONF);
 UART4_INSTALL(uart4)
 
-uart::Work<UART5_TYPE> uart5 (UART5_CONF);
+uart::Async<UART5_TYPE> uart5 (UART5_CONF);
 UART5_INSTALL(uart5)
 
-uart::Work<UART6_TYPE> uart6 (UART6_CONF);
+uart::Async<UART6_TYPE> uart6 (UART6_CONF);
 UART6_INSTALL(uart6)
 
 uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
 //UART9_INSTALL(uart9)
 
-uart::Work<UART10_TYPE> uart10 (UART10_CONF);
+uart::Async<UART10_TYPE> uart10 (UART10_CONF);
 #define UART10_IRQHandler USART10_IRQHandler 
 UART10_INSTALL(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 

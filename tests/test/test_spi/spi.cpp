@@ -19,9 +19,9 @@ spi::Gpio spiGpio;
 spi::Poll<SPI_NAME.ADDR> spiPoll (ena::SPI_NAME, SPI_FREQ);
 spi::Sync<SPI_TYPE> spiSync (SPI_CONF);
 
-spi::Work<SPI_TYPE> spiWork (SPI_CONF);
-IRQ_HANDLER(DMA1_Channel3, spiWork.interrupt) // not DMA1_CH3 !
-IRQ_HANDLER(DMA1_Channel4, spiWork.interrupt) // not DMA1_CH4 !
+spi::Async<SPI_TYPE> spiAsync (SPI_CONF);
+IRQ_HANDLER(DMA1_Channel3, spiAsync.interrupt) // not DMA1_CH3 !
+IRQ_HANDLER(DMA1_Channel4, spiAsync.interrupt) // not DMA1_CH4 !
 
 void setUp () {}
 
@@ -29,7 +29,7 @@ void tearDown () {
     spiGpio.deinit();
     spiPoll.deinit();
     spiSync.deinit();
-    spiWork.deinit();
+    spiAsync.deinit();
 }
 
 void testTxGpio () {
@@ -206,37 +206,37 @@ logDump(snBuf, sizeof snBuf);
 }
 
 void testTxWait () {
-    spiWork.init(SPI_PINS, SPEED);
+    spiAsync.init(SPI_PINS, SPEED);
 
     auto start = cycles::micros();
-    spiWork.transfer(true, (uint8_t*) "x", 1);
+    spiAsync.transfer(true, (uint8_t*) "x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 8, cycles::micros()-start);
 
     start = cycles::micros();
-    spiWork.transfer(true, (uint8_t*) "abcde", 5);
+    spiAsync.transfer(true, (uint8_t*) "abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiWork.transfer(true, (uint8_t*) "1234567890", 10);
+    spiAsync.transfer(true, (uint8_t*) "1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiWork.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    spiAsync.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 12, cycles::micros()-start);
 }
 
 void testRxWait () {
-    spiWork.init(SPI_PINS, SPEED);
+    spiAsync.init(SPI_PINS, SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
-    spiWork.transfer(false, buf, sizeof buf);
+    spiAsync.transfer(false, buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(MARGIN, 29, cycles::micros()-start);
 }
 
 void testFlashWait () {
-    spiWork.init(SPI_PINS, SPEED);
-    SpiFlash spif (spiWork);
+    spiAsync.init(SPI_PINS, SPEED);
+    SpiFlash spif (spiAsync);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
 
@@ -280,22 +280,22 @@ private:
             case START:
                 break;
             case TX:
-                spiWork.start(true, (uint8_t*) "x", 1, { wId, TX1 });
+                spiAsync.start(true, (uint8_t*) "x", 1, { wId, TX1 });
                 break;
             case TX1:
-                spiWork.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
+                spiAsync.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
                 break;
             case TX2:
-                spiWork.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
+                spiAsync.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
                 break;
             case TX3:
-                spiWork.start(true,
+                spiAsync.start(true,
                               (uint8_t*) "123456789012345678901234567890", 30,
                               { wId, DONE });
                 break;
             case RX:
                 memset(buf, 0, sizeof buf);
-                spiWork.start(false, buf, sizeof buf, { wId, DONE });
+                spiAsync.start(false, buf, sizeof buf, { wId, DONE });
                 break;
             case DONE:
                 done = true;
@@ -307,9 +307,9 @@ private:
     }
 };
 
-void testTxWork () {
+void testTxAsync () {
     SpiTask task;
-    auto swId = spiWork.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPI_PINS, SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -326,9 +326,9 @@ void testTxWork () {
     TEST_ASSERT_EQUAL(5, task.calls);
 }
 
-void testRxWork () {
+void testRxAsync () {
     SpiTask task;
-    auto swId = spiWork.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPI_PINS, SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -345,9 +345,9 @@ void testRxWork () {
     TEST_ASSERT_EQUAL(2, task.calls);
 }
 
-void testFlashWork () {
+void testFlashAsync () {
     SpiTask task;
-    auto swId = spiWork.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPI_PINS, SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -356,7 +356,7 @@ void testFlashWork () {
     // TODO flash driver will need to be extended to work in async mode
     //  i.e. wrap as task and use periodic ticks to check erase completion
 
-    SpiFlash spif (spiWork);
+    SpiFlash spif (spiAsync);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
 
@@ -401,7 +401,7 @@ void allTests () {
 pins[6] = 0;
     RUN_TEST(testFlashWait); // async in blocking mode (sync-like)
 pins[7] = 0;
-    RUN_TEST(testTxWork);
-    RUN_TEST(testRxWork);
-    //RUN_TEST(testFlashWork);
+    RUN_TEST(testTxAsync);
+    RUN_TEST(testRxAsync);
+    //RUN_TEST(testFlashAsync);
 }

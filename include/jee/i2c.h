@@ -311,7 +311,7 @@ cfg.dma.completed();
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
-struct Work : Sync<A,D,T,R>, Task {
+struct Async : Sync<A,D,T,R>, Task {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg;
 

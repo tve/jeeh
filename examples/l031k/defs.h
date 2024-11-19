@@ -63,5 +63,5 @@ void initBoard () {
     auto dt = rtc::getDate();
     logf("\n%s: %s @ %d MHz - 20%02d-%02d-%02d %02d:%02d:%02d.%03d",
             PIOENV, SVDNAME, SystemCoreClock / 1'000'000,
-            dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, (dt.ff * 1000) / 256);
+            dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, dt.ms);
 }

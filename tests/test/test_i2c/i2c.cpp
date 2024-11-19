@@ -16,9 +16,9 @@ i2c::Gpio i2cGpio;
 i2c::Poll<I2C_NAME.ADDR> i2cPoll (ena::I2C_NAME, I2C_FREQ);
 i2c::Sync<I2C_TYPE> i2cSync (I2C_CONF);
 
-i2c::Work<I2C_TYPE> i2cWork (I2C_CONF);
-IRQ_HANDLER(DMA1_Channel5, i2cWork.interrupt) // not DMA1_CH5 !
-IRQ_HANDLER(DMA1_Channel6, i2cWork.interrupt) // not DMA1_CH6 !
+i2c::Async<I2C_TYPE> i2cAsync (I2C_CONF);
+IRQ_HANDLER(DMA1_Channel5, i2cAsync.interrupt) // not DMA1_CH5 !
+IRQ_HANDLER(DMA1_Channel6, i2cAsync.interrupt) // not DMA1_CH6 !
 
 template< typename T >
 bool read32b (T const& dev, uint16_t addr, void* ptr) {
@@ -38,7 +38,7 @@ void tearDown () {
     i2cGpio.deinit();
     i2cPoll.deinit();
     i2cSync.deinit();
-    i2cWork.deinit();
+    i2cAsync.deinit();
 }
 
 void testFramGpio () {
@@ -181,8 +181,8 @@ void testFramSync () {
 void testFramWait () {
     if (DUMP)
         logf("\n<<< testFramWait >>>");
-    i2cWork.init(I2C_PINS, i2cTiming(SPEED));
-    i2c::Dev fram { i2cWork, 0x50 };
+    i2cAsync.init(I2C_PINS, i2cTiming(SPEED));
+    i2c::Dev fram { i2cAsync, 0x50 };
 
     uint8_t buf [32], buf2 [32];
 
@@ -227,22 +227,22 @@ private:
             case START:
                 break;
             case TX:
-                i2cWork.start(true, (uint8_t*) "x", 1, { wId, TX1 });
+                i2cAsync.start(true, (uint8_t*) "x", 1, { wId, TX1 });
                 break;
             case TX1:
-                i2cWork.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
+                i2cAsync.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
                 break;
             case TX2:
-                i2cWork.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
+                i2cAsync.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
                 break;
             case TX3:
-                i2cWork.start(true,
+                i2cAsync.start(true,
                               (uint8_t*) "123456789012345678901234567890", 30,
                               { wId, DONE });
                 break;
             case RX:
                 memset(buf, 0, sizeof buf);
-                i2cWork.start(false, buf, sizeof buf, { wId, DONE });
+                i2cAsync.start(false, buf, sizeof buf, { wId, DONE });
                 break;
             case DONE:
                 done = true;
@@ -254,11 +254,11 @@ private:
     }
 };
 
-void testFramWork () {
+void testFramAsync () {
     if (DUMP)
-        logf("\n<<< testFramWork >>>");
+        logf("\n<<< testFramAsync >>>");
     I2cTask task;
-    auto swId = i2cWork.init(I2C_PINS, i2cTiming(SPEED));
+    auto swId = i2cAsync.init(I2C_PINS, i2cTiming(SPEED));
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -282,6 +282,6 @@ pins[6] = 1;
 pins[6] = 0;
     RUN_TEST(testFramSync);
     //RUN_TEST(testFramWait); // async in blocking mode (sync-like)
-    //RUN_TEST(testFramWork);
+    //RUN_TEST(testFramAsync);
 logf("99");
 }

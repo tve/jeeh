@@ -14,15 +14,15 @@ uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
 
-uart::Work<UART_TYPE> uartWork (UART_CONF);
-UART_INSTALL(uartWork)
+uart::Async<UART_TYPE> uartAsync (UART_CONF);
+UART_INSTALL(uartAsync)
 
 void setUp () {}
 
 void tearDown () {
     uartPoll.deinit();
     uartSync.deinit();
-    uartWork.deinit();
+    uartAsync.deinit();
 }
 
 void testJumper () {
@@ -75,22 +75,22 @@ void testSync () {
 }
 
 void testWait () {
-    uartWork.init(UART_PINS, 1'000'000);
+    uartAsync.init(UART_PINS, 1'000'000);
 
     auto start = cycles::micros();
-    uartWork.write("x", 1);
+    uartAsync.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.write("abcde", 5);
+    uartAsync.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 51, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.write("1234567890", 10);
+    uartAsync.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 99, cycles::micros()-start);
 
     start = cycles::micros();
-    uartWork.write("123456789012345678901234567890", 30);
+    uartAsync.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 300, cycles::micros()-start);
 }
 
@@ -108,16 +108,16 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartWork.write("x", 1, { wId, ONE });
+                uartAsync.write("x", 1, { wId, ONE });
                 break;
             case ONE:
-                uartWork.write("abcde", 5, { wId, TWO });
+                uartAsync.write("abcde", 5, { wId, TWO });
                 break;
             case TWO:
-                uartWork.write("1234567890", 10, { wId, THREE });
+                uartAsync.write("1234567890", 10, { wId, THREE });
                 break;
             case THREE:
-                uartWork.write("123456789012345678901234567890", 30,
+                uartAsync.write("123456789012345678901234567890", 30,
                                { wId, FOUR });
                 break;
             case FOUR:
@@ -130,9 +130,9 @@ private:
     }
 };
 
-void testWork () {
+void testAsync () {
     UartTask task;
-    auto uwId = uartWork.init(UART_PINS, 1'000'000);
+    auto uwId = uartAsync.init(UART_PINS, 1'000'000);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -164,12 +164,12 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartWork.read(0, { wId, RECV });
+                uartAsync.read(0, { wId, RECV });
                 [[fallthrough]];
             case MORE:
                 ++count;
                 // send 1 + 2 + 3 + ... + 25 + 26 + 27 bytes
-                uartWork.write("~ABCDEFGHIJKLMNOPQRSTUVWXYZ", count,
+                uartAsync.write("~ABCDEFGHIJKLMNOPQRSTUVWXYZ", count,
                                { wId, count < 27 ? MORE : SENT });
                 break;
             case SENT:
@@ -179,10 +179,10 @@ private:
                 // count the number of bytes received
                 sum += in.eVal;
                 if (sum >= 27*28/2) {
-                    uartWork.read(in.eVal, {}); // consume without new request
+                    uartAsync.read(in.eVal, {}); // consume without new request
                     rxDone = true;
                 } else // keep reading
-                    uartWork.read(in.eVal, { wId, RECV });
+                    uartAsync.read(in.eVal, { wId, RECV });
                 break;
             default:
                 fail();
@@ -193,7 +193,7 @@ private:
 
 void testLoop () {
     LoopTask task;
-    auto uwId = uartWork.init(UART_PINS, 1'000'000);
+    auto uwId = uartAsync.init(UART_PINS, 1'000'000);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -218,7 +218,7 @@ void allTests () {
     RUN_TEST(testPoll);
     RUN_TEST(testSync);
     RUN_TEST(testWait); // async in blocking mode (sync-like)
-    RUN_TEST(testWork); // async in full non-blocking mode
+    RUN_TEST(testAsync); // async in full non-blocking mode
     RUN_TEST(testSync); // make sure reinit works
     RUN_TEST(testPoll); // make sure reinit works
     RUN_TEST(testLoop);

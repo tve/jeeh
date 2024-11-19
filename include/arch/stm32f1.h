@@ -74,8 +74,8 @@ uint32_t get250hz () {
 
 DateTime getDate () {
     auto t = get250hz();
-    DateTime dt { offSecs + t/250 };
-    dt.ff = t % 250;
+    DateTime dt { offSecs + t/1000 };
+    dt.ms = t % 1000;
     return dt;
 }
 
