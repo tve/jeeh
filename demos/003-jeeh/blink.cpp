@@ -2,7 +2,7 @@
 #include <jee/cycles.h>
 using namespace jeeh;
 
-Pin led {"C13","P"};
+const Pin led {"C13","P"};
 
 int main () {
     cycles::init();
