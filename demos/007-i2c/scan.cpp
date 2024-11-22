@@ -7,7 +7,7 @@ i2c::Gpio i2cBus;
 
 int main () {
     initBoard();
-    i2cBus.init("B7,B6");
+    i2cBus.init("B7,B6"); // sda scl
 
     while (true) {
         led.toggle();

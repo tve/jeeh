@@ -7,9 +7,9 @@ struct Gpio {
 
     void init (char const* desc, int khz =10'000) {
         Pin::config(desc, &mosi, 4);
-        disable(); // start with NSEL high
         Pin::config(":HP,:U,:HP,", &mosi, 4);
         sclk = cpol;
+        disable(); // start with NSEL high
 
         rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }

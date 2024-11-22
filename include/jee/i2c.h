@@ -20,7 +20,7 @@ struct Dev {
         return write(r, &v, 1);
     }
 
-    // one byte address, to/from buffer
+    // one byte address, read/write buffer
     bool read (uint8_t r, void* p, uint8_t n) const {
         return transfer(bus.R1, &r, 1)
             && transfer(bus.R2, p, n);
@@ -30,7 +30,7 @@ struct Dev {
             && transfer(bus.W2, (void*) p, n);
     }
 
-    // two byte address, to/from buffer
+    // two byte address, read/write buffer
     bool read16 (uint16_t r, void* p, uint8_t n) const {
         return transfer(bus.R1, &r, 2)
             && transfer(bus.R2, p, n);
@@ -66,8 +66,8 @@ struct Gpio {
         Pin::config(desc, &sda, 2);
         Pin::config(":OU,", &sda, 2);
 
-        scl = 1;
         sda = 1;
+        scl = 1;
 
         // this is merely a wild estimate for the countdown needed in hold()
         // values < 100 will override to define a specific countdown instead
