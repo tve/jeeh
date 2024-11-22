@@ -1,3 +1,8 @@
+// Lines with "CG" control the code-generated parts of this file.
+
+//CG1 pio
+#define PIOENV  "logf"
+
 namespace serio {
     enum { SR=0x00, DR=0x04, BRR=0x08, CR1=0x0C };
 
@@ -25,5 +30,5 @@ void initBoard () {
     cycles::init();
     serio::init();
 
-    logf("logf: %s @ %d MHz", SVDNAME, SystemCoreClock / 1'000'000);
+    logf("%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }

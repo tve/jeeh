@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "pull"
+#define PIOENV  "detect"
 
 const Pin led {"C13","P"};    // push-pull output mode
 const Pin button {"A0","U"};  // pull-up input mode
@@ -22,6 +22,12 @@ namespace serio {
             USART1[DR] = ((uint8_t const*) ptr)[i];
         }
     }
+}
+
+extern "C" int _write (int fd, char* buf, int len) {
+    if (fd == 1)
+        serio::write(buf, len);
+    return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
