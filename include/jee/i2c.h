@@ -210,7 +210,6 @@ struct Poll {
     enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-        assert(n > 0);
         startReq(a, m, n);
 
         auto q = (uint8_t*) p;

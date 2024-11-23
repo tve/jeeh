@@ -6,7 +6,7 @@ using namespace jeeh;
 i2c::Gpio i2cBus;
 enum { SHT21 = 0x40 }; // I2C address
 
-// start T measurement, wait until ready, get 3 result bytes
+// start a measurement, wait until ready, get 3 result bytes
 uint16_t measure (uint8_t type, uint8_t delay) {
     i2cBus.start(SHT21*2);
     i2cBus.wrByte(type);
