@@ -222,7 +222,7 @@ void SVC_Handler () {
         " addne sp,#32 \n"
 #endif
         " pop {r0,r1} \n"
-        " msr psr,r0 \n"
+        " msr psr_nzcvq,r0 \n"
         " bx r1 \n"
     );
 }
