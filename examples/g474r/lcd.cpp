@@ -254,8 +254,5 @@ int main () {
     gfx.fg = 0x001F; // blue
     gfx.bFill({300, 220}, 130, 30);
 
-    while (true) {
-        led.toggle();
-        cycles::msBusy(250);
-    }
+    while (true) { cycles::msBusy(500); led.toggle(); }
 }

@@ -67,8 +67,5 @@ int main () {
             logf("itg3200 gyro:    xyz = %6d %6d %6d", x, y, z);
     }
 
-    while (true) {
-        cycles::msBusy(250);
-        led.toggle();
-    }
+    while (true) { cycles::msBusy(500); led.toggle(); }
 }

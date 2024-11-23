@@ -82,5 +82,5 @@ int main () {
     cycles::msBusy(500);
     oled2.clear();
 
-    while (true) { cycles::msBusy(250); led.toggle(); }
+    while (true) { cycles::msBusy(500); led.toggle(); }
 }

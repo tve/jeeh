@@ -203,8 +203,5 @@ int main () {
     logf("font3 %5d us (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
 
-    while (true) {
-        led1.toggle();
-        cycles::msBusy(250);
-    }
+    while (true) { cycles::msBusy(500); led1.toggle(); }
 }
