@@ -216,7 +216,6 @@ struct Adjuster : Task {
     }
 
     int lseDiff () const { // difference from 32x 32 kHz counts
-        //return ((TIM2[CCR2] - (1<<20)) * 512) / 489;
         return TIM2[CCR2] - (1<<20);
     }
 

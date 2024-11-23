@@ -242,9 +242,9 @@ void set (uint32_t t) {
 }
 
 void calibrate (int diff) {
-    assert(-480 < diff && diff < 480);
+    assert(-512 < diff && diff < 512);
     if (diff < 0)
-        diff = (1<<15) | (diff+512); // CALP CALM
+        diff = (1<<15) | (diff+511); // CALP CALM
     RTC[CALR] = diff;
 }
 
