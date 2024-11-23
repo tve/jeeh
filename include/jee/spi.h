@@ -71,7 +71,7 @@ struct Poll {
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, int khz) {
+    void init (char const* defs, int khz =10'000) {
         Pin::config(defs, &mosi, 4);
         disable(); // start with NSEL high
 
