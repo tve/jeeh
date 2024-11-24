@@ -58,9 +58,11 @@ UART3_INSTALL(ttyUart)
 //CG]
 
 spi::Poll<SPI1_NAME.ADDR> lcdSpi (ena::SPI1_NAME, SPI1_FREQ);
+//spi::Sync<SPI1_TYPE> lcdSpi (SPI1_CONF);
+//spi::Aync<SPI1_TYPE> lcdSpi (SPI1_CONF);
 //Pin lcdCmd {lcdSpi.miso}; // re-used as C/D output pin
 Pin lcdCmd {"A6","P"}; // re-used as C/D output pin
-//Pin lcdRst {"D15","P"}; // can be tied to Vcc
+//Pin lcdRst {"D15","P"}; // tied to Vcc instead
 
 #if 0
 namespace serio {
