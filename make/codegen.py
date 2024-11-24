@@ -157,7 +157,7 @@ def processAll(d='', e='', o={}, p='', s=False, t=False, v=False, srcs=[]):
         if not t:
             processFile(f)
 
-    if not t and hasattr(cgdefs, 'onFinisn'):
+    if not t and hasattr(cgdefs, 'onFinish'):
         cgdefs.onFinisn(files)
 
 # main app: parse command line and process specified files and directories
