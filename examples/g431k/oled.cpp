@@ -77,7 +77,7 @@ int main () {
     t2 = cycles::micros() - t2;
     logf(" oled 2: %5d µs", t2);
 
-    cycles::msBusy(500);
+    cycles::msBusy(2000);
     oled1.clear();
     cycles::msBusy(500);
     oled2.clear();
