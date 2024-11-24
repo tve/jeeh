@@ -15,7 +15,7 @@ Pin led (LED,"P");
 #define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 1-1, 2-1
 #define UART2_CONF  { ena::USART2, 170, Irq::USART2, \
                       Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,27,26 } }
-#define UART2_INSTALL(w) extern "C" { \
+#define UART2_TRIGGER(w) extern "C" { \
     void USART2_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel1_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel2_IRQHandler () { (w).irqDma(); } \
@@ -23,7 +23,7 @@ Pin led (LED,"P");
 //CG]
 
 uart::Async<UART2_TYPE> console (UART2_CONF);
-UART2_INSTALL(console)
+UART2_TRIGGER(console)
 
 //CG[ board spi
 #define SPI_NAME  SPI1

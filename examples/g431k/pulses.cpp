@@ -23,7 +23,7 @@ struct Sender : Task {
         switch (in.eTag) {
             case START:
                 pin6 = 1; // 31 µs
-                send({ replier.wId }, { wId, REPLY });
+                send({ replier.tId }, { tId, REPLY });
                 pin6 = 0; // 56 µs
                 break;
             case REPLY:

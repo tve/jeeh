@@ -4,7 +4,7 @@ using namespace jeeh;
 #include "defs.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 struct Blinker : Task {
     enum TAG { START, TICK };
@@ -35,14 +35,14 @@ struct Shell : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                console.read(0, { wId, TTYIN });
+                console.read(0, { tId, TTYIN });
                 break;
             case TTYIN:
                 logf("%d: '%c'", in.eVal, *console.rxPtr);
                 switch (*console.rxPtr) {
                     case 'l': blinker.enable = !blinker.enable; break;
                 }
-                console.read(1, { wId, TTYIN });
+                console.read(1, { tId, TTYIN });
                 break;
             default:
                 fail();

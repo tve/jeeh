@@ -60,7 +60,7 @@ def BOARD(block, name, suffix=''):
             x1 = 'void ${N}_IRQHandler () { (w).irqIdle(); }'
             x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'
             x3 = 'void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); }'
-            r.append(f'#define UART{suffix}_INSTALL(w) extern "C" {{ \\')
+            r.append(f'#define UART{suffix}_TRIGGER(w) extern "C" {{ \\')
             r.append(f'    {Template(x1).substitute(f)} \\')
             r.append(f'    {Template(x2).substitute(f)} \\')
             r.append(f'    {Template(x3).substitute(f)} \\')

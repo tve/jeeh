@@ -5,7 +5,7 @@ using namespace jeeh;
 #include "defs.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 struct Blinker : Task {
     enum TAG { START, TICK };

@@ -6,7 +6,7 @@ using namespace jeeh;
 #include "defs.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 struct Stream : Task {
     enum TAG { START, TICK, SENT };
@@ -35,7 +35,7 @@ struct Stream : Task {
                     else {
                         auto n = snprintf(buf, sizeof buf, "%2d %d\n",
                                             repeat, (int16_t) prev);
-                        ttyUart.write(buf, n, { wId, SENT });
+                        ttyUart.write(buf, n, { tId, SENT });
                         repeat = 1;
                         prev = bits;
                     }

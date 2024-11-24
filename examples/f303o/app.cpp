@@ -10,10 +10,10 @@ using namespace jeeh;
 extern "C" uint8_t* _sbrk (uint32_t);
 
 ExtIrq extier;
-EXTIRQ_INSTALL(extier)
+EXTIRQ_TRIGGER(extier)
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 struct Rusher : Task {
     enum TAG { START, TRACK, TICK, PPS };
@@ -23,7 +23,6 @@ struct Rusher : Task {
     Event tracker;                   // task to notify on each edge change
     uint32_t ppsMillis =0;           // ms of last 1PPS pulse
     uint16_t ppsPrev =0;             // cycle count of last PPS pulse
-    int16_t ppsDiff =0;              // cycle diff from one pulse to the next
     uint16_t ticks =0, prevTicks =0; // tick count (once every 4 ms)
     int16_t hsePpm =0;               // calculated HSE clock error
 
@@ -44,7 +43,7 @@ struct Rusher : Task {
                 ++ticks; // keep track of current tick count
                 out = ticked(); // may have a reply for tracking task
                 break;
-            case PPS:
+            case PPS: {
 //assert((uint16_t) (cycles::count() - in.eVal) < 10000);
                 ppsMillis = cycles::millis();
                 if (flag("Gp")) {
@@ -52,11 +51,12 @@ struct Rusher : Task {
                     uint16_t diff = (in.eVal - ppsPrev) - SystemCoreClock;
                     logf("G pps lag %d cy, clk diff %d cy", lag, diff);
                 }
-                ppsDiff = in.eVal - ppsPrev;
+                uint16_t ppsDiff = in.eVal - ppsPrev;
                 ppsPrev = in.eVal;
                 hsePpm = (int16_t) (ppsDiff - SystemCoreClock) /
                             (int) (SystemCoreClock/1'000'000);
                 break;
+            }
             default:
                 fail();
         }
@@ -109,7 +109,7 @@ struct Gpser : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                gpsUart.read(0, { wId, RECV });
+                gpsUart.read(0, { tId, RECV });
                 break;
             case RECV: {
                 auto i = 0U;
@@ -124,7 +124,7 @@ struct Gpser : Task {
                         }
                         break;
                     }
-                gpsUart.read(i, { wId, RECV });
+                gpsUart.read(i, { tId, RECV });
                 break;
             }
             case SETRTC:
@@ -285,11 +285,11 @@ struct Cmder : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                ttyUart.read(0, { wId, TTYIN });
+                ttyUart.read(0, { tId, TTYIN });
                 break;
             case TTYIN:
                 doCmd(*ttyUart.rxPtr);
-                ttyUart.read(1, { wId, TTYIN });
+                ttyUart.read(1, { tId, TTYIN });
                 break;
             case REPORT: {
                 auto t1 = gpser.now.asText();
@@ -461,7 +461,7 @@ struct Idler : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                send({ rusher.wId, rusher.TRACK }, { wId, EDGE });
+                send({ rusher.tId, rusher.TRACK }, { tId, EDGE });
                 break;
             case EDGE:
                 // triggered each time the DCF or MSF signal changes
@@ -500,7 +500,7 @@ private:
 
 void initGps () {
     gpsUart.init(UART1_PINS, 9600);
-    gpsUart.wName = "gps-uart";
+    gpsUart.setName("gps-uart");
 
     const uint8_t config [] = {
         // enable NAV-PVT

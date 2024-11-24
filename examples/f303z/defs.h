@@ -21,7 +21,7 @@ const Pin led3 (LED3,"P");
 #define UART1_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
 #define UART1_CONF  { ena::USART1, 72, Irq::USART1, \
                       Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
-#define UART1_INSTALL(w) extern "C" { \
+#define UART1_TRIGGER(w) extern "C" { \
     void USART1_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel5_IRQHandler () { (w).irqDma(); } \
@@ -29,7 +29,7 @@ const Pin led3 (LED3,"P");
 //CG]
 
 uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
-UART1_INSTALL(gpsUart)
+UART1_TRIGGER(gpsUart)
 
 //CG[ board uart3
 #define UART3_NAME  USART3
@@ -38,7 +38,7 @@ UART1_INSTALL(gpsUart)
 #define UART3_TYPE  USART3.ADDR, DMA1.ADDR, 2-1, 3-1
 #define UART3_CONF  { ena::USART3, 36, Irq::USART3, \
                       Irq::DMA1_CH2, Irq::DMA1_CH3, { 1-1,2,2 } }
-#define UART3_INSTALL(w) extern "C" { \
+#define UART3_TRIGGER(w) extern "C" { \
     void USART3_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel2_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel3_IRQHandler () { (w).irqDma(); } \
@@ -46,7 +46,7 @@ UART1_INSTALL(gpsUart)
 //CG]
 
 uart::Async<UART3_TYPE> ttyUart (UART3_CONF);
-UART3_INSTALL(ttyUart)
+UART3_TRIGGER(ttyUart)
 
 //CG[ board spi1
 #define SPI1_NAME  SPI1
@@ -101,7 +101,7 @@ void initBoard () {
     rtc::init(false);
 
     ttyUart.init(UART3_PINS, 2'000'000);
-    ttyUart.wName = "tty-uart";
+    ttyUart.setName("tty-uart");
     //serio::init();
 
     if (rtc::getSecs() == 0)

@@ -95,12 +95,12 @@ private:
 };
 
 #if STM32G0 | STM32L0
-#define EXTIRQ_INSTALL(name) \
+#define EXTIRQ_TRIGGER(name) \
     IRQ_HANDLER(EXTI0_1,   name.irqExti) \
     IRQ_HANDLER(EXTI2_3,   name.irqExti) \
     IRQ_HANDLER(EXTI4_15,  name.irqExti)
 #else
-#define EXTIRQ_INSTALL(name) \
+#define EXTIRQ_TRIGGER(name) \
     IRQ_HANDLER(EXTI0,     name.irqExti) \
     IRQ_HANDLER(EXTI1,     name.irqExti) \
     IRQ_HANDLER(EXTI2,     name.irqExti) \

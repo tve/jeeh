@@ -7,7 +7,7 @@ using namespace jeeh;
 #include "defs.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 uint32_t start;
 

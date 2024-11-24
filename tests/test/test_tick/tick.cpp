@@ -4,7 +4,7 @@
 #include "jee/ticker.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 void setUp () {}
 void tearDown () {}

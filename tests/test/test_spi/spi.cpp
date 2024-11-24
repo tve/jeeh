@@ -13,7 +13,7 @@ constexpr auto SPEED = 10'000; // SPI bus speed, kHz
 const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 }; // serno
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 spi::Gpio spiGpio;
 spi::Poll<SPI_NAME.ADDR> spiPoll (ena::SPI_NAME, SPI_FREQ);
@@ -280,22 +280,22 @@ private:
             case START:
                 break;
             case TX:
-                spiAsync.start(true, (uint8_t*) "x", 1, { wId, TX1 });
+                spiAsync.start(true, (uint8_t*) "x", 1, { tId, TX1 });
                 break;
             case TX1:
-                spiAsync.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
+                spiAsync.start(true, (uint8_t*) "abcde", 5, { tId, TX2 });
                 break;
             case TX2:
-                spiAsync.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
+                spiAsync.start(true, (uint8_t*) "1234567890", 10, { tId, TX3 });
                 break;
             case TX3:
                 spiAsync.start(true,
                               (uint8_t*) "123456789012345678901234567890", 30,
-                              { wId, DONE });
+                              { tId, DONE });
                 break;
             case RX:
                 memset(buf, 0, sizeof buf);
-                spiAsync.start(false, buf, sizeof buf, { wId, DONE });
+                spiAsync.start(false, buf, sizeof buf, { tId, DONE });
                 break;
             case DONE:
                 done = true;

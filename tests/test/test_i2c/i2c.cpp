@@ -10,7 +10,7 @@ constexpr auto SPEED = 400; // I2C bus speed, kHz
 constexpr auto DUMP = false; // false compares against expected
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 i2c::Gpio i2cGpio;
 i2c::Poll<I2C_NAME.ADDR> i2cPoll (ena::I2C_NAME, I2C_FREQ);
@@ -227,22 +227,22 @@ private:
             case START:
                 break;
             case TX:
-                i2cAsync.start(true, (uint8_t*) "x", 1, { wId, TX1 });
+                i2cAsync.start(true, (uint8_t*) "x", 1, { tId, TX1 });
                 break;
             case TX1:
-                i2cAsync.start(true, (uint8_t*) "abcde", 5, { wId, TX2 });
+                i2cAsync.start(true, (uint8_t*) "abcde", 5, { tId, TX2 });
                 break;
             case TX2:
-                i2cAsync.start(true, (uint8_t*) "1234567890", 10, { wId, TX3 });
+                i2cAsync.start(true, (uint8_t*) "1234567890", 10, { tId, TX3 });
                 break;
             case TX3:
                 i2cAsync.start(true,
                               (uint8_t*) "123456789012345678901234567890", 30,
-                              { wId, DONE });
+                              { tId, DONE });
                 break;
             case RX:
                 memset(buf, 0, sizeof buf);
-                i2cAsync.start(false, buf, sizeof buf, { wId, DONE });
+                i2cAsync.start(false, buf, sizeof buf, { tId, DONE });
                 break;
             case DONE:
                 done = true;

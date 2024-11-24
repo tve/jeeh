@@ -8,14 +8,14 @@
 constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
 
 uart::Sync<UART_TYPE> uartSync (UART_CONF);
 
 uart::Async<UART_TYPE> uartAsync (UART_CONF);
-UART_INSTALL(uartAsync)
+UART_TRIGGER(uartAsync)
 
 void setUp () {}
 
@@ -108,17 +108,17 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartAsync.write("x", 1, { wId, ONE });
+                uartAsync.write("x", 1, { tId, ONE });
                 break;
             case ONE:
-                uartAsync.write("abcde", 5, { wId, TWO });
+                uartAsync.write("abcde", 5, { tId, TWO });
                 break;
             case TWO:
-                uartAsync.write("1234567890", 10, { wId, THREE });
+                uartAsync.write("1234567890", 10, { tId, THREE });
                 break;
             case THREE:
                 uartAsync.write("123456789012345678901234567890", 30,
-                               { wId, FOUR });
+                               { tId, FOUR });
                 break;
             case FOUR:
                 done = true;
@@ -164,13 +164,13 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartAsync.read(0, { wId, RECV });
+                uartAsync.read(0, { tId, RECV });
                 [[fallthrough]];
             case MORE:
                 ++count;
                 // send 1 + 2 + 3 + ... + 25 + 26 + 27 bytes
                 uartAsync.write("~ABCDEFGHIJKLMNOPQRSTUVWXYZ", count,
-                               { wId, count < 27 ? MORE : SENT });
+                               { tId, count < 27 ? MORE : SENT });
                 break;
             case SENT:
                 txDone = true;
@@ -182,7 +182,7 @@ private:
                     uartAsync.read(in.eVal, {}); // consume without new request
                     rxDone = true;
                 } else // keep reading
-                    uartAsync.read(in.eVal, { wId, RECV });
+                    uartAsync.read(in.eVal, { tId, RECV });
                 break;
             default:
                 fail();

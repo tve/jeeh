@@ -9,29 +9,29 @@ using namespace jeeh;
 #include "defs.h"
 
 uart::Async<UART_TYPE> uart3 (UART_CONF);
-UART_INSTALL(uart3)
+UART_TRIGGER(uart3)
 
 uart::Async<UART1_TYPE> uart1 (UART1_CONF);
-UART1_INSTALL(uart1)
+UART1_TRIGGER(uart1)
 
 uart::Async<UART2_TYPE> uart2 (UART2_CONF);
-UART2_INSTALL(uart2)
+UART2_TRIGGER(uart2)
 
 uart::Async<UART4_TYPE> uart4 (UART4_CONF);
-UART4_INSTALL(uart4)
+UART4_TRIGGER(uart4)
 
 uart::Async<UART5_TYPE> uart5 (UART5_CONF);
-UART5_INSTALL(uart5)
+UART5_TRIGGER(uart5)
 
 uart::Async<UART6_TYPE> uart6 (UART6_CONF);
-UART6_INSTALL(uart6)
+UART6_TRIGGER(uart6)
 
 uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
-//UART9_INSTALL(uart9)
+//UART9_TRIGGER(uart9)
 
 uart::Async<UART10_TYPE> uart10 (UART10_CONF);
 #define UART10_IRQHandler USART10_IRQHandler 
-UART10_INSTALL(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
+UART10_TRIGGER(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
 struct Matrix : Task {
     enum TAG { START, R1, R2, R3, R4, R5, R6, R10, T1, T2, T3, T4, T5, T6, NE };
@@ -52,27 +52,27 @@ struct Matrix : Task {
             logf("%s %d", names[tag], in.eVal);
         switch (tag) {
             case START: // issue read requests on all UARTs
-                uart1.read(0, { wId, R1 });
-                uart2.read(0, { wId, R2 });
-                uart3.read(0, { wId, R3 });
-                uart4.read(0, { wId, R4 });
-                uart5.read(0, { wId, R5 });
-                uart6.read(0, { wId, R6 });
-                //uart10.read(0, { wId, R10 });
+                uart1.read(0, { tId, R1 });
+                uart2.read(0, { tId, R2 });
+                uart3.read(0, { tId, R3 });
+                uart4.read(0, { tId, R4 });
+                uart5.read(0, { tId, R5 });
+                uart6.read(0, { tId, R6 });
+                //uart10.read(0, { tId, R10 });
                 break;
             case R1:
                 memcpy(buf1, uart1.rxPtr, in.eVal); // keep copy of recv'd data
-                uart1.read(in.eVal, { wId, R1 }); // consume and start new read
-                uart1.write(buf1, in.eVal, { wId, T1 }); // send data out again
+                uart1.read(in.eVal, { tId, R1 }); // consume and start new read
+                uart1.write(buf1, in.eVal, { tId, T1 }); // send data out again
                 break;
             case R2:
                 memcpy(buf2, uart2.rxPtr, in.eVal);
-                uart2.read(in.eVal, { wId, R2 });
-                uart2.write(buf2, in.eVal, { wId, T2 });
+                uart2.read(in.eVal, { tId, R2 });
+                uart2.write(buf2, in.eVal, { tId, T2 });
                 break;
             case R3: // console input
                 memcpy(buf3, uart3.rxPtr, in.eVal);
-                uart3.read(in.eVal, { wId, R3 });
+                uart3.read(in.eVal, { tId, R3 });
                 switch (buf3[0]) {
                     case 'q': verbose = false; break;
                     case 'v': verbose = true; break;
@@ -85,22 +85,22 @@ struct Matrix : Task {
                 break;
             case R4:
                 memcpy(buf4, uart4.rxPtr, in.eVal);
-                uart4.read(in.eVal, { wId, R4 });
-                uart4.write(buf4, in.eVal, { wId, T4 });
+                uart4.read(in.eVal, { tId, R4 });
+                uart4.write(buf4, in.eVal, { tId, T4 });
                 break;
             case R5:
                 memcpy(buf5, uart5.rxPtr, in.eVal);
-                uart5.read(in.eVal, { wId, R5 });
-                uart5.write(buf5, in.eVal, { wId, T5 });
+                uart5.read(in.eVal, { tId, R5 });
+                uart5.write(buf5, in.eVal, { tId, T5 });
                 break;
             case R6:
                 memcpy(buf6, uart6.rxPtr, in.eVal);
-                uart6.read(in.eVal, { wId, R6 });
-                uart6.write(buf6, in.eVal, { wId, T6 });
+                uart6.read(in.eVal, { tId, R6 });
+                uart6.write(buf6, in.eVal, { tId, T6 });
                 break;
             case R10:
                 memcpy(buf10, uart10.rxPtr, in.eVal);
-                uart10.read(in.eVal, { wId, R10 });
+                uart10.read(in.eVal, { tId, R10 });
                 break;
             case T1:
             case T2:

@@ -26,15 +26,15 @@ struct Ticker : Task {
     }
 
     void delay (uint16_t ms, uint8_t tag) const {
-        send({ wId, DELAY, ms }, { level, tag });
+        send({ tId, DELAY, ms }, { level, tag });
     }
 
     void periodic (uint16_t ms, uint8_t tag) const {
-        send({ wId, PERIOD, ms }, { level, tag });
+        send({ tId, PERIOD, ms }, { level, tag });
     }
 
     void cancel (uint8_t tag) const {
-        send({ wId, CANCEL, (uint16_t) ((level<<8) | tag) });
+        send({ tId, CANCEL, (uint16_t) ((level<<8) | tag) });
     }
 
 private:
@@ -146,7 +146,7 @@ private:
     }
 };
 
-#define TICKER_INSTALL(w) \
+#define TICKER_TRIGGER(w) \
     extern "C" void SysTick_Handler () { (w).irqSysTick(); }
 
 } // namespace jeeh

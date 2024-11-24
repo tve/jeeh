@@ -4,7 +4,7 @@ using namespace jeeh;
 #include "defs.h"
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 struct Bridge : Task {
     enum TAG { START, RECV };
@@ -12,12 +12,12 @@ struct Bridge : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                gpsUart.read(0, { wId, RECV });
+                gpsUart.read(0, { tId, RECV });
                 break;
             case RECV:
                 led1.toggle();
                 ttyUart.write(gpsUart.rxPtr, in.eVal);
-                gpsUart.read(in.eVal, { wId, RECV });
+                gpsUart.read(in.eVal, { tId, RECV });
                 break;
             default:
                 fail();
@@ -30,7 +30,7 @@ int main () {
     initBoard();
 
     gpsUart.init(UART1_PINS, 9600);
-    gpsUart.wName = "gps-uart";
+    gpsUart.setName("gps-uart");
 
     Bridge bridge;
     ticker.init();

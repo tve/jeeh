@@ -5,10 +5,10 @@
 #include <jee/exti.h>
 
 Ticker ticker;
-TICKER_INSTALL(ticker)
+TICKER_TRIGGER(ticker)
 
 ExtIrq exti;
-EXTIRQ_INSTALL(exti)
+EXTIRQ_TRIGGER(exti)
 
 void setUp () {}
 void tearDown () {}
