@@ -124,7 +124,7 @@ struct Gpser : Task {
     uint32_t lastSet =0, hAcc =0, tAcc =0, sv =0, fix =0;
     DateTime now;
 
-    Gpser () : Task ("gps") {}
+    Gpser () : Task ("gps"), now ((uint32_t) 0) {}
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
