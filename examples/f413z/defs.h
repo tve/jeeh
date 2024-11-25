@@ -123,10 +123,7 @@ namespace serio {
     void init () {
         Pin::config("D8:7");
         RCC(ena::UART_NAME,1) = 1;
-        // SystemCoreClock mixup? gcc inits as 16 MHz, but Nucleo-144 is 8 MHz
-        //  (normally, this next divider should be 100/2)
-        // TODO can probably also be fixed by using HSI16 iso HSE8
-        UART_NAME[BRR] = SystemCoreClock / 4 / 1'000'000; // 100/4 MHz APB bus
+        UART_NAME[BRR] = (SystemCoreClock/2) / 1'000'000; // 50 MHz APB bus
         UART_NAME[CR1] = (1<<13) | (1<<3); // UE TE
     }
 

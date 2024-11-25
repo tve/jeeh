@@ -122,7 +122,7 @@ int main () {
 
     uart1.init(UART1_PINS, 1'000'000);    // tx: B6  rx: B3  < D15 #9
     uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < B6  #1
-    uart3.init(UART_PINS, 2'000'000); // TODO probably 8/16 MHz xtal mixup
+    uart3.init(UART_PINS, 1'000'000);     // tx: D8  rx: D9
     uart4.init(UART4_PINS, 1'000'000);    // tx: A0  rx: C11 < A2  #2
     uart5.init(UART5_PINS, 1'000'000);    // tx: C12 rx: D2  < A0  #4
     uart6.init(UART6_PINS, 1'000'000);    // tx: G14 rx: G9  < C12 #5
