@@ -164,7 +164,7 @@ struct Task {
             auto name = id < MAX_taskS && tasks[id] != nullptr ?
                                 tasks[id]->tName : "";
             logf("%4d: [%c] dst %-3d tag %-3d val %-5d %s", 
-                    i, "SRIP"[evt.eDst>>6], id, evt.eTag, evt.eVal, name);
+                    i+1, "SRIP"[evt.eDst>>6], id, evt.eTag, evt.eVal, name);
         }
 
         // enable history logging once shown

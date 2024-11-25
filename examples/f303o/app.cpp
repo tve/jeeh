@@ -15,6 +15,26 @@ EXTIRQ_TRIGGER(extier)
 Ticker ticker;
 TICKER_TRIGGER(ticker)
 
+void memInfo () {
+    auto heapEnd = _sbrk(0);
+    auto currSp = (uint8_t*) &heapEnd;
+    extern uint8_t g_pfnVectors [], _siccmram [], _sdata [], _sbss [],
+                    _ebss [], _estack [];
+    logf("memory: code %d  data %d  bss %d  heap %d  stack %d  free %d kb",
+            _siccmram-g_pfnVectors, _sbss - _sdata, _ebss - _sbss,
+            heapEnd - _ebss, _estack - currSp, (currSp-heapEnd) >> 10);
+}
+
+auto showFlags (char c) {
+    assert('A' <= c && c <= 'Z');
+    auto f = flagsAtoZ[c-'A'];
+    char buf [27];
+    for (auto i = 0; i < 26; ++i)
+        buf[i] = (f>>i) & 1 ? 'a'+i : '-';
+    buf[26] = 0;
+    logf("  %c %s 0x%08x = %u", c, buf, f, f);
+}
+
 struct Rusher : Task {
     enum TAG { START, TRACK, TICK, PPS };
 
@@ -275,7 +295,7 @@ struct Blinker : Task {
 } blinker;
 
 struct Cmder : Task {
-    enum TAG { START, TTYIN, REPORT };
+    enum TAG { START, TTYIN, HIST, REPORT, STATS };
 
     uint32_t value =0, lastVal =0, seqNum =0;
     char lastCh =0;
@@ -291,39 +311,48 @@ struct Cmder : Task {
                 doCmd(*ttyUart.rxPtr);
                 ttyUart.read(1, { tId, TTYIN });
                 break;
-            case REPORT: {
-                auto t1 = gpser.now.asText();
-                auto t2 = rtc::getDate().asText();
-                auto t3 = DateTime{ gpser.lastSet }.asText();
-                ubx::Maidenhead mh (gpser.lat, gpser.lon);
-                logf("#%d %s", ++seqNum, led1 ? "OK" : "");
-                constexpr char const* fixDesc [] = {
-                    "NO", "DRO", "2D", "3D", "GNSS", "TIME"
-                };
-                logf("lse %d ppm, hse %d ppm, hor %d m, tim %d ns, sat %d : %s",
-                        adjuster.lsePpm, rusher.hsePpm,
-                        gpser.hAcc/1000, gpser.tAcc, gpser.sv,
-                        fixDesc[gpser.fix]);
-                logf("gps %s  lon %d  lat %d  mh %s",
-                        t1.buf, gpser.lon, gpser.lat, led1 ? mh.buf : "-");
-                logf("rtc %s  set %s", t2.buf, t3.buf);
+            case HIST:
+                logf("history #%d max %d", ++seqNum, Task::MAX_HISTORY-1);
+                showHistory();
+                break;
+            case REPORT:
+                logf("report #%d %s", ++seqNum, led1 ? "OK" : "");
+                report();
+                break;
+            case STATS:
+                logf("stats #%d", ++seqNum);
+                showStats();
+                ticker.showInfo();
                 memInfo();
                 break;
-            }
             default:
                 fail();
         }
         return out;
     }
 
-    void memInfo () const {
-        auto heapEnd = _sbrk(0);
-        auto currSp = (uint8_t*) &heapEnd;
-        extern uint8_t g_pfnVectors [], _siccmram [], _sdata [], _sbss [],
-                       _ebss [], _estack [];
-        logf("code %d  data %d  bss %d  heap %d  stack %d  free %d kb",
-                _siccmram-g_pfnVectors, _sbss - _sdata, _ebss - _sbss,
-                heapEnd - _ebss, _estack - currSp, (currSp-heapEnd) >> 10);
+    void report () const {
+        auto t1 = gpser.now.asText();
+        auto t2 = rtc::getDate().asText();
+        auto t3 = DateTime{ gpser.lastSet }.asText();
+        ubx::Maidenhead mh (gpser.lat, gpser.lon);
+        constexpr char const* fixDesc [] = {
+            "NO", "DRO", "2D", "3D", "GNSS", "TIME"
+        };
+        logf("lse %d ppm, hse %d ppm, hor %d m, tim %d ns, sat %d : %s",
+                adjuster.lsePpm, rusher.hsePpm,
+                gpser.hAcc/1000, gpser.tAcc, gpser.sv,
+                fixDesc[gpser.fix]);
+        logf("gps %s  lon %d  lat %d  mh %s",
+                t1.buf, gpser.lon, gpser.lat, led1 ? mh.buf : "-");
+        logf("rtc %s  set %s", t2.buf, t3.buf);
+    }
+
+    void repeating (uint8_t type) const {
+        ticker.cancel(type);
+        if (lastVal > 0)
+            ticker.periodic(100 * lastVal, type);
+        ticker.delay(1, type);
     }
 
     void doCmd (char ch) {
@@ -342,7 +371,7 @@ struct Cmder : Task {
                     case '=': f = lastVal; break;
                 }
 #endif
-                logf("  %c = 0x%08x = %u", lastCh, f, f);
+                showFlags(lastCh);
                 lastCh = 0;
             }
             return;
@@ -386,32 +415,26 @@ struct Cmder : Task {
                 if (blinker.enable)
                     rusher.ledSel = 0; // stop tracking other signals
                 break;
-            case 's':
-                showStats();
-                ticker.showInfo();
-                break;
             case 'h':
-                logf("history: max %d", Task::MAX_HISTORY-1);
-                showHistory();
+                repeating(HIST);
                 break;
             case 'r':
-                ticker.cancel(REPORT);
-                if (lastVal > 0)
-                    ticker.periodic(100 * lastVal, REPORT);
-                ticker.delay(1, REPORT);
+                repeating(REPORT);
+                break;
+            case 's':
+                repeating(STATS);
                 break;
             case 'f':
                 logf("flags: A-Z");
                 for (auto c = 'A'; c <= 'Z'; ++c)
-                    if (auto f = flagsAtoZ[c-'A']; f != 0)
-                        logf("  %c = 0x%08x = %u", c, f, f);
+                    if (flagsAtoZ[c-'A'] != 0)
+                        showFlags(c);
                 break;
             case 't': {
                 ubx::Packet<ubx::CfgNav5> pkt;
                 pkt.data.mask = 0b1; // dyn
                 pkt.data.dynModel = 2; // stationary
                 auto [p, n] = pkt.wrapper();
-                logf("11 %p %d", p, n);
                 gpsUart.write(p, n);
                 break;
             }

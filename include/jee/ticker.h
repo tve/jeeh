@@ -40,11 +40,11 @@ struct Ticker : Task {
 
     void showInfo () const {
         auto count = 0, repeat = 0;
-        for (auto curr = tHead; curr != 0; curr = links[curr]) {
+        for (auto c = tHead; c != 0 && count < tLast; c = links[c]) {
             ++count;
-            repeat += period[curr] != 0;
+            repeat += period[c] != 0;
         }
-        logf("ticker active %d periodic %d used %d/%d",
+        logf("ticker: act %d rep %d used %d of %d",
                 count, repeat, tLast, MAX_TIMERS);
     }
 private:
