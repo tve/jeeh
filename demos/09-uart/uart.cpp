@@ -13,6 +13,5 @@ int main () {
         uint8_t ch;
         gps.transfer(false, &ch, 1);
         serio::write(&ch, 1);
-        led.toggle();
     }
 }
