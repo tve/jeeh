@@ -12,7 +12,7 @@ namespace serio {
     void init () {
         Pin::config("A9:U7");
         RCC(ena::USART1,1) = 1;
-        USART1[BRR] = (SystemCoreClock/2) / 1'000'000;
+        USART1[BRR] = SystemCoreClock / 1'000'000;
         USART1[CR1] = (1<<13) | (1<<3); // UE TE
     }
 

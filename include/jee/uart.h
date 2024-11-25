@@ -48,10 +48,14 @@ struct Poll {
         if (w) {
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
-                UART[TDR] = *p;
+                UART[TDR] = p[i];
             }
             while (!UART[SR](6)) {} // ~TC
-        }
+        } else
+            for (auto i = 0U; i < n; ++i) {
+                while ((UART[SR] & 0x2F) == 0) {} // ~RXNE ~OVR ~NF ~FE ~PE
+                p[i] = UART[RDR];
+            }
     }
 };
 
