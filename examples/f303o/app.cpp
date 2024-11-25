@@ -388,6 +388,7 @@ struct Cmder : Task {
                 break;
             case 's':
                 showStats();
+                ticker.showInfo();
                 break;
             case 'h':
                 logf("history: max %d", Task::MAX_HISTORY-1);

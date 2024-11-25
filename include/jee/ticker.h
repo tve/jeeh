@@ -30,6 +30,7 @@ struct Ticker : Task {
     }
 
     void periodic (uint16_t ms, uint8_t tag) const {
+        assert(ms > 0);
         send({ tId, PERIOD, ms }, { level, tag });
     }
 
@@ -37,6 +38,15 @@ struct Ticker : Task {
         send({ tId, CANCEL, (uint16_t) ((level<<8) | tag) });
     }
 
+    void showInfo () const {
+        auto count = 0, repeat = 0;
+        for (auto curr = tHead; curr != 0; curr = links[curr]) {
+            ++count;
+            repeat += period[curr] != 0;
+        }
+        logf("ticker active %d periodic %d used %d/%d",
+                count, repeat, tLast, MAX_TIMERS);
+    }
 private:
     volatile uint32_t ticks =0;   // adjusted each time SysTick fires
     Event timers [MAX_TIMERS];    // timer pool
@@ -119,7 +129,7 @@ private:
         auto ms = period[slot];
         links[slot] = tFree;
         tFree = slot;
-        if (ms == 0)
+        if (ms == 0) // not periodic
             return;
 
         ms += ticks - evt.eVal; // correct for missed ticks
