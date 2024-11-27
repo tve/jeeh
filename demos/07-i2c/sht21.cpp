@@ -37,6 +37,6 @@ int main () {
         auto h = (12500 * hRaw >> 16) - 600; // %RH x 100
         logf("T: %d.%02d C, RH: %d.%02d %%", t/100, t%100, h/100, h%100);
 
-        cycles::msBusy(500);
+        cycles::msBusy(1000);
     }
 }

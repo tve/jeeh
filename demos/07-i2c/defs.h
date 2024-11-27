@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "sht21-poll"
+#define PIOENV  "fram"
 
 const Pin led {"C13","P"};    // push-pull output mode
 const Pin button {"A0","U"};  // pull-up input mode
@@ -12,7 +12,7 @@ namespace serio {
     void init () {
         Pin::config("A9:U7");
         RCC(ena::USART1,1) = 1;
-        USART1[BRR] = SystemCoreClock / 1'000'000;
+        USART1[BRR] = SystemCoreClock / 2'000'000;
         USART1[CR1] = (1<<13) | (1<<3); // UE TE
     }
 
