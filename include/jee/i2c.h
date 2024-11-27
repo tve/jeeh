@@ -76,7 +76,7 @@ struct Gpio {
 
     void init (char const* desc, uint16_t khz =400) {
         Pin::config(desc, &sda, 2);
-        Pin::config(":OU,", &sda, 2);
+        Pin::config(":OUL,", &sda, 2);
 
         sda = 1;
         scl = 1;
@@ -206,6 +206,17 @@ struct Poll {
     void init (char const* defs, uint32_t khz =400) {
         Pin::config(defs, &sda, 2);
 
+        if (!sda) { // reset the I2C bus if SDA is stuck low
+            scl.mode("OU");
+            for (auto i = 0; i < 20; ++i) {
+                scl.toggle();
+                cycles::usBusy(10);
+            }
+            scl = 1;
+            assert(sda); // should now be unstuck
+            Pin::config(defs, &sda, 2);
+        }
+
         RCC(cfg.ena,1) = 1;
 #if STM32F4
         I2C[CR1](15) = 1; // SWRST
@@ -241,6 +252,15 @@ struct Poll {
 
 #if STM32F4
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        auto waitFor = [](uint8_t bit) {
+            while (!I2C[SR1](bit))
+                if (I2C[SR1] & 0x4D00) { // TIMEOUT OVR AF BERR
+                    I2C[SR1] = 0;
+                    return false;
+                }
+            return true;
+        };
+
         auto q = (uint8_t*) p;
         if (m != W2) {
             I2C[CR1](10) = 1; // ACK
@@ -251,19 +271,25 @@ struct Poll {
             case R1:
             case W1:
                 I2C[DR] = a<<1;
-                while (!I2C[SR1](1)) {} // ~ADDR
+                if (!waitFor(1)) // ADDR
+                    return false;
                 (void) +I2C[SR2];
                 [[fallthrough]];
             case W2:
-                do {
-                    while (!I2C[SR1](7)) {} // ~TXE
-                    I2C[DR] = *q++;
-                } while (--n > 0);
-                while (!I2C[SR1](2)) {} // ~BTF
+                if (n > 0) {
+                    do {
+                        if (!waitFor(7)) // TXE
+                            return false;
+                        I2C[DR] = *q++;
+                    } while (--n > 0);
+                    if (!waitFor(2)) // BTF
+                        return false;
+                }
                 break;
             case R2:
                 I2C[DR] = (a<<1)+1;
-                while (!I2C[SR1](1)) {} // ~ADDR
+                if (!waitFor(1)) // ADDR
+                    return false;
                 I2C[CR1](10) = n > 1; // ACK if multiple
                 (void) +I2C[SR2];
                 do {
