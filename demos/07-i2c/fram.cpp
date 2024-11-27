@@ -3,8 +3,12 @@
 using namespace jeeh;
 #include "defs.h"
 
-//i2c::Gpio i2cBus;
+#if POLLED
 i2c::Poll<I2C1.ADDR> i2cBus (ena::I2C1, 50);
+#else
+i2c::Gpio i2cBus;
+#endif
+
 i2c::Dev fram { i2cBus, 0x50 };
 
 Pin trigger {"B12","P"};
@@ -23,7 +27,7 @@ void write32 (uint16_t addr, uint8_t const* ptr) {
 
 int main () {
     initBoard();
-    i2cBus.init("B7:OU4,B6", i2cTiming(100)); // sda scl
+    i2cBus.init("B7:OUH4,B6", 1000); // sda scl
 
     dog::init(2);  // will fire approx. every 2 secs
 

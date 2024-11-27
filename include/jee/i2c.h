@@ -203,25 +203,27 @@ struct Poll {
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
-    void init (char const* defs, uint32_t timing) {
+    void init (char const* defs, uint32_t khz =400) {
         Pin::config(defs, &sda, 2);
 
         RCC(cfg.ena,1) = 1;
 #if STM32F4
-(void) timing; // TODO
         I2C[CR1](15) = 1; // SWRST
         I2C[CR1](15) = 0; // ~SWRST
-                          //
+
+        auto div = (1000/2 * cfg.mhz) / khz;
         I2C[CR2] = cfg.mhz;
-        I2C[CCR] = (1<15) | 85; // TODO 5000/20
-        I2C[TRISE] = 26; // TODO 1000/20+1
+        I2C[CCR] = khz <= 100 ? div :
+                   khz <= 400 ? (2<<14) | 2*div/3 :
+                                (3<<14) | div/9;
+        I2C[TRISE] = div/2; // seems to work well
 #else
-        I2C[TIMINGR] = timing;
+        I2C[TIMINGR] = khz; // TODO
 
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values
         // FIXME should this be cfg.mhz iso SystemCoreClock ?
-        auto t = 12 * ((SystemCoreClock>>20) / ((timing>>28) + 1));
+        auto t = 12 * ((SystemCoreClock>>20) / ((khz>>28) + 1));
         assert(t < 4096);
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
 #endif
@@ -325,8 +327,8 @@ struct Sync : Poll<A> {
 
     Sync (Config const& c) : BASE (c.ena, c.mhz), cfg (c) {}
 
-    void init (char const* defs, uint32_t timing) {
-        BASE::init(defs, timing);
+    void init (char const* defs, uint32_t khz =400) {
+        BASE::init(defs, khz);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
 
         // peripheral address config and interrupt vector setup
@@ -391,8 +393,8 @@ struct Async : Sync<A,D,T,R>, Task {
 
     Event pending;
 
-    uint8_t init (char const* defs, int timing) {
-        BASE::init(defs, timing);
+    uint8_t init (char const* defs, int khz =400) {
+        BASE::init(defs, khz);
         irqEnable(cfg.evIrq);
         //irqEnable(cfg.erIrq);
         return Task::init();
