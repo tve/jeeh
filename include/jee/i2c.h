@@ -20,7 +20,7 @@ struct Dev {
         return write(r, &v, 1);
     }
 
-    // one byte address, read/write buffer
+    // one byte address, read/write byte buffer
     bool read (uint8_t r, void* p, uint8_t n) const {
         return transfer(bus.R1, &r, 1)
             && transfer(bus.R2, p, n);
@@ -30,12 +30,24 @@ struct Dev {
             && transfer(bus.W2, (void*) p, n);
     }
 
-    // two byte address, read/write buffer
-    bool read16 (uint16_t r, void* p, uint8_t n) const {
+    // two byte address, two-byte data, both big-endian
+    int read16be (uint16_t r) const {
+        uint16_t v = 0;
+        return read16be(r, &v, 2) ? (v<<8) | (v>>8) : -1;
+    }
+    bool write16be (uint16_t r, uint16_t v) const {
+        v = (v<<8) | (v>>8); // send big-endian
+        return write16be(r, &v, 2);
+    }
+
+    // two byte big-endian address, read/write byte buffer
+    bool read16be (uint16_t r, void* p, uint8_t n) const {
+        r = (r<<8) | (r>>8); // send big-endian
         return transfer(bus.R1, &r, 2)
             && transfer(bus.R2, p, n);
     }
-    bool write16 (uint16_t r, void const* p, uint8_t n) const {
+    bool write16be (uint16_t r, void const* p, uint8_t n) const {
+        r = (r<<8) | (r>>8); // send big-endian
         return transfer(bus.W1, &r, 2)
             && transfer(bus.W2, (void*) p, n);
     }

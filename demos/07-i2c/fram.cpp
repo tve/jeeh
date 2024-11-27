@@ -12,15 +12,13 @@ Pin trigger {"B12","P"};
 constexpr auto N = 5;
 
 void read32 (uint16_t addr, uint8_t* ptr) {
-    addr = (addr<<8) | (addr>>8); // big-endian
     trigger = 0;
-    fram.read16(addr, ptr, N);
+    fram.read16be(addr, ptr, N);
 }
 
 void write32 (uint16_t addr, uint8_t const* ptr) {
-    addr = (addr<<8) | (addr>>8); // big-endian
     trigger = 1;
-    fram.write16(addr, ptr, N);
+    fram.write16be(addr, ptr, N);
 }
 
 int main () {
@@ -61,8 +59,8 @@ int main () {
             logf("%02x %02x ... %02x %02x", buf[0], buf[1], buf[N-2], buf[N-1]);
         }
 
-        fram.read16(N<<8, buf, 1);
-        fram.read16(0, buf+1, 1);
+        fram.read16be(N, buf, 1);
+        fram.read16be(0, buf+1, 1);
         logf("%02x %02x", buf[0], buf[1]);
 
         cycles::msBusy(1000);
