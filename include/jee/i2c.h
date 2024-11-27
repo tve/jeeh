@@ -190,7 +190,7 @@ struct Poll {
            CCR=0x1C,TRISE=0x20 };
 #else
     enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,TIMOUTR=0x14,
-           ISR=0x18,ICR=0x1C };
+           ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28 };
 #endif
 
     struct Config {
@@ -209,7 +209,7 @@ struct Poll {
         if (!sda) { // reset the I2C bus if SDA is stuck low
             scl.mode("OU");
             sda.mode("OU");
-            for (auto i = 0; i < 20; ++i) {
+            for (auto i = 0; i < 32; ++i) {
                 scl.toggle();
                 cycles::usBusy(10);
             }
@@ -219,18 +219,29 @@ struct Poll {
         }
 
         RCC(cfg.ena,1) = 1;
+        auto div = (1000 * cfg.mhz) / khz;
 #if STM32F4
         I2C[CR1](15) = 1; // SWRST
         I2C[CR1](15) = 0; // ~SWRST
 
-        auto div = (1000 * cfg.mhz) / khz;
         I2C[CR2] = cfg.mhz;
         I2C[CCR] = khz <= 100 ? div/2 :
                    khz <= 400 ? (2<<14) | div/3 :
                                 (3<<14) | div/25;
         I2C[TRISE] = div/4; // seems to work well
 #else
-        I2C[TIMINGR] = khz; // TODO
+        auto presc = div/256;
+        div /= presc+1;
+logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
+        assert(presc < 16 && div < 256);
+        I2C[TIMINGR] = (presc<<28)
+                     | (5<<20)
+                     | (1<<16)
+                     | (div/4<<8)
+                     | (3*div/4<<0);
+        //khz = 0x50901B22;
+        //I2C[TIMINGR] = khz; // TODO
+I2C[TIMINGR] = 0x20601318;
 
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values
@@ -239,7 +250,6 @@ struct Poll {
         assert(t < 4096);
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
 #endif
-
         I2C[CR1] = 1; // PE
     }
 
