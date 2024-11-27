@@ -173,8 +173,13 @@ struct Poll {
     enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
 
     static constexpr IoReg<A> I2C {};
+#if STM32F4
+    enum { CR1=0x00,CR2=0x04,DR=0x10,SR1=0x14,SR2=0x18,
+           CCR=0x1C,TRISE=0x20 };
+#else
     enum { CR1=0x00,CR2=0x04,TIMINGR=0x10,TIMOUTR=0x14,
-           ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28 };
+           ISR=0x18,ICR=0x1C };
+#endif
 
     struct Config {
         uint16_t ena;
@@ -190,13 +195,24 @@ struct Poll {
         Pin::config(defs, &sda, 2);
 
         RCC(cfg.ena,1) = 1;
+#if STM32F4
+(void) timing; // TODO
+        I2C[CR1](15) = 1; // SWRST
+        I2C[CR1](15) = 0; // ~SWRST
+                          //
+        I2C[CR2] = cfg.mhz;
+        I2C[CCR] = (1<15) | 85; // TODO 5000/20
+        I2C[TRISE] = 26; // TODO 1000/20+1
+#else
         I2C[TIMINGR] = timing;
 
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values
+        // FIXME should this be cfg.mhz iso SystemCoreClock ?
         auto t = 12 * ((SystemCoreClock>>20) / ((timing>>28) + 1));
         assert(t < 4096);
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
+#endif
 
         I2C[CR1](0) = 1; // PE
     }
@@ -209,6 +225,50 @@ struct Poll {
 
     enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
+#if STM32F4
+    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+        auto q = (uint8_t*) p;
+        if (m != W2) {
+            I2C[CR1](10) = 1; // ACK
+            I2C[CR1](8) = 1; // START
+            while (!I2C[SR1](0)) {} // ~SB
+        }
+        switch (m) {
+            case R1:
+            case W1:
+                I2C[DR] = a<<1;
+                while (!I2C[SR1](1)) {} // ~ADDR
+                (void) +I2C[SR2];
+                [[fallthrough]];
+            case W2:
+                do {
+                    while (!I2C[SR1](7)) {} // ~TXE
+                    I2C[DR] = *q++;
+                } while (--n > 0);
+                while (!I2C[SR1](2)) {} // ~BTF
+                break;
+            case R2:
+                I2C[DR] = (a<<1)+1;
+                while (!I2C[SR1](1)) {} // ~ADDR
+                I2C[CR1](10) = n > 1; // ACK if multiple
+                (void) +I2C[SR2];
+                do {
+                    if (n == 1) { // about to read last byte
+                        I2C[CR1](10) = 0; // ~ACK
+                        I2C[CR1](9) = 1; // STOP
+                    }
+                    while (!I2C[SR1](6)) {} // ~RXNE
+                    *q++ = I2C[DR];
+                } while (--n > 0);
+                break;
+            default:
+                fail();
+        }
+        if (m == W2)
+            I2C[CR1](9) = 1; // STOP
+        return true;
+    }
+#else
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
         startReq(a, m, n);
 
@@ -219,7 +279,7 @@ struct Poll {
             else if (I2C[ISR](1)) // TXIS
                 I2C[TXDR] = *q++;
 
-        auto ok = !I2C[ISR](12) && ~I2C[ISR](4); // ~TIMEOUT ~NACKF
+        auto ok = !I2C[ISR](12) && !I2C[ISR](4); // ~TIMEOUT ~NACKF
         I2C[ICR] = I2C[ISR];
         return ok;
     }
@@ -235,6 +295,7 @@ protected:
                  | (((m&RD) != 0) << 10) // RD_WRN
                  |             (a << 1); // SADD
     }
+#endif
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
