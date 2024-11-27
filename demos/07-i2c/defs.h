@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "fram"
+#define PIOENV  "fram-poll"
 
 const Pin led {"C13","P"};    // push-pull output mode
 const Pin button {"A0","U"};  // pull-up input mode

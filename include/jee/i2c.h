@@ -74,7 +74,7 @@ struct Gpio {
     Pin sda, scl; // pin definitions must be kept in this order
     uint16_t rate;
 
-    void init (char const* desc, uint16_t khz =400) {
+    void init (char const* desc, uint32_t khz =400) {
         Pin::config(desc, &sda, 2);
         Pin::config(":OUL,", &sda, 2);
 
@@ -219,37 +219,11 @@ struct Poll {
         }
 
         RCC(cfg.ena,1) = 1;
-        auto div = (1000 * cfg.mhz) / khz;
 #if STM32F4
         I2C[CR1](15) = 1; // SWRST
         I2C[CR1](15) = 0; // ~SWRST
-
-        I2C[CR2] = cfg.mhz;
-        I2C[CCR] = khz <= 100 ? div/2 :
-                   khz <= 400 ? (2<<14) | div/3 :
-                                (3<<14) | div/25;
-        I2C[TRISE] = div/4; // seems to work well
-#else
-        auto presc = div/256;
-        div /= presc+1;
-logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
-        assert(presc < 16 && div < 256);
-        I2C[TIMINGR] = (presc<<28)
-                     | (5<<20)
-                     | (1<<16)
-                     | (div/4<<8)
-                     | (3*div/4<<0);
-        //khz = 0x50901B22;
-        //I2C[TIMINGR] = khz; // TODO
-I2C[TIMINGR] = 0x20601318;
-
-        // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
-        // see table 394, p.1909 in RM0440 r8 for some suggested values
-        // FIXME should this be cfg.mhz iso SystemCoreClock ?
-        auto t = 12 * ((SystemCoreClock>>20) / ((khz>>28) + 1));
-        assert(t < 4096);
-        I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
 #endif
+        setTiming(khz);
         I2C[CR1] = 1; // PE
     }
 
@@ -347,6 +321,45 @@ protected:
                  |             (a << 1); // SADD
     }
 #endif
+
+private:
+    void setTiming (uint32_t khz) {
+#if STM32F4
+        if (khz < 10'000) {
+            auto div = (1000 * cfg.mhz) / khz;
+            I2C[CR2] = cfg.mhz;
+            I2C[TRISE] = div/4; // seems to work well
+            I2C[CCR] = khz <= 100 ? div/2 :
+                       khz <= 400 ? (2<<14) | div/3 :
+                                    (3<<14) | div/25;
+        } else { // custom rate settings
+            I2C[CR2] = khz>>24;
+            I2C[TRISE] = (uint8_t) (khz>>16);
+            I2C[CCR] = (uint16_t) khz;
+        }
+#else
+        if (khz < 10'000) {
+            auto div = (1000 * cfg.mhz) / khz;
+            auto presc = div/256;
+            assert(presc < 16);
+            div /= presc+1;
+logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
+            I2C[TIMINGR] = (presc<<28)
+                           | (5<<20)
+                           | (1<<16)
+                           | (div/4<<8)
+                           | (3*div/4<<0);
+        } else // custom rate settings
+            I2C[TIMINGR] = khz;
+
+        // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
+        // see table 394, p.1909 in RM0440 r8 for some suggested values
+        // FIXME should this be cfg.mhz iso SystemCoreClock ?
+        auto t = 12 * ((SystemCoreClock>>20) / ((khz>>28) + 1));
+        assert(t < 4096);
+        I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
+#endif
+    }
 };
 
 template< uint32_t A, uint32_t D, int T, int R >
@@ -430,7 +443,7 @@ struct Async : Sync<A,D,T,R>, Task {
 
     Event pending;
 
-    uint8_t init (char const* defs, int khz =400) {
+    uint8_t init (char const* defs, uint32_t khz =400) {
         BASE::init(defs, khz);
         irqEnable(cfg.evIrq);
         //irqEnable(cfg.erIrq);
