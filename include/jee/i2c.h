@@ -211,12 +211,12 @@ struct Poll {
         I2C[CR1](15) = 1; // SWRST
         I2C[CR1](15) = 0; // ~SWRST
 
-        auto div = (1000/2 * cfg.mhz) / khz;
+        auto div = (1000 * cfg.mhz) / khz;
         I2C[CR2] = cfg.mhz;
-        I2C[CCR] = khz <= 100 ? div :
-                   khz <= 400 ? (2<<14) | 2*div/3 :
-                                (3<<14) | div/9;
-        I2C[TRISE] = div/2; // seems to work well
+        I2C[CCR] = khz <= 100 ? div/2 :
+                   khz <= 400 ? (2<<14) | div/3 :
+                                (3<<14) | div/25;
+        I2C[TRISE] = div/4; // seems to work well
 #else
         I2C[TIMINGR] = khz; // TODO
 

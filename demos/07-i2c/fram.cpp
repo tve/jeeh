@@ -27,7 +27,7 @@ void write32 (uint16_t addr, uint8_t const* ptr) {
 
 int main () {
     initBoard();
-    i2cBus.init("B7:OUH4,B6", 1000); // sda scl
+    i2cBus.init("B7:OUL4,B6", 1000); // sda scl
 
     dog::init(2);  // will fire approx. every 2 secs
 
