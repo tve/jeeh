@@ -208,6 +208,7 @@ struct Poll {
 
         if (!sda) { // reset the I2C bus if SDA is stuck low
             scl.mode("OU");
+            sda.mode("OU");
             for (auto i = 0; i < 20; ++i) {
                 scl.toggle();
                 cycles::usBusy(10);
@@ -239,7 +240,7 @@ struct Poll {
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
 #endif
 
-        I2C[CR1](0) = 1; // PE
+        I2C[CR1] = 1; // PE
     }
 
     void deinit () {
