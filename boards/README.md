@@ -72,6 +72,8 @@ Each application can be built and run independently, e.g.
 * `g431k/imu` - read out the values of a 9-DOF I2C IMU sensor
 * `g431k/pulses` - generate pulses to check the logic-analyser hookup
 * `g431k/tick` - blink on-board LED via periodic timer and task
+* `g431k/fram` - test the I2C bus with attached 32 KB FRAM
+* `g431k/sram` - test the SPI bus with attached 32 KB SRAM
 
 **`g474re` - Nucleo-64 @ 160 MHz**
 
