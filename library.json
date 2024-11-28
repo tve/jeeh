@@ -1,7 +1,7 @@
 {
     "name": "JeeH",
-    "version": "6.3.0",
-    "description": "Hardware abstraction and multi-tasker for ARM Cortex µCs",
+    "version": "7.0a1",
+    "description": "Hardware abstraction and event-tasker for ARM Cortex µCs",
     "keywords": "experimental",
     "authors": {
         "name": "Jean-Claude Wippler",
@@ -17,7 +17,7 @@
         "extraScript": "make/pio-extra.py"
     },
     "export": {
-        "exclude": [ ".DS_Store", ".git*", "builds", "tests",
+        "exclude": [ ".DS_Store", ".git*", "boards", "demos", "tests",
                      "NOCOMMIT", "Session.vim", "tags" ]
     }
 }
