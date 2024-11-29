@@ -61,6 +61,11 @@ Each application can be built and run independently, e.g.
 * `g031d/blink` - blink on-board LED and send some text to serial
 * `g031d/tick` - blink on-board LED via periodic timer and task
 
+**`g071rb` - Nucleo-64 @ 64 MHz**
+
+* `g071r/blink` - blink on-board LED and send some text to serial
+* `g071r/tick` - blink on-board LED via periodic timer and task
+
 **`g431kb` - Nucleo-32 @ 160 MHz**
 
 * `g431k/blink` - minimal blink of on-board LED
