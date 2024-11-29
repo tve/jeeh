@@ -49,7 +49,7 @@ struct Gpio {
 
 private:
     void hold () const {
-        for (volatile int i = rate; --i >= 0; ) {}
+        for (volatile int i = rate; i >= 0; ) i = i-1;
     }
 };
 

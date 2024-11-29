@@ -13,7 +13,7 @@ struct Ticker : Task {
     }
 
     void irqSysTick () {
-        ticks += tRate;
+        ticks = ticks + tRate;
         if (expired())
             trigger(TICK);
     }

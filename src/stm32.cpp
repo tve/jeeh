@@ -32,7 +32,7 @@ using namespace jeeh;
 
 void jeeh::systemReset () {
     volatile auto n = SystemCoreClock >> 15;
-    while (n > 0) --n; // brief delay to let uart TX finish, etc
+    while (n > 0) n = n-1; // brief delay to let uart TX finish, etc
     asm volatile ("dsb");
     SCB[0x0C] = (0x5FA<<16) | (1<<2); // SCB AIRCR reset
     asm volatile ("dsb");

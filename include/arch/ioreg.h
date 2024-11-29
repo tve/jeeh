@@ -25,7 +25,7 @@ struct IoReg {
         [[gnu::always_inline]]
         int operator= (int v) const {
             if (CAN_BIT_BAND && w == 1)
-                return *bitBandAddr() = v;
+                return *bitBandAddr() = v, v;
             auto mask = (1<<w)-1;
             auto ptr = (volatile uint32_t*) (A+o);
             *ptr = (*ptr & ~(mask<<b)) | ((v&mask)<<b);
