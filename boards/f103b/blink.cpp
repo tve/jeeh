@@ -4,8 +4,6 @@ using namespace jeeh;
 #include "defs.h"
 
 int main () {
-    initBoard();
-
     while (true) {
         led = 0;
         cycles::msBusy(100);

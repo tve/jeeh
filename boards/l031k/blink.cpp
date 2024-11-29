@@ -8,8 +8,6 @@ static void delayLoop (int n) {
 }
 
 int main () {
-    initBoard();
-
     while (true) {
         led.toggle();
         delayLoop(500);
