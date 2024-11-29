@@ -6,22 +6,22 @@ Each application can be built and run independently, e.g.
     pio run -e tick -t upload
     pio device monitor          # to view serial output
 
-**`f103c8` - Blue Pill w/ BMP @ 72 MHz**
+**`F103C8` - Blue Pill w/ BMP @ 72 MHz**
 
 * `f103b/blink` - blink on-board LED to verify build and setup
 * `f103b/tick` - blink on-board LED via periodic timer and task
 
-**`f103rb` - Nucleo-64 @ 72 MHz**
+**`F103RB` - Nucleo-64 @ 72 MHz**
 
 * `f103r/blink` - blink on-board LED to verify build and setup
 * `f103r/tick` - blink on-board LED via periodic timer and task
 
-**`f303k8` - Nucleo-32 @ 72 MHz**
+**`F303K8` - Nucleo-32 @ 72 MHz**
 
 * `f303k/blink` - blink on-board LED to verify build and setup
 * `f303k/tick` - blink on-board LED via periodic timer and task
 
-**`f303rc` - Olimexino w/ ST-Link @ 72 MHz**
+**`F303RC` - Olimexino w/ ST-Link @ 72 MHz**
 
 * `f303o/blink` - blink on-board LED to verify build and setup
 * `f303o/tick` - blink on-board LED via periodic timer and task
@@ -31,19 +31,19 @@ Each application can be built and run independently, e.g.
 * `f303o/stream` - capture DCF77 at 1 kHz and stream as 16-bit ints
 * `f303o/app` - demo app to explore time-related functionality
 
-**`f303ze` - Nucleo-144 @ 72 MHz**
+**`F303ZE` - Nucleo-144 @ 72 MHz**
 
 * `f303z/blink` - blink on-board LED to verify build and setup
 * `f303z/tick` - blink on-board LED via periodic timer and task
 * `f303z/gps` - show messages coming from attached GPS module
 
-**`f413zh` - Nucleo-144 @ 100 MHz**
+**`F413ZH` - Nucleo-144 @ 100 MHz**
 
 * `f413z/blink` - blink on-board LED to verify build and setup
 * `f413z/uarts` - send data through multiple uarts using async driver
 * `f413z/tick` - blink on-board LED via periodic timer and task
 
-**`f429zi` - Haoyu w/ 5" TFT @ 180 MHz**
+**`F429ZI` - Haoyu w/ 5" TFT @ 180 MHz**
 
 * `f429h/gpio` - check presence of I2C, SPI, and LCD peripherals
 * `f429h/lcd` - draw a transparency test pattern on the 800x480 LCD
@@ -51,27 +51,27 @@ Each application can be built and run independently, e.g.
 * `f429h/life` - run Conway's "Game of Life" on a 400x240 grid
 * `f429h/ram` - test on-board 4 MB PSRAM and 32 MB SDRAM memory
 
-**`f446ze` - Nucleo-144 @ 180 MHz**
+**`F446ZE` - Nucleo-144 @ 180 MHz**
 
 * `f446z/blink` - blink on-board LED to verify build and setup
 * `f446z/tick` - blink on-board LED via periodic timer and task
 
-**`f746zg` - Nucleo-144 @ 216 MHz**
+**`F746ZG` - Nucleo-144 @ 216 MHz**
 
 * `f746z/blink` - blink on-board LED to verify build and setup
 * `f746z/tick` - blink on-board LED via periodic timer and task
 
-**`g031j6` - Discovery @ 64 MHz**
+**`G031J6` - Discovery @ 64 MHz**
 
 * `g031d/blink` - blink on-board LED to verify build and setup
 * `g031d/tick` - blink on-board LED via periodic timer and task
 
-**`g071rb` - Nucleo-64 @ 64 MHz**
+**`G071RB` - Nucleo-64 @ 64 MHz**
 
 * `g071r/blink` - blink on-board LED to verify build and setup
 * `g071r/tick` - blink on-board LED via periodic timer and task
 
-**`g431kb` - Nucleo-32 @ 160 MHz**
+**`G431KB` - Nucleo-32 @ 160 MHz**
 
 * `g431k/blink` - minimal blink of on-board LED
 * `g431k/fast` - blink with system clock at 160 MHz
@@ -85,7 +85,7 @@ Each application can be built and run independently, e.g.
 * `g431k/fram` - test the I2C bus with attached 32 KB FRAM
 * `g431k/sram` - test the SPI bus with attached 32 KB SRAM
 
-**`g474re` - Nucleo-64 @ 160 MHz**
+**`G474RE` - Nucleo-64 @ 160 MHz**
 
 * `g474r/blink` - blink on-board LED to verify build and setup
 * `g474r/tick` - blink on-board LED via periodic timer and task
@@ -93,22 +93,22 @@ Each application can be built and run independently, e.g.
 * `g474r/sdspi` - connect to the µSD card on the LCD shield
 * `g474r/shell` - explore the use of a command-line shell
 
-**`h743zi` - Nucleo-144 @ 480 MHz**
+**`H743ZI` - Nucleo-144 @ 480 MHz**
 
 * `h743z/blink` - blink on-board LED to verify build and setup
 * `h743z/tick` - blink on-board LED via periodic timer and task
 
-**`l011k4` - Nucleo-32 @ 32 MHz**
+**`L011K4` - Nucleo-32 @ 32 MHz**
 
 * `l011k/blink` - blink on-board LED to verify build and setup
 * `l011k/tick` - blink on-board LED via periodic timer and task
 
-**`l031k6` - Nucleo-32 @ 32 MHz**
+**`L031K6` - Nucleo-32 @ 32 MHz**
 
 * `l031k/blink` - blink on-board LED to verify build and setup
 * `l031k/tick` - blink on-board LED via periodic timer and task
 
-**`l412kb` - Nucleo-32 @ 80 MHz**
+**`L412KB` - Nucleo-32 @ 80 MHz**
 
 * `l412k/blink` - blink on-board LED to verify build and setup
 * `l412k/i2c` - scan for attached devices on the I2C bus
