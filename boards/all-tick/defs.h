@@ -1,15 +1,12 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "f103r"
+#define PIOENV  "l475d"
 
 //CG1 board leds
 #define LED  "A5"
 
-//CG3 board uart
-#define UART_NAME  USART2
-#define UART_PINS  "A2:U1,A3"
-#define UART_FREQ  36
+//CG: board uart
 
 Pin led (LED, "P");
 
