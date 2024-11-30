@@ -55,6 +55,6 @@ int main () {
         led = 0;
         msDelay(400);
 
-        printf("%d ms\n", cycles::millis());
+        printf("%lu ms\n", cycles::millis());
     }
 }
