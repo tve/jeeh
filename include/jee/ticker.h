@@ -89,7 +89,12 @@ private:
     void setRate (uint8_t ms) {
         ticks = millis(); // don't lose the current partial count
         tRate = ms;
-        STK[0x4] = (tRate * (SystemCoreClock/1000)) / 8 - 1; // reload value
+#if STM32H7
+        auto div = 1;
+#else
+        auto div = 8;
+#endif
+        STK[0x4] = (tRate * (SystemCoreClock/1000)) / div - 1; // reload value
         STK[0x8] = 0;
         STK[0x0] = tRate > 0 ? 0b011 : 0; // enable, clk/8 mode
     }
