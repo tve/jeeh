@@ -28,10 +28,12 @@ struct Blinker : Task {
     }
 };
 
+Blinker blinker;
+
 int main () {
     initBoard();
 
-    Blinker blinker;
+    // the order of these inits defines the (decreasing) task priorities
     ticker.init();
     blinker.init();
 
