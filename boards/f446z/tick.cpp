@@ -1,5 +1,5 @@
 #include <jee.h>
-#include <jee/ticker.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
@@ -12,10 +12,15 @@ struct Blinker : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                ticker.periodic(500, TICK);
+                ticker.periodic(250, TICK);
                 break;
             case TICK:
-                led.toggle();
+                led1.toggle();
+                if (!led1) {
+                    led2.toggle();
+                    if (!led2)
+                        led3.toggle();
+                }
                 break;
             default:
                 fail();

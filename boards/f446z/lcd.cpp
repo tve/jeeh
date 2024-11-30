@@ -159,25 +159,26 @@ TwoDee<Tft> gfx;
 int main () {
     initBoard();
 
-    lcdSpi.init(SPI1_PINS, 10'000'000);
+    lcdSpi.init(SPI1_PINS, 10'000);
+    lcdCmd.mode("P"); // MISO is reused as C/D output pin
     lcdCmd = 1;
     //lcdRst = 1;
 
     auto start = cycles::micros();
     init();
-    logf("init %6d us", cycles::micros()-start);
+    logf("init %7d us", cycles::micros()-start);
 
     start = cycles::micros();
     clear();
-    logf("clear %5d us", cycles::micros()-start);
+    logf("clear %6d us", cycles::micros()-start);
 
     start = cycles::micros();
     pixel(width/2, height/2, 0xF800);
-    logf("pixel %5d us", cycles::micros()-start);
+    logf("pixel %6d us", cycles::micros()-start);
 
     start = cycles::micros();
     auto w = gfx.writes(font, {10, 40}, "123 Hello world!");
-    logf("font1 %5d us (16 ch, %d px)", cycles::micros()-start, w);
+    logf("font1 %6d us (16 ch, %d px)", cycles::micros()-start, w);
     gfx.hLine({10, 52}, w, 0xF800);
 
     gfx.line({10, 60}, {110, 110});
@@ -195,12 +196,12 @@ int main () {
     gfx.fg = 0xFFFF; // white
     start = cycles::micros();
     auto w2 = gfx.writes(font2, {10, 114}, "123 Hello world!");
-    logf("font2 %5d us (16 ch, %d px)", cycles::micros()-start, w2);
+    logf("font2 %6d us (16 ch, %d px)", cycles::micros()-start, w2);
     gfx.hLine({10, 127}, w2, 0xF800);
 
     start = cycles::micros();
     auto w3 = gfx.writes(font3, {64, 20}, "Hello!");
-    logf("font3 %5d us (6 ch, %d px)", cycles::micros()-start, w3);
+    logf("font3 %6d us (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
 
     while (true) { cycles::msBusy(500); led1.toggle(); }

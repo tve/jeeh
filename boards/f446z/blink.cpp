@@ -1,6 +1,5 @@
 #include <jee.h>
 using namespace jeeh;
-#include "defs.h"
 
 static void delayLoop (int n) {
     for (int i = 0; i < n * 3000; ++i)
@@ -8,8 +7,14 @@ static void delayLoop (int n) {
 }
 
 int main () {
+    const Pin led1 ("B0","P");
+    const Pin led2 ("B7","P");
+    const Pin led3 ("B14","P");
+
     while (true) {
-        led.toggle();
+        led1.toggle();
+        led2.toggle();
+        led3.toggle();
         delayLoop(500);
     }
 }
