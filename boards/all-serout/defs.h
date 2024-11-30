@@ -3,7 +3,10 @@
 //CG1 board leds
 #define LED  "A5"
 
-//CG: board serout
+//CG3 board serout
+#define SEROUT_DEV USART2
+#define SEROUT_PIN "A2:7"
+#define SEROUT_VER (1)
 
 Pin led (LED, "P");
 
