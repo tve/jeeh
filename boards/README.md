@@ -31,12 +31,6 @@ Each application can be built and run independently, e.g.
 * `f303o/stream` - capture DCF77 at 1 kHz and stream as 16-bit ints
 * `f303o/app` - demo app to explore time-related functionality
 
-**`F303ZE` - Nucleo-144 @ 72 MHz**
-
-* `f303z/blink` - blink on-board LED to verify build and setup
-* `f303z/tick` - blink on-board LED via periodic timer and task
-* `f303z/gps` - show messages coming from attached GPS module
-
 **`F413ZH` - Nucleo-144 @ 100 MHz**
 
 * `f413z/blink` - blink on-board LED to verify build and setup
@@ -55,6 +49,8 @@ Each application can be built and run independently, e.g.
 
 * `f446z/blink` - blink on-board LED to verify build and setup
 * `f446z/tick` - blink on-board LED via periodic timer and task
+* `f446z/gps` - show messages coming from attached GPS module
+* `f446z/lcd` - display text and graphics on a 128x128 LCD over SPI
 
 **`F746ZG` - Nucleo-144 @ 216 MHz**
 
