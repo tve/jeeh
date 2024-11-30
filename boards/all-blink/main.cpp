@@ -4,8 +4,8 @@
 using namespace jeeh;
 #include "defs.h"
 
-static void delayLoop (int n) {
-    n *= SystemCoreClock / 2500;
+void delayLoop (int n) {
+    n *= SystemCoreClock / 5000;
     for (int i = 0; i < n; ++i)
         asm ("");
 }

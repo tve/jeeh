@@ -110,9 +110,10 @@ def BOARD(block, name, suffix=''):
             r.append(f'                   {skip} {t2.substitute(f)} }}')
         return r
 
-    # catch-all: "board_foo = bar:123 baz:xyz" will generate:
+    # catch-all: "board_foo = bar:123 baz:def boo::xyz" will generate:
     #   #define FOO_BAR (123)
-    #   #define FOO_BAZ "xyz"
+    #   #define FOO_BAZ "def"
+    #   #define FOO_BOO xyz
     n = name.upper() + suffix
     r = []
     for x in info:
@@ -122,6 +123,8 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             if v[0].isdigit():
                 r.append(f'#define {n}_{k.upper()} ({v})')
+            elif v[0] == ':':
+                r.append(f'#define {n}_{k.upper()} {v[1:]}')
             else:
                 r.append(f'#define {n}_{k.upper()} "{v}"')
     return r
