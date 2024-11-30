@@ -1,4 +1,5 @@
-// Minimal LED blinker, using a busy loop as delay.
+// Minimal serial output example, blinking the LED as it loops.
+// All board details are in "defs.h", using settings from "platformio.ini".
 
 #include <jee.h>
 #include <jee/cycles.h>

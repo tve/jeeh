@@ -1,4 +1,5 @@
 // Minimal LED blinker, using a busy loop as delay.
+// All board details are in "defs.h", using settings from "platformio.ini".
 
 #include <jee.h>
 using namespace jeeh;
