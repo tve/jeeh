@@ -46,7 +46,11 @@ struct ExtIrq : Task {
     void enable (Pin pin, MODE mode, uint8_t tag, uint16_t val =0) {
         auto pos = pin.pin();
         auto off = 4*(pos%4) + 32*(pos/4);
+#if STM32G0 // FIXME
+        (void) off;
+#else
         SYSCFG[EXTICR1](off,4) = pin.port();
+#endif
 
         if (mode != NONE) {
             events[pos] = { level, tag, val };

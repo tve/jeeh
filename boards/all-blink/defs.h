@@ -1,4 +1,4 @@
 //CG1 board leds
-#define LED  "C13"
+#define LED  "B3"
 
 Pin led (LED, "P");
