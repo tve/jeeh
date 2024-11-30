@@ -1,12 +1,11 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 board leds
-#define LED  "A5"
+#define LED  "B8"
 
-//CG3 board serout
+//CG2 board serout
 #define SEROUT_DEV USART2
 #define SEROUT_PIN "A2:7"
-#define SEROUT_VER (1)
 
 Pin led (LED, "P");
 

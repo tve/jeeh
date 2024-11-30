@@ -1,12 +1,15 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "l475d"
+#define PIOENV  "g431k"
 
 //CG1 board leds
-#define LED  "A5"
+#define LED  "B8"
 
-//CG: board uart
+//CG3 board uart
+#define UART_NAME  USART2
+#define UART_PINS  "A2:U7,A3"
+#define UART_FREQ  170
 
 Pin led (LED, "P");
 
@@ -14,13 +17,13 @@ uart::Poll<UART_NAME.ADDR> console (ena::UART_NAME, UART_FREQ);
 //uart::Sync<UART_TYPE> console (UART_CONF);
 
 extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1)
+    if (fd == 1 || fd == 2)
         console.transfer(true, (uint8_t*) buf, len);
     return len;
 }
 
 void jeeh::logWriter (void const* ptr, size_t len) {
-    console.transfer(true, (uint8_t*) ptr, len);
+    _write(2, (char*) ptr, len);
 }
 
 void initBoard () {
