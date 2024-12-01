@@ -1,36 +1,16 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "f303z"
+#define PIOENV  "l475d"
 
-//CG[ board leds
-#define LED  "B0"
-#define LED1 "B0"
-#define LED2 "B7"
-#define LED3 "B14"
-//CG]
+//CG1 board leds
+#define LED  "A5"
 
-//CG[ board uart
-#define UART_NAME  USART3
-#define UART_PINS  "D8:7,D9"
-#define UART_FREQ  36
-#define UART_TYPE  USART3.ADDR, DMA1.ADDR, 3-0, 1-0
-#define UART_CONF  { ena::USART3, 36, Irq::USART3, \
-                     Irq::DMA1_CH3, Irq::DMA1_CH1, { 1-1,4,4 } }
-#define UART_TRIGGER(w) extern "C" { \
-    void USART3_IRQHandler () { (w).irqIdle(); } \
-    void DMA1_Channel3_IRQHandler () { (w).irqDma(); } \
-    void DMA1_Channel1_IRQHandler () { (w).irqDma(); } \
-}
-//CG]
+//CG: board uart
 
 Pin led (LED, "P");
 
-#ifdef UART_TYPE
-uart::Sync<UART_TYPE> console (UART_CONF);
-#else
 uart::Poll<UART_NAME.ADDR> console (ena::UART_NAME, UART_FREQ);
-#endif
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)

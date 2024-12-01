@@ -1,6 +1,6 @@
 ## Running the same code on different µC variants
 
-- Fast clock, polled console @ 2 Mbaud, and tasks with periodic events.
+- Fast clock, console w/ DMA @ 2 Mbaud, and tasks with periodic events.
 - All board details are in "defs.h", using settings from "platformio.ini".
 
 Build and upload for specific board, e.g. **`pio run -e g431k -t upload`**

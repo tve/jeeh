@@ -8,7 +8,17 @@ enum struct Irq : uint8_t {
 #if STM32G4
     LPUART1 = LPUART,
 #endif
-#if STM32L0
+#if STM32G0
+    DMA1_Channel1 = DMA_Channel1,
+    DMA1_Channel2 = DMA_Channel2_3,
+    DMA1_Channel3 = DMA_Channel2_3,
+    DMA1_Channel4 = DMA_Channel4_5_6_7,
+    DMA1_Channel5 = DMA_Channel4_5_6_7,
+    DMA1_Channel6 = DMA_Channel4_5_6_7,
+    DMA1_Channel7 = DMA_Channel4_5_6_7,
+    I2C1_EV = I2C1,
+    I2C1_ER = I2C1,
+#elif STM32L0
     DMA1_Channel2 = DMA1_Channel2_3,
     DMA1_Channel3 = DMA1_Channel2_3,
     DMA1_Channel4 = DMA1_Channel4_7,
