@@ -8,6 +8,13 @@ void hardFaultHandler (uint32_t*); // weak, can be redefined
 [[noreturn]]
 void systemReset ();
 
+uint32_t fastClock (bool high =true);
+uint32_t slowClock (bool high =true);
+uint32_t clockChange (uint32_t hz);
+
+void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
+void swoWrite (void const* ptr =nullptr, size_t len =0);
+
 void logf (char const* fmt ...);
 void logDump (void const* ptr, int len =16, char const* msg =nullptr);
 void logWriter (void const* ptr, size_t len); // weak, can be redefined
@@ -43,33 +50,6 @@ void duffs (T* dst, T const* src, uint32_t count) {
                 } while (--n > 0);
     }
 }
-
-struct Message {
-    uint8_t  mDst =0;
-    uint8_t  mTag =0;
-    uint16_t mLen =0;
-    uint8_t* mPtr =nullptr;
-
-    void*    mObj =nullptr;
-    void   (*mFun)(void*,Message&) =[](void*,Message&) {}; // callback
-    Message* mLnk =this;
-
-    template< typename T >
-    Message& setCallback(T* o, void (T::* f)(Message&)) {
-        mObj = (uint8_t*) o;
-        mFun = (void (*) (void*,Message&)) ((uint32_t*) &f)[0];
-        assert(((uint32_t*) &f)[1] == 0); // TODO vtable support
-        return *this;
-    }
-
-    void callback () { mFun(mObj, *this); }
-
-    bool inUse () const { return mLnk != this; }
-
-    Message (const Message&) =delete;
-    void operator= (const Message&) =delete;
-};
-static_assert(sizeof (Message) == 20);
 
 struct BlockIRQ {
     BlockIRQ () { asm ("mrs %0, primask; cpsid i" : "=r" (mask)); }

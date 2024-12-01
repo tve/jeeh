@@ -55,10 +55,3 @@ namespace ena {
 #endif
     };
 } // namespace ena
-
-uint32_t fastClock (bool high =true);
-uint32_t slowClock (bool high =true);
-uint32_t clockChange (uint32_t hz);
-
-void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
-void swoWrite (void const* ptr =nullptr, size_t len =0);

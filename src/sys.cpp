@@ -42,33 +42,25 @@ uint32_t jeeh::flagsAtoZ [26]; // A..Z: settings for global use
 
 //------------------------------------------------------------------------ logf
 
+extern "C" int _write (int fd, char* buf, int len);
+
 [[gnu::weak]] void jeeh::logWriter (void const* ptr, size_t len) {
-    swoWrite(ptr, len);
+    _write(2, (char*) ptr, len);
 }
 
 void jeeh::logf (char const* fmt ...) {
-#if !(STM32G0 | STM32L0) // Cortex M0+ doesn't support ITM
-    constexpr IoReg<0xE000'0000> ITM;
-    enum { TER=0xE00, TCR=0xE80 };
+    va_list ap;
+    va_start(ap, fmt);
+    auto n = vsnprintf(logBuf, sizeof logBuf, fmt, ap);
+    va_end(ap);
 
-    // check for enabled ITM flags before generating any printf output
-    if (logWriter != swoWrite || (ITM[TCR](0) && ITM[TER](0)))
-#endif
-    {
+    if (n >= (int) sizeof logBuf)
+        n = sizeof logBuf;
+    else if (n == 0 || logBuf[n-1] != '\n')
+        ++n;
+    logBuf[n-1] = '\n';
 
-        va_list ap;
-        va_start(ap, fmt);
-        auto n = vsnprintf(logBuf, sizeof logBuf, fmt, ap);
-        va_end(ap);
-
-        if (n >= (int) sizeof logBuf)
-            n = sizeof logBuf;
-        else if (n == 0 || logBuf[n-1] != '\n')
-            ++n;
-        logBuf[n-1] = '\n';
-
-        logWriter(logBuf, n);
-    }
+    logWriter(logBuf, n);
 }
 
 //------------------------------------------------------------------------ fail
