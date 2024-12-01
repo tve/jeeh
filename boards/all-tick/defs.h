@@ -13,8 +13,11 @@
 
 Pin led (LED, "P");
 
+#ifdef UART_TYPE
+uart::Sync<UART_TYPE> console (UART_CONF);
+#else
 uart::Poll<UART_NAME.ADDR> console (ena::UART_NAME, UART_FREQ);
-//uart::Sync<UART_TYPE> console (UART_CONF);
+#endif
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)
@@ -28,9 +31,9 @@ void jeeh::logWriter (void const* ptr, size_t len) {
 
 void initBoard () {
     fastClock();
+    led.toggle();
     cycles::init();
     console.init(UART_PINS, 2'000'000);
 
-    logf("\n%s: %s @ %d MHz",
-            PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }

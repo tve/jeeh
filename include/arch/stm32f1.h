@@ -7,7 +7,7 @@ static void enableClkWithPll (int freq) {
     FLASH[0x00] = 0x12;           // flash acr, two wait states
     // 8 MHz src, pll 9x, pclk1 = hclk/2, adcpre = pclk2/6 [1] pp.100
 #if XTAL == 0
-    RCC[0x04] = (div<<18) | (0<<16) | (2<<14) | (4<<8); // HSI
+    RCC[0x04] = (div<<18) | (2<<14) | (4<<8); // HSI
 #else
     //RCC[0x00](18) = 1;            // HSEBYP
     RCC[0x00](16) = 1;            // HSEON
