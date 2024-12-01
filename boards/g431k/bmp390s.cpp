@@ -13,9 +13,8 @@ spi::Poll<SPI_NAME.ADDR> bmp390 (ena::SPI_NAME, SPI_FREQ);
 int main () {
     initBoard();
 
-    Pin power ("B6"); // Vcc for BMP390
-    power.mode("P");
-    power = 1;
+    bmpVcc.mode("P");
+    bmpVcc = 1;
     cycles::msBusy(5);
 
     bmp390.init(SPI_PINS, 10'000);

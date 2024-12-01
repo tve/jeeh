@@ -1,12 +1,14 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "ni2c"
+#define PIOENV  "bmp390s"
 
 //CG1 board leds
 #define LED  "B8"
 
 const Pin led (LED,"P");
+
+Pin bmpVcc ("B6"); // Vcc for BMP390
 
 //CG[ board uart
 #define UART_NAME  USART2
@@ -106,13 +108,9 @@ namespace serio {
 }
 
 extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1)
+    if (fd == 1 || fd == 2)
         serio::write(buf, len);
     return len;
-}
-
-void jeeh::logWriter (void const* ptr, size_t len) {
-    serio::write(ptr, len);
 }
 
 void initBoard () {
