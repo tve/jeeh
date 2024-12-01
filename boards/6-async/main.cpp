@@ -9,6 +9,7 @@ using namespace jeeh;
 Pin led (LED, "P");
 
 uart::Async<UART_TYPE> console (UART_CONF);
+UART_TRIGGER(console)
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2) {
