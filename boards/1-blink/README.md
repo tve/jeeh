@@ -1,6 +1,9 @@
-## Minimal LED blinker
+## 1 - Minimal LED blinker
 
-Build and upload for specific board, e.g. **`pio run -e g431k -t upload`**
+This example uses a minimal subset of the JeeH library to blink an on-board LED.
+The board-specific pin is set in `platformio.ini` and copied to `defs.h`.
+
+To build & upload for a specific board: **`pio run -e g431k -t upload`**
 
 Board      | CPU            | Command
 -----------|----------------|------------------------------
@@ -14,3 +17,5 @@ Other boards:
 - Blue Pill: `f103bp` (via BMP)
 - HyTiny: `f103hy` (via BMP)
 - Black Pill: `f411bp`
+
+See `platformio.ini` to see which boards have been defined so far.
