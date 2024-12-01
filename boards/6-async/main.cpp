@@ -11,8 +11,11 @@ Pin led (LED, "P");
 uart::Async<UART_TYPE> console (UART_CONF);
 
 extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1 || fd == 2)
-        ((uart::Poll<UART_NAME.ADDR>&) console).transfer(true, (uint8_t*) buf, len);
+    if (fd == 1 || fd == 2) {
+        // TODO briefly using the uart in polled mode to make this write block
+        auto& blocking = (uart::Poll<UART_NAME.ADDR>&) console;
+        blocking.transfer(true, (uint8_t*) buf, len);
+    }
     return len;
 }
 
@@ -21,7 +24,7 @@ void initBoard () {
     cycles::init();
     console.init(UART_PINS, 2'000'000);
 
-    //logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
+    logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 
 Ticker ticker;
@@ -45,8 +48,6 @@ struct Blinker : Task {
     }
 };
 
-Blinker blinker;
-
 struct Streamer : Task {
     enum TAG { START, SENT };
 
@@ -58,8 +59,9 @@ struct Streamer : Task {
             case START:
             case SENT: {
                 ++seq;
-                auto n = snprintf(buf, sizeof buf, "%*c #%d\n",
-                                                        64 - seq%64, '/', seq);
+                auto n = snprintf(buf, sizeof buf,
+                            "%*c %d ms #%d\n",
+                            64 - seq%64, '/', (int) cycles::millis(), seq);
                 console.write(buf, n, { tId, SENT });
                 break;
             }
@@ -70,10 +72,11 @@ struct Streamer : Task {
     }
 };
 
-Streamer streamer;
-
 int main () {
     initBoard();
+
+    Streamer streamer;
+    Blinker blinker;
 
     // init all tasks in decreasing priority
     ticker.init();

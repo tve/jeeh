@@ -46,10 +46,10 @@ struct Blinker : Task {
     }
 };
 
-Blinker blinker;
-
 int main () {
     initBoard();
+
+    Blinker blinker;
 
     // init all tasks in decreasing priority
     ticker.init();

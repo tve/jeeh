@@ -1,10 +1,15 @@
 # Example apps
 
-* For a minimal LED blink demo, see the `all-blink/` folder.
-* For a minimal serial output demo, see the `all-serout/` folder.
-* For a more elaborate periodic task demo, see the `all-tick/` folder.
+This is a sequence of "bring-up" examples for a variety of boards:
 
-Each application can be built and run independently, e.g.
+* `1-blink/` - minimal LED blink demo
+* `2-serial/` - minimal serial output demo
+* `3-fast/` - fast CPU clock, polled serial output @ 2 Mbaud
+* `4-dma/` - switch from polled serial output to DMA + WFE
+* `5-task/` - using multiple tasks with periodic event triggers
+* `6-async/` - asynchronous full speed serial + background LED blink
+
+In the list below, each example can be built and run independently, e.g.
 
     cd g431k
     pio run -e i2c -t upload

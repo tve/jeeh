@@ -1,7 +1,10 @@
 namespace jeeh {
 
+#ifndef MAX_TIMERS
+#define MAX_TIMERS 20
+#endif
+
 struct Ticker : Task {
-    constexpr static auto MAX_TIMERS = 20;
     enum TAG { START, TICK, DELAY, PERIOD, CANCEL };
 
     Ticker () : Task ("tick") {}
