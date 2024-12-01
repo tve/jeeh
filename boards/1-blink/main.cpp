@@ -5,6 +5,8 @@
 using namespace jeeh;
 #include "defs.h"
 
+Pin led (LED, "P");
+
 void delayLoop (int n) {
     n *= SystemCoreClock / 5000;
     for (int i = 0; i < n; ++i)

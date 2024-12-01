@@ -8,6 +8,8 @@ struct Pin {
     constexpr int port () const { return id/16-1; }
     constexpr int pin () const { return id%16; }
 
+    bool isValid () const { return id != 0; }
+
     [[gnu::always_inline]]
     constexpr auto reg (int off) const { return GPIOA[0x400*port()+off]; }
 
@@ -38,7 +40,7 @@ struct Pin {
     int init (char const* desc) {
         if (auto t = parse(desc); t != 0)
             id = t;
-        if (id == 0)
+        if (!isValid())
             return -1;
         auto i = strcspn(desc, ":,");
         return desc[i] == ':' ? mode(desc+i+1) : 0;

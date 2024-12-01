@@ -1,10 +1,28 @@
-// Fast clock, console w/ DMA @ 2 Mbaud, and tasks with periodic events.
+// Fast clock, DMA+WFE console @ 2 Mbaud, tasks, and continuous output.
 // All board details are in "defs.h", using settings from "platformio.ini".
 
 #include <jee.h>
 #include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
+
+Pin led (LED, "P");
+
+uart::Async<UART_TYPE> console (UART_CONF);
+
+extern "C" int _write (int fd, char* buf, int len) {
+    if (fd == 1 || fd == 2)
+        ((uart::Poll<UART_NAME.ADDR>&) console).transfer(true, (uint8_t*) buf, len);
+    return len;
+}
+
+void initBoard () {
+    fastClock();
+    cycles::init();
+    console.init(UART_PINS, 2'000'000);
+
+    //logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
+}
 
 Ticker ticker;
 TICKER_TRIGGER(ticker)
@@ -19,7 +37,6 @@ struct Blinker : Task {
                 break;
             case TICK:
                 led.toggle();
-                logf("%d ms", cycles::millis());
                 break;
             default:
                 fail();
@@ -31,16 +48,21 @@ struct Blinker : Task {
 Blinker blinker;
 
 struct Streamer : Task {
-    enum TAG { START };
+    enum TAG { START, SENT };
 
-    char buf [58] = "                                                        /";
+    char buf [80];
+    int seq =0;
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                for (auto seq = 0;; ++seq)
-                    logf("%s %d", buf + seq % (sizeof buf - 2), seq);
+            case SENT: {
+                ++seq;
+                auto n = snprintf(buf, sizeof buf, "%*c #%d\n",
+                                                        64 - seq%64, '/', seq);
+                console.write(buf, n, { tId, SENT });
                 break;
+            }
             default:
                 fail();
         }
@@ -53,10 +75,10 @@ Streamer streamer;
 int main () {
     initBoard();
 
-    // the order of these inits defines the (decreasing) task priorities
+    // init all tasks in decreasing priority
     ticker.init();
-    blinker.init();
     streamer.init();
+    blinker.init();
 
     while (true)
         asm ("wfi");
