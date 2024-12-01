@@ -49,6 +49,8 @@ In the list below, each example can be built and run independently, e.g.
 * `g431k/oled` - show a test pattern on 128x64 or 128x32 I2C OLEDs
 * `g431k/imu` - read out the values of a 9-DOF I2C IMU sensor
 * `g431k/pulses` - generate pulses to check the logic-analyser hookup
+* `g431k/bmp390i` - read out the BMP390 sensor using its I2C pins
+* `g431k/bmp390s` - read out the BMP390 sensor using its SPI pins
 * `g431k/fram` - test the I2C bus with attached 32 KB FRAM
 * `g431k/sram` - test the SPI bus with attached 32 KB SRAM
 
@@ -57,8 +59,3 @@ In the list below, each example can be built and run independently, e.g.
 * `g474r/lcd` - graphics and text on a 480x320 LCD shield
 * `g474r/sdspi` - connect to the µSD card on the LCD shield
 * `g474r/shell` - explore the use of a command-line shell
-
-**`L412KB` - Nucleo-32 @ 80 MHz**
-
-* `l412k/i2c` - scan for attached devices on the I2C bus
-* `l412k/spi` - read out the BMP390 sensor using its SPI pins
