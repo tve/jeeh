@@ -53,6 +53,7 @@ In the list below, each example can be built and run independently, e.g.
 * `g431k/bmp390s` - read out the BMP390 sensor using its SPI pins
 * `g431k/fram` - test the I2C bus with attached 32 KB FRAM
 * `g431k/sram` - test the SPI bus with attached 32 KB SRAM
+* `g431k/sht21` - read temperature and humidity from SHT21 sensor
 
 **`G474RE` - Nucleo-64 @ 160 MHz**
 
