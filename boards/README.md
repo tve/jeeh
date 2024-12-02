@@ -54,6 +54,8 @@ In the list below, each example can be built and run independently, e.g.
 * `g431k/fram` - test the I2C bus with attached 32 KB FRAM
 * `g431k/sram` - test the SPI bus with attached 32 KB SRAM
 * `g431k/sht21` - read temperature and humidity from SHT21 sensor
+* `f446z/lcd` - display text and graphics on a 128x128 LCD over SPI
+* `g474r/sdspi` - connect to the µSD card socket via SPI
 
 **`G474RE` - Nucleo-64 @ 160 MHz**
 

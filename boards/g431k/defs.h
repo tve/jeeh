@@ -1,17 +1,18 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "i2c"
+#define PIOENV  "sdspi"
 
 //CG1 board leds
 #define LED  "B8"
 
 const Pin led (LED,"P");
 
-Pin bmpVcc ("B6","P"); // Vcc for BMP390
+Pin bmpVcc ("B6","P");  // VCC for BMP390
 Pin bmpSel ("A11","U"); // NSEL for BMP390 on SPI
 Pin lcdSel ("A12","U"); // NSEL for LCD on SPI
 Pin sramSel ("B0","U"); // NSEL for SRAM on SPI
+Pin sdSel ("A7","U");   // NSEL for SD card on SPI
 
 //CG[ board uart
 #define UART_NAME  USART2
@@ -35,6 +36,14 @@ Pin sramSel ("B0","U"); // NSEL for SRAM on SPI
 #define SPI_CONF  { ena::SPI1, 170, \
                     Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,11,10 } }
 //CG]
+
+template< typename T >
+void spiSelect (T& spi, Pin nsel) {
+    // switch from BMP390 to SRAM pin select
+    nsel = 1;
+    nsel.mode("HP");
+    spi.nsel = nsel;
+}
 
 //CG[ board i2c
 #define I2C_NAME  I2C1

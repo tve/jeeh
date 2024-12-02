@@ -30,13 +30,7 @@ void wrMem (uint16_t addr, void const* buf, uint16_t len) {
 int main () {
     initBoard();
     sram.init(SPI_PINS);
-
-    // switch from BMP390 to SRAM pin select
-    sramSel = 1;
-    sramSel.mode("HP");
-    sram.nsel = sramSel;
-
-    cycles::msBusy(200); // needs time to init?
+    spiSelect(sram, sramSel);
 
     sram.enable();
     sram.rwByte(0x01); // write status
