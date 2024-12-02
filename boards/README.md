@@ -61,3 +61,7 @@ In the list below, each example can be built and run independently, e.g.
 
 * `g474r/lcd` - graphics and text on a 480x320 LCD shield
 * `g474r/sdspi` - connect to the µSD card on the LCD shield
+
+**`L432KC` - Nucleo-32 @ 80 MHz**
+
+* This is a plug-in variation for use with the above **G431KB** test board.
