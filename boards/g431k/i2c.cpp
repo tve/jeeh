@@ -28,10 +28,5 @@ int main () {
     showPresence("ITG3200", 0x68);
     showPresence("BMP390", 0x77);
 
-    while (true) {
-        led = 1;
-        cycles::msBusy(100);
-        led = 0;
-        cycles::msBusy(900);
-    }
+    while (true) { cycles::msBusy(500); led.toggle(); }
 }

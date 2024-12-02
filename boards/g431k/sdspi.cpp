@@ -227,6 +227,5 @@ int main () {
     read512(blk, buf);
     logDump(buf, 16);
 
-    while (true)
-        asm ("wfi");
+    while (true) { cycles::msBusy(500); led.toggle(); }
 }

@@ -13,6 +13,7 @@ spi::Poll<SPI_NAME.ADDR> bmp390 (ena::SPI_NAME, SPI_FREQ);
 int main () {
     initBoard();
 
+    cycles::msBusy(5);
     bmpVcc = 1;
     cycles::msBusy(5);
 

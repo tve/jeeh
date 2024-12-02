@@ -8,8 +8,9 @@ These examples are for use with this board:
 - I2C: BMP390, 128x64 OLED, 128x32 OLED, IMU, SHT21, 32 KB FRAM
 
 ```text
-i2c: STM32G431xx @ 160 MHz - 2024-12-02 14:45:39.929
-	 i2c: B7:OH4,A15 spi: B5:H5,B4,B3,A11:HP uart: A2:U7,A3
+i2c: STM32G431xx @ 160 MHz - 2024-12-02 20:46:01.019
+	 i2c=B7:OH4,A15  spi=B5:H5,B4,B3,A11:HP  uart=A2:U7,A3
+	 led=B8  vcc=B6  bmp=A11  lcd=A12  sram=B0  sd=A7
 00:                         -- -- -- -- -- -- -- --
 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 1E --
 20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -20,15 +21,7 @@ i2c: STM32G431xx @ 160 MHz - 2024-12-02 14:45:39.929
 70: -- -- -- -- -- -- -- 77
 ```
 
-Hard-wired: A4 <=> A1 (DAC & ADC), P9 <=> P10 (USART1 RX & TX). And:
-
-```
-Pin bmpVcc ("B6","P");  // VCC for BMP390
-Pin bmpSel ("A11","U"); // NSEL for BMP390 on SPI
-Pin lcdSel ("A12","U"); // NSEL for LCD on SPI
-Pin sramSel ("B0","U"); // NSEL for SRAM on SPI
-Pin sdSel ("A7","U");   // NSEL for SD card on SPI
-```
+Hard-wired: A4 <=> A1 (DAC & ADC), P9 <=> P10 (USART1 RX & TX).
 
 ---
 

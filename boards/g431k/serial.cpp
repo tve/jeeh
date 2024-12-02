@@ -5,7 +5,6 @@ using namespace jeeh;
 
 int main () {
     initBoard();
-    console.init(UART_PINS, 10'000'000);
 
     auto s = " ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890"
              " abcdefghijklmnopqrstuvwxyz 1234567890 /\n";
