@@ -29,11 +29,13 @@ void wrMem (uint16_t addr, void const* buf, uint16_t len) {
 
 int main () {
     initBoard();
-#if POLLED
-    sram.init("B5:V5,B4,B3,A11:P");
-#else
-    sram.init("B5,B4,B3,A11");
-#endif
+    sram.init(SPI_PINS);
+
+    // switch from BMP390 to SRAM pin select
+    sramSel = 1;
+    sramSel.mode("HP");
+    sram.nsel = sramSel;
+
     cycles::msBusy(200); // needs time to init?
 
     sram.enable();

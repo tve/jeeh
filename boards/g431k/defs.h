@@ -1,14 +1,17 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "sht21"
+#define PIOENV  "i2c"
 
 //CG1 board leds
 #define LED  "B8"
 
 const Pin led (LED,"P");
 
-Pin bmpVcc ("B6"); // Vcc for BMP390
+Pin bmpVcc ("B6","P"); // Vcc for BMP390
+Pin bmpSel ("A11","U"); // NSEL for BMP390 on SPI
+Pin lcdSel ("A12","U"); // NSEL for LCD on SPI
+Pin sramSel ("B0","U"); // NSEL for SRAM on SPI
 
 //CG[ board uart
 #define UART_NAME  USART2

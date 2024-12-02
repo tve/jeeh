@@ -13,9 +13,8 @@ i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 int main () {
     initBoard();
 
-    Pin power ("B6"); // Vcc for BMP390
-    power.mode("P");
-    power = 1;
+    cycles::msBusy(5);
+    bmpVcc = 1;
     cycles::msBusy(5);
 
     i2cBus.init(I2C_PINS, i2cTiming(1000));
