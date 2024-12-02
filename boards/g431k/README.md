@@ -18,7 +18,11 @@ i2c: STM32G431xx @ 160 MHz - 2024-12-02 14:45:39.929
 50: 50 -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
 60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
 70: -- -- -- -- -- -- -- 77
+```
 
+Hard-wired: A4 <=> A1 (DAC & ADC), P9 <=> P10 (USART1 RX & TX). And:
+
+```
 Pin bmpVcc ("B6","P");  // VCC for BMP390
 Pin bmpSel ("A11","U"); // NSEL for BMP390 on SPI
 Pin lcdSel ("A12","U"); // NSEL for LCD on SPI
