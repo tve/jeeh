@@ -19,7 +19,7 @@ uint16_t measure (uint8_t type, uint8_t delay) {
     buf[0] = i2cBus.rdByte(false);
     buf[1] = i2cBus.rdByte(false);
     buf[2] = i2cBus.rdByte(true); // last one
-    logDump(buf, sizeof buf);
+    //logDump(buf, sizeof buf);
 
     return (buf[0] << 8) | (buf[1] & ~3); // clear lower 2 bits
 }

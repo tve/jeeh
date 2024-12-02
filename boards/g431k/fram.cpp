@@ -3,23 +3,19 @@
 using namespace jeeh;
 #include "defs.h"
 
-i2c::Gpio i2cBus;
-//i2c::Poll<I2C1.ADDR> i2cBus (ena::I2C1, 170);
+//i2c::Gpio i2cBus;
+i2c::Poll<I2C1.ADDR> i2cBus (ena::I2C1, 170);
 
 i2c::Dev fram (i2cBus, 0x50);
-
-//Pin trigger ("B4","P");
 
 constexpr auto N = 5;
 
 void read32 (uint16_t addr, uint8_t* ptr) {
-    //trigger = 0;
     auto ok = fram.read16be(addr, ptr, N);
     assert(ok);
 }
 
 void write32 (uint16_t addr, uint8_t const* ptr) {
-    //trigger = 1;
     auto ok = fram.write16be(addr, ptr, N);
     assert(ok);
 }
@@ -29,7 +25,6 @@ int main () {
     dog::init(2);  // will fire approx. every 2 secs
 
     i2cBus.init(I2C_PINS); // sda scl
-    i2c::detect(i2cBus);
 
     auto seq = 0;
     while (true) {

@@ -1,9 +1,7 @@
 // I2C example with two different OLED displays.
 
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/i2c.h>
+#include <jee/hal.h>
 #include <jee/dev/ssd1306.h>
 using namespace jeeh;
 #include "defs.h"

@@ -1,9 +1,7 @@
 // Simple I2C sensor readout example.
 
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/i2c.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 

@@ -1,11 +1,7 @@
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/dma.h>
-#include <jee/uart.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
-
-uart::Sync<UART_TYPE> console (UART_CONF);
 
 int main () {
     initBoard();
@@ -19,7 +15,7 @@ int main () {
     while (true) {
         uint32_t t = cycles::micros(), c = 0;
         for (auto i = 0U; i < n-2; ++i) {
-            console.transfer(true, (uint8_t*) s + i, n - i);
+            console.write(s + i, n - i);
             c += n - i;
         }
         t = cycles::micros() - t;

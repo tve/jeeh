@@ -1,8 +1,7 @@
 // Keep the watchdog alive with an ever-later periodic callback.
 
 #include <jee.h>
-#include <jee/cycles.h>
-#include <jee/ticker.h>
+#include <jee/hal.h>
 using namespace jeeh;
 #include "defs.h"
 
