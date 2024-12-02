@@ -16,7 +16,7 @@ int main () {
     bmpVcc = 1;
     cycles::msBusy(5);
 
-    bmp390.init(SPI_PINS, 10'000);
+    bmp390.init(SPI_PINS, 20'000);
 
     bmp390.enable();
     bmp390.transfer(true, config, sizeof config);

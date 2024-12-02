@@ -188,7 +188,7 @@ int main () {
     auto bsh = r ? 0 : 9;
     logf("sdhc %d, bsh %d, %d us", r, bsh, cycles::micros()-start);
 
-    sdSpi.init(SPI_PINS, 20'000);
+    sdSpi.init(SPI_PINS, 40'000);
     spiSelect(sdSpi, sdSel);
 
     uint8_t buf [512];

@@ -166,7 +166,7 @@ TwoDee<Tft> gfx;
 int main () {
     initBoard();
 
-    lcdSpi.init(SPI_PINS, 10'000);
+    lcdSpi.init(SPI_PINS, 40'000);
     spiSelect(lcdSpi, lcdSel);
 
     lcdCmd.mode("P"); // MISO is reused as C/D output pin

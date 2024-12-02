@@ -1,13 +1,34 @@
 ### Example code for a Nucleo-32 G431KB board.
 
-Use any of these commands to verify that PlatformIO works properly:
+These examples are for use with this board:
 
-    pio run -e blink     # blink the on-board LED with busy waiting
-    pio run -e fast      # increase the clock from 16 to 160 MHz
-    pio run -e i2c       # list any devices connected to I2C via PB7+PA15
+![](board.jpg)
 
+- SPI: BMP390, 32 KB SRAM, 128x128 TFT LCD, µSD card
+- I2C: BMP390, 128x64 OLED, 128x32 OLED, IMU, SHT21, 32 KB FRAM
 
-This board is used for tests with an RFM69 radio module:
+```text
+i2c: STM32G431xx @ 160 MHz - 2024-12-02 14:45:39.929
+	 i2c: B7:OH4,A15 spi: B5:H5,B4,B3,A11:HP uart: A2:U7,A3
+00:                         -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 1E --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- 3C 3D -- --
+40: 40 -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: 50 -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- 77
+
+Pin bmpVcc ("B6","P");  // VCC for BMP390
+Pin bmpSel ("A11","U"); // NSEL for BMP390 on SPI
+Pin lcdSel ("A12","U"); // NSEL for LCD on SPI
+Pin sramSel ("B0","U"); // NSEL for SRAM on SPI
+Pin sdSel ("A7","U");   // NSEL for SD card on SPI
+```
+
+---
+
+Another board is used for tests with an RFM69 radio module:
 
 ![](rfm69.jpg)
 

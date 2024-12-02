@@ -3,11 +3,8 @@
 using namespace jeeh;
 #include "defs.h"
 
-#if POLLED
+//spi::Gpio sram;
 spi::Poll<SPI1.ADDR> sram (ena::SPI1, 100);
-#else
-spi::Gpio sram;
-#endif
 
 void rdMem (uint16_t addr, void* buf, uint16_t len) {
     sram.enable();
@@ -29,7 +26,7 @@ void wrMem (uint16_t addr, void const* buf, uint16_t len) {
 
 int main () {
     initBoard();
-    sram.init(SPI_PINS);
+    sram.init(SPI_PINS, 10'000);
     spiSelect(sram, sramSel);
 
     sram.enable();

@@ -42,7 +42,6 @@ In the list below, each example can be built and run independently, e.g.
 
 **`G431KB` - Nucleo-32 @ 160 MHz**
 
-* `g431k/fast` - blink with system clock at 160 MHz
 * `g431k/serial` - send text to serial port @ 10 Mbaud
 * `g431k/i2c` - scan for attached devices on the I2C bus
 * `g431k/dog` - kick the watchdog less and less, until it resets
