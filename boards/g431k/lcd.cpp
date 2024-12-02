@@ -15,7 +15,9 @@ using namespace jeeh::twodee;
 #include "../g474r/font3.h"
 Font const font (u8g2_font_lubR08_tr);
 Font const font2 (u8g2_font_7x14_tf);
+#if !STM32F3 // FIXME ???
 Font const font3 (u8g2_font_9x15_tf);
+#endif
 
 //spi::Gpio lcdSpi;
 spi::Poll<SPI_NAME.ADDR> lcdSpi (ena::SPI_NAME, SPI_FREQ);
@@ -166,7 +168,11 @@ TwoDee<Tft> gfx;
 int main () {
     initBoard();
 
+#if STM32F3
+    lcdSpi.init(SPI_PINS, 10'000);
+#else
     lcdSpi.init(SPI_PINS, 40'000);
+#endif
     spiSelect(lcdSpi, lcdSel);
 
     lcdCmd.mode("P"); // MISO is reused as C/D output pin
@@ -208,10 +214,12 @@ int main () {
     logf("font2 %6d us (16 ch, %d px)", cycles::micros()-start, w2);
     gfx.hLine({10, 127}, w2, 0xF800);
 
+#if !STM32F3 // FIXME ???
     start = cycles::micros();
     auto w3 = gfx.writes(font3, {64, 20}, "Hello!");
     logf("font3 %6d us (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
+#endif
 
     while (true) { cycles::msBusy(500); led.toggle(); }
 }

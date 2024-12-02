@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "imu"
+#define PIOENV  "i2c"
 
 //CG1 board leds
 #define LED  "A0"
@@ -25,9 +25,9 @@ Pin sdSel (PINS_SD,"U");     // NSEL for SD card on SPI
 //CG[ board uart
 #define UART_NAME  USART2
 #define UART_PINS  "A2:7,A15:3"
-#define UART_FREQ  80
+#define UART_FREQ  36
 #define UART_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
-#define UART_CONF  { ena::USART2, 80, Irq::USART2, \
+#define UART_CONF  { ena::USART2, 36, Irq::USART2, \
                      Irq::DMA1_CH7, Irq::DMA1_CH6, { 1-1,2,2 } }
 #define UART_TRIGGER(w) extern "C" { \
     void USART2_IRQHandler () { (w).irqIdle(); } \
@@ -42,9 +42,9 @@ UART_TRIGGER(console)
 //CG[ board spi
 #define SPI_NAME  SPI1
 #define SPI_PINS  "B5:H5,B4,B3,A11:HP"
-#define SPI_FREQ  80
+#define SPI_FREQ  72
 #define SPI_TYPE  SPI1.ADDR, DMA1.ADDR, 3-1, 2-1
-#define SPI_CONF  { ena::SPI1, 80, \
+#define SPI_CONF  { ena::SPI1, 72, \
                     Irq::DMA1_CH3, Irq::DMA1_CH2, { 1-1,1,1 } }
 //CG]
 
@@ -59,9 +59,9 @@ void spiSelect (T& spi, Pin nsel) {
 //CG[ board i2c
 #define I2C_NAME  I2C1
 #define I2C_PINS  "B7:OH4,B6"
-#define I2C_FREQ  80
+#define I2C_FREQ  36
 #define I2C_TYPE  I2C1.ADDR, DMA2.ADDR, 7-1, 6-1
-#define I2C_CONF  { ena::I2C1, 80, Irq::I2C1_EV, Irq::I2C1_ER, \
+#define I2C_CONF  { ena::I2C1, 36, Irq::I2C1_EV, Irq::I2C1_ER, \
                     Irq::DMA2_CH7, Irq::DMA2_CH6, { 2-1,5,5 } }
 //CG]
 
@@ -74,6 +74,16 @@ uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
           case  100: return 0x00504F49; // prs 0 tcd 5 tdd 0 scll 73 sclh 79
           case  400: return 0x00500D12; // prs 0 tcd 5 tdd 0 scll 18 sclh 13
           case 1000: return 0x00500205; // prs 0 tcd 5 tdd 0 scll 5 sclh 2
+          //CG]
+        }
+        break;
+      case 72: // MHz
+        switch (khz) {
+          //CG[ i2c timing 72
+          // 72 Mhz: (remove this line to re-generate)
+          case  100: return 0x40404742; // prs 4 tcd 4 tdd 0 scll 66 sclh 71
+          case  400: return 0x10C0232B; // prs 1 tcd 12 tdd 0 scll 43 sclh 35
+          case 1000: return 0x10C00B0F; // prs 1 tcd 12 tdd 0 scll 15 sclh 11
           //CG]
         }
         break;

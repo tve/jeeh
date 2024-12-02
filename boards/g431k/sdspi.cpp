@@ -188,7 +188,11 @@ int main () {
     auto bsh = r ? 0 : 9;
     logf("sdhc %d, bsh %d, %d us", r, bsh, cycles::micros()-start);
 
+#if STM32F3
+    sdSpi.init(SPI_PINS, 10'000);
+#else
     sdSpi.init(SPI_PINS, 40'000);
+#endif
     spiSelect(sdSpi, sdSel);
 
     uint8_t buf [512];

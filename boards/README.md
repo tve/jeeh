@@ -15,6 +15,10 @@ In the list below, each example can be built and run independently, e.g.
     pio run -e i2c -t upload
     pio device monitor          # to view serial output
 
+**`F303K8` - Nucleo-32 @ 72 MHz**
+
+* This is a plug-in variation for use with the **G431KB** test board below.
+
 **`F303RC` - Olimexino w/ ST-Link @ 72 MHz**
 
 * `f303o/dcf77` - decode DCF77 time pulses using 1st radio module
@@ -64,4 +68,4 @@ In the list below, each example can be built and run independently, e.g.
 
 **`L432KC` - Nucleo-32 @ 80 MHz**
 
-* This is a plug-in variation for use with the above **G431KB** test board.
+* This is a plug-in variation for use with the **G431KB** test board above.
