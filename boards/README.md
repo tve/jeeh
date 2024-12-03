@@ -76,7 +76,7 @@ In the list below, each example can be built and run independently, e.g.
 
 There's a `test/` area which reuses some of the `g431/` code to run tests on
 all I2C and SPI devices attached to the test board. The tests can run in
-different mode, one for each driver variant (gpio, poll, etc):
+different modes, one for each driver variant (gpio, poll, etc):
 
 ```
 pio run -e gpio -t upload
