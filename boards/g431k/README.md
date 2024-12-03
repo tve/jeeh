@@ -4,6 +4,8 @@ These examples are for use with this board:
 
 ![](board.jpg)
 
+(the two Nucleo's at the bottom right are just parked there for swapping out)
+
 - SPI: BMP390, 32 KB SRAM, 128x128 TFT LCD, µSD card
 - I2C: BMP390, 128x64 OLED, 128x32 OLED, IMU, SHT21, 32 KB FRAM
 
