@@ -9,6 +9,8 @@ This is a sequence of "bring-up" examples for a variety of boards:
 * `5-task/` - using multiple tasks with periodic event triggers
 * `6-async/` - asynchronous full speed serial + background LED blink
 
+## Boards
+
 In the list below, each example can be built and run independently, e.g.
 
     cd g431k
@@ -69,3 +71,17 @@ In the list below, each example can be built and run independently, e.g.
 **`L432KC` - Nucleo-32 @ 80 MHz**
 
 * This is a plug-in variation for use with the **G431KB** test board above.
+
+## Test board
+
+There's a `test/` area which reuses some of the `g431/` code to run tests on
+all I2C and SPI devices attached to the test board. The tests can run in
+different mode, one for each driver variant (gpio, poll, etc):
+
+```
+pio run -e gpio -t upload
+pio run -e poll -t upload
+[etc...]
+```
+
+As before, use `pio device monitor` to see the test results.
