@@ -263,7 +263,7 @@ struct Async : Sync<A,D,T,R>, Task {
         BASE::startReq(w, p, n);
     }
 
-    void interrupt () {
+    void irqDma () {
         auto f = cfg.dma.completed();
         if (f != 0)
             trigger(f == cfg.dma.TXDONE ? TXDONE : RXDONE);

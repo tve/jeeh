@@ -56,6 +56,7 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define UART{suffix}_TYPE  {t0.substitute(f)}')
             r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)} \\')
             r.append(f'                    {skip} {t2.substitute(f)} }}')
+
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             x1 = 'void ${N}_IRQHandler () { (w).irqIdle(); }'
             x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'
@@ -87,6 +88,12 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define I2C{suffix}_TYPE  ' + t0.substitute(f))
             r.append(f'#define I2C{suffix}_CONF  {{ {t1.substitute(f)} \\')
             r.append(f'                   {skip} {t2.substitute(f)} }}')
+
+            f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
+            x1 = 'void ${N}_EV_IRQHandler () { (w).irqI2c(); }'
+            r.append(f'#define I2C{suffix}_TRIGGER(w) extern "C" {{ \\')
+            r.append(f'    {Template(x1).substitute(f)} \\')
+            r.append(f'}}')
         return r
 
     if name.startswith('spi'):
@@ -108,6 +115,14 @@ def BOARD(block, name, suffix=''):
             r.append(f'#define SPI{suffix}_TYPE  ' + t0.substitute(f))
             r.append(f'#define SPI{suffix}_CONF  {{ {t1.substitute(f)} \\')
             r.append(f'                   {skip} {t2.substitute(f)} }}')
+
+            f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
+            x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'
+            x3 = 'void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); }'
+            r.append(f'#define SPI{suffix}_TRIGGER(w) extern "C" {{ \\')
+            r.append(f'    {Template(x2).substitute(f)} \\')
+            r.append(f'    {Template(x3).substitute(f)} \\')
+            r.append(f'}}')
         return r
 
     # catch-all: "board_foo = bar:123 baz:def boo::xyz" will generate:

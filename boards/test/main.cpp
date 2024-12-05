@@ -25,9 +25,9 @@ spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
 #elif MODE_ASYNC
 
 i2c::Async<I2C_TYPE> i2cBus (I2C_CONF);
-//I2C_TRIGGER(i2cBus);
+I2C_TRIGGER(i2cBus)
 spi::Async<SPI_TYPE> spiBus (SPI_CONF);
-//SPI_TRIGGER(spiBus);
+SPI_TRIGGER(spiBus)
 
 #endif
 

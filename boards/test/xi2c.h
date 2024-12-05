@@ -6,21 +6,6 @@ enum {
     IO_MORE=1<<4, IO_LAST=1<<5
 };
 
-constexpr uint32_t operator""_IO (char const* s, size_t n) {
-    uint32_t m = 0;
-    for (auto i = 0U; i < n; ++i)
-        switch (s[i]) {
-            case '<': m |= IO_START; break;
-            case 'R': m |= IO_READ; break;
-            case 'W': m |= IO_WRITE; break;
-            case '>': m |= IO_STOP; break;
-            case '+': m |= IO_MORE; break;
-            case '=': m |= IO_LAST; break;
-            default:  fail();
-        }
-    return m;
-}
-
 } // namespace jeeh
 
 namespace jeeh::i2c {
@@ -504,7 +489,7 @@ struct Async : Sync<A,D,T,R>, Task {
     }
 #endif
 
-    void interrupt () {
+    void irqI2c () {
         BASE::I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
         trigger(RXDONE); // TODO TXDONE?
     }
