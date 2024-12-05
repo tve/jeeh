@@ -3,8 +3,9 @@
 using namespace jeeh;
 #include "defs.h"
 
-i2c::Gpio i2cBus;
-//i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+//i2c::Gpio i2cBus;
+i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+//i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
 
 void showPresence (char const* name, uint8_t addr) {
     i2c::Dev dev { i2cBus, addr };

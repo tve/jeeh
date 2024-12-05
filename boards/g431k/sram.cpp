@@ -4,7 +4,8 @@ using namespace jeeh;
 #include "defs.h"
 
 //spi::Gpio sram;
-spi::Poll<SPI1.ADDR> sram (ena::SPI1, 100);
+//spi::Poll<SPI_NAME.ADDR> sram (ena::SPI_NAME, 100);
+spi::Sync<SPI_TYPE> sram (SPI_CONF);
 
 void rdMem (uint16_t addr, void* buf, uint16_t len) {
     sram.enable();
