@@ -3,30 +3,25 @@
 auto& sram = spiBus;
 
 void rdMem (uint16_t addr, void* buf, uint16_t len) {
-    sram.enable();
-    sram.rwByte(0x03); // read
-    sram.rwByte(addr >> 8);
-    sram.rwByte(addr);
-    sram.transfer(false, (uint8_t*) buf, len);
-    sram.disable();
+    uint8_t hdr [] = { 0x03, (uint8_t) (addr>>8), (uint8_t) addr };
+    sram.ioReq("<W"_IO, hdr, sizeof hdr);
+    sram.ioReq("R>"_IO, (uint8_t*) buf, len);
 }
 
 void wrMem (uint16_t addr, void const* buf, uint16_t len) {
-    sram.enable();
-    sram.rwByte(0x02); // write
-    sram.rwByte(addr >> 8);
-    sram.rwByte(addr);
-    sram.transfer(true, (uint8_t*) buf, len);
-    sram.disable();
+    uint8_t hdr [] = { 0x02, (uint8_t) (addr>>8), (uint8_t) addr };
+    sram.ioReq("<W"_IO, hdr, sizeof hdr);
+    sram.ioReq("W>"_IO, (uint8_t*) buf, len);
 }
 
 void testSram () {
     spiSelect(sram, sramSel);
+    cycles::msBusy(10);
+uint8_t z [10] = {};
+sram.ioReq("W"_IO, z, sizeof z);
 
-    sram.enable();
-    sram.rwByte(0x01); // write status
-    sram.rwByte(0x40); // sequential mode
-    sram.disable();
+    uint8_t hdr [] = { 0x01, 0x40 }; // write status, sequential mode
+    sram.ioReq("<W>"_IO, hdr, sizeof hdr);
 
     uint8_t buf [2][32];
     memset(buf, 0, sizeof buf);

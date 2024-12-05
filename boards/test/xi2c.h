@@ -1,3 +1,27 @@
+namespace jeeh {
+
+enum {
+    MODE_READ=0, MODE_WRITE=1<<0, MODE_START=1<<1, MODE_STOP=1<<2,
+    MODE_MORE=1<<3, MODE_LAST=1<<4
+};
+
+constexpr uint32_t operator""_IO (char const* s, size_t n) {
+    uint32_t m = 0;
+    for (auto i = 0U; i < n; ++i)
+        switch (s[i]) {
+            case '<': m |= MODE_START; break;
+            case 'R': m |= MODE_READ; break;
+            case 'W': m |= MODE_WRITE; break;
+            case '>': m |= MODE_STOP; break;
+            case '+': m |= MODE_MORE; break;
+            case '=': m |= MODE_LAST; break;
+            default:  fail();
+        }
+    return m;
+}
+
+} // namespace jeeh
+
 namespace jeeh::i2c {
 
 template< typename I2C >

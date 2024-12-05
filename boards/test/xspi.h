@@ -9,8 +9,7 @@ struct Gpio {
         Pin::config(desc, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
         sclk = cpol;
-        disable(); // start with NSEL high
-
+        ioReq(MODE_STOP); // start with nsel high
         rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }
 
@@ -18,9 +17,37 @@ struct Gpio {
         Pin::config(":F,,,:U", &mosi, 4);
     }
 
-    void enable () const { hold(); nsel = 0; hold(); }
-    void disable () const { hold(); nsel = 1; hold(); }
+    int ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+        uint8_t r = 0;
+        checkStart(m);
+        if (m & MODE_WRITE)
+            for (auto i = 0U; i < n; ++i)
+                r = rwByte(*p++); // return last byte from reply
+        else
+            for (auto i = 0U; i < n; ++i)
+                *p++ = rwByte(0);
+        checkStop(m);
+        return m & MODE_LAST ? r : n;
+    }
 
+protected:
+    void checkStart (uint32_t m) const {
+        if ((m & MODE_START) && nsel.isValid()) {
+            hold();
+            nsel = 0;
+            hold();
+        }
+    }
+
+    void checkStop (uint32_t m) const {
+        if ((m & MODE_STOP) && nsel.isValid()) {
+            hold();
+            nsel = 1;
+            hold();
+        }
+    }
+
+private:
     int rwByte (int v) const {
         auto r = 0;
         for (auto i = 0; i < 8; ++i) {
@@ -35,19 +62,6 @@ struct Gpio {
         return r;
     }
 
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
-        uint8_t r = 0;
-        auto q = (uint8_t*) p;
-        if (w)
-            for (auto i = 0U; i < n; ++i)
-                r = rwByte(*q++); // return last byte from reply
-        else
-            for (auto i = 0U; i < n; ++i)
-                *q++ = rwByte(0);
-        return r;
-    }
-
-private:
     void hold () const {
         for (volatile int i = rate; i >= 0; ) i = i-1;
     }
@@ -55,8 +69,8 @@ private:
 
 // polled H/W version (see spi::Gpio for bit-banged version)
 template< uint32_t A >
-struct Poll {
-    using ID = Pin;
+struct Poll : Gpio {
+    using BASE = Gpio;
 
     static constexpr IoReg<A> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
@@ -66,14 +80,13 @@ struct Poll {
         uint8_t mhz;
     };
 
-    Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     Config const cfg;
 
     Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
 
     void init (char const* defs, int khz =10'000) {
         Pin::config(defs, &mosi, 4);
-        disable(); // start with NSEL high
+        ioReq(MODE_STOP); // start with nsel high
 
         int clk = SystemCoreClock / 1'000;
         while (clk > 1000 * cfg.mhz)
@@ -94,28 +107,19 @@ struct Poll {
     }
 
     void deinit () {
-        Pin::config(":F,,,:U", &mosi, 4);
         RCC(cfg.ena, 1) = 0;
+        BASE::deinit();
     }
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
-
-    int rwByte (int v) const {
-        SPI.byte(DR) = v;
-        while (!SPI[SR](0)) {} // ~RXNE
-        return SPI.byte(DR);
-    }
-
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
+    int ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
         uint8_t r = 0;
+        checkStart(m);
         if (n > 0) {
-            auto q = (uint8_t*) p;
-            if (w) {
-                SPI.byte(DR) = *q++;
+            if (m & MODE_WRITE) {
+                SPI.byte(DR) = *p++;
                 while (--n != 0) {
                     while (!SPI[SR](1)) {} // ~TXE
-                    SPI.byte(DR) = *q++;
+                    SPI.byte(DR) = *p++;
                     while (!SPI[SR](0)) {} // ~RXNE
                     (void) +SPI.byte(DR);
                 }
@@ -127,13 +131,14 @@ struct Poll {
                     while (!SPI[SR](1)) {} // ~TXE
                     SPI.byte(DR) = 0;
                     while (!SPI[SR](0)) {} // ~RXNE
-                    *q++ = SPI.byte(DR);
+                    *p++ = SPI.byte(DR);
                 }
                 while (!SPI[SR](0)) {} // ~RXNE
-                *q = SPI.byte(DR);
+                *p = SPI.byte(DR);
             }
         }
-        return r;
+        checkStop(m);
+        return m & MODE_LAST ? r : n;
     }
 };
 
@@ -155,30 +160,35 @@ struct Sync : Poll<A> {
     void init (char const* defs, int khz =10'000) {
         BASE::init(defs, khz);
         SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
-
-        // peripheral address config and interrupt vector setup
         cfg.dma.init(A + BASE::DR, A + BASE::DR);
-
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma.idx,1) = 0; // may be shared
+    void deinit () {
+        SPI[BASE::CR2](0,2) = 0; // ~TXDMAEN ~RXDMAEN
+        cfg.dma.deinit();
+        BASE::deinit();
+    }
 
-    // sync version, dma with wfe
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
-        if (n == 0)
-            return 0;
-
-        startReq(w, p, n);
-        while (true) {
-            if (!cfg.dma.isRunning())
-                break;
-            if (cfg.dma.completed() == 0)
-                asm ("wfe");
+    uint32_t ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+        uint8_t r = 0;
+        BASE::checkStart(m);
+        if (n > 0) {
+            startReq(m & 1, p, n);
+//if (!(m & MODE_WRITE)) logf("11");
+            while (true) {
+                if (cfg.dma.completed() == 0)
+                    asm ("wfe");
+                if (!cfg.dma.isRunning())
+                    break;
+            }
+//logf("12");
+            Task::irqClear(cfg.txIrq);
+            Task::irqClear(cfg.rxIrq);
+            r = finishReq(m & 1, p, n);
         }
-        Task::irqClear(cfg.txIrq);
-        Task::irqClear(cfg.rxIrq);
-        return finishReq(w, p, n);
+        BASE::checkStop(m);
+        return m & MODE_LAST ? r : n;
     }
 
 protected:
