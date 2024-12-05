@@ -5,30 +5,24 @@
 auto& bmp390 = spiBus;
 
 void testBmpS () {
+    spiSelect(spiBus, bmpSel);
+
     bmpVcc = 0;
     cycles::msBusy(5);
     bmpVcc = 1;
     cycles::msBusy(5);
 
-    bmp390.init(SPI_PINS, 20'000);
-
-    bmp390.enable();
-    bmp390.transfer(true, config, sizeof config);
-    bmp390.disable();
+    bmp390.ioReq(IO_START|IO_WRITE|IO_STOP, config, sizeof config);
 
     TrimCoeffs tc;
-    bmp390.enable();
-    bmp390.transfer(true, (uint8_t*) "\xB1.", 2);
-    bmp390.transfer(false, (uint8_t*) &tc, sizeof tc);
-    bmp390.disable();
+    bmp390.ioReq(IO_START|IO_WRITE, (uint8_t*) "\xB1.", 2);
+    bmp390.ioReq(IO_READ|IO_STOP, (uint8_t*) &tc, sizeof tc);
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {
         uint8_t buf [6];
-        bmp390.enable();
-        bmp390.transfer(true, (uint8_t*) "\x84.", 2);
-        bmp390.transfer(false, buf, sizeof buf);
-        bmp390.disable();
+        bmp390.ioReq(IO_START|IO_WRITE, (uint8_t*) "\x84.", 2);
+        bmp390.ioReq(IO_READ|IO_STOP, buf, sizeof buf);
 
         showReading(buf); // in fcalc.h
     }

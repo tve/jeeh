@@ -1,20 +1,21 @@
 namespace jeeh {
 
 enum {
-    MODE_READ=0, MODE_WRITE=1<<0, MODE_START=1<<1, MODE_STOP=1<<2,
-    MODE_MORE=1<<3, MODE_LAST=1<<4
+    IO_WRITE=1<<0, IO_READ=1<<1,
+    IO_START=1<<2, IO_STOP=1<<3,
+    IO_MORE=1<<4, IO_LAST=1<<5
 };
 
 constexpr uint32_t operator""_IO (char const* s, size_t n) {
     uint32_t m = 0;
     for (auto i = 0U; i < n; ++i)
         switch (s[i]) {
-            case '<': m |= MODE_START; break;
-            case 'R': m |= MODE_READ; break;
-            case 'W': m |= MODE_WRITE; break;
-            case '>': m |= MODE_STOP; break;
-            case '+': m |= MODE_MORE; break;
-            case '=': m |= MODE_LAST; break;
+            case '<': m |= IO_START; break;
+            case 'R': m |= IO_READ; break;
+            case 'W': m |= IO_WRITE; break;
+            case '>': m |= IO_STOP; break;
+            case '+': m |= IO_MORE; break;
+            case '=': m |= IO_LAST; break;
             default:  fail();
         }
     return m;
@@ -31,7 +32,7 @@ struct Dev {
 
     Dev (I2C& b, uint8_t i) : bus (b), id (i) {}
 
-    bool transfer (uint8_t m, void* p =nullptr, uint8_t n =0) const {
+    bool transfer (uint8_t m, uint8_t* p =nullptr, uint8_t n =0) const {
         return bus.transfer(id, m, p, n);
     }
 
@@ -45,13 +46,13 @@ struct Dev {
     }
 
     // one byte address, read/write byte buffer
-    bool read (uint8_t r, void* p, uint8_t n) const {
+    bool read (uint8_t r, uint8_t* p, uint8_t n) const {
         return transfer(bus.R1, &r, 1)
             && transfer(bus.R2, p, n);
     }
-    bool write (uint8_t r, void const* p, uint8_t n) const {
+    bool write (uint8_t r, uint8_t const* p, uint8_t n) const {
         return transfer(bus.W1, &r, 1)
-            && transfer(bus.W2, (void*) p, n);
+            && transfer(bus.W2, (uint8_t*) p, n);
     }
 
     // two byte address, two-byte data, both big-endian
@@ -65,15 +66,15 @@ struct Dev {
     }
 
     // two byte big-endian address, read/write byte buffer
-    bool read16be (uint16_t r, void* p, uint8_t n) const {
+    bool read16be (uint16_t r, uint8_t* p, uint8_t n) const {
         r = (r<<8) | (r>>8); // send big-endian
-        return transfer(bus.R1, &r, 2)
+        return transfer(bus.R1, (uint8_t*) &r, 2)
             && transfer(bus.R2, p, n);
     }
-    bool write16be (uint16_t r, void const* p, uint8_t n) const {
+    bool write16be (uint16_t r, uint8_t const* p, uint8_t n) const {
         r = (r<<8) | (r>>8); // send big-endian
-        return transfer(bus.W1, &r, 2)
-            && transfer(bus.W2, (void*) p, n);
+        return transfer(bus.W1, (uint8_t*) &r, 2)
+            && transfer(bus.W2, (uint8_t*) p, n);
     }
 };
 
@@ -116,21 +117,20 @@ struct Gpio {
 
     enum { R1, R2, W1, W2 };
 
-    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         bool ack = true;
 
         if (m == R1 || m == W1)
             ack = start(2*a);
 
         if (ack) {
-            auto q = (uint8_t*) p;
             if (m != R2) {
                 for (auto i = 0; ack && i < n; ++i)
-                    ack = wrByte(*q++);
+                    ack = wrByte(*p++);
             } else {
                 ack = start(2*a + 1);
                 for (auto i = 0; i < n; ++i)
-                    *q++ = rdByte(i == n-1);
+                    *p++ = rdByte(i == n-1);
             }
         }
 
@@ -260,7 +260,7 @@ struct Poll {
     enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
 #if STM32F4
-    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         auto waitFor = [](uint8_t bit) {
             while (!I2C[SR1](bit))
                 if (I2C[SR1] & 0x4D00) { // TIMEOUT OVR AF BERR
@@ -270,7 +270,6 @@ struct Poll {
             return true;
         };
 
-        auto q = (uint8_t*) p;
         if (m != W2) {
             I2C[CR1](10) = 1; // ACK
             I2C[CR1](8) = 1; // START
@@ -289,7 +288,7 @@ struct Poll {
                     do {
                         if (!waitFor(7)) // TXE
                             return false;
-                        I2C[DR] = *q++;
+                        I2C[DR] = *p++;
                     } while (--n > 0);
                     if (!waitFor(2)) // BTF
                         return false;
@@ -307,7 +306,7 @@ struct Poll {
                         I2C[CR1](9) = 1; // STOP
                     }
                     while (!I2C[SR1](6)) {} // ~RXNE
-                    *q++ = I2C[DR];
+                    *p++ = I2C[DR];
                 } while (--n > 0);
                 break;
             default:
@@ -318,15 +317,14 @@ struct Poll {
         return true;
     }
 #else
-    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         startReq(a, m, n);
 
-        auto q = (uint8_t*) p;
         while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
             if (I2C[ISR](2)) // RXNE
-                *q++ = I2C[RXDR];
+                *p++ = I2C[RXDR];
             else if (I2C[ISR](1)) // TXIS
-                I2C[TXDR] = *q++;
+                I2C[TXDR] = *p++;
 
         auto ok = !I2C[ISR](12) && !I2C[ISR](4); // ~TIMEOUT ~NACKF
         I2C[ICR] = I2C[ISR];
@@ -414,7 +412,7 @@ struct Sync : Poll<A> {
     // void deinit () // RCC(ena::DMA1+cfg.dma.idx,1) = 0; // may be shared
 
     // sync version, dma with wfe
-    bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         assert(n > 0);
         startReq(a, m, p, n);
         while (true) {

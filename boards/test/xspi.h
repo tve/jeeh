@@ -9,7 +9,7 @@ struct Gpio {
         Pin::config(desc, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
         sclk = cpol;
-        ioReq(MODE_STOP); // start with nsel high
+        ioReq(IO_STOP); // start with nsel high
         rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }
 
@@ -20,19 +20,19 @@ struct Gpio {
     int ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
         uint8_t r = 0;
         checkStart(m);
-        if (m & MODE_WRITE)
+        if (m & IO_WRITE)
             for (auto i = 0U; i < n; ++i)
                 r = rwByte(*p++); // return last byte from reply
         else
             for (auto i = 0U; i < n; ++i)
                 *p++ = rwByte(0);
         checkStop(m);
-        return m & MODE_LAST ? r : n;
+        return m & IO_LAST ? r : n;
     }
 
 protected:
     void checkStart (uint32_t m) const {
-        if ((m & MODE_START) && nsel.isValid()) {
+        if ((m & IO_START) && nsel.isValid()) {
             hold();
             nsel = 0;
             hold();
@@ -40,7 +40,7 @@ protected:
     }
 
     void checkStop (uint32_t m) const {
-        if ((m & MODE_STOP) && nsel.isValid()) {
+        if ((m & IO_STOP) && nsel.isValid()) {
             hold();
             nsel = 1;
             hold();
@@ -86,7 +86,7 @@ struct Poll : Gpio {
 
     void init (char const* defs, int khz =10'000) {
         Pin::config(defs, &mosi, 4);
-        ioReq(MODE_STOP); // start with nsel high
+        ioReq(IO_STOP); // start with nsel high
 
         int clk = SystemCoreClock / 1'000;
         while (clk > 1000 * cfg.mhz)
@@ -115,7 +115,7 @@ struct Poll : Gpio {
         uint8_t r = 0;
         checkStart(m);
         if (n > 0) {
-            if (m & MODE_WRITE) {
+            if (m & IO_WRITE) {
                 SPI.byte(DR) = *p++;
                 while (--n != 0) {
                     while (!SPI[SR](1)) {} // ~TXE
@@ -138,7 +138,7 @@ struct Poll : Gpio {
             }
         }
         checkStop(m);
-        return m & MODE_LAST ? r : n;
+        return m & IO_LAST ? r : n;
     }
 };
 
@@ -175,7 +175,6 @@ struct Sync : Poll<A> {
         BASE::checkStart(m);
         if (n > 0) {
             startReq(m & 1, p, n);
-//if (!(m & MODE_WRITE)) logf("11");
             while (true) {
                 if (cfg.dma.completed() == 0)
                     asm ("wfe");
@@ -188,7 +187,7 @@ struct Sync : Poll<A> {
             r = finishReq(m & 1, p, n);
         }
         BASE::checkStop(m);
-        return m & MODE_LAST ? r : n;
+        return m & IO_LAST ? r : n;
     }
 
 protected:

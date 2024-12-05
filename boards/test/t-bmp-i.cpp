@@ -14,7 +14,7 @@ void testBmpI () {
         bmp390.write(config[i], config[i+1]);
 
     TrimCoeffs tc;
-    bmp390.read(0x31, &tc, sizeof tc); // TRIM_PARAMS
+    bmp390.read(0x31, (uint8_t*) &tc, sizeof tc); // TRIM_PARAMS
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {

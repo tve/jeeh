@@ -22,24 +22,24 @@ Pin& lcdCmd = lcd.miso; // re-used as C/D output pin
 namespace {
 
 void out8 (uint8_t v) {
-    lcd.ioReq("W"_IO, &v, 1);
+    lcd.ioReq(IO_WRITE, &v, 1);
 }
 
 void out16 (uint16_t v) {
     uint8_t hdr [] = { (uint8_t) (v>>8), (uint8_t) v };
-    lcd.ioReq("W"_IO, hdr, sizeof hdr);
+    lcd.ioReq(IO_WRITE, hdr, sizeof hdr);
 }
 
 // returns with cs low
 void cmd (uint8_t v) {
     lcdCmd = 0;
-    lcd.ioReq(MODE_START);
+    lcd.ioReq(IO_START);
     out8(v);
     lcdCmd = 1;
 }
 
 void cmdEnd () {
-    lcd.ioReq(MODE_STOP);
+    lcd.ioReq(IO_STOP);
 }
 
 void init () {
