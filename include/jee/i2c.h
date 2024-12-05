@@ -311,8 +311,6 @@ struct Poll {
 
 protected:
     void startReq (uint8_t a, uint8_t m, uint8_t n) const {
-        if (n == 0)
-            m |= AE;
         I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
                  | (((m&RL) != 0) << 24) // RELOAD
                  |             (n << 16) // NBYTES
@@ -391,7 +389,6 @@ struct Sync : Poll<A> {
 
     // sync version, dma with wfe
     bool transfer (uint8_t a, uint8_t m, void* p, uint8_t n) const {
-        assert(n > 0);
         startReq(a, m, p, n);
         while (true) {
 cycles::usBusy(15);
