@@ -2,19 +2,6 @@
 
 auto& sram = spiBus;
 
-#if 0
-void rdMem (uint16_t addr, void* buf, uint16_t len) {
-    uint8_t hdr [] = { 0x03, (uint8_t) (addr>>8), (uint8_t) addr };
-    sram.ioRequest(IO_START|IO_WRITE, hdr, sizeof hdr);
-    sram.ioRequest(IO_READ|IO_STOP, (uint8_t*) buf, len);
-}
-
-void wrMem (uint16_t addr, void const* buf, uint16_t len) {
-    uint8_t hdr [] = { 0x02, (uint8_t) (addr>>8), (uint8_t) addr };
-    sram.ioRequest(IO_START|IO_WRITE, hdr, sizeof hdr);
-    sram.ioRequest(IO_WRITE|IO_STOP, (uint8_t*) buf, len);
-}
-#else
 void rdMem (uint16_t addr, void* buf, uint16_t len) {
     uint8_t hdr [] = { 0x03, (uint8_t) (addr>>8), (uint8_t) addr };
     IoReq const req [] = {
@@ -32,7 +19,6 @@ void wrMem (uint16_t addr, void const* buf, uint16_t len) {
     };
     sram.ioRequest(req);
 }
-#endif
 
 void testSram () {
     spiSelect(sram, sramSel);

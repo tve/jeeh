@@ -21,10 +21,6 @@ Pin& lcdCmd = lcd.miso; // re-used as C/D output pin
 
 namespace {
 
-void out8 (uint8_t v) {
-    lcd.ioRequest(IO_WRITE, &v, 1);
-}
-
 void out16 (uint16_t v) {
     uint8_t hdr [] = { (uint8_t) (v>>8), (uint8_t) v };
     lcd.ioRequest(IO_WRITE, hdr, sizeof hdr);
@@ -33,8 +29,7 @@ void out16 (uint16_t v) {
 // returns with cs low
 void cmd (uint8_t v) {
     lcdCmd = 0;
-    lcd.ioRequest(IO_START);
-    out8(v);
+    lcd.ioRequest(IO_START|IO_WRITE, &v, 1);
     lcdCmd = 1;
 }
 
@@ -73,9 +68,9 @@ void init () {
             cycles::msBusy(*++p);
         else {
             cmd(*p);
-            int n = *++p;
-            while (--n >= 0)
-                out8(*++p);
+            auto n = *++p;
+            lcd.ioRequest(IO_WRITE, (uint8_t*) p+1, n);
+            p += n;
         }
     }
     cmdEnd();
@@ -94,17 +89,20 @@ void bounds (int xend =width-1, int yend =height-1) {
 }
 
 // returns with cs low
-void setPos (int x, int y) {
+void setArea (int x1, int y1, int x2, int y2) {
     cmd(0x2A);
-    out16(x);
-    out16(xLimit);
-
+    uint8_t xhdr [] = { (uint8_t) (x1>>8), (uint8_t) x1,
+                        (uint8_t) (x2>>8), (uint8_t) x2 };
+    lcd.ioRequest(IO_WRITE, xhdr, sizeof xhdr);
     cmd(0x2B);
-    out16(y);
-    out16(yLimit);
-
-    cmdEnd();
+    uint8_t yhdr [] = { (uint8_t) (y1>>8), (uint8_t) y1,
+                        (uint8_t) (y2>>8), (uint8_t) y2 };
+    lcd.ioRequest(IO_WRITE, yhdr, sizeof yhdr);
     cmd(0x2C);
+}
+
+void setPos (int x, int y) {
+    setArea(x, y, xLimit, yLimit);
 }
 
 void pixel (int x, int y, uint16_t rgb) {
@@ -132,8 +130,7 @@ void orientation (uint8_t rot) {
 
     constexpr uint8_t mac [] = { 0x28, 0x98, 0xF8, 0x48 };
     cmd(0x36);
-    out8(mac[rot]);
-    cmdEnd();
+    lcd.ioRequest(IO_WRITE|IO_STOP, (uint8_t*) &mac[rot], 1);
 }
 
 struct Tft {
@@ -141,15 +138,11 @@ struct Tft {
     constexpr static auto depth = 16; // colour depth (RGB565)
 
     static void pos (Point p) {
-        cmd(0x2A); out16(p.x); out16(width-1);
-        cmd(0x2B); out16(p.y); out16(height-1);
-        cmd(0x2C);
+        setArea(p.x, p.y, width-1, height-1);
     }
 
     static void lim (Rect const& r) {
-        cmd(0x2A); out16(r.x); out16(r.x+r.w-1);
-        cmd(0x2B); out16(r.y); out16(r.y+r.h-1);
-        cmd(0x2C);
+        setArea(r.x, r.y, r.x+r.w-1, r.y+r.h-1);
     }
 
     static void set (unsigned c)  { out16(c); }

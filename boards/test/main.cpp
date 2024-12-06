@@ -7,26 +7,31 @@
 using namespace jeeh;
 #include "defs.h"
 
+constexpr spi::Config spiCfg {
+    SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ,
+    Irq::DMA1_CH3, Irq::DMA1_CH4, DMA1.ADDR, 1-1, 11, 10,
+};
+
 #if MODE_GPIO
 
 i2c::Gpio i2cBus;
-spi::Gpio spiBus;
+Dev<spi::Gpio<spiCfg>> spiBus;
 
 #elif MODE_POLL
 
 i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
-spi::Poll<SPI_NAME.ADDR> spiBus (ena::SPI_NAME, SPI_FREQ);
+Dev<spi::Poll<spiCfg>> spiBus;
 
 #elif MODE_SYNC
 
 i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
-spi::Sync<SPI_TYPE> spiBus (SPI_CONF);
+Dev<spi::Sync<spiCfg>> spiBus;
 
 #elif MODE_ASYNC
 
 i2c::Async<I2C_TYPE> i2cBus (I2C_CONF);
 I2C_TRIGGER(i2cBus)
-spi::Async<SPI_TYPE> spiBus (SPI_CONF);
+Dev<spi::Async<spiCfg>> spiBus;
 SPI_TRIGGER(spiBus)
 
 #endif
@@ -62,7 +67,7 @@ int main () {
 
 #if 1
     spiBus.init(SPI_PINS);
-    //header("SPI - BMP390"); testBmpS();
+    header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
     header("SPI - SRAM");   testSram();
     //header("SPI - SDCARD"); testSdSpi();

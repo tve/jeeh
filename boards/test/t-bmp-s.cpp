@@ -15,14 +15,20 @@ void testBmpS () {
     bmp390.ioRequest(IO_START|IO_WRITE|IO_STOP, config, sizeof config);
 
     TrimCoeffs tc;
-    bmp390.ioRequest(IO_START|IO_WRITE, (uint8_t*) "\xB1.", 2);
-    bmp390.ioRequest(IO_READ|IO_STOP, (uint8_t*) &tc, sizeof tc);
+    IoReq const req [] = {
+        { IO_START|IO_WRITE, 2, (uint8_t*) "\xB1." },
+        { IO_READ|IO_STOP, sizeof tc, (uint8_t*) &tc },
+    };
+    bmp390.ioRequest(req);
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {
         uint8_t buf [6];
-        bmp390.ioRequest(IO_START|IO_WRITE, (uint8_t*) "\x84.", 2);
-        bmp390.ioRequest(IO_READ|IO_STOP, buf, sizeof buf);
+        IoReq const req [] = {
+            { IO_START|IO_WRITE, 2, (uint8_t*) "\xB4." },
+            { IO_READ|IO_STOP, sizeof buf, buf },
+        };
+        bmp390.ioRequest(req);
 
         showReading(buf); // in fcalc.h
     }

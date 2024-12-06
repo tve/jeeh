@@ -21,6 +21,8 @@ namespace spi {
     };
 
     struct Gpio {
+        using Config = spi::Config;
+
         Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
         uint16_t rate =0;
         uint8_t cpol =0;
@@ -75,12 +77,12 @@ namespace spi {
 
 } // namespace spi
 
-template< typename D, typename T, T const& CFG >
+template< typename D, typename D::Config const& C >
 struct Dev {
-    static constexpr IoReg<CFG.base> DEV {};
-    DmaConfig<CFG.dmaAddr,CFG.dmaTx,CFG.dmaRx> dma;
+    static constexpr IoReg<C.base> DEV {};
+    DmaConfig<C.dmaAddr,C.dmaTx,C.dmaRx> dma;
 
-    using Addr = typename T::Addr;
+    using Addr = typename D::Config::Addr;
     Addr sub;
 
     Dev (Addr s) : sub (s) {
@@ -92,10 +94,10 @@ struct Dev {
 };
 
 constexpr auto spiConf = spi::Config{ SPI1.ADDR };
-Dev<spi::Gpio,spi::Config,spiConf> sram (Pin {"A4"});
+Dev<spi::Gpio,spiConf> sram (Pin {"A4"});
 
 void run () {
-    logf("spi %08x", sram.DEV.ADDR);
+    logf("spi %08x", sram.sub);
     sram.read(234);
 }
 
