@@ -8,8 +8,9 @@ using namespace jeeh;
 #include "defs.h"
 
 constexpr spi::Config spiCfg {
-    SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ,
-    Irq::DMA1_CH3, Irq::DMA1_CH4, DMA1.ADDR, 1-1, 11, 10,
+    SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
+    DMA1.ADDR, 1-1, 11, 10,                 // sync
+    Irq::DMA1_CH3, Irq::DMA1_CH4,           // async
 };
 
 #if MODE_GPIO

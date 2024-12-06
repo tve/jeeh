@@ -9,11 +9,11 @@ struct Dev : T {
     }
 
     int ioRequest (IoReq const* v, uint32_t n) const {
-        return ((T*) this)->ioRequest(v, n);
+        return T::ioRequest(v, n);
     }
 
     int ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
-        return ((T*) this)->ioRequest(m, p, n);
+        return T::ioRequest(m, p, n);
     }
 
     // simple reads and writes
@@ -87,9 +87,9 @@ struct Config {
     uint32_t base =0;
     uint16_t ena =0;
     uint8_t mhz =0;
-    Irq txIrq ={}, rxIrq ={};
     uint32_t dmaAddr =0;
     uint8_t dmaIdx =0, dmaTx =0, dmaRx =0;
+    Irq txIrq ={}, rxIrq ={};
 };
 
 template< Config const& C >
