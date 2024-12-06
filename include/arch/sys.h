@@ -67,25 +67,26 @@ struct IoReq {
 
 template< typename T >
 struct Dev : T {
+    using IoSize = typename T::IoSize;
 
     template< uint32_t N >
     int ioRequest (IoReq const (&v) [N]) const {
         return ioRequest(v, N);
     }
 
-    int ioRequest (IoReq const* v, uint32_t n) const {
+    int ioRequest (IoReq const* v, IoSize n) const {
         return T::ioRequest(v, n);
     }
 
-    int ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+    int ioRequest (uint32_t m, uint8_t* p =nullptr, IoSize n =0) const {
         return T::ioRequest(m, p, n);
     }
 
     // simple reads and writes
-    int read (void* p, uint16_t n) const {
+    int read (void* p, IoSize n) const {
         return ioRequest(IO_START|IO_READ|IO_STOP, (uint8_t*) p, n);
     }
-    int write (void const* p, uint16_t n) const {
+    int write (void const* p, IoSize n) const {
         return ioRequest(IO_START|IO_WRITE|IO_STOP, (uint8_t*) p, n);
     }
 
@@ -99,15 +100,15 @@ struct Dev : T {
     }
 
     // one byte address, read/write byte buffer
-    int readRegs (uint8_t r, void* p, uint8_t n) const {
-        IoReq const req [] = {
+    int readRegs (uint8_t r, void* p, IoSize n) const {
+        IoReq req [] = {
             { IO_START|IO_WRITE, 1, &r },
             { IO_READ|IO_STOP, n, (uint8_t*) p },
         };
         return ioRequest(req);
     }
-    int writeRegs (uint8_t r, void const* p, uint8_t n) const {
-        IoReq const req [] = {
+    int writeRegs (uint8_t r, void const* p, IoSize n) const {
+        IoReq req [] = {
             { IO_START|IO_WRITE|IO_MORE, 1, &r },
             { IO_WRITE|IO_STOP, n, (uint8_t*) p },
         };
@@ -125,17 +126,17 @@ struct Dev : T {
     }
 
     // two byte big-endian address, read/write byte buffer
-    int readRegs16 (uint16_t r, void* p, uint8_t n) const {
+    int readRegs16 (uint16_t r, void* p, IoSize n) const {
         r = __builtin_bswap16(r); // send big-endian
-        IoReq const req [] = {
+        IoReq req [] = {
             { IO_START|IO_WRITE, 2, &r },
             { IO_READ|IO_STOP, n, (uint8_t*) p },
         };
         return ioRequest(req);
     }
-    int writeRegs16 (uint16_t r, void const* p, uint8_t n) const {
+    int writeRegs16 (uint16_t r, void const* p, IoSize n) const {
         r = __builtin_bswap16(r); // send big-endian
-        IoReq const req [] = {
+        IoReq req [] = {
             { IO_START|IO_WRITE|IO_MORE, 2, &r },
             { IO_WRITE|IO_STOP, n, (uint8_t*) p },
         };

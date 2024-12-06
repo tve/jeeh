@@ -1,7 +1,6 @@
 namespace jeeh::spi {
 
 struct Config {
-    using Addr = Pin;
     char const* pins;           // gpio
     uint32_t base =0;           // poll
     uint16_t ena =0;
@@ -13,6 +12,8 @@ struct Config {
 
 template< Config const& C >
 struct Gpio {
+    using IoSize = uint16_t;
+
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;
@@ -20,16 +21,21 @@ struct Gpio {
     void init (int khz =10'000) {
         Pin::config(C.pins, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
+        rate = khz < 100 ? khz : SystemCoreClock/khz/200'000; // TODO
         sclk = cpol;
-        ioRequest(IO_STOP, nullptr, 0); // start with nsel high
-        rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }
 
     void deinit () {
         Pin::config(":F,,,:U", &mosi, 4);
     }
 
-    int ioRequest (IoReq const* v, uint32_t n) const {
+    void select (Pin sel) {
+        nsel = sel;
+        nsel = 1; // start with nsel high
+        nsel.mode("HP");
+    }
+
+    int ioRequest (IoReq const* v, IoSize n) const {
         int r = 0;
         for (auto i = 0U; i < n; ++i) {
             auto& t = v[i];
@@ -40,7 +46,7 @@ struct Gpio {
         return r;
     }
 
-    int ioRequest (uint32_t m, uint8_t* p, uint16_t n) const {
+    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
         uint8_t r = 0;
         checkStart(m);
         if (m & IO_WRITE)
@@ -101,7 +107,6 @@ struct Poll : Gpio<C> {
 
     void init (int khz =10'000) {
         Pin::config(C.pins, &(BASE::mosi), 4);
-        ioRequest(IO_STOP, nullptr, 0); // start with nsel high
 
         int clk = SystemCoreClock / 1'000;
         while (clk > 1000 * C.mhz)

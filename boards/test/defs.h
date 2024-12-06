@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "gpio"
+#define PIOENV  "async"
 
 //CG1 board leds
 #define LED  "B8"
@@ -9,7 +9,7 @@
 const Pin led (LED,"P");
 
 //CG1 board mode
-#define MODE_GPIO 1
+#define MODE_ASYNC 1
 
 //CG[ board pins
 #define PINS_VCC "B6"
@@ -44,7 +44,7 @@ UART_TRIGGER(console)
 
 //CG[ board spi
 #define SPI_NAME  SPI1
-#define SPI_PINS  "B5:H5,B4,B3,A11:HP"
+#define SPI_PINS  "B5:H5,B4,B3"
 #define SPI_FREQ  170
 #define SPI_TYPE  SPI1.ADDR, DMA1.ADDR, 3-1, 4-1
 #define SPI_CONF  { ena::SPI1, 170, \
@@ -54,14 +54,6 @@ UART_TRIGGER(console)
     void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
 }
 //CG]
-
-template< typename T >
-void spiSelect (T& spi, Pin nsel) {
-    // switch from BMP390 to SRAM pin select
-    nsel = 1;
-    nsel.mode("HP");
-    spi.nsel = nsel;
-}
 
 //CG[ board i2c
 #define I2C_NAME  I2C1

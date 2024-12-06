@@ -152,7 +152,7 @@ struct Tft {
 TwoDee<Tft> gfx;
 
 void testLcd () {
-    spiSelect(lcd, lcdSel);
+    lcd.select(lcdSel);
 
     lcdCmd.mode("P"); // MISO is reused as C/D output pin
     lcdCmd = 1;

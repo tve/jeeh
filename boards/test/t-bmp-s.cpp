@@ -5,7 +5,7 @@
 auto& bmp390 = spiBus;
 
 void testBmpS () {
-    spiSelect(spiBus, bmpSel);
+    bmp390.select(bmpSel);
 
     bmpVcc = 0;
     cycles::msBusy(5);
@@ -15,7 +15,7 @@ void testBmpS () {
     bmp390.ioRequest(IO_START|IO_WRITE|IO_STOP, config, sizeof config);
 
     TrimCoeffs tc;
-    IoReq const req [] = {
+    IoReq req [] = {
         { IO_START|IO_WRITE, 2, (uint8_t*) "\xB1." },
         { IO_READ|IO_STOP, sizeof tc, (uint8_t*) &tc },
     };
@@ -24,7 +24,7 @@ void testBmpS () {
 
     for (auto i = 0; i < 3; ++i) {
         uint8_t buf [6];
-        IoReq const req [] = {
+        IoReq req [] = {
             { IO_START|IO_WRITE, 2, (uint8_t*) "\xB4." },
             { IO_READ|IO_STOP, sizeof buf, buf },
         };

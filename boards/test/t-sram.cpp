@@ -4,7 +4,7 @@ auto& sram = spiBus;
 
 void rdMem (uint16_t addr, void* buf, uint16_t len) {
     uint8_t hdr [] = { 0x03, (uint8_t) (addr>>8), (uint8_t) addr };
-    IoReq const req [] = {
+    IoReq req [] = {
         { IO_START|IO_WRITE, sizeof hdr, hdr },
         { IO_READ|IO_STOP, len, (uint8_t*) buf },
     };
@@ -13,7 +13,7 @@ void rdMem (uint16_t addr, void* buf, uint16_t len) {
 
 void wrMem (uint16_t addr, void const* buf, uint16_t len) {
     uint8_t hdr [] = { 0x02, (uint8_t) (addr>>8), (uint8_t) addr };
-     IoReq const req [] = {
+     IoReq req [] = {
         { IO_START|IO_WRITE, sizeof hdr, hdr },
         { IO_WRITE|IO_STOP, len, (uint8_t*) buf },
     };
@@ -21,7 +21,7 @@ void wrMem (uint16_t addr, void const* buf, uint16_t len) {
 }
 
 void testSram () {
-    spiSelect(sram, sramSel);
+    sram.select(sramSel);
     cycles::msBusy(10);
 
     uint8_t hdr [] = { 0x01, 0x40 }; // write status, sequential mode
