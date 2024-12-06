@@ -1,13 +1,14 @@
 namespace jeeh::spi {
 
 struct Config {
-    using Addr = Pin; // poll
-    uint32_t base =0;
+    using Addr = Pin;
+    char const* pins;           // gpio
+    uint32_t base =0;           // poll
     uint16_t ena =0;
     uint8_t mhz =0;
-    uint32_t dmaAddr =0; // sync
+    uint32_t dmaBase =0;        // sync
     uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
-    Irq txIrq ={}, rxIrq ={}; // async
+    Irq txIrq ={}, rxIrq ={};   // async
 };
 
 template< Config const& C >
@@ -16,8 +17,8 @@ struct Gpio {
     uint16_t rate =0;
     uint8_t cpol =0;
 
-    void init (char const* desc, int khz =10'000) {
-        Pin::config(desc, &mosi, 4);
+    void init (int khz =10'000) {
+        Pin::config(C.pins, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
         sclk = cpol;
         ioRequest(IO_STOP, nullptr, 0); // start with nsel high
@@ -98,8 +99,8 @@ struct Poll : Gpio<C> {
 
     Poll () {}
 
-    void init (char const* defs, int khz =10'000) {
-        Pin::config(defs, &(BASE::mosi), 4);
+    void init (int khz =10'000) {
+        Pin::config(C.pins, &(BASE::mosi), 4);
         ioRequest(IO_STOP, nullptr, 0); // start with nsel high
 
         int clk = SystemCoreClock / 1'000;
@@ -174,8 +175,8 @@ struct Sync : Poll<C> {
 
     static constexpr dma::DmaConfig<Config,C> dma {};
 
-    void init (char const* defs, int khz =10'000) {
-        BASE::init(defs, khz);
+    void init (int khz =10'000) {
+        BASE::init(khz);
         SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
         dma.init(C.base + BASE::DR, C.base + BASE::DR);
         SCB[0x10](4) = 1; // SEVONPEND
@@ -271,8 +272,8 @@ struct Async : Sync<C>, Task {
 
     Event pending;
 
-    uint8_t init (char const* defs, int khz =10'000) {
-        BASE::init(defs, khz);
+    uint8_t init (int khz =10'000) {
+        BASE::init(khz);
         irqEnable(C.txIrq);
         irqEnable(C.rxIrq);
         return Task::init();

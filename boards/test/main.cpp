@@ -9,6 +9,7 @@ using namespace jeeh;
 #include "defs.h"
 
 constexpr spi::Config spiCfg {
+    SPI_PINS,                               // gpio
     SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
     DMA1.ADDR, 1-1, 3-1, 4-1, 11, 10,       // sync
     Irq::DMA1_CH3, Irq::DMA1_CH4,           // async
@@ -68,7 +69,7 @@ int main () {
 #endif
 
 #if 1
-    spiBus.init(SPI_PINS);
+    spiBus.init();
     //header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
     header("SPI - SRAM");   testSram();

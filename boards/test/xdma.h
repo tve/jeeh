@@ -13,9 +13,9 @@ struct DmaConfig {
 #endif
     enum { NONE, RXHALF, RXFULL, TXDONE };
 
-    static constexpr IoReg<C.dmaAddr>             DMA {};
-    static constexpr IoReg<C.dmaAddr+CHAN_STEP*C.dmaTs> DTX {}; // DMA channel TX
-    static constexpr IoReg<C.dmaAddr+CHAN_STEP*C.dmaRs> DRX {}; // DMA channel RX
+    static constexpr IoReg<C.dmaBase>                   DMA {};
+    static constexpr IoReg<C.dmaBase+CHAN_STEP*C.dmaTs> DTX {}; // DMA stream TX
+    static constexpr IoReg<C.dmaBase+CHAN_STEP*C.dmaRs> DRX {}; // DMA stream RX
 
     void init (uint32_t txAddr, uint32_t rxAddr) const {
         RCC(ena::DMA1+C.dmaIdx,1) = 1;
