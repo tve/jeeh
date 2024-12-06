@@ -77,7 +77,7 @@ struct Pin {
 
     template< uint32_t N >
     inline static char const* config (char const* d, Pin p [N]) {
-        return config(nullptr, p, N);
+        return config(d, p, N);
     }
 
     int mode (char const* desc) const {

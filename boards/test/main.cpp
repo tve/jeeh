@@ -49,20 +49,20 @@ void header (char const* text) {
 int main () {
     initBoard();
 
-#if 1
+#if 0
     i2cBus.init(I2C_PINS);
     header("I2C - SCAN");   testScan();
     header("I2C - OLED");   testOled();
     header("I2C - FRAM");   testFram();
-    header("I2C - IMU");    testImu();
+    //header("I2C - IMU");    testImu();
     header("I2C - SHT21");  testSht21();
-    header("I2C - BMP390"); testBmpI();
+    //header("I2C - BMP390"); testBmpI();
     i2cBus.deinit();
 #endif
 
 #if 1
     spiBus.init(SPI_PINS);
-    header("SPI - BMP390"); testBmpS();
+    //header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
     header("SPI - SRAM");   testSram();
     //header("SPI - SDCARD"); testSdSpi();

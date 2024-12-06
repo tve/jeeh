@@ -12,17 +12,17 @@ void testBmpS () {
     bmpVcc = 1;
     cycles::msBusy(5);
 
-    bmp390.ioReq(IO_START|IO_WRITE|IO_STOP, config, sizeof config);
+    bmp390.ioRequest(IO_START|IO_WRITE|IO_STOP, config, sizeof config);
 
     TrimCoeffs tc;
-    bmp390.ioReq(IO_START|IO_WRITE, (uint8_t*) "\xB1.", 2);
-    bmp390.ioReq(IO_READ|IO_STOP, (uint8_t*) &tc, sizeof tc);
+    bmp390.ioRequest(IO_START|IO_WRITE, (uint8_t*) "\xB1.", 2);
+    bmp390.ioRequest(IO_READ|IO_STOP, (uint8_t*) &tc, sizeof tc);
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {
         uint8_t buf [6];
-        bmp390.ioReq(IO_START|IO_WRITE, (uint8_t*) "\x84.", 2);
-        bmp390.ioReq(IO_READ|IO_STOP, buf, sizeof buf);
+        bmp390.ioRequest(IO_START|IO_WRITE, (uint8_t*) "\x84.", 2);
+        bmp390.ioRequest(IO_READ|IO_STOP, buf, sizeof buf);
 
         showReading(buf); // in fcalc.h
     }

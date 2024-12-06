@@ -9,7 +9,7 @@ struct Gpio {
         Pin::config(desc, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
         sclk = cpol;
-        ioReq(IO_STOP); // start with nsel high
+        ioRequest(IO_STOP); // start with nsel high
         rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }
 
@@ -17,7 +17,23 @@ struct Gpio {
         Pin::config(":F,,,:U", &mosi, 4);
     }
 
-    int ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+    template< uint32_t N >
+    int ioRequest (IoReq const (&v) [N]) const {
+        return ioRequest(v, N);
+    }
+
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
+    }
+
+    int ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
         uint8_t r = 0;
         checkStart(m);
         if (m & IO_WRITE)
@@ -86,7 +102,7 @@ struct Poll : Gpio {
 
     void init (char const* defs, int khz =10'000) {
         Pin::config(defs, &mosi, 4);
-        ioReq(IO_STOP); // start with nsel high
+        ioRequest(IO_STOP); // start with nsel high
 
         int clk = SystemCoreClock / 1'000;
         while (clk > 1000 * cfg.mhz)
@@ -111,7 +127,7 @@ struct Poll : Gpio {
         BASE::deinit();
     }
 
-    int ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+    int ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
         uint8_t r = 0;
         checkStart(m);
         if (n > 0) {
@@ -170,7 +186,7 @@ struct Sync : Poll<A> {
         BASE::deinit();
     }
 
-    uint32_t ioReq (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+    uint32_t ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
         uint8_t r = 0;
         BASE::checkStart(m);
         if (n > 0) {

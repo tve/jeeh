@@ -9,21 +9,6 @@ using namespace jeeh;
 
 namespace ndev { //-------------------------------------------------------------
 
-namespace i2c {
-    struct Config {
-        using Addr = uint8_t;
-        uint32_t base =0;
-        uint16_t ena =0;
-        uint8_t mhz =0;
-        Irq evIrq ={}, erIrq ={}, txIrq ={}, rxIrq ={};
-        uint32_t dmaAddr =0;
-        uint8_t dmaTx =0, dmaRx =0;
-    };
-
-    using Gpio = ::jeeh::i2c::Gpio;
-
-} // namespace i2c
-
 namespace spi {
     struct Config {
         using Addr = Pin;
@@ -106,16 +91,11 @@ struct Dev {
     }
 };
 
-constexpr auto i2cConf = i2c::Config{ I2C1.ADDR };
-Dev<i2c::Gpio,i2c::Config,i2cConf> fram (0x50);
-
 constexpr auto spiConf = spi::Config{ SPI1.ADDR };
 Dev<spi::Gpio,spi::Config,spiConf> sram (Pin {"A4"});
 
 void run () {
-    logf("i2c %08x", fram.DEV.ADDR);
     logf("spi %08x", sram.DEV.ADDR);
-    fram.read(123);
     sram.read(234);
 }
 
