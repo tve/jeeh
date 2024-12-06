@@ -1,21 +1,3 @@
-namespace jeeh {
-
-enum : uint16_t {
-    IO_WRITE=1<<0, IO_READ=1<<1,
-    IO_START=1<<2, IO_STOP=1<<3,
-    IO_MORE=1<<4, IO_LAST=1<<5
-};
-
-struct IoReq {
-    uint16_t mode;
-    uint16_t len;
-    uint8_t* ptr;
-
-    IoReq (uint32_t m, uint32_t n, uint8_t* p) : mode (m), len (n), ptr (p) {}
-};
-
-} // namespace jeeh
-
 namespace jeeh::i2c {
 
 template< typename I2C >

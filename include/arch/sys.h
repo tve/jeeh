@@ -51,6 +51,98 @@ void duffs (T* dst, T const* src, uint32_t count) {
     }
 }
 
+enum IO : uint16_t {
+    IO_WRITE=1<<0, IO_READ=1<<1,
+    IO_START=1<<2, IO_STOP=1<<3,
+    IO_MORE=1<<4, IO_LAST=1<<5
+};
+
+struct IoReq {
+    uint16_t mode;
+    uint16_t len;
+    uint8_t* ptr;
+
+    IoReq (uint32_t m, uint32_t n, uint8_t* p) : mode (m), len (n), ptr (p) {}
+};
+
+template< typename T >
+struct Dev : T {
+
+    template< uint32_t N >
+    int ioRequest (IoReq const (&v) [N]) const {
+        return ioRequest(v, N);
+    }
+
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        return T::ioRequest(v, n);
+    }
+
+    int ioRequest (uint32_t m, uint8_t* p =nullptr, uint16_t n =0) const {
+        return T::ioRequest(m, p, n);
+    }
+
+    // simple reads and writes
+    int read (void* p, uint16_t n) const {
+        return ioRequest(IO_START|IO_READ|IO_STOP, (uint8_t*) p, n);
+    }
+    int write (void const* p, uint16_t n) const {
+        return ioRequest(IO_START|IO_WRITE|IO_STOP, (uint8_t*) p, n);
+    }
+
+    // one byte address, single-byte data
+    int readReg (uint8_t r) const {
+        uint8_t v = 0;
+        return readRegs(r, &v, 1) >= 0 ? v : -1;
+    }
+    int writeReg (uint8_t r, uint8_t v) const {
+        return writeRegs(r, &v, 1);
+    }
+
+    // one byte address, read/write byte buffer
+    int readRegs (uint8_t r, void* p, uint8_t n) const {
+        IoReq const req [] = {
+            { IO_START|IO_WRITE, 1, &r },
+            { IO_READ|IO_STOP, n, (uint8_t*) p },
+        };
+        return ioRequest(req);
+    }
+    int writeRegs (uint8_t r, void const* p, uint8_t n) const {
+        IoReq const req [] = {
+            { IO_START|IO_WRITE|IO_MORE, 1, &r },
+            { IO_WRITE|IO_STOP, n, (uint8_t*) p },
+        };
+        return ioRequest(req);
+    }
+
+    // two byte address, two-byte data, both big-endian
+    int readReg16 (uint16_t r) const {
+        uint16_t v = 0;
+        return readRegs16(r, &v, 2) >= 0 ? __builtin_bswap16(v) : -1;
+    }
+    int writeReg16 (uint16_t r, uint16_t v) const {
+        v = __builtin_bswap16(v); // send big-endian
+        return writeRegs16(r, &v, 2);
+    }
+
+    // two byte big-endian address, read/write byte buffer
+    int readRegs16 (uint16_t r, void* p, uint8_t n) const {
+        r = __builtin_bswap16(r); // send big-endian
+        IoReq const req [] = {
+            { IO_START|IO_WRITE, 2, &r },
+            { IO_READ|IO_STOP, n, (uint8_t*) p },
+        };
+        return ioRequest(req);
+    }
+    int writeRegs16 (uint16_t r, void const* p, uint8_t n) const {
+        r = __builtin_bswap16(r); // send big-endian
+        IoReq const req [] = {
+            { IO_START|IO_WRITE|IO_MORE, 2, &r },
+            { IO_WRITE|IO_STOP, n, (uint8_t*) p },
+        };
+        return ioRequest(req);
+    }
+};
+
 struct BlockIRQ {
     BlockIRQ () { asm ("mrs %0, primask; cpsid i" : "=r" (mask)); }
     ~BlockIRQ () { asm ("msr primask, %0" :: "r" (mask)); }
