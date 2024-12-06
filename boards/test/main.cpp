@@ -2,6 +2,7 @@
 #include <jee/cycles.h>
 #include <jee/dma.h>
 #include <jee/uart.h>
+#include "xdma.h"
 #include "xi2c.h"
 #include "xspi.h"
 using namespace jeeh;
@@ -9,7 +10,7 @@ using namespace jeeh;
 
 constexpr spi::Config spiCfg {
     SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
-    DMA1.ADDR, 1-1, 11, 10,                 // sync
+    DMA1.ADDR, 1-1, 3-1, 4-1, 11, 10,       // sync
     Irq::DMA1_CH3, Irq::DMA1_CH4,           // async
 };
 
@@ -68,7 +69,7 @@ int main () {
 
 #if 1
     spiBus.init(SPI_PINS);
-    header("SPI - BMP390"); testBmpS();
+    //header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
     header("SPI - SRAM");   testSram();
     //header("SPI - SDCARD"); testSdSpi();

@@ -6,7 +6,7 @@ struct Config {
     uint16_t ena =0;
     uint8_t mhz =0;
     uint32_t dmaAddr =0; // sync
-    uint8_t dmaIdx =0, dmaTx =0, dmaRx =0;
+    uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
     Irq txIrq ={}, rxIrq ={}; // async
 };
 
@@ -172,9 +172,7 @@ struct Sync : Poll<C> {
     using BASE = Poll<C>;
     using BASE::SPI;
 
-    DmaConfig<C.dmaAddr,C.dmaTx,C.dmaRx> dma;
-
-    Sync () : dma { C.dmaIdx, C.dmaTx, C.dmaRx } {}
+    static constexpr dma::DmaConfig<Config,C> dma {};
 
     void init (char const* defs, int khz =10'000) {
         BASE::init(defs, khz);
@@ -221,14 +219,14 @@ struct Sync : Poll<C> {
     }
 
 protected:
-    void startReq (bool w, void* p, uint16_t n) const {
+    void startReq (uint16_t m, void* p, uint16_t n) const {
         assert(n > 0);
 
         assert(!SPI[BASE::SR](7)); // ~BSY
         assert(SPI[BASE::SR](11,2) == 0); // FTLVL
         assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
 
-        if (w)
+        if (m & IO_WRITE)
             dma.txStart(p, n);
         else {
             SPI[BASE::CR1](6) = 0; // ~SPE
@@ -238,8 +236,8 @@ protected:
         }
     }
 
-    uint8_t finishReq (bool w, void* p, uint16_t n) const {
-        if (!w) {
+    uint8_t finishReq (uint16_t m, void* p, uint16_t n) const {
+        if (m & IO_READ) {
             SPI[BASE::CR1](10) = 0; // ~RXONLY
             while (SPI[BASE::SR](7)) {} // BSY
             cache::inval(p, n);
@@ -287,10 +285,10 @@ struct Async : Sync<C>, Task {
     }
 
     // TODO async version
-    void start (uint8_t w, uint8_t* p, uint16_t n, Event out) {
+    void start (uint16_t m, uint8_t* p, uint16_t n, Event out) {
         assert(n > 0);
         pending = out;
-        BASE::startReq(w, p, n);
+        BASE::startReq(m, p, n);
     }
 
     void irqDma () {
