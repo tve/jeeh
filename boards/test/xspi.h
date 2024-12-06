@@ -1,19 +1,17 @@
 namespace jeeh::spi {
 
 struct Config {
-    using Addr = Pin;
+    using Addr = Pin; // poll
     uint32_t base =0;
     uint16_t ena =0;
     uint8_t mhz =0;
-    uint32_t dmaAddr =0;
+    uint32_t dmaAddr =0; // sync
     uint8_t dmaIdx =0, dmaTx =0, dmaRx =0;
-    Irq txIrq ={}, rxIrq ={};
+    Irq txIrq ={}, rxIrq ={}; // async
 };
 
 template< Config const& C >
 struct Gpio {
-    using Config = spi::Config;
-
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;
@@ -91,7 +89,6 @@ private:
     }
 };
 
-// polled H/W version (see spi::Gpio for bit-banged version)
 template< Config const& C >
 struct Poll : Gpio<C> {
     using BASE = Gpio<C>;
@@ -289,7 +286,7 @@ struct Async : Sync<C>, Task {
         BASE::deinit();
     }
 
-    // async version
+    // TODO async version
     void start (uint8_t w, uint8_t* p, uint16_t n, Event out) {
         assert(n > 0);
         pending = out;
