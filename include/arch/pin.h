@@ -106,6 +106,7 @@ struct Pin {
     }
 
     int mode (int m) const {
+        assert(isValid());
 #if STM32F1
         RCC(ena::IOPA+port(),1) = 1;
         RCC(ena::AFIO,1) = 1;

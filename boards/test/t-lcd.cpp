@@ -199,4 +199,6 @@ void testLcd () {
     logf("font3 %6d us (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
 #endif
+
+    lcd.init(); // reinit wirh proper MISO pin mode
 }
