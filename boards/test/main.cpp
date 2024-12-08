@@ -71,7 +71,7 @@ int main () {
 #if 1
     spiBus.init();
     //header("SPI - BMP390"); testBmpS();
-    header("SPI - LCD");    testLcd();
+    //header("SPI - LCD");    testLcd();
     header("SPI - SRAM");   testSram();
     //header("SPI - SDCARD"); testSdSpi();
     spiBus.deinit();

@@ -205,66 +205,54 @@ struct Sync : Poll<C> {
     }
 
     uint32_t ioRequest (uint32_t m, uint8_t* p, uint16_t n) const {
-        uint8_t r = 0;
-        BASE::checkStart(m);
-        if (n > 0) {
-            startReq(m & 1, p, n);
-            while (true) {
-                if (dma.completed() == 0)
-                    asm ("wfe");
-                if (!dma.isRunning())
-                    break;
-            }
-//logf("12");
+        assert(!Task::pendingIrq());
+        if (startReq(m, p, n)) {
+            while (!Task::pendingIrq())
+                asm ("wfe");
+            dma.completed();
+            assert(!dma.isRunning());
             Task::irqClear(C.txIrq);
             Task::irqClear(C.rxIrq);
-            r = finishReq(m & 1, p, n);
         }
-        BASE::checkStop(m);
-        return m & IO_LAST ? r : n;
+        return finishReq(m, p, n);
     }
 
 protected:
-    void startReq (uint16_t m, void* p, uint16_t n) const {
-        assert(n > 0);
-
+    bool startReq (uint16_t m, void* p, uint16_t n) const {
         assert(!SPI[BASE::SR](7)); // ~BSY
         assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
+        assert(SPI[BASE::SR](9,2) == 0); // FRLVL
 
+        BASE::checkStart(m);
+        if (n == 0)
+            return false;
+        // TODO try to get read+write working, replacing same buffer
         if (m & IO_WRITE)
             dma.txStart(p, n);
         else {
-            SPI[BASE::CR1](6) = 0; // ~SPE
-            SPI[BASE::CR1](10) = 1; // RXONLY
             dma.rxStart(p, n);
-            SPI[BASE::CR1](6) = 1; // SPE needed to reaffirm?
+            SPI[BASE::CR1](10) = 1; // RXONLY
+            SPI[BASE::CR1](6) = 1; // SPE
         }
+        return true;
     }
 
     uint8_t finishReq (uint16_t m, void* p, uint16_t n) const {
-        if (m & IO_READ) {
-            SPI[BASE::CR1](10) = 0; // ~RXONLY
+        uint8_t r = 0;
+        if (n > 0) {
+            if (m & IO_READ) {
+                cache::inval(p, n);
+                SPI[BASE::CR1](10) = 0; // ~RXONLY
+            }
+
+            while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
             while (SPI[BASE::SR](7)) {} // BSY
-            cache::inval(p, n);
+
+            while (SPI[BASE::SR](9,2) != 0) // FRLVL
+                r = +SPI.byte(BASE::DR);
         }
-
-        while (SPI[BASE::SR](7)) {} // BSY
-        //while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
-        //while (SPI[BASE::SR](7)) {} // BSY
-
-        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        //assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
-
-        uint8_t r;
-        do
-            r = SPI.byte(BASE::DR);
-        while (SPI[BASE::SR](9,2) > 0); // FRLVL
-
-        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
-
-        return r;
+        BASE::checkStop(m);
+        return m & IO_LAST ? r : n;
     }
 };
 

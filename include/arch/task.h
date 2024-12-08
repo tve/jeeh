@@ -177,6 +177,10 @@ struct Task {
     static void showHistory () {}
 #endif // HIST_BASE
 
+    static bool pendingIrq () {
+        return SCB[0x04](22);
+    }
+
     static void irqClear (Irq irq) {
         auto num = (uint16_t) irq;
         NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
