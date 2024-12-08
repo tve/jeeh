@@ -261,34 +261,36 @@ struct Async : Sync<C>, Task {
     using BASE = Sync<C>;
     using BASE::Sync, BASE::dma;
 
-    enum TAG { START, RXDONE, TXDONE };
+    enum TAG { START, REQUEST, DONE };
 
-    Event pending;
+    IoReq curr ={ 0, 0, nullptr };
+    IoReq const* reqs;
+    int num =0;
+    Event pend;
 
     uint8_t init (int khz =10'000) {
         BASE::init(khz);
-        irqEnable(C.txIrq);
-        irqEnable(C.rxIrq);
         return Task::init();
     }
 
-    void deinit () {
-        irqDisable(C.txIrq);
-        irqDisable(C.rxIrq);
-        BASE::deinit();
+    using BASE::ioRequest; // non-async versions
+
+    void ioRequest (IoReq const* v, uint32_t n, Event out) const {
+        curr = v;
+        num = n;
+        send({ tId, REQUEST }, out);
     }
 
-    // TODO async version
-    void start (uint16_t m, uint8_t* p, uint16_t n, Event out) {
-        assert(n > 0);
-        pending = out;
-        BASE::startReq(m, p, n);
+    void ioRequest (uint32_t m, uint8_t* p, uint16_t n, Event out) const {
+        curr = { m, n, p };
+        ioRequest(&curr, 1, out);
     }
 
     void irqDma () {
+return; // FIXME why does this get called even when only sync mode is used ???
         auto f = dma.completed();
-        if (f != 0)
-            trigger(f == dma.TXDONE ? TXDONE : RXDONE);
+        assert(f > 0);
+        trigger(DONE);
     }
 
 private:
@@ -296,13 +298,20 @@ private:
         switch (in.eTag) {
             case START:
                 break;
-            case RXDONE:
-                pending.eVal = BASE::finishReq(false, nullptr, 0);
-                reply(pending);
-                break;
-            case TXDONE:
-                pending.eVal = BASE::finishReq(true, nullptr, 0);
-                reply(pending);
+            case REQUEST:
+                pend = take(out);
+                irqEnable(C.txIrq);
+                irqEnable(C.rxIrq);
+                while (--num >= 0) {
+                    curr = *reqs++;
+                    if (BASE::startReq(curr.mode, curr.ptr, curr.len))
+                        break; // transfer started, wait for DONE trigger
+            case DONE:         // this jumps back into the transfer loop!
+                    pend.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                }
+                irqDisable(C.txIrq);
+                irqDisable(C.rxIrq);
+                out = take(pend);
                 break;
             default:
                 fail();

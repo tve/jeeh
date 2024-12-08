@@ -59,9 +59,9 @@ UART_TRIGGER(console)
 #define I2C_NAME  I2C1
 #define I2C_PINS  "B7:OH4,A15"
 #define I2C_FREQ  170
-#define I2C_TYPE  I2C1.ADDR, DMA1.ADDR, 3-1, 4-1
+#define I2C_TYPE  I2C1.ADDR, DMA1.ADDR, 5-1, 6-1
 #define I2C_CONF  { ena::I2C1, 170, Irq::I2C1_EV, Irq::I2C1_ER, \
-                    Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,17,16 } }
+                    Irq::DMA1_CH5, Irq::DMA1_CH6, { 1-1,17,16 } }
 #define I2C_TRIGGER(w) extern "C" { \
     void I2C1_EV_IRQHandler () { (w).irqI2c(); } \
 }

@@ -129,7 +129,7 @@ struct Async : Sync<A,D,T,R>, Task {
     using BASE = Sync<A,D,T,R>;
     using BASE::Sync, BASE::cfg, BASE::UART;
 
-    enum TAG { START, RXIDLE, RXHALF, RXFULL, TXDONE };
+    enum TAG { START, RXHALF, RXFULL, TXDONE, RXIDLE }; // see irqDma()
 
     Event rxPending, txPending;
 
@@ -198,13 +198,11 @@ struct Async : Sync<A,D,T,R>, Task {
 
     void irqDma () {
         auto f = cfg.dma.completed();
-        //assert(f != 0);
-        if (f == cfg.dma.RXHALF)
-            trigger(RXHALF);
-        else if (f == cfg.dma.RXFULL)
-            trigger(RXFULL);
-        else if (f == cfg.dma.TXDONE)
-            trigger(TXDONE);
+        assert(f != 0);
+        static_assert(cfg.dma.RXHALF == (int) RXHALF);
+        static_assert(cfg.dma.RXFULL == (int) RXFULL);
+        static_assert(cfg.dma.TXDONE == (int) TXDONE);
+        trigger(f);
     }
 
     uint8_t const* rxPtr = rxBuf;

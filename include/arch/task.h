@@ -203,6 +203,7 @@ protected:
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler
+        assert(tag != 0);
         Event evt { tId, tag, val };
         saveInHist(H_IRQ, evt);
         wPend.push(evt);
