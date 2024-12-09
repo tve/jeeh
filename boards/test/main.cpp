@@ -8,6 +8,13 @@
 using namespace jeeh;
 #include "defs.h"
 
+constexpr i2c::Config i2cCfg {
+    I2C_PINS,                               // gpio
+    I2C_NAME.ADDR, ena::I2C_NAME, I2C_FREQ, // poll
+    DMA1.ADDR, 1-1, 5-1, 6-1, 17, 16,       // sync
+    Irq::DMA1_CH5, Irq::DMA1_CH6,           // async
+};
+
 constexpr spi::Config spiCfg {
     SPI_PINS,                               // gpio
     SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
@@ -17,22 +24,22 @@ constexpr spi::Config spiCfg {
 
 #if MODE_GPIO
 
-i2c::Gpio i2cBus;
+Dev<i2c::Gpio<i2cCfg>> i2cBus;
 Dev<spi::Gpio<spiCfg>> spiBus;
 
 #elif MODE_POLL
 
-i2c::Poll<I2C_NAME.ADDR> i2cBus (ena::I2C_NAME, I2C_FREQ);
+Dev<i2c::Poll<i2cCfg>> i2cBus;
 Dev<spi::Poll<spiCfg>> spiBus;
 
 #elif MODE_SYNC
 
-i2c::Sync<I2C_TYPE> i2cBus (I2C_CONF);
+Dev<i2c::Sync<i2cCfg>> i2cBus;
 Dev<spi::Sync<spiCfg>> spiBus;
 
 #elif MODE_ASYNC
 
-i2c::Async<I2C_TYPE> i2cBus (I2C_CONF);
+Dev<i2c::Async<i2cCfg>> i2cBus;
 I2C_TRIGGER(i2cBus)
 Dev<spi::Async<spiCfg>> spiBus;
 SPI_TRIGGER(spiBus)
@@ -57,14 +64,14 @@ void header (char const* text) {
 int main () {
     initBoard();
 
-#if 0
-    i2cBus.init(I2C_PINS);
+#if 1
+    i2cBus.init();
     header("I2C - SCAN");   testScan();
     header("I2C - OLED");   testOled();
     header("I2C - FRAM");   testFram();
-    //header("I2C - IMU");    testImu();
+    header("I2C - IMU");    testImu();
     header("I2C - SHT21");  testSht21();
-    //header("I2C - BMP390"); testBmpI();
+    header("I2C - BMP390"); testBmpI();
     i2cBus.deinit();
 #endif
 

@@ -1,56 +1,13 @@
 namespace jeeh::i2c {
 
-template< typename I2C >
-struct Dev {
-    I2C& bus;
-    uint8_t id;
-
-    Dev (I2C& b, uint8_t i) : bus (b), id (i) {}
-
-    bool transfer (uint8_t m, uint8_t* p =nullptr, uint8_t n =0) const {
-        return bus.transfer(id, m, p, n);
-    }
-
-    // one byte address, single-byte data
-    int read (uint8_t r) const {
-        uint8_t v = 0;
-        return read(r, &v, 1) ? v : -1;
-    }
-    bool write (uint8_t r, uint8_t v) const {
-        return write(r, &v, 1);
-    }
-
-    // one byte address, read/write byte buffer
-    bool read (uint8_t r, uint8_t* p, uint8_t n) const {
-        return transfer(bus.R1, &r, 1)
-            && transfer(bus.R2, p, n);
-    }
-    bool write (uint8_t r, uint8_t const* p, uint8_t n) const {
-        return transfer(bus.W1, &r, 1)
-            && transfer(bus.W2, (uint8_t*) p, n);
-    }
-
-    // two byte address, two-byte data, both big-endian
-    int read16be (uint16_t r) const {
-        uint16_t v = 0;
-        return read16be(r, &v, 2) ? (v<<8) | (v>>8) : -1;
-    }
-    bool write16be (uint16_t r, uint16_t v) const {
-        v = (v<<8) | (v>>8); // send big-endian
-        return write16be(r, &v, 2);
-    }
-
-    // two byte big-endian address, read/write byte buffer
-    bool read16be (uint16_t r, uint8_t* p, uint8_t n) const {
-        r = (r<<8) | (r>>8); // send big-endian
-        return transfer(bus.R1, (uint8_t*) &r, 2)
-            && transfer(bus.R2, p, n);
-    }
-    bool write16be (uint16_t r, uint8_t const* p, uint8_t n) const {
-        r = (r<<8) | (r>>8); // send big-endian
-        return transfer(bus.W1, (uint8_t*) &r, 2)
-            && transfer(bus.W2, (uint8_t*) p, n);
-    }
+struct Config {
+    char const* pins;           // gpio
+    uint32_t base =0;           // poll
+    uint16_t ena =0;
+    uint8_t mhz =0;
+    uint32_t dmaBase =0;        // sync
+    uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
+    Irq txIrq ={}, rxIrq ={};   // async
 };
 
 template< typename I2C >
@@ -60,8 +17,8 @@ void detect (I2C& bus) {
         for (auto j = 0; j < 16; ++j) {
             uint8_t addr = i + j;
             if (0x08 <= addr && addr <= 0x77) {
-                Dev dev { bus, addr };
-                bool ack = dev.transfer(bus.W1) && dev.transfer(bus.W2);
+                bus.select(addr);
+                bool ack = bus.write(nullptr, 0);
                 printf(ack ? " %02x" : " --", addr);
             } else
                 printf("   ");
@@ -70,13 +27,17 @@ void detect (I2C& bus) {
     }
 }
 
+template< Config const& C >
 struct Gpio {
+    using IoSize = uint8_t;
+
     Pin sda, scl; // pin definitions must be kept in this order
+    uint8_t addr =0;
     uint16_t rate;
 
-    void init (char const* desc, uint32_t khz =400) {
-        Pin::config(desc, &sda, 2);
-        Pin::config(":OUL,", &sda, 2);
+    void init (uint32_t khz =400) {
+        Pin::config(C.pins, &sda, 2);
+        Pin::config(":OU,", &sda, 2);
 
         sda = 1;
         scl = 1;
@@ -90,26 +51,39 @@ struct Gpio {
         Pin::config(":F,", &sda, 2);
     }
 
-    enum { R1, R2, W1, W2 };
+    void select (uint8_t a) {
+        addr = a;
+    }
 
-    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
+    int ioRequest (IoReq const* v, IoSize n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
+    }
+
+    int ioRequest (uint16_t m, uint8_t* p, IoSize n) const {
         bool ack = true;
 
-        if (m == R1 || m == W1)
-            ack = start(2*a);
+        if (m & IO_START)
+            ack = start(2*addr);
 
         if (ack) {
-            if (m != R2) {
+            if (m & IO_WRITE) {
                 for (auto i = 0; ack && i < n; ++i)
                     ack = wrByte(*p++);
             } else {
-                ack = start(2*a + 1);
+                ack = start(2*addr + 1);
                 for (auto i = 0; i < n; ++i)
                     *p++ = rdByte(i == n-1);
             }
         }
 
-        if (m == R2 || m == W2 || !ack)
+        if ((m & IO_STOP) || !ack)
             stop();
 
         return ack;
@@ -177,6 +151,7 @@ private:
     }
 };
 
+#if 0
 // polled H/W version (see i2c::Gpio for bit-banged version)
 template< uint32_t A >
 struct Poll {
@@ -503,5 +478,6 @@ private:
         return out;
     }
 };
+#endif
 
 } // namespace jeeh

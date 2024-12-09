@@ -1,8 +1,8 @@
 // Scan the I2C bus to detect all attached devices.
 
 void showPresence (char const* name, uint8_t addr) {
-    i2c::Dev dev { i2cBus, addr };
-    bool ack = dev.transfer(i2cBus.W1) && dev.transfer(i2cBus.W2);
+    i2cBus.select(addr);
+    bool ack = i2cBus.write(nullptr, 0);
     logf("%15s @ 0x%02x: %s", name, addr, ack ? "OK" : "NOT FOUND");
 }
 

@@ -1,20 +1,20 @@
 // Test the attached FRAM over I2C.
 
-i2c::Dev fram (i2cBus, 0x50);
-
 constexpr auto N = 5;
 
 void read32 (uint16_t addr, uint8_t* ptr) {
-    auto ok = fram.read16be(addr, ptr, N);
+    auto ok = i2cBus.readRegs16(addr, ptr, N);
     assert(ok);
 }
 
 void write32 (uint16_t addr, uint8_t const* ptr) {
-    auto ok = fram.write16be(addr, ptr, N);
+    auto ok = i2cBus.writeRegs16(addr, ptr, N);
     assert(ok);
 }
 
 void testFram () {
+    i2cBus.select(0x50);
+
     uint8_t buf [N];
     memset(buf, 0xEE, sizeof buf);
     for (auto i = 0; i < 3; ++i)
@@ -42,8 +42,8 @@ void testFram () {
         logf("%02x %02x ... %02x %02x", buf[0], buf[1], buf[N-2], buf[N-1]);
     }
 
-    fram.read16be(0, buf, 1);
-    fram.read16be(N, buf+1, 1);
-    fram.read16be(2*N+3, buf+2, 1);
+    i2cBus.readRegs16(0, buf, 1);
+    i2cBus.readRegs16(N, buf+1, 1);
+    i2cBus.readRegs16(2*N+3, buf+2, 1);
     logf("%02x %02x %02x", buf[0], buf[1], buf[2]);
 }

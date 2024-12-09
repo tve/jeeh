@@ -4,28 +4,20 @@ enum { SHT21 = 0x40 }; // I2C address
 
 // start a measurement, wait until ready, get 3 result bytes
 uint16_t measure (uint8_t type, uint8_t delay) {
-#if MODE_GPIO
-    i2cBus.start(SHT21*2);
-    i2cBus.wrByte(type);
-    i2cBus.stop();
+    i2cBus.write(&type, 1);
 
     cycles::msBusy(delay);
 
     uint8_t buf [3];
-    i2cBus.start(SHT21*2+1);
-    buf[0] = i2cBus.rdByte(false);
-    buf[1] = i2cBus.rdByte(false);
-    buf[2] = i2cBus.rdByte(true); // last one
+    i2cBus.read(buf, sizeof buf);
     //logDump(buf, sizeof buf);
 
     return (buf[0] << 8) | (buf[1] & ~3); // clear lower 2 bits
-#else
-    (void) type; (void) delay;
-    return 0;
-#endif
 }
 
 void testSht21 () {
+    i2cBus.select(SHT21);
+
     for (auto i = 0; i < 3; ++i) {
         auto tRaw = measure(0xF3, 85); // measure temperature
         auto hRaw = measure(0xF5, 29); // measure humidity

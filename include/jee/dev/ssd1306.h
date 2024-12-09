@@ -61,10 +61,10 @@ struct SSD1306 {
         cmd(0x00 + (x&0xF));  // SETLOWCOLUMN
         cmd(0x10 + (x>>4));   // SETHIGHCOLUMN
 
-        dev.write(0x40, ptr, len);
+        dev.writeRegs(0x40, ptr, len);
     }
 
     void cmd (uint8_t c) const {
-        dev.write(0x80, c);
+        dev.writeReg(0x80, c);
     }
 };

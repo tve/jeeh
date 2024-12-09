@@ -46,7 +46,7 @@ struct Gpio {
         return r;
     }
 
-    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+    int ioRequest (uint16_t m, uint8_t* p, IoSize n) const {
         uint8_t r = 0;
         checkStart(m);
         if (m & IO_WRITE)

@@ -2,20 +2,19 @@
 
 #include <jee/dev/ssd1306.h>
 
-void testOled () {
-    // two I2C devices
-    i2c::Dev dev1 {i2cBus, 0x3D};
-    i2c::Dev dev2 {i2cBus, 0x3C};
+enum { OLED1 = 0x3D, OLED2 = 0x3C };
 
+void testOled () {
     // same type, two instances: one is for 128x64, the other for 128x32
-    SSD1306 oled1 (dev1, 64);
-    SSD1306 oled2 (dev2, 32);
+    SSD1306 oled1 (i2cBus, 64);
+    SSD1306 oled2 (i2cBus, 32);
 
     // display a trivial pattern, just to verify that it works
     static uint8_t const data [] = {
         255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255,0,255
     };
 
+    i2cBus.select(OLED1);
     oled1.init();
     auto t = cycles::micros();
     oled1.clear();
@@ -42,6 +41,7 @@ void testOled () {
     t = cycles::micros() - t;
     logf(" oled 1: %5d µs", t);
 
+    i2cBus.select(OLED2);
     oled2.init();
     auto t2 = cycles::micros();
     oled2.clear();
