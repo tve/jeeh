@@ -76,7 +76,7 @@ struct FloatParams {
 FloatParams fp;
 
 void showReading (uint8_t const* buf) {
-    //logDump(buf, sizeof buf);
+    //logDump(buf, 6);
 
     auto t = (buf[5] << 16) | (buf[4] << 8) | buf[3];
     auto p = (buf[2] << 16) | (buf[1] << 8) | buf[0];
@@ -87,5 +87,5 @@ void showReading (uint8_t const* buf) {
     int32_t cp = p2 * 10;
 
     logf("t-raw %08x p-raw %08x  =>  temp %d.%03d °C, pres %d.%03d hPa",
-            t, p, ct / 1000, ct % 1000, cp / 1000, cp % 1000);
+            t, p, ct / 1000, (ct < 0 ? -ct : ct) % 1000, cp / 1000, cp % 1000);
 }

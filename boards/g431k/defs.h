@@ -46,6 +46,10 @@ UART_TRIGGER(console)
 #define SPI_TYPE  SPI1.ADDR, DMA1.ADDR, 3-1, 4-1
 #define SPI_CONF  { ena::SPI1, 170, \
                     Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,11,10 } }
+#define SPI_TRIGGER(w) extern "C" { \
+    void DMA1_Channel3_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
+}
 //CG]
 
 template< typename T >
@@ -63,6 +67,9 @@ void spiSelect (T& spi, Pin nsel) {
 #define I2C_TYPE  I2C1.ADDR, DMA1.ADDR, 3-1, 4-1
 #define I2C_CONF  { ena::I2C1, 170, Irq::I2C1_EV, Irq::I2C1_ER, \
                     Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,17,16 } }
+#define I2C_TRIGGER(w) extern "C" { \
+    void I2C1_EV_IRQHandler () { (w).irqI2c(); } \
+}
 //CG]
 
 uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {

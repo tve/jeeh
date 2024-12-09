@@ -18,6 +18,8 @@ void testBmpI () {
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {
+        cycles::msBusy(5);
+
         uint8_t buf [6];
         bmp390.read(0x04, buf, sizeof buf);
 

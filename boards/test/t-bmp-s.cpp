@@ -7,7 +7,6 @@ auto& bmp390 = spiBus;
 void testBmpS () {
     bmp390.select(bmpSel);
 
-    bmpVcc = 0;
     cycles::msBusy(5);
     bmpVcc = 1;
     cycles::msBusy(5);
@@ -23,9 +22,11 @@ void testBmpS () {
     fp.load(tc);
 
     for (auto i = 0; i < 3; ++i) {
+        cycles::msBusy(5);
+
         uint8_t buf [6];
         IoReq req [] = {
-            { IO_START|IO_WRITE, 2, (uint8_t*) "\xB4." },
+            { IO_START|IO_WRITE, 2, (uint8_t*) "\x84." },
             { IO_READ|IO_STOP, sizeof buf, buf },
         };
         bmp390.ioRequest(req);

@@ -70,7 +70,7 @@ int main () {
 
 #if 1
     spiBus.init();
-    //header("SPI - BMP390"); testBmpS();
+    header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
     spiBus.init(); // reinit wirh proper MISO pin mode
     header("SPI - SRAM");   testSram();
