@@ -75,7 +75,7 @@ int main () {
     i2cBus.deinit();
 #endif
 
-#if 1
+#if 0
     spiBus.init();
     header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();

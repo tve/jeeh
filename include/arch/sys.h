@@ -103,7 +103,7 @@ struct Dev : T {
     int readRegs (uint8_t r, void* p, IoSize n) const {
         IoReq req [] = {
             { IO_START|IO_WRITE, 1, &r },
-            { IO_READ|IO_STOP, n, (uint8_t*) p },
+            { IO_START|IO_READ|IO_STOP, n, (uint8_t*) p },
         };
         return ioRequest(req);
     }
@@ -130,7 +130,7 @@ struct Dev : T {
         r = __builtin_bswap16(r); // send big-endian
         IoReq req [] = {
             { IO_START|IO_WRITE, 2, (uint8_t*) &r },
-            { IO_READ|IO_STOP, n, (uint8_t*) p },
+            { IO_START|IO_READ|IO_STOP, n, (uint8_t*) p },
         };
         return ioRequest(req);
     }

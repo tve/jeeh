@@ -2,12 +2,12 @@
 
 template< typename DEV >
 struct SSD1306 {
-    DEV dev;
+    DEV& dev;
 
     enum { width = 128 };
     const uint8_t height;
 
-    SSD1306 (DEV const& d, uint8_t h =32) : dev {d}, height (h) {}
+    SSD1306 (DEV& d, uint8_t h =32) : dev {d}, height (h) {}
 
     void init () const {
         auto big = height > 32;

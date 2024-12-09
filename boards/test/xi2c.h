@@ -70,17 +70,15 @@ struct Gpio {
         bool ack = true;
 
         if (m & IO_START)
-            ack = start(2*addr);
+            ack = start(2*addr + ((m & IO_READ) != 0));
 
         if (ack) {
-            if (m & IO_WRITE) {
+            if (m & IO_WRITE)
                 for (auto i = 0; ack && i < n; ++i)
                     ack = wrByte(*p++);
-            } else {
-                ack = start(2*addr + 1);
+            else
                 for (auto i = 0; i < n; ++i)
                     *p++ = rdByte(i == n-1);
-            }
         }
 
         if ((m & IO_STOP) || !ack)
@@ -89,6 +87,7 @@ struct Gpio {
         return ack;
     }
 
+private:
     bool start (uint8_t addr) const {
         sclLo();
         sclHi();
@@ -135,7 +134,6 @@ struct Gpio {
         return ack;
     }
 
-private:
     void hold () const {
         for (volatile int i = rate; i >= 0; ) i = i-1;
     }
