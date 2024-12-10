@@ -18,7 +18,7 @@ void detect (I2C& bus) {
             uint8_t addr = i + j;
             if (0x08 <= addr && addr <= 0x77) {
                 bus.select(addr);
-                bool ack = bus.write(nullptr, 0);
+                auto ack = bus.write(nullptr, 0) >= 0;
                 printf(ack ? " %02x" : " --", addr);
             } else
                 printf("   ");
@@ -52,7 +52,7 @@ struct Gpio {
     }
 
     void select (uint8_t a) {
-        addr = a << 1;
+        addr = a;
     }
 
     int ioRequest (IoReq const* v, IoSize n) const {
@@ -70,7 +70,7 @@ struct Gpio {
         bool ack = true;
 
         if (m & IO_START)
-            ack = start(addr + ((m & IO_READ) != 0));
+            ack = start(2*addr + ((m & IO_READ) != 0));
 
         if (ack) {
             if (m & IO_WRITE)
@@ -149,14 +149,13 @@ private:
     }
 };
 
-#if 0
-// polled H/W version (see i2c::Gpio for bit-banged version)
-template< uint32_t A >
-struct Poll {
-    using ID = uint8_t;
-    enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
+template< Config const& C >
+struct Poll : Gpio<C> {
+    using BASE = Gpio<C>;
+    using typename BASE::IoSize;
+    using BASE::addr;
 
-    static constexpr IoReg<A> I2C {};
+    static constexpr IoReg<C.base> I2C {};
 #if STM32F4
     enum { CR1=0x00,CR2=0x04,DR=0x10,SR1=0x14,SR2=0x18,
            CCR=0x1C,TRISE=0x20 };
@@ -165,18 +164,10 @@ struct Poll {
            ISR=0x18,ICR=0x1C,RXDR=0x24,TXDR=0x28 };
 #endif
 
-    struct Config {
-        uint16_t ena;
-        uint8_t mhz;
-    };
-
     Pin sda, scl; // pin definitions must be kept in this order
-    Config const cfg;
 
-    Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
-
-    void init (char const* defs, uint32_t khz =400) {
-        Pin::config(defs, &sda, 2);
+    void init (uint32_t khz =400) {
+        Pin::config(C.pins, &sda, 2);
 
         if (!sda) { // reset the I2C bus if SDA is stuck low
             scl.mode("OU");
@@ -187,10 +178,10 @@ struct Poll {
             }
             scl = 1;
             assert(sda); // should now be unstuck
-            Pin::config(defs, &sda, 2);
+            Pin::config(C.pins, &sda, 2);
         }
 
-        RCC(cfg.ena,1) = 1;
+        RCC(C.ena,1) = 1;
 #if STM32F4
         I2C[CR1](15) = 1; // SWRST
         I2C[CR1](15) = 0; // ~SWRST
@@ -202,13 +193,22 @@ struct Poll {
     void deinit () {
         Pin::config(":F,", &sda, 2);
         I2C[CR1](0) = 0; // ~PE
-        RCC(cfg.ena, 1) = 0;
+        RCC(C.ena, 1) = 0;
     }
 
-    enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
+    int ioRequest (IoReq const* v, IoSize n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
+    }
 
 #if STM32F4
-    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
+    bool xtransfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         auto waitFor = [](uint8_t bit) {
             while (!I2C[SR1](bit))
                 if (I2C[SR1] & 0x4D00) { // TIMEOUT OVR AF BERR
@@ -264,9 +264,15 @@ struct Poll {
             I2C[CR1](9) = 1; // STOP
         return true;
     }
-#else
-    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
-        startReq(a, m, n);
+#endif
+
+    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+        I2C[CR2] = (((m & IO_STOP) != 0)  << 25) // AUTOEND
+                 | (((m & IO_MORE) != 0)  << 24) // RELOAD
+                 |                     (n << 16) // NBYTES
+                 | (((m & IO_START) != 0) << 13) // START
+                 | (((m & IO_READ) != 0)  << 10) // RD_WRN
+                 |                  (addr << 1); // SADD
 
         while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
             if (I2C[ISR](2)) // RXNE
@@ -276,28 +282,15 @@ struct Poll {
 
         auto ok = !I2C[ISR](12) && !I2C[ISR](4); // ~TIMEOUT ~NACKF
         I2C[ICR] = I2C[ISR];
-        return ok;
+        return ok ? n : -1;
     }
-
-protected:
-    void startReq (uint8_t a, uint8_t m, uint8_t n) const {
-        if (n == 0)
-            m |= AE;
-        I2C[CR2] = (((m&AE) != 0) << 25) // AUTOEND
-                 | (((m&RL) != 0) << 24) // RELOAD
-                 |             (n << 16) // NBYTES
-                 | (((m&ST) != 0) << 13) // START
-                 | (((m&RD) != 0) << 10) // RD_WRN
-                 |             (a << 1); // SADD
-    }
-#endif
 
 private:
     void setTiming (uint32_t khz) {
 #if STM32F4
         if (khz < 10'000) {
-            auto div = (1000 * cfg.mhz) / khz;
-            I2C[CR2] = cfg.mhz;
+            auto div = (1000 * C.mhz) / khz;
+            I2C[CR2] = C.mhz;
             I2C[TRISE] = div/4; // seems to work well
             I2C[CCR] = khz <= 100 ? div/2 :
                        khz <= 400 ? (2<<14) | div/3 :
@@ -309,11 +302,11 @@ private:
         }
 #else
         if (khz < 10'000) {
-            auto div = (1000 * cfg.mhz) / khz;
+            auto div = (1000 * C.mhz) / khz;
             auto presc = div/256;
             assert(presc < 16);
             div /= presc+1;
-logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
+logf("11 %d %d %d+%d", C.mhz, presc, div/3, div-div/3);
             I2C[TIMINGR] = (presc<<28)
                            | (5<<20)
                            | (1<<16)
@@ -324,7 +317,7 @@ logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
 
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values
-        // FIXME should this be cfg.mhz iso SystemCoreClock ?
+        // FIXME should this be C.mhz iso SystemCoreClock ?
         auto t = 12 * ((SystemCoreClock>>20) / ((khz>>28) + 1));
         assert(t < 4096);
         I2C[TIMOUTR] = (1<<15) | t; // TIMOUTEN
@@ -332,11 +325,14 @@ logf("11 %d %d %d+%d", cfg.mhz, presc, div/3, div-div/3);
     }
 };
 
+#if 0
 template< uint32_t A, uint32_t D, int T, int R >
 struct Sync : Poll<A> {
     using BASE = Poll<A>;
+    using BASE::I2C;
 
-    static constexpr IoReg<A> I2C {};
+//enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
+//enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
 
     struct Config : BASE::Config {
         Irq evIrq, erIrq, txIrq, rxIrq;

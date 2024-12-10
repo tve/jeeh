@@ -2,7 +2,7 @@
 
 void showPresence (char const* name, uint8_t addr) {
     i2cBus.select(addr);
-    bool ack = i2cBus.write(nullptr, 0);
+    bool ack = i2cBus.write(nullptr, 0) >= 0;
     logf("%15s @ 0x%02x: %s", name, addr, ack ? "OK" : "NOT FOUND");
 }
 
