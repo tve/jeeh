@@ -267,26 +267,34 @@ struct Poll : Gpio<C> {
 #endif
 
     int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+        startReq(m, n);
+        while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
+            if (I2C[ISR](2)) // RXNE
+                *p++ = I2C[RXDR];
+            else if (I2C[ISR](1)) // TXIS
+                I2C[TXDR] = *p++;
+        return finishReq(m, n);
+    }
+
+protected:
+    void startReq (uint8_t m, uint8_t n) const {
         I2C[CR2] = (((m & IO_STOP) != 0)  << 25) // AUTOEND
                  | (((m & IO_MORE) != 0)  << 24) // RELOAD
                  |                     (n << 16) // NBYTES
                  | (((m & IO_START) != 0) << 13) // START
                  | (((m & IO_READ) != 0)  << 10) // RD_WRN
                  |                  (addr << 1); // SADD
+    }
 
-        while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
-            if (I2C[ISR](2)) // RXNE
-                *p++ = I2C[RXDR];
-            else if (I2C[ISR](1)) // TXIS
-                I2C[TXDR] = *p++;
-
+    int finishReq (uint16_t m, uint16_t n) const {
+        (void) m; // TODO unused
         auto ok = !I2C[ISR](12) && !I2C[ISR](4); // ~TIMEOUT ~NACKF
         I2C[ICR] = I2C[ISR];
         return ok ? n : -1;
     }
 
 private:
-    void setTiming (int khz) {
+    void setTiming (uint32_t khz) {
         assert(khz > 0);
 #if STM32F4
         if (khz < 10'000) {
@@ -307,14 +315,9 @@ private:
             auto presc = div/256;
             assert(presc < 16);
             div /= presc+1;
-logf("11 %d %d %d+%d", C.mhz, presc, div/3, div-div/3);
-            I2C[TIMINGR] = (presc<<28)
-                           | (5<<20)
-                           | (1<<16)
-                           | (div/4<<8)
-                           | (3*div/4<<0);
-        } else // custom rate settings
-            I2C[TIMINGR] = khz;
+            khz = (presc<<28) | (5<<20) | (1<<16) | (div/4<<8) | (3*div/4<<0);
+        } // else custom rate settings
+        I2C[TIMINGR] = khz;
 
         // 25 ms timeout is approx 12x I2C clock in Mhz (i.e. sysclk/prescaler)
         // see table 394, p.1909 in RM0440 r8 for some suggested values

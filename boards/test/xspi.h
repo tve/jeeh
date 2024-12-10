@@ -237,7 +237,7 @@ protected:
         return true;
     }
 
-    uint8_t finishReq (uint16_t m, void* p, uint16_t n) const {
+    uint16_t finishReq (uint16_t m, void* p, uint16_t n) const {
         uint8_t r = 0;
         if (n > 0) {
             if (m & IO_READ) {
