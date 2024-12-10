@@ -16,6 +16,8 @@ Other boards:
 
 - Blue Pill: `f103bp` (via BMP)
 - HyTiny: `f103hy` (via BMP)
+- Olimexino F1: `F103o`
+- Olimexino F3: `F303o`
 - Black Pill: `f411bp`
 
 See `platformio.ini` to see which boards have been defined so far.
