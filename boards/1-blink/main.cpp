@@ -8,8 +8,8 @@ using namespace jeeh;
 Pin led (LED, "P");
 
 void delayLoop (int n) {
-    n *= SystemCoreClock / 5000;
-    for (int i = 0; i < n; ++i)
+    n *= SystemCoreClock >> 12;
+    while (--n >= 0)
         asm ("");
 }
 

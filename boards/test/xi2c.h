@@ -35,7 +35,7 @@ struct Gpio {
     uint8_t addr =0;
     uint16_t rate;
 
-    void init (uint32_t khz =400) {
+    void init (int khz =400) {
         Pin::config(C.pins, &sda, 2);
         Pin::config(":OU,", &sda, 2);
 
@@ -44,7 +44,7 @@ struct Gpio {
 
         // this is merely a wild estimate for the countdown needed in hold()
         // values < 100 will override to define a specific countdown instead
-        rate = khz < 100 ? khz : SystemCoreClock/khz/200'000 + 1;
+        rate = khz <= 0 ? -khz : SystemCoreClock/khz/100'000 + 1;
     }
 
     void deinit () {
@@ -84,7 +84,7 @@ struct Gpio {
         if ((m & IO_STOP) || !ack)
             stop();
 
-        return ack;
+        return ack ? n : -1;
     }
 
 private:
@@ -166,7 +166,7 @@ struct Poll : Gpio<C> {
 
     Pin sda, scl; // pin definitions must be kept in this order
 
-    void init (uint32_t khz =400) {
+    void init (int khz =400) {
         Pin::config(C.pins, &sda, 2);
 
         if (!sda) { // reset the I2C bus if SDA is stuck low
@@ -286,7 +286,8 @@ struct Poll : Gpio<C> {
     }
 
 private:
-    void setTiming (uint32_t khz) {
+    void setTiming (int khz) {
+        assert(khz > 0);
 #if STM32F4
         if (khz < 10'000) {
             auto div = (1000 * C.mhz) / khz;
