@@ -275,6 +275,7 @@ protected:
                  | (((m & IO_START) != 0) << 13) // START
                  | (((m & IO_READ) != 0)  << 10) // RD_WRN
                  |                  (addr << 1); // SADD
+if (n > 1) logf("22 %02x %3d %08x", m, n, +I2C[CR2]);
     }
 
     int finishReq (uint16_t m, uint16_t n) const {
@@ -357,6 +358,7 @@ struct Sync : Poll<C> {
         startReq(m, p, n);
         while (!Task::pendingIrq())
             asm ("wfe");
+if (n > 1) logf("11 %02x %3d %04x", m, n, +I2C[BASE::ISR]);
         dma.done();
         dma.completed();
         assert(!dma.isRunning());
@@ -389,17 +391,16 @@ protected:
 };
 
 #if 0
-template< uint32_t A, uint32_t D, int T, int R >
-struct Async : Sync<A,D,T,R>, Task {
-    using BASE = Sync<A,D,T,R>;
-    using BASE::Sync;
+template< Config const& C >
+struct Async : Sync<C>, Task {
+    using BASE = Sync<C>;
 
     enum TAG { START, RXDONE, TXDONE };
 
     Event pending;
 
-    uint8_t init (char const* defs, uint32_t khz =400) {
-        BASE::init(defs, khz);
+    uint8_t init (uint32_t khz =400) {
+        BASE::init(khz);
         irqEnable(cfg.evIrq);
         //irqEnable(cfg.erIrq);
         return Task::init();
@@ -412,10 +413,10 @@ struct Async : Sync<A,D,T,R>, Task {
     }
 
     // async version, started from a msg
-    void start (uint8_t a, uint8_t m, uint8_t* p, uint16_t n, Event out) {
+    void start (uint8_t m, uint8_t* p, uint16_t n, Event out) {
         assert(n > 0);
         pending = out;
-        BASE::startReq(a, n, p, n);
+        BASE::startReq(m, p, n);
     }
 
 #if 0
