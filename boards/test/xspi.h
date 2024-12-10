@@ -35,7 +35,7 @@ struct Gpio {
         nsel.mode("HP");
     }
 
-    int ioRequest (IoReq const* v, IoSize n) const {
+    int ioRequest (IoReq const* v, uint32_t n) const {
         int r = 0;
         for (auto i = 0U; i < n; ++i) {
             auto& t = v[i];
@@ -46,7 +46,7 @@ struct Gpio {
         return r;
     }
 
-    int ioRequest (uint16_t m, uint8_t* p, IoSize n) const {
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
         checkStart(m);
         if (m & IO_WRITE)

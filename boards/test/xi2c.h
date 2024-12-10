@@ -55,7 +55,7 @@ struct Gpio {
         addr = a;
     }
 
-    int ioRequest (IoReq const* v, IoSize n) const {
+    int ioRequest (IoReq const* v, uint32_t n) const {
         int r = 0;
         for (auto i = 0U; i < n; ++i) {
             auto& t = v[i];
@@ -66,7 +66,7 @@ struct Gpio {
         return r;
     }
 
-    int ioRequest (uint16_t m, uint8_t* p, IoSize n) const {
+    int ioRequest (uint16_t m, uint8_t* p, uint8_t n) const {
         bool ack = true;
 
         if (m & IO_START)
@@ -152,7 +152,6 @@ private:
 template< Config const& C >
 struct Poll : Gpio<C> {
     using BASE = Gpio<C>;
-    using typename BASE::IoSize;
     using BASE::addr;
 
     static constexpr IoReg<C.base> I2C {};
@@ -196,7 +195,7 @@ struct Poll : Gpio<C> {
         RCC(C.ena, 1) = 0;
     }
 
-    int ioRequest (IoReq const* v, IoSize n) const {
+    int ioRequest (IoReq const* v, uint32_t n) const {
         int r = 0;
         for (auto i = 0U; i < n; ++i) {
             auto& t = v[i];
@@ -266,7 +265,7 @@ struct Poll : Gpio<C> {
     }
 #endif
 
-    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+    int ioRequest (uint32_t m, uint8_t* p, uint8_t n) const {
         startReq(m, n);
         while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
             if (I2C[ISR](2)) // RXNE
@@ -333,7 +332,6 @@ private:
 template< Config const& C >
 struct Sync : Poll<C> {
     using BASE = Poll<C>;
-    using typename BASE::IoSize;
     using BASE::I2C;
 
     static constexpr dma::DmaConfig<Config,C> dma {};
@@ -351,7 +349,7 @@ struct Sync : Poll<C> {
         BASE::deinit();
     }
 
-    int ioRequest (IoReq const* v, IoSize n) const {
+    int ioRequest (IoReq const* v, uint32_t n) const {
         int r = 0;
         for (auto i = 0U; i < n; ++i) {
             auto& t = v[i];
@@ -362,7 +360,7 @@ struct Sync : Poll<C> {
         return r;
     }
 
-    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+    int ioRequest (uint32_t m, uint8_t* p, uint8_t n) const {
         assert(!Task::pendingIrq());
         startReq(m, p, n);
         while (!Task::pendingIrq())
