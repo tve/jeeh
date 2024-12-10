@@ -68,8 +68,8 @@ int main () {
     i2cBus.init();
     header("I2C - SCAN");   testScan();
     header("I2C - OLED");   testOled();
-    header("I2C - FRAM");   testFram();
-    header("I2C - IMU");    testImu();
+    //header("I2C - FRAM");   testFram();
+    //header("I2C - IMU");    testImu();
     header("I2C - SHT21");  testSht21();
     header("I2C - BMP390"); testBmpI();
     i2cBus.deinit();

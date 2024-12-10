@@ -52,7 +52,7 @@ struct Gpio {
     }
 
     void select (uint8_t a) {
-        addr = a;
+        addr = a << 1;
     }
 
     int ioRequest (IoReq const* v, IoSize n) const {
@@ -70,7 +70,7 @@ struct Gpio {
         bool ack = true;
 
         if (m & IO_START)
-            ack = start(2*addr + ((m & IO_READ) != 0));
+            ack = start(addr + ((m & IO_READ) != 0));
 
         if (ack) {
             if (m & IO_WRITE)
@@ -88,11 +88,11 @@ struct Gpio {
     }
 
 private:
-    bool start (uint8_t addr) const {
+    bool start (uint8_t a) const {
         sclLo();
         sclHi();
         sda = 0;
-        return wrByte(addr);
+        return wrByte(a);
     }
 
     void stop () const {
