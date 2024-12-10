@@ -7,7 +7,7 @@ struct Config {
     uint8_t mhz =0;
     uint32_t dmaBase =0;        // sync
     uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
-    Irq txIrq ={}, rxIrq ={};   // async
+    Irq txIrq ={}, rxIrq ={}, evIrq ={}, erIrq ={};
 };
 
 template< typename I2C >
@@ -287,7 +287,8 @@ protected:
     }
 
     int finishReq (uint16_t m, uint16_t n) const {
-        (void) m; // TODO unused
+        if (m & IO_STOP)
+            while (I2C[ISR](15)) {} // BUSY
         auto ok = !I2C[ISR](12) && !I2C[ISR](4); // ~TIMEOUT ~NACKF
         I2C[ICR] = I2C[ISR];
         return ok ? n : -1;
@@ -329,85 +330,79 @@ private:
     }
 };
 
-#if 0
-template< uint32_t A, uint32_t D, int T, int R >
-struct Sync : Poll<A> {
-    using BASE = Poll<A>;
+template< Config const& C >
+struct Sync : Poll<C> {
+    using BASE = Poll<C>;
+    using typename BASE::IoSize;
     using BASE::I2C;
 
-//enum { AE=1<<0, RL=1<<1, ST=1<<2, RD=1<<3 }; // used as flag bits in mode
-//enum { R1=ST, R2=AE|ST|RD, W1=RL|ST, W2=AE }; // R1:04 R2:0D W1:06 W2:01
+    static constexpr dma::DmaConfig<Config,C> dma {};
 
-    struct Config : BASE::Config {
-        Irq evIrq, erIrq, txIrq, rxIrq;
-        DmaConfig<D,T,R> dma;
-    };
-
-    Config const cfg;
-
-    Sync (Config const& c) : BASE (c.ena, c.mhz), cfg (c) {}
-
-    void init (char const* defs, uint32_t khz =400) {
-        BASE::init(defs, khz);
+    void init (uint32_t khz =400) {
+        BASE::init(khz);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
-
-        // peripheral address config and interrupt vector setup
-        cfg.dma.init(A + BASE::TXDR, A + BASE::RXDR);
-
+        dma.init(C.base + BASE::TXDR, C.base + BASE::RXDR);
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma.idx,1) = 0; // may be shared
+    void deinit () {
+        I2C[BASE::CR1](14,2) = 0; // ~RXDMAEN ~TXDMAEN
+        dma.deinit();
+        BASE::deinit();
+    }
 
-    // sync version, dma with wfe
-    bool transfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
-        assert(n > 0);
-        startReq(a, m, p, n);
-        while (true) {
-cycles::usBusy(15);
-            if (!cfg.dma.isRunning())
-                break;
-            if (cfg.dma.completed() == 0)
-                asm ("wfe");
-            uint32_t isr = I2C[BASE::ISR];
-            if ((isr & 0x10F0) != 0) // TIMEOUT TCR TC STOPF NACKF
+    int ioRequest (IoReq const* v, IoSize n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
                 break;
         }
-        Task::irqClear(cfg.evIrq);
-        //Task::irqClear(cfg.erIrq);
-        Task::irqClear(cfg.txIrq);
-        Task::irqClear(cfg.rxIrq);
-        return finishReq(m, p, n);
+        return r;
+    }
+
+    int ioRequest (uint32_t m, uint8_t* p, IoSize n) const {
+        assert(!Task::pendingIrq());
+        startReq(m, p, n);
+        while (!Task::pendingIrq())
+            asm ("wfe");
+        dma.done();
+        dma.completed();
+        assert(!dma.isRunning());
+        auto r = finishReq(m, p, n);
+        Task::irqClear(C.evIrq);
+        Task::irqClear(C.erIrq);
+        Task::irqClear(C.txIrq);
+        Task::irqClear(C.rxIrq);
+        return r;
     }
 
 protected:
-    void startReq (uint8_t a, uint8_t m, void* p, uint8_t n) const {
+    void startReq (uint16_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
-        if (m != BASE::R2)
-            cfg.dma.txStart(p, n);
+        if (m & IO_WRITE)
+            dma.txStart(p, n);
         else
-            cfg.dma.rxStart(p, n);
+            dma.rxStart(p, n);
 
-        BASE::startReq(a, m, n);
+        BASE::startReq(m, n);
         I2C[BASE::CR1](4,4) = 0b1111; // ERRIE TCIE STOPIE NACKIE
     }
 
-    bool finishReq (uint8_t m, void* p, uint8_t n) const {
-        //cfg.dma.done();
-cfg.dma.completed();
+    int finishReq (uint16_t m, void* p, uint8_t n) const {
         I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
-        if (m == BASE::R2)
+        if (m & IO_READ)
             cache::inval(p, n);
-        auto ok = !I2C[BASE::ISR](12) && ~I2C[BASE::ISR](4); // ~TIMEOUT ~NACKF
-        I2C[BASE::ICR] = I2C[BASE::ISR];
-        return ok;
+        return BASE::finishReq(m, n);
     }
 };
 
+#if 0
 template< uint32_t A, uint32_t D, int T, int R >
 struct Async : Sync<A,D,T,R>, Task {
     using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg;
+    using BASE::Sync;
 
     enum TAG { START, RXDONE, TXDONE };
 

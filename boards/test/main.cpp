@@ -12,14 +12,14 @@ constexpr i2c::Config i2cCfg {
     I2C_PINS,                               // gpio
     I2C_NAME.ADDR, ena::I2C_NAME, I2C_FREQ, // poll
     DMA1.ADDR, 1-1, 5-1, 6-1, 17, 16,       // sync
-    Irq::DMA1_CH5, Irq::DMA1_CH6,           // async
+    Irq::DMA1_CH5, Irq::DMA1_CH6, Irq::I2C1_EV, Irq::I2C1_ER,
 };
 
 constexpr spi::Config spiCfg {
     SPI_PINS,                               // gpio
     SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
     DMA1.ADDR, 1-1, 3-1, 4-1, 11, 10,       // sync
-    Irq::DMA1_CH3, Irq::DMA1_CH4,           // async
+    Irq::DMA1_CH3, Irq::DMA1_CH4,
 };
 
 #if MODE_GPIO

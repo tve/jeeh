@@ -7,7 +7,7 @@ struct Config {
     uint8_t mhz =0;
     uint32_t dmaBase =0;        // sync
     uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
-    Irq txIrq ={}, rxIrq ={};   // async
+    Irq txIrq ={}, rxIrq ={};
 };
 
 template< Config const& C >
@@ -102,8 +102,6 @@ struct Poll : Gpio<C> {
 
     static constexpr IoReg<C.base> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
-
-    Poll () {}
 
     void init (int khz =10'000) {
         Pin::config(C.pins, &(BASE::mosi), 4);
