@@ -69,8 +69,12 @@ struct Gpio {
     int ioRequest (uint16_t m, uint8_t* p, uint8_t n) const {
         bool ack = true;
 
-        if (m & IO_START)
-            ack = start(2*addr + ((m & IO_READ) != 0));
+        if (m & IO_START) {
+            sclLo();
+            sclHi();
+            sda = 0;
+            ack = wrByte(2*addr + ((m & IO_READ) != 0));
+        }
 
         if (ack) {
             if (m & IO_WRITE)
@@ -81,27 +85,17 @@ struct Gpio {
                     *p++ = rdByte(i == n-1);
         }
 
-        if ((m & IO_STOP) || !ack)
-            stop();
+        if ((m & IO_STOP) || !ack) {
+            sda = 0;
+            sclHi();
+            sda = 1;
+            hold();
+        }
 
         return ack ? n : -1;
     }
 
 private:
-    bool start (uint8_t a) const {
-        sclLo();
-        sclHi();
-        sda = 0;
-        return wrByte(a);
-    }
-
-    void stop () const {
-        sda = 0;
-        sclHi();
-        sda = 1;
-        hold();
-    }
-
     int rdByte (bool last) const {
         uint8_t data = 0;
         for (auto mask = 0x80; mask != 0; mask >>= 1) {
@@ -113,8 +107,6 @@ private:
         sda = last;
         sclHi();
         sclLo();
-        if (last)
-            stop();
         sda = 1;
         return data;
     }
