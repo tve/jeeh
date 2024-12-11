@@ -14,27 +14,25 @@ Font const font2 (u8g2_font_7x14_tf);
 Font const font3 (u8g2_font_9x15_tf);
 #endif
 
-auto& lcd = spiBus;
-
-Pin& lcdCmd = lcd.miso; // re-used as C/D output pin
+Pin& lcdCmd = spiBus.miso; // re-used as C/D output pin
 //Pin lcdRst {"D15","P"}; // tied to Vcc instead
 
 namespace {
 
 void out16 (uint16_t v) {
     uint8_t hdr [] = { (uint8_t) (v>>8), (uint8_t) v };
-    lcd.ioRequest(IO_WRITE, hdr, sizeof hdr);
+    spiBus.ioRequest(IO_WRITE, hdr, sizeof hdr);
 }
 
 // returns with cs low
 void cmd (uint8_t v) {
     lcdCmd = 0;
-    lcd.ioRequest(IO_START|IO_WRITE, &v, 1);
+    spiBus.ioRequest(IO_START|IO_WRITE, &v, 1);
     lcdCmd = 1;
 }
 
 void cmdEnd () {
-    lcd.ioRequest(IO_STOP);
+    spiBus.ioRequest(IO_STOP, nullptr, 0);
 }
 
 void init () {
@@ -69,7 +67,7 @@ void init () {
         else {
             cmd(*p);
             auto n = *++p;
-            lcd.ioRequest(IO_WRITE, (uint8_t*) p+1, n);
+            spiBus.ioRequest(IO_WRITE, (uint8_t*) p+1, n);
             p += n;
         }
     }
@@ -93,11 +91,11 @@ void setArea (int x1, int y1, int x2, int y2) {
     cmd(0x2A);
     uint8_t xhdr [] = { (uint8_t) (x1>>8), (uint8_t) x1,
                         (uint8_t) (x2>>8), (uint8_t) x2 };
-    lcd.ioRequest(IO_WRITE, xhdr, sizeof xhdr);
+    spiBus.ioRequest(IO_WRITE, xhdr, sizeof xhdr);
     cmd(0x2B);
     uint8_t yhdr [] = { (uint8_t) (y1>>8), (uint8_t) y1,
                         (uint8_t) (y2>>8), (uint8_t) y2 };
-    lcd.ioRequest(IO_WRITE, yhdr, sizeof yhdr);
+    spiBus.ioRequest(IO_WRITE, yhdr, sizeof yhdr);
     cmd(0x2C);
 }
 
@@ -130,7 +128,7 @@ void orientation (uint8_t rot) {
 
     constexpr uint8_t mac [] = { 0x28, 0x98, 0xF8, 0x48 };
     cmd(0x36);
-    lcd.ioRequest(IO_WRITE|IO_STOP, (uint8_t*) &mac[rot], 1);
+    spiBus.ioRequest(IO_WRITE|IO_STOP, (uint8_t*) &mac[rot], 1);
 }
 
 struct Tft {
@@ -152,7 +150,7 @@ struct Tft {
 TwoDee<Tft> gfx;
 
 void testLcd () {
-    lcd.select(lcdSel);
+    spiBus.select(lcdSel);
 
     lcdCmd.mode("P"); // MISO is reused as C/D output pin
     lcdCmd = 1;
@@ -199,6 +197,4 @@ void testLcd () {
     logf("font3 %6d us (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
 #endif
-
-    lcd.init(); // reinit wirh proper MISO pin mode
 }

@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "poll"
+#define PIOENV  "sync"
 
 //CG1 board leds
 #define LED  "B8"
@@ -9,7 +9,7 @@
 const Pin led (LED,"P");
 
 //CG1 board mode
-#define MODE_POLL 1
+#define MODE_SYNC 1
 
 //CG[ board pins
 #define PINS_VCC "B6"
@@ -39,8 +39,16 @@ Pin sdSel (PINS_SD,"U");     // NSEL for SD card on SPI
 }
 //CG]
 
-uart::Async<UART_TYPE> console (UART_CONF);
-UART_TRIGGER(console)
+constexpr uart::Config uartCfg {
+    UART_PINS,                                 // gpio
+    UART_NAME.ADDR, ena::UART_NAME, UART_FREQ, // poll
+    DMA1.ADDR, 1-1, 1-1, 2-1, 27, 26,          // sync
+    Irq::DMA1_CH1, Irq::DMA1_CH1, Irq::USART2,
+};
+
+Dev<uart::Poll<uartCfg>> console;
+//uart::Sync<UART_TYPE> console (UART_CONF);
+//UART_TRIGGER(console)
 
 //CG[ board spi
 #define SPI_NAME  SPI1
@@ -69,7 +77,7 @@ UART_TRIGGER(console)
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)
-        console.write(buf, len);
+        console.ioRequest(IO_WRITE, (uint8_t*) buf, len);
     return len;
 }
 
@@ -78,7 +86,7 @@ void initBoard () {
     cycles::init();
     rtc::init(false);
 
-    console.init(UART_PINS, 2'000'000);
+    console.init(2'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running

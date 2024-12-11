@@ -1,26 +1,82 @@
 namespace jeeh::spi {
 
+struct Config {
+    char const* pins;           // gpio
+    uint32_t base =0;           // poll
+    uint16_t ena =0;
+    uint8_t mhz =0;
+    uint32_t dmaBase =0;        // sync
+    uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
+    Irq txIrq ={}, rxIrq ={};
+};
+
+template< Config const& C >
 struct Gpio {
+    using IoSize = uint16_t;
+
     Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
     uint16_t rate =0;
     uint8_t cpol =0;
 
-    void init (char const* desc, int khz =10'000) {
-        Pin::config(desc, &mosi, 4);
+    void init (int khz =10'000) {
+        Pin::config(C.pins, &mosi, 4);
         Pin::config(":HP,:U,:HP,", &mosi, 4);
+        rate = khz < 100 ? khz : SystemCoreClock/khz/200'000; // TODO
         sclk = cpol;
-        disable(); // start with NSEL high
-
-        rate = khz < 1000 ? khz : SystemCoreClock/khz/200'000; // TODO
     }
 
     void deinit () {
         Pin::config(":F,,,:U", &mosi, 4);
     }
 
-    void enable () const { hold(); nsel = 0; hold(); }
-    void disable () const { hold(); nsel = 1; hold(); }
+    void select (Pin sel) {
+        nsel = sel;
+        nsel = 1; // start with nsel high
+        nsel.mode("HP");
+    }
 
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
+    }
+
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        uint8_t r = 0;
+        checkStart(m);
+        if (m & IO_WRITE)
+            for (auto i = 0U; i < n; ++i)
+                r = rwByte(*p++); // return last byte from reply
+        else
+            for (auto i = 0U; i < n; ++i)
+                *p++ = rwByte(0);
+        checkStop(m);
+        return m & IO_LAST ? r : n;
+    }
+
+protected:
+    void checkStart (uint16_t m) const {
+        if ((m & IO_START) && nsel.isValid()) {
+            hold();
+            nsel = 0;
+            hold();
+        }
+    }
+
+    void checkStop (uint16_t m) const {
+        if ((m & IO_STOP) && nsel.isValid()) {
+            hold();
+            nsel = 1;
+            hold();
+        }
+    }
+
+private:
     int rwByte (int v) const {
         auto r = 0;
         for (auto i = 0; i < 8; ++i) {
@@ -35,55 +91,30 @@ struct Gpio {
         return r;
     }
 
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
-        uint8_t r = 0;
-        auto q = (uint8_t*) p;
-        if (w)
-            for (auto i = 0U; i < n; ++i)
-                r = rwByte(*q++); // return last byte from reply
-        else
-            for (auto i = 0U; i < n; ++i)
-                *q++ = rwByte(0);
-        return r;
-    }
-
-private:
     void hold () const {
         for (volatile int i = rate; i >= 0; ) i = i-1;
     }
 };
 
-// polled H/W version (see spi::Gpio for bit-banged version)
-template< uint32_t A >
-struct Poll {
-    using ID = Pin;
+template< Config const& C >
+struct Poll : Gpio<C> {
+    using BASE = Gpio<C>;
 
-    static constexpr IoReg<A> SPI {};
+    static constexpr IoReg<C.base> SPI {};
     enum { CR1=0x00, CR2=0x04, SR=0x08, DR=0x0C }; // SPI regs
 
-    struct Config {
-        uint16_t ena;
-        uint8_t mhz;
-    };
-
-    Pin mosi, miso, sclk, nsel; // pin definitions must be kept in this order
-    Config const cfg;
-
-    Poll (uint16_t e, uint8_t f) : cfg { e, f } {}
-
-    void init (char const* defs, int khz =10'000) {
-        Pin::config(defs, &mosi, 4);
-        disable(); // start with NSEL high
+    void init (int khz =10'000) {
+        Pin::config(C.pins, &(BASE::mosi), 4);
 
         int clk = SystemCoreClock / 1'000;
-        while (clk > 1000 * cfg.mhz)
+        while (clk > 1000 * C.mhz)
             clk /= 2;
         auto div = 0; // determine clock divider
         while ((clk >> (div+1)) > khz)
             ++div;
         assert(div <= 7);
 
-        RCC(cfg.ena, 1) = 1;
+        RCC(C.ena, 1) = 1;
         SPI[CR1] = (div<<3) | (1<<2); // BD MSTR
 #if STM32F1 | STM32F4 | STM32L0
         SPI[CR2] = (1<<2); // SSOE
@@ -94,28 +125,30 @@ struct Poll {
     }
 
     void deinit () {
-        Pin::config(":F,,,:U", &mosi, 4);
-        RCC(cfg.ena, 1) = 0;
+        RCC(C.ena, 1) = 0;
+        BASE::deinit();
     }
 
-    void enable () const { nsel = 0; }
-    void disable () const { nsel = 1; }
-
-    int rwByte (int v) const {
-        SPI.byte(DR) = v;
-        while (!SPI[SR](0)) {} // ~RXNE
-        return SPI.byte(DR);
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
     }
 
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
         uint8_t r = 0;
+        BASE::checkStart(m);
         if (n > 0) {
-            auto q = (uint8_t*) p;
-            if (w) {
-                SPI.byte(DR) = *q++;
+            if (m & IO_WRITE) {
+                SPI.byte(DR) = *p++;
                 while (--n != 0) {
                     while (!SPI[SR](1)) {} // ~TXE
-                    SPI.byte(DR) = *q++;
+                    SPI.byte(DR) = *p++;
                     while (!SPI[SR](0)) {} // ~RXNE
                     (void) +SPI.byte(DR);
                 }
@@ -127,151 +160,161 @@ struct Poll {
                     while (!SPI[SR](1)) {} // ~TXE
                     SPI.byte(DR) = 0;
                     while (!SPI[SR](0)) {} // ~RXNE
-                    *q++ = SPI.byte(DR);
+                    *p++ = SPI.byte(DR);
                 }
                 while (!SPI[SR](0)) {} // ~RXNE
-                *q = SPI.byte(DR);
+                *p = SPI.byte(DR);
             }
         }
-        return r;
+        BASE::checkStop(m);
+        return m & IO_LAST ? r : n;
     }
 };
 
-template< uint32_t A, uint32_t D, int T, int R >
-struct Sync : Poll<A> {
-    using BASE = Poll<A>;
+template< Config const& C >
+struct Sync : Poll<C> {
+    using BASE = Poll<C>;
+    using BASE::SPI;
 
-    static constexpr IoReg<A> SPI {};
+    static constexpr dma::DmaConfig<Config,C> dma {};
 
-    struct Config : BASE::Config {
-        Irq txIrq, rxIrq;
-        DmaConfig<D,T,R> dma;
-    };
-
-    Config const cfg;
-
-    Sync (Config const& c) : BASE (c.ena, c.mhz), cfg (c) {}
-
-    void init (char const* defs, int khz) {
-        BASE::init(defs, khz);
+    void init (int khz =10'000) {
+        BASE::init(khz);
         SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
-
-        // peripheral address config and interrupt vector setup
-        cfg.dma.init(A + BASE::DR, A + BASE::DR);
-
+        dma.init(C.base + BASE::DR, C.base + BASE::DR);
         SCB[0x10](4) = 1; // SEVONPEND
     }
 
-    // void deinit () // RCC(ena::DMA1+cfg.dma.idx,1) = 0; // may be shared
-
-    // sync version, dma with wfe
-    uint8_t transfer (uint8_t w, uint8_t* p, uint16_t n) const {
-        if (n == 0)
-            return 0;
-
-        startReq(w, p, n);
-        while (true) {
-            if (!cfg.dma.isRunning())
-                break;
-            if (cfg.dma.completed() == 0)
-                asm ("wfe");
-        }
-        Task::irqClear(cfg.txIrq);
-        Task::irqClear(cfg.rxIrq);
-        return finishReq(w, p, n);
-    }
-
-protected:
-    void startReq (bool w, void* p, uint16_t n) const {
-        assert(n > 0);
-
-        assert(!SPI[BASE::SR](7)); // ~BSY
-        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
-
-        if (w)
-            cfg.dma.txStart(p, n);
-        else {
-            SPI[BASE::CR1](6) = 0; // ~SPE
-            SPI[BASE::CR1](10) = 1; // RXONLY
-            cfg.dma.rxStart(p, n);
-            SPI[BASE::CR1](6) = 1; // SPE needed to reaffirm?
-        }
-    }
-
-    uint8_t finishReq (bool w, void* p, uint16_t n) const {
-        if (!w) {
-            SPI[BASE::CR1](10) = 0; // ~RXONLY
-            while (SPI[BASE::SR](7)) {} // BSY
-            cache::inval(p, n);
-        }
-
-        while (SPI[BASE::SR](7)) {} // BSY
-        //while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
-        //while (SPI[BASE::SR](7)) {} // BSY
-
-        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        //assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
-
-        uint8_t r;
-        do
-            r = SPI.byte(BASE::DR);
-        while (SPI[BASE::SR](9,2) > 0); // FRLVL
-
-        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
-        assert(SPI[BASE::SR](9,2) <= 1); // FRLVL
-
-        return r;
-    }
-};
-
-template< uint32_t A, uint32_t D, int T, int R >
-struct Async : Sync<A,D,T,R>, Task {
-    using BASE = Sync<A,D,T,R>;
-    using BASE::Sync, BASE::cfg;
-
-    enum TAG { START, RXDONE, TXDONE };
-
-    Event pending;
-
-    uint8_t init (char const* defs, int khz) {
-        BASE::init(defs, khz);
-        irqEnable(cfg.txIrq);
-        irqEnable(cfg.rxIrq);
-        return Task::init();
-    }
-
     void deinit () {
-        irqDisable(cfg.txIrq);
-        irqDisable(cfg.rxIrq);
+        SPI[BASE::CR2](0,2) = 0; // ~TXDMAEN ~RXDMAEN
+        dma.deinit();
         BASE::deinit();
     }
 
-    // async version
-    void start (uint8_t w, uint8_t* p, uint16_t n, Event out) {
-        assert(n > 0);
-        pending = out;
-        BASE::startReq(w, p, n);
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
     }
 
-    void interrupt () {
-        auto f = cfg.dma.completed();
-        if (f != 0)
-            trigger(f == cfg.dma.TXDONE ? TXDONE : RXDONE);
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        assert(!Task::pendingIrq());
+        if (startReq(m, p, n)) {
+            while (!Task::pendingIrq())
+                asm ("wfe");
+            dma.completed();
+            assert(!dma.isRunning());
+            Task::irqClear(C.txIrq);
+            Task::irqClear(C.rxIrq);
+        }
+        return finishReq(m, p, n);
+    }
+
+protected:
+    bool startReq (uint16_t m, void* p, uint16_t n) const {
+        assert(!SPI[BASE::SR](7)); // ~BSY
+        assert(SPI[BASE::SR](11,2) == 0); // FTLVL
+        assert(SPI[BASE::SR](9,2) == 0); // FRLVL
+
+        BASE::checkStart(m);
+        if (n == 0)
+            return false;
+        // TODO try to get read+write working, replacing same buffer
+        if (m & IO_WRITE)
+            dma.txStart(p, n);
+        else {
+            dma.rxStart(p, n);
+            SPI[BASE::CR1](10) = 1; // RXONLY
+            SPI[BASE::CR1](6) = 1; // SPE
+        }
+        return true;
+    }
+
+    uint16_t finishReq (uint16_t m, void* p, uint16_t n) const {
+        uint8_t r = 0;
+        if (n > 0) {
+            if (m & IO_READ) {
+                cache::inval(p, n);
+                SPI[BASE::CR1](10) = 0; // ~RXONLY
+            }
+
+            while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
+            while (SPI[BASE::SR](7)) {} // BSY
+
+            while (SPI[BASE::SR](9,2) != 0) // FRLVL
+                r = +SPI.byte(BASE::DR);
+        }
+        BASE::checkStop(m);
+        return m & IO_LAST ? r : n;
+    }
+};
+
+template< Config const& C >
+struct Async : Sync<C>, Task {
+    using BASE = Sync<C>;
+    using BASE::dma;
+
+    enum TAG { START, REQUEST, DONE };
+
+    uint8_t init (int khz =10'000) {
+        BASE::init(khz);
+        return Task::init();
+    }
+
+    void setReply (Event out) const {
+        pend = out;
+    }
+
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        if (!pend)
+            return BASE::ioRequest(v, n); // use sync version
+        reqs = v;
+        num = n;
+        send({ tId, REQUEST });
+        return 0;
+    }
+
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        curr = { m, n, p };
+        return ioRequest(&curr, 1);
+    }
+
+    void irqDma () {
+return; // FIXME why does this get called even when only sync mode is used ???
+        auto f = dma.completed();
+        assert(f > 0);
+        trigger(DONE);
     }
 
 private:
+    mutable IoReq curr ={ 0, 0, nullptr };
+    mutable IoReq const* reqs;
+    mutable int num =0;
+    mutable Event pend;
+
     Event process (Event in, Event out) override {
+        assert(!out); // should use setReply instead
         switch (in.eTag) {
             case START:
                 break;
-            case RXDONE:
-                pending.eVal = BASE::finishReq(false, nullptr, 0);
-                reply(pending);
-                break;
-            case TXDONE:
-                pending.eVal = BASE::finishReq(true, nullptr, 0);
-                reply(pending);
+            case REQUEST:
+                irqEnable(C.txIrq);
+                irqEnable(C.rxIrq);
+                while (--num >= 0) {
+                    curr = *reqs++;
+                    if (BASE::startReq(curr.mode, curr.ptr, curr.len))
+                        break; // transfer started, wait for DONE trigger
+            case DONE:         // this jumps back into the transfer loop!
+                    pend.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                }
+                irqDisable(C.txIrq);
+                irqDisable(C.rxIrq);
+                out = take(pend);
                 break;
             default:
                 fail();

@@ -1,8 +1,8 @@
 // Common code for setting up the DMA channels.
 
-namespace jeeh {
+namespace jeeh::dma {
 
-template< uint32_t D, int T, int R >
+template< typename T, T const& C >
 struct DmaConfig {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
     enum { ISR=0x00,IFCR=0x04,CCR=0x08,CNDTR=0x0C,CPAR=0x10,CMAR=0x14 };
@@ -13,14 +13,12 @@ struct DmaConfig {
 #endif
     enum { NONE, RXHALF, RXFULL, TXDONE };
 
-    static constexpr IoReg<D>             DMA {};
-    static constexpr IoReg<D+CHAN_STEP*T> DTX {}; // DMA channel TX
-    static constexpr IoReg<D+CHAN_STEP*R> DRX {}; // DMA channel RX
-
-    uint8_t idx, txReq, rxReq; // 0-based
+    static constexpr IoReg<C.dmaBase>                   DMA {};
+    static constexpr IoReg<C.dmaBase+CHAN_STEP*C.dmaTs> DTX {}; // DMA stream TX
+    static constexpr IoReg<C.dmaBase+CHAN_STEP*C.dmaRs> DRX {}; // DMA stream RX
 
     void init (uint32_t txAddr, uint32_t rxAddr) const {
-        RCC(ena::DMA1+idx,1) = 1;
+        RCC(ena::DMA1+C.dmaIdx,1) = 1;
 
         // channel/stream/request setup (confusing naming differences!)
 #if STM32G4 | STM32H7 | STM32WB | STM32WL
@@ -37,11 +35,11 @@ struct DmaConfig {
 #else // STM32WB | STM32WL
         constexpr auto CHMAP = 7;
 #endif
-        DMAMUX[4*(CHMAP*idx+T)] = txReq;
-        DMAMUX[4*(CHMAP*idx+R)] = rxReq;
+        DMAMUX[4*(CHMAP*C.dmaIdx+C.dmaTs)] = C.dmaTc;
+        DMAMUX[4*(CHMAP*C.dmaIdx+C.dmaRs)] = C.dmaRc;
 #elif STM32L0 | STM32L4
-        DMA[0xA8](4*T,4) = txReq; // CSELR
-        DMA[0xA8](4*R,4) = rxReq; // CSELR
+        DMA[0xA8](4*C.dmaTs,4) = C.dmaTc; // CSELR
+        DMA[0xA8](4*C.dmaRs,4) = C.dmaRc; // CSELR
 #endif
 
         // channel configuration
@@ -52,8 +50,8 @@ struct DmaConfig {
         DTX[CCR] = 0b0100'0101'0000; // MINC DIR TCIE
         DRX[CCR] = 0b0100'0001'0000; // MINC TCIE
 #else
-        DTX[CCR] = (txReq<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
-        DRX[CCR] = (rxReq<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
+        DTX[CCR] = (C.dmaTc<<25) | 0b0100'0101'0000; // CHSEL MINC DIR TCIE
+        DRX[CCR] = (C.dmaRc<<25) | 0b0100'0001'0000; // CHSEL MINC TCIE
 #endif
 
         DTX[CPAR] = txAddr;
@@ -80,8 +78,8 @@ struct DmaConfig {
 
     int completed () const {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
-        if (DMA[ISR](4*R+2)) { // HTIF
-            DMA[IFCR] = 1<<(4*R+2);
+        if (DMA[ISR](4*C.dmaRs+2)) { // HTIF
+            DMA[IFCR] = 1<<(4*C.dmaRs+2);
 #if STM32F1 | STM32F3 | STM32G4
             if (DRX[CCR](5)) // only report if circular
 #else
@@ -89,26 +87,26 @@ struct DmaConfig {
 #endif
                 return RXHALF;
         }
-        if (DMA[ISR](4*R)) { // GIF
+        if (DMA[ISR](4*C.dmaRs)) { // GIF
             if (!DRX[CCR](5)) // only disable if not circular
                 DRX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*R);
+            DMA[IFCR] = 1<<(4*C.dmaRs);
             return RXFULL;
         }
-        if (DMA[ISR](4*T)) { // GIF
+        if (DMA[ISR](4*C.dmaTs)) { // GIF
             DTX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*T);
+            DMA[IFCR] = 1<<(4*C.dmaTs);
             return TXDONE;
         }
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
-        if ((uint8_t) DMA[R&~3](ifcBits[R&3],6)) { // rx irq
-            auto d = DMA[R&~3](4+ifcBits[R&3]) ? RXHALF : RXFULL;
-            DMA[IFCR+(R&~3)] = 0b111101 << ifcBits[R&3]; // clr irq
+        if ((uint8_t) DMA[C.dmaRs&~3](ifcBits[C.dmaRs&3],6)) { // rx irq
+            auto d = DMA[C.dmaRs&~3](4+ifcBits[C.dmaRs&3]) ? RXHALF : RXFULL;
+            DMA[IFCR+(C.dmaRs&~3)] = 0b111101 << ifcBits[C.dmaRs&3]; // clr irq
             return d;
         }
-        if ((uint8_t) DMA[T&~3](ifcBits[T&3],6)) { // tx irq
-            DMA[IFCR+(T&~3)] = 0b111101 << ifcBits[T&3]; // clr irq
+        if ((uint8_t) DMA[C.dmaTs&~3](ifcBits[C.dmaTs&3],6)) { // tx irq
+            DMA[IFCR+(C.dmaTs&~3)] = 0b111101 << ifcBits[C.dmaTs&3]; // clr irq
             return TXDONE;
         }
 #endif

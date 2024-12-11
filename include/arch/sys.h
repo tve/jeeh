@@ -68,18 +68,11 @@ struct IoReq {
 template< typename T >
 struct Dev : T {
     using IoSize = typename T::IoSize;
+    using T::ioRequest;
 
     template< uint32_t N >
     int ioRequest (IoReq const (&v) [N]) const {
         return ioRequest(v, N);
-    }
-
-    int ioRequest (IoReq const* v, IoSize n) const {
-        return T::ioRequest(v, n);
-    }
-
-    int ioRequest (uint32_t m, uint8_t* p =nullptr, IoSize n =0) const {
-        return T::ioRequest(m, p, n);
     }
 
     // simple reads and writes

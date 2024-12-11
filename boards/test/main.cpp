@@ -1,10 +1,9 @@
 #include <jee.h>
 #include <jee/cycles.h>
-#include <jee/dma.h>
+#include "jee/dma.h"
+#include "jee/i2c.h"
+#include "jee/spi.h"
 #include <jee/uart.h>
-#include "xdma.h"
-#include "xi2c.h"
-#include "xspi.h"
 using namespace jeeh;
 #include "defs.h"
 
