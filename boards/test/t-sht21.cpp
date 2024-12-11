@@ -23,7 +23,7 @@ void testSht21 () {
         auto hRaw = measure(0xF5, 29); // measure humidity
         auto t = (17572 * tRaw >> 16) - 4685; // °C x 100
         auto h = (12500 * hRaw >> 16) - 600; // %RH x 100
-        logf("T: %d.%02d C, RH: %d.%02d %%",
+        logf("T: %d.%02d °C RH: %d.%02d %%",
                 t/100, (t < 0 ? -t : t) % 100, h/100, h%100);
     }
 }

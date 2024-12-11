@@ -46,17 +46,17 @@ itg3200 gyro:    xyz =     -6     25      8
 itg3200 gyro:    xyz =     -7     26      8
 itg3200 gyro:    xyz =     -7     26      9
                                                            I2C - SHT21
-T: 19.65 C, RH: 46.52 %
-T: 19.66 C, RH: 46.52 %
-T: 19.67 C, RH: 46.51 %
+T: 19.65 °C RH: 46.52 %
+T: 19.66 °C RH: 46.52 %
+T: 19.67 °C RH: 46.51 %
                                                           I2C - BMP390
-t-raw 007D4700 p-raw 005C7100  =>  temp 21.326 °C, pres 1032.065 hPa
-t-raw 007D4800 p-raw 005C7100  =>  temp 21.331 °C, pres 1032.076 hPa
-t-raw 007D4A00 p-raw 005C7000  =>  temp 21.340 °C, pres 1032.122 hPa
-                                                          SPI - BMP390
-t-raw 007D4F00 p-raw 005C7200  =>  temp 21.363 °C, pres 1032.134 hPa
-t-raw 007D5000 p-raw 005C7500  =>  temp 21.368 °C, pres 1032.078 hPa
-t-raw 007D5200 p-raw 005C7200  =>  temp 21.377 °C, pres 1032.168 hPa
+raw T: 007D4700 P: 005C7100 => T: 21.326 °C P: 1032.065 hPa
+raw T: 007D4800 P: 005C7100 => T: 21.331 °C P: 1032.076 hPa
+raw T: 007D4A00 P: 005C7000 => T: 21.340 °C P: 1032.122 hPa
+                                                       SPI - BMP390
+raw T: 007D4F00 P: 005C7200 => T: 21.363 °C P: 1032.134 hPa
+raw T: 007D5000 P: 005C7500 => T: 21.368 °C P: 1032.078 hPa
+raw T: 007D5200 P: 005C7200 => T: 21.377 °C P: 1032.168 hPa
                                                              SPI - LCD
 init      40 us
 clear  32375 us

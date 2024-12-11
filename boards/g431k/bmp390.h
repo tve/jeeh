@@ -86,6 +86,6 @@ void showReading (uint8_t const* buf) {
     int32_t ct = t2 * 1000;
     int32_t cp = p2 * 10;
 
-    logf("t-raw %08x p-raw %08x  =>  temp %d.%03d °C, pres %d.%03d hPa",
-            t, p, ct / 1000, (ct < 0 ? -ct : ct) % 1000, cp / 1000, cp % 1000);
+    logf("raw T: %08x P: %08x => T: %d.%03d °C P: %d.%03d hPa",
+            t, p, ct/1000, (ct < 0 ? -ct : ct) % 1000, cp/1000, cp%1000);
 }
