@@ -8,14 +8,7 @@ using namespace jeeh;
 
 Pin led (LED, "P");
 
-constexpr uart::Config uartCfg {
-    UART_PINS,                                 // gpio
-    UART_NAME.ADDR, ena::UART_NAME, UART_FREQ, // poll
-//  DMA1.ADDR, 1-1, 1-1, 2-1, 27, 26,          // sync
-//  Irq::DMA1_CH1, Irq::DMA1_CH1, Irq::USART2,
-};
-
-Dev<uart::Poll<uartCfg>> console;
+Dev<uart::Poll<UART_CONF>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)

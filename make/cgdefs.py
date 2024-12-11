@@ -35,6 +35,9 @@ def BOARD(block, name, suffix=''):
                 r.append(f'#define LED{i+1} "{v}"')
         return r
 
+    def addTempl(t):
+        r.append(Template('    ' + t).substitute(f))
+
     if name.startswith('uart'):
         if not suffix:
             suffix = name[4:].upper();
@@ -43,29 +46,22 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             f[k] = v
         # N:USART2 P:A2:7,A3 F:150 V:2 D:1 L:CH O:0 T:1 R:2 C:26,27
-        r = [f'#define UART{suffix}_NAME  {f["N"]}',
-             f'#define UART{suffix}_PINS  "{f["P"]}"',
-             f'#define UART{suffix}_FREQ  {f["F"]}']
+        r = [f'#define UART{suffix}_NAME {f["N"]}']
         if 'V' in f:
-            r.append(f'#define UART{suffix}_VERS  {f["V"]}')
+            r.append(f'#define UART{suffix}_VERS {f["V"]}')
         if 'D' in f:
-            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
-            t1 = Template('ena::$N, $F, Irq::$N,')
-            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
-            skip = len(suffix) * ' '
-            r.append(f'#define UART{suffix}_TYPE  {t0.substitute(f)}')
-            r.append(f'#define UART{suffix}_CONF  {{ {t1.substitute(f)} \\')
-            r.append(f'                    {skip} {t2.substitute(f)} }}')
-
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
-            x1 = 'void ${N}_IRQHandler () { (w).irqIdle(); }'
-            x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'
-            x3 = 'void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); }'
             r.append(f'#define UART{suffix}_TRIGGER(w) extern "C" {{ \\')
-            r.append(f'    {Template(x1).substitute(f)} \\')
-            r.append(f'    {Template(x2).substitute(f)} \\')
-            r.append(f'    {Template(x3).substitute(f)} \\')
+            addTempl('void ${N}_IRQHandler () { (w).irqIdle(); } \\')
+            addTempl('void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); } \\')
+            addTempl('void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); } \\')
             r.append(f'}}')
+        r.append(f'constexpr uart::Config UART{suffix}_CONF {{')
+        addTempl('"$P", $N.ADDR, ena::$N, $F,')
+        if 'D' in f:
+            addTempl('DMA$D.ADDR, $D-1, $T-$O,$R-$O, $C,')
+            addTempl('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, Irq::$N,')
+        r.append('};')
         return r
 
     if name.startswith('i2c'):
@@ -81,19 +77,17 @@ def BOARD(block, name, suffix=''):
              f'#define I2C{suffix}_PINS  "{f["P"]}"',
              f'#define I2C{suffix}_FREQ  {f["F"]}']
         if 'D' in f:
-            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
-            t1 = Template('ena::$N, $F, Irq::${N}_EV, Irq::${N}_ER,')
-            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
-            skip = len(suffix) * ' '
-            r.append(f'#define I2C{suffix}_TYPE  ' + t0.substitute(f))
-            r.append(f'#define I2C{suffix}_CONF  {{ {t1.substitute(f)} \\')
-            r.append(f'                   {skip} {t2.substitute(f)} }}')
-
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             x1 = 'void ${N}_EV_IRQHandler () { (w).irqI2c(); }'
             r.append(f'#define I2C{suffix}_TRIGGER(w) extern "C" {{ \\')
             r.append(f'    {Template(x1).substitute(f)} \\')
             r.append(f'}}')
+        r.append(f'constexpr i2c::Config I2C{suffix}_CONF {{')
+        addTempl('"$P", $N.ADDR, ena::$N, $F,')
+        if 'D' in f:
+            addTempl('DMA$D.ADDR, $D-1, $T-$O,$R-$O, $C,')
+            addTempl('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, Irq::${N}_EV, Irq::${N}_ER,')
+        r.append('};')
         return r
 
     if name.startswith('spi'):
@@ -104,18 +98,8 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             f[k] = v
         # N:SPI1 P:A7:5,A6,A5,A4:P F:54 D:1 L:CH O:0 T:4 R:3 C:0,0
-        r = [f'#define SPI{suffix}_NAME  {f["N"]}',
-             f'#define SPI{suffix}_PINS  "{f["P"]}"',
-             f'#define SPI{suffix}_FREQ  {f["F"]}']
+        r = [f'#define SPI{suffix}_NAME  {f["N"]}']
         if 'D' in f:
-            t0 = Template('$N.ADDR, DMA$D.ADDR, $T-$O, $R-$O')
-            t1 = Template('ena::$N, $F,')
-            t2 = Template('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, { $D-1,$C }')
-            skip = len(suffix) * ' '
-            r.append(f'#define SPI{suffix}_TYPE  ' + t0.substitute(f))
-            r.append(f'#define SPI{suffix}_CONF  {{ {t1.substitute(f)} \\')
-            r.append(f'                   {skip} {t2.substitute(f)} }}')
-
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'
             x3 = 'void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); }'
@@ -123,6 +107,12 @@ def BOARD(block, name, suffix=''):
             r.append(f'    {Template(x2).substitute(f)} \\')
             r.append(f'    {Template(x3).substitute(f)} \\')
             r.append(f'}}')
+        r.append(f'constexpr spi::Config SPI{suffix}_CONF {{')
+        addTempl('"$P", $N.ADDR, ena::$N, $F,')
+        if 'D' in f:
+            addTempl('DMA$D.ADDR, $D-1, $T-$O,$R-$O, $C,')
+            addTempl('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R,')
+        r.append('};')
         return r
 
     # catch-all: "board_foo = bar:123 baz:def boo::xyz" will generate:

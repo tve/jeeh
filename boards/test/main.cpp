@@ -7,40 +7,26 @@
 using namespace jeeh;
 #include "defs.h"
 
-constexpr i2c::Config i2cCfg {
-    I2C_PINS,                               // gpio
-    I2C_NAME.ADDR, ena::I2C_NAME, I2C_FREQ, // poll
-    DMA1.ADDR, 1-1, 5-1, 6-1, 17, 16,       // sync
-    Irq::DMA1_CH5, Irq::DMA1_CH6, Irq::I2C1_EV, Irq::I2C1_ER,
-};
-
-constexpr spi::Config spiCfg {
-    SPI_PINS,                               // gpio
-    SPI_NAME.ADDR, ena::SPI_NAME, SPI_FREQ, // poll
-    DMA1.ADDR, 1-1, 3-1, 4-1, 11, 10,       // sync
-    Irq::DMA1_CH3, Irq::DMA1_CH4,
-};
-
 #if MODE_GPIO
 
-Dev<i2c::Gpio<i2cCfg>> i2cBus;
-Dev<spi::Gpio<spiCfg>> spiBus;
+Dev<i2c::Gpio<I2C_CONF>> i2cBus;
+Dev<spi::Gpio<SPI_CONF>> spiBus;
 
 #elif MODE_POLL
 
-Dev<i2c::Poll<i2cCfg>> i2cBus;
-Dev<spi::Poll<spiCfg>> spiBus;
+Dev<i2c::Poll<I2C_CONF>> i2cBus;
+Dev<spi::Poll<SPI_CONF>> spiBus;
 
 #elif MODE_SYNC
 
-Dev<i2c::Sync<i2cCfg>> i2cBus;
-Dev<spi::Sync<spiCfg>> spiBus;
+Dev<i2c::Sync<I2C_CONF>> i2cBus;
+Dev<spi::Sync<SPI_CONF>> spiBus;
 
 #elif MODE_ASYNC
 
-Dev<i2c::Async<i2cCfg>> i2cBus;
+Dev<i2c::Async<I2C_CONF>> i2cBus;
 I2C_TRIGGER(i2cBus)
-Dev<spi::Async<spiCfg>> spiBus;
+Dev<spi::Async<SPI_CONF>> spiBus;
 SPI_TRIGGER(spiBus)
 
 #endif
