@@ -58,7 +58,7 @@ SPI_TRIGGER(spiBus)
 #include "t-sram.cpp"
 
 void header (char const* text) {
-    logf("%79s", text);
+    logf("%70s", text);
 }
 
 int main () {
