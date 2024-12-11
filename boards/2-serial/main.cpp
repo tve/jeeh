@@ -9,7 +9,7 @@ using namespace jeeh;
 Pin led (LED, "P");
 
 namespace serout {
-#if SEROUT_VER
+#if SEROUT_VER == 1
     enum { ISR=0x00, TDR=0x04, BRR=0x08, CR1=0x0C, UE=13 };
 #else    
     enum { CR1=0x00, BRR=0x0C, ISR=0x1C, TDR=0x28, UE=0 };
