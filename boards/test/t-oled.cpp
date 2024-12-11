@@ -24,7 +24,6 @@ void testOled () {
     t = cycles::micros();
     oled1.copyBand (  0,  0, data, sizeof data);
     oled1.copyBand (  1,  8, data, sizeof data);
-#if 0
     oled1.copyBand ( 12, 16, data, sizeof data);
     oled1.copyBand ( 13, 24, data, sizeof data);
     oled1.copyBand ( 24, 32, data, sizeof data);
@@ -39,10 +38,8 @@ void testOled () {
     oled1.copyBand ( 95, 40, data, sizeof data);
     oled1.copyBand (106, 48, data, sizeof data);
     oled1.copyBand (107, 56, data, sizeof data);
-#endif
     t = cycles::micros() - t;
     logf(" oled 1: %5d µs", t);
-return;
 
     i2cBus.select(OLED2);
     oled2.init();

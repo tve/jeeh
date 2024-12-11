@@ -275,7 +275,6 @@ protected:
                  | (((m & IO_START) != 0) << 13) // START
                  | (((m & IO_READ) != 0)  << 10) // RD_WRN
                  |                  (addr << 1); // SADD
-if (n > 1) logf("22 %02x %3d %08x", m, n, +I2C[CR2]);
     }
 
     int finishReq (uint16_t m, uint16_t n) const {
@@ -358,34 +357,28 @@ struct Sync : Poll<C> {
         startReq(m, p, n);
         while (!Task::pendingIrq())
             asm ("wfe");
-if (n > 1) logf("11 %02x %3d %04x", m, n, +I2C[BASE::ISR]);
-        dma.done();
-        dma.completed();
-        assert(!dma.isRunning());
-        auto r = finishReq(m, p, n);
-        Task::irqClear(C.evIrq);
-        Task::irqClear(C.erIrq);
-        Task::irqClear(C.txIrq);
-        Task::irqClear(C.rxIrq);
-        return r;
+        return finishReq(m, p, n);
     }
 
 protected:
     void startReq (uint16_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
         if (m & IO_WRITE)
-            dma.txStart(p, n);
+            dma.txStart(p, 256); // end reached by I2C h/w iso DMA
         else
-            dma.rxStart(p, n);
+            dma.rxStart(p, 256); // end reached by I2C h/w iso DMA
 
         BASE::startReq(m, n);
         I2C[BASE::CR1](4,4) = 0b1111; // ERRIE TCIE STOPIE NACKIE
     }
 
     int finishReq (uint16_t m, void* p, uint8_t n) const {
-        I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
+        dma.done();
         if (m & IO_READ)
             cache::inval(p, n);
+        I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
+        Task::irqClear(C.evIrq);
+        Task::irqClear(C.erIrq);
         return BASE::finishReq(m, n);
     }
 };

@@ -65,21 +65,21 @@ int main () {
     initBoard();
 
 #if 1
-    i2cBus.init();
-    //header("I2C - SCAN");   testScan();
+    i2cBus.init(1000);
+    header("I2C - SCAN");   testScan();
     header("I2C - OLED");   testOled();
-    //header("I2C - FRAM");   testFram();
-    //header("I2C - IMU");    testImu();
-    //header("I2C - SHT21");  testSht21();
-    //header("I2C - BMP390"); testBmpI();
+    header("I2C - FRAM");   testFram();
+    header("I2C - IMU");    testImu();
+    header("I2C - SHT21");  testSht21();
+    header("I2C - BMP390"); testBmpI();
     i2cBus.deinit();
 #endif
 
-#if 0
-    spiBus.init();
+#if 1
+    spiBus.init(20'000);
     header("SPI - BMP390"); testBmpS();
     header("SPI - LCD");    testLcd();
-    spiBus.init(); // reinit wirh proper MISO pin mode
+    spiBus.init(20'000); // reinit wirh proper MISO pin mode
     header("SPI - SRAM");   testSram();
     //header("SPI - SDCARD"); testSdSpi();
     spiBus.deinit();
