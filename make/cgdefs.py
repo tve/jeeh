@@ -73,9 +73,7 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             f[k] = v
         # N:I2C1 P:A2:7,A3 D:1 L:CH O:0 T:1 R:2 C:26,27
-        r = [f'#define I2C{suffix}_NAME  {f["N"]}',
-             f'#define I2C{suffix}_PINS  "{f["P"]}"',
-             f'#define I2C{suffix}_FREQ  {f["F"]}']
+        r = [f'#define I2C{suffix}_NAME {f["N"]}']
         if 'D' in f:
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             x1 = 'void ${N}_EV_IRQHandler () { (w).irqI2c(); }'
@@ -98,7 +96,7 @@ def BOARD(block, name, suffix=''):
             k, v = x.split(':', 1)
             f[k] = v
         # N:SPI1 P:A7:5,A6,A5,A4:P F:54 D:1 L:CH O:0 T:4 R:3 C:0,0
-        r = [f'#define SPI{suffix}_NAME  {f["N"]}']
+        r = [f'#define SPI{suffix}_NAME {f["N"]}']
         if 'D' in f:
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             x2 = 'void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); }'

@@ -45,7 +45,7 @@ Dev<uart::Poll<UART_CONF>> console;
 //UART_TRIGGER(console)
 
 //CG[ board spi
-#define SPI_NAME  SPI1
+#define SPI_NAME SPI1
 #define SPI_TRIGGER(w) extern "C" { \
     void DMA1_Channel3_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
@@ -58,9 +58,7 @@ constexpr spi::Config SPI_CONF {
 //CG]
 
 //CG[ board i2c
-#define I2C_NAME  I2C1
-#define I2C_PINS  "B7:OH4,A15"
-#define I2C_FREQ  170
+#define I2C_NAME I2C1
 #define I2C_TRIGGER(w) extern "C" { \
     void I2C1_EV_IRQHandler () { (w).irqI2c(); } \
 }
@@ -92,7 +90,7 @@ void initBoard () {
             PIOENV, SVDNAME, SystemCoreClock / 1'000'000,
             dt.yr, dt.mo, dt.dy, dt.hh, dt.mm, dt.ss, dt.ms);
     logf("\t i2c=%s  spi=%s  uart=%s",
-            I2C_PINS, SPI_CONF.pins, UART_CONF.pins);
+            I2C_CONF.pins, SPI_CONF.pins, UART_CONF.pins);
     logf("\t led=%s  vcc=%s  bmp=%s  lcd=%s  sram=%s  sd=%s",
             LED, PINS_VCC, PINS_BMP, PINS_LCD, PINS_SRAM, PINS_SD);
 }
