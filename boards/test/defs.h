@@ -77,7 +77,7 @@ Dev<uart::Poll<uartCfg>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)
-        console.ioRequest(IO_WRITE, (uint8_t*) buf, len);
+        console.write(buf, len);
     return len;
 }
 

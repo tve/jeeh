@@ -8,18 +8,25 @@ using namespace jeeh;
 
 Pin led (LED, "P");
 
-uart::Poll<UART_NAME.ADDR> console (ena::UART_NAME, UART_FREQ);
+constexpr uart::Config uartCfg {
+    UART_PINS,                                 // gpio
+    UART_NAME.ADDR, ena::UART_NAME, UART_FREQ, // poll
+//  DMA1.ADDR, 1-1, 1-1, 2-1, 27, 26,          // sync
+//  Irq::DMA1_CH1, Irq::DMA1_CH1, Irq::USART2,
+};
+
+Dev<uart::Poll<uartCfg>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)
-        console.transfer(true, (uint8_t*) buf, len);
+        console.write(buf, len);
     return len;
 }
 
 void initBoard () {
     fastClock();
     cycles::init();
-    console.init(UART_PINS, 2'000'000);
+    console.init(2'000'000);
 
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
