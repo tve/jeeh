@@ -198,8 +198,8 @@ struct Poll : Gpio<C> {
         return r;
     }
 
+    int ioRequest (uint16_t m, uint8_t* p, uint8_t n) const {
 #if STM32F4
-    bool xtransfer (uint8_t a, uint8_t m, uint8_t* p, uint8_t n) const {
         auto waitFor = [](uint8_t bit) {
             while (!I2C[SR1](bit))
                 if (I2C[SR1] & 0x4D00) { // TIMEOUT OVR AF BERR
@@ -209,55 +209,46 @@ struct Poll : Gpio<C> {
             return true;
         };
 
-        if (m != W2) {
+        if (m & IO_START) {
             I2C[CR1](10) = 1; // ACK
             I2C[CR1](8) = 1; // START
             while (!I2C[SR1](0)) {} // ~SB
         }
-        switch (m) {
-            case R1:
-            case W1:
-                I2C[DR] = a<<1;
+        if (m & IO_WRITE) {
+            if (m & IO_START) {
+                I2C[DR] = addr<<1;
                 if (!waitFor(1)) // ADDR
-                    return false;
+                    return -1;
                 (void) +I2C[SR2];
-                [[fallthrough]];
-            case W2:
-                if (n > 0) {
-                    do {
-                        if (!waitFor(7)) // TXE
-                            return false;
-                        I2C[DR] = *p++;
-                    } while (--n > 0);
-                    if (!waitFor(2)) // BTF
-                        return false;
-                }
-                break;
-            case R2:
-                I2C[DR] = (a<<1)+1;
-                if (!waitFor(1)) // ADDR
-                    return false;
-                I2C[CR1](10) = n > 1; // ACK if multiple
-                (void) +I2C[SR2];
+            }
+            if (n > 0) {
                 do {
-                    if (n == 1) { // about to read last byte
-                        I2C[CR1](10) = 0; // ~ACK
-                        I2C[CR1](9) = 1; // STOP
-                    }
-                    while (!I2C[SR1](6)) {} // ~RXNE
-                    *p++ = I2C[DR];
+                    if (!waitFor(7)) // TXE
+                        return -1;
+                    I2C[DR] = *p++;
                 } while (--n > 0);
-                break;
-            default:
-                fail();
+                if (!waitFor(2)) // BTF
+                    return -1;
+            }
+        } else {
+            I2C[DR] = (addr<<1)+1;
+            if (!waitFor(1)) // ADDR
+                return -1;
+            I2C[CR1](10) = n > 1; // ACK if multiple
+            (void) +I2C[SR2];
+            do {
+                if (n == 1) { // about to read last byte
+                    I2C[CR1](10) = 0; // ~ACK
+                    I2C[CR1](9) = 1; // STOP
+                }
+                while (!I2C[SR1](6)) {} // ~RXNE
+                *p++ = I2C[DR];
+            } while (--n > 0);
         }
-        if (m == W2)
+        if (m & IO_STOP)
             I2C[CR1](9) = 1; // STOP
-        return true;
-    }
-#endif
-
-    int ioRequest (uint16_t m, uint8_t* p, uint8_t n) const {
+        return n;
+#else
         startReq(m, n);
         while ((I2C[ISR] & 0x10F0) == 0) // ~TIMEOUT ~TCR ~TC ~STOPF ~NACKF
             if (I2C[ISR](2)) // RXNE
@@ -265,6 +256,7 @@ struct Poll : Gpio<C> {
             else if (I2C[ISR](1)) // TXIS
                 I2C[TXDR] = *p++;
         return finishReq(m, n);
+#endif
     }
 
 protected:
