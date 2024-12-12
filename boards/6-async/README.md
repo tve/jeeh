@@ -2,7 +2,7 @@
 
 This is also an example to send large amounts of text over serial, but now the
 CPU will be mostly idle (and sleeping in main's WFI loop). With async requests,
-an additional reply event needs to be added, which will be sent on completion.
+an additional reply event needs to be set up, which will be sent on completion.
 
 The UART driver will start the transfer and immediately return to the caller.
 The blink task (blinker) can run at the lowest priority because the send task

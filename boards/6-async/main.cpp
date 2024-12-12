@@ -60,7 +60,8 @@ struct Streamer : Task {
                 auto n = snprintf(buf, sizeof buf,
                             "%*c %d ms #%d\n",
                             64 - seq%64, '/', (int) cycles::millis(), seq);
-                console.write(buf, n, { tId, SENT });
+                console.setReply({ tId, SENT });
+                console.write(buf, n);
                 break;
             }
             default:
