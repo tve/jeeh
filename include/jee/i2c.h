@@ -395,6 +395,10 @@ struct Async : Sync<C>, Task {
         BASE::deinit();
     }
 
+    void setReply (Event out) const {
+        pend = out;
+    }
+
     // async version, started from a msg
     void start (uint8_t m, uint8_t* p, uint16_t n, Event out) {
         assert(n > 0);

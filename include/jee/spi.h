@@ -256,7 +256,6 @@ protected:
 template< Config const& C >
 struct Async : Sync<C>, Task {
     using BASE = Sync<C>;
-    using BASE::dma;
 
     enum TAG { START, REQUEST, DONE };
 
@@ -284,8 +283,7 @@ struct Async : Sync<C>, Task {
     }
 
     void irqDma () {
-return; // FIXME why does this get called even when only sync mode is used ???
-        auto f = dma.completed();
+        auto f = BASE::dma.completed();
         assert(f > 0);
         trigger(DONE);
     }

@@ -9,79 +9,40 @@
 const Pin led (LED,"P");
 
 //CG[ board uart
-#define UART_NAME  USART1
-#define UART_PINS  "A9:U7,A10"
-#define UART_FREQ  170
-#define UART_TYPE  USART1.ADDR, DMA1.ADDR, 1-1, 2-1
-#define UART_CONF  { ena::USART1, 170, Irq::USART1, \
-                     Irq::DMA1_CH1, Irq::DMA1_CH2, { 1-1,25,24 } }
+#define UART_NAME USART1
 #define UART_TRIGGER(w) extern "C" { \
     void USART1_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel1_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel2_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART_CONF {
+    "A9:U7,A10", USART1.ADDR, ena::USART1, 170,
+    DMA1.ADDR, 1-1, 1-1,2-1, 25,24,
+    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART1,
+};
 //CG]
 
 //CG[ board spi
-#define SPI_NAME  SPI1
-#define SPI_PINS  "B5:V5,B4,B3,A11:HP"
-#define SPI_FREQ  170
-#define SPI_TYPE  SPI1.ADDR, DMA1.ADDR, 3-1, 4-1
-#define SPI_CONF  { ena::SPI1, 170, \
-                    Irq::DMA1_CH3, Irq::DMA1_CH4, { 1-1,11,10 } }
+#define SPI_NAME SPI1
+#define SPI_TRIGGER(w) extern "C" { \
+    void DMA1_Channel3_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
+}
+constexpr spi::Config SPI_CONF {
+    "B5:V5,B4,B3,A11:HP", SPI1.ADDR, ena::SPI1, 170,
+    DMA1.ADDR, 1-1, 3-1,4-1, 11,10,
+    Irq::DMA1_CH3, Irq::DMA1_CH4,
+};
 //CG]
 
 //CG[ board i2c
-#define I2C_NAME  I2C1
-#define I2C_PINS  "B7:OH4,A15"
-#define I2C_FREQ  170
-#define I2C_TYPE  I2C1.ADDR, DMA1.ADDR, 5-1, 6-1
-#define I2C_CONF  { ena::I2C1, 170, Irq::I2C1_EV, Irq::I2C1_ER, \
-                    Irq::DMA1_CH5, Irq::DMA1_CH6, { 1-1,17,16 } }
-//CG]
-
-uint32_t i2cTiming (uint16_t khz, uint16_t mhz =SystemCoreClock/1'000'000) {
-    switch (mhz) {
-      case 16: // MHz
-        switch (khz) {
-          //CG[ i2c timing 16
-          // 16 Mhz: (remove this line to re-generate)
-          case  100: return 0x00504F49; // prs 0 tcd 5 tdd 0 scll 73 sclh 79
-          case  400: return 0x00500D12; // prs 0 tcd 5 tdd 0 scll 18 sclh 13
-          case 1000: return 0x00500205; // prs 0 tcd 5 tdd 0 scll 5 sclh 2
-          //CG]
-        }
-        break;
-      case 80: // MHz
-        switch (khz) {
-          //CG[ i2c timing 80
-          // 80 Mhz: (remove this line to re-generate)
-          case  100: return 0x1020D4C0; // prs 1 tcd 2 tdd 0 scll 192 sclh 212
-          case  400: return 0x00505366; // prs 0 tcd 5 tdd 0 scll 102 sclh 83
-          case 1000: return 0x00501C23; // prs 0 tcd 5 tdd 0 scll 35 sclh 28
-          //CG]
-        }
-        break;
-      case 160: // MHz
-        switch (khz) {
-          //CG[ i2c timing 160
-          // 160 Mhz: (remove this line to re-generate)
-          case  100: return 0x3010D4C1; // prs 3 tcd 1 tdd 0 scll 193 sclh 212
-          case  400: return 0x0050AACE; // prs 0 tcd 5 tdd 0 scll 206 sclh 170
-          case 1000: return 0x00503C49; // prs 0 tcd 5 tdd 0 scll 73 sclh 60
-          //CG]
-        }
-        break;
-      case 170: // MHz
-        switch (khz) {
-          //CG[ i2c timing 170
-          // 170 Mhz: (remove this line to re-generate)
-          case  100: return 0x3010D4C1; // prs 3 tcd 1 tdd 0 scll 193 sclh 212
-          case  400: return 0x0050AACE; // prs 0 tcd 5 tdd 0 scll 206 sclh 170
-          case 1000: return 0x00503C49; // prs 0 tcd 5 tdd 0 scll 73 sclh 60
-          //CG]
-        }
-        break;
-    }
-    fail();
+#define I2C_NAME I2C1
+#define I2C_TRIGGER(w) extern "C" { \
+    void I2C1_EV_IRQHandler () { (w).irqI2c(); } \
 }
+constexpr i2c::Config I2C_CONF {
+    "B7:OH4,A15", I2C1.ADDR, ena::I2C1, 170,
+    DMA1.ADDR, 1-1, 5-1,6-1, 17,16,
+    Irq::DMA1_CH5, Irq::DMA1_CH6, Irq::I2C1_EV, Irq::I2C1_ER,
+};
+//CG]

@@ -2,8 +2,6 @@
 
 #include "common.h"
 Pin pins [8];
-#include "jee/ticker.h"
-#include "jee/spi.h"
 #include <jee/dev/flash.h>
 #include "defs.h"
 
@@ -15,13 +13,12 @@ const uint8_t expect [] = { 0xE6,0x67,0x64,0xA5,0x53,0x5C,0x73,0x23 }; // serno
 Ticker ticker;
 TICKER_TRIGGER(ticker)
 
-spi::Gpio spiGpio;
-spi::Poll<SPI_NAME.ADDR> spiPoll (ena::SPI_NAME, SPI_FREQ);
-spi::Sync<SPI_TYPE> spiSync (SPI_CONF);
+Dev<spi::Gpio<SPI_CONF>> spiGpio;
+Dev<spi::Poll<SPI_CONF>> spiPoll;
+Dev<spi::Sync<SPI_CONF>> spiSync;
 
-spi::Async<SPI_TYPE> spiAsync (SPI_CONF);
-IRQ_HANDLER(DMA1_Channel3, spiAsync.interrupt) // not DMA1_CH3 !
-IRQ_HANDLER(DMA1_Channel4, spiAsync.interrupt) // not DMA1_CH4 !
+Dev<spi::Async<SPI_CONF>> spiAsync;
+SPI_TRIGGER(spiAsync)
 
 void setUp () {}
 
@@ -33,36 +30,36 @@ void tearDown () {
 }
 
 void testTxGpio () {
-    spiGpio.init(SPI_PINS, SPEED);
+    spiGpio.init(SPEED);
 
     auto start = cycles::micros();
-    spiGpio.transfer(true, (uint8_t*) "x", 1);
+    spiGpio.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 7, cycles::micros()-start);
 
     start = cycles::micros();
-    spiGpio.transfer(true, (uint8_t*) "abcde", 5);
+    spiGpio.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 29, cycles::micros()-start);
 
     start = cycles::micros();
-    spiGpio.transfer(true, (uint8_t*) "1234567890", 10);
+    spiGpio.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 57, cycles::micros()-start);
 
     start = cycles::micros();
-    spiGpio.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    spiGpio.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 174, cycles::micros()-start);
 }
 
 void testRxGpio () {
-    spiGpio.init(SPI_PINS, SPEED);
+    spiGpio.init(SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
-    spiGpio.transfer(false, buf, sizeof buf);
+    spiGpio.read(buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(MARGIN, 577, cycles::micros()-start);
 }
 
 void testFlashGpio () {
-    spiGpio.init(SPI_PINS, SPEED);
+    spiGpio.init(SPEED);
     SpiFlash spif (spiGpio);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -90,36 +87,36 @@ void testFlashGpio () {
 }
 
 void testTxPoll () {
-    spiPoll.init(SPI_PINS, SPEED);
+    spiPoll.init(SPEED);
 
     auto start = cycles::micros();
-    spiPoll.transfer(true, (uint8_t*) "x", 1);
+    spiPoll.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 1, cycles::micros()-start);
 
     start = cycles::micros();
-    spiPoll.transfer(true, (uint8_t*) "abcde", 5);
+    spiPoll.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 2, cycles::micros()-start);
 
     start = cycles::micros();
-    spiPoll.transfer(true, (uint8_t*) "1234567890", 10);
+    spiPoll.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiPoll.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    spiPoll.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 7, cycles::micros()-start);
 }
 
 void testRxPoll () {
-    spiPoll.init(SPI_PINS, SPEED);
+    spiPoll.init(SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
-    spiPoll.transfer(false, buf, sizeof buf);
+    spiPoll.read(buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(MARGIN, 23, cycles::micros()-start);
 }
 
 void testFlashPoll () {
-    spiPoll.init(SPI_PINS, SPEED);
+    spiPoll.init(SPEED);
     SpiFlash spif (spiPoll);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -147,36 +144,36 @@ void testFlashPoll () {
 }
 
 void testTxSync () {
-    spiSync.init(SPI_PINS, SPEED);
+    spiSync.init(SPEED);
 
     auto start = cycles::micros();
-    spiSync.transfer(true, (uint8_t*) "x", 1);
+    spiSync.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 2, cycles::micros()-start);
 
     start = cycles::micros();
-    spiSync.transfer(true, (uint8_t*) "abcde", 5);
+    spiSync.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 2, cycles::micros()-start);
 
     start = cycles::micros();
-    spiSync.transfer(true, (uint8_t*) "1234567890", 10);
+    spiSync.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiSync.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    spiSync.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 8, cycles::micros()-start);
 }
 
 void testRxSync () {
-    spiSync.init(SPI_PINS, SPEED);
+    spiSync.init(SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
-    spiSync.transfer(false, buf, sizeof buf);
+    spiSync.read(buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(MARGIN, 21, cycles::micros()-start);
 }
 
 void testFlashSync () {
-    spiSync.init(SPI_PINS, SPEED);
+    spiSync.init(SPEED);
     SpiFlash spif (spiSync);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -206,36 +203,36 @@ logDump(snBuf, sizeof snBuf);
 }
 
 void testTxWait () {
-    spiAsync.init(SPI_PINS, SPEED);
+    spiAsync.init(SPEED);
 
     auto start = cycles::micros();
-    spiAsync.transfer(true, (uint8_t*) "x", 1);
+    spiAsync.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 8, cycles::micros()-start);
 
     start = cycles::micros();
-    spiAsync.transfer(true, (uint8_t*) "abcde", 5);
+    spiAsync.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiAsync.transfer(true, (uint8_t*) "1234567890", 10);
+    spiAsync.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 3, cycles::micros()-start);
 
     start = cycles::micros();
-    spiAsync.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    spiAsync.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 12, cycles::micros()-start);
 }
 
 void testRxWait () {
-    spiAsync.init(SPI_PINS, SPEED);
+    spiAsync.init(SPEED);
 
     uint8_t buf [100];
     auto start = cycles::micros();
-    spiAsync.transfer(false, buf, sizeof buf);
+    spiAsync.read(buf, sizeof buf);
     TEST_ASSERT_INT_WITHIN(MARGIN, 29, cycles::micros()-start);
 }
 
 void testFlashWait () {
-    spiAsync.init(SPI_PINS, SPEED);
+    spiAsync.init(SPEED);
     SpiFlash spif (spiAsync);
 
     // expect a W25Q16 chip of 2 MB, serial# 0xE66764A5535C7323
@@ -280,22 +277,25 @@ private:
             case START:
                 break;
             case TX:
-                spiAsync.start(true, (uint8_t*) "x", 1, { tId, TX1 });
+                spiAsync.setReply({ tId, TX1 });
+                spiAsync.write("x", 1);
                 break;
             case TX1:
-                spiAsync.start(true, (uint8_t*) "abcde", 5, { tId, TX2 });
+                spiAsync.setReply({ tId, TX2 });
+                spiAsync.write("abcde", 5);
                 break;
             case TX2:
-                spiAsync.start(true, (uint8_t*) "1234567890", 10, { tId, TX3 });
+                spiAsync.setReply({ tId, TX3 });
+                spiAsync.write("1234567890", 10);
                 break;
             case TX3:
-                spiAsync.start(true,
-                              (uint8_t*) "123456789012345678901234567890", 30,
-                              { tId, DONE });
+                spiAsync.setReply({ tId, DONE });
+                spiAsync.write("123456789012345678901234567890", 30);
                 break;
             case RX:
                 memset(buf, 0, sizeof buf);
-                spiAsync.start(false, buf, sizeof buf, { tId, DONE });
+                spiAsync.setReply({ tId, DONE });
+                spiAsync.read(buf, sizeof buf);
                 break;
             case DONE:
                 done = true;
@@ -309,7 +309,7 @@ private:
 
 void testTxAsync () {
     SpiTask task;
-    auto swId = spiAsync.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -328,7 +328,7 @@ void testTxAsync () {
 
 void testRxAsync () {
     SpiTask task;
-    auto swId = spiAsync.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -347,7 +347,7 @@ void testRxAsync () {
 
 void testFlashAsync () {
     SpiTask task;
-    auto swId = spiAsync.init(SPI_PINS, SPEED);
+    auto swId = spiAsync.init(SPEED);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);

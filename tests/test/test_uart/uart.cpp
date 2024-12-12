@@ -1,8 +1,6 @@
 // DMA-based UART tests.
 
 #include "common.h"
-#include "jee/ticker.h"
-#include "jee/uart.h"
 #include "defs.h"
 
 constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
@@ -10,11 +8,10 @@ constexpr auto MARGIN = 10000; // non-zero loosens microsecond timing checks
 Ticker ticker;
 TICKER_TRIGGER(ticker)
 
-uart::Poll<UART_NAME.ADDR> uartPoll (ena::UART_NAME, UART_FREQ);
+Dev<uart::Poll<UART_CONF>> uartPoll;
+Dev<uart::Sync<UART_CONF>> uartSync;
 
-uart::Sync<UART_TYPE> uartSync (UART_CONF);
-
-uart::Async<UART_TYPE> uartAsync (UART_CONF);
+Dev<uart::Async<UART_CONF>> uartAsync;
 UART_TRIGGER(uartAsync)
 
 void setUp () {}
@@ -35,47 +32,47 @@ void testJumper () {
 }
 
 void testPoll () {
-    uartPoll.init(UART_PINS, 1'000'000);
+    uartPoll.init(1'000'000);
 
     auto start = cycles::micros();
-    uartPoll.transfer(true, (uint8_t*) "x", 1);
+    uartPoll.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 20, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (uint8_t*) "abcde", 5);
+    uartPoll.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 52, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (uint8_t*) "1234567890", 10);
+    uartPoll.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 102, cycles::micros()-start);
 
     start = cycles::micros();
-    uartPoll.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    uartPoll.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 307, cycles::micros()-start);
 }
 
 void testSync () {
-    uartSync.init(UART_PINS, 1'000'000);
+    uartSync.init(1'000'000);
 
     auto start = cycles::micros();
-    uartSync.transfer(true, (uint8_t*) "x", 1);
+    uartSync.write("x", 1);
     TEST_ASSERT_INT_WITHIN(MARGIN, 2, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (uint8_t*) "abcde", 5);
+    uartSync.write("abcde", 5);
     TEST_ASSERT_INT_WITHIN(MARGIN, 47, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (uint8_t*) "1234567890", 10);
+    uartSync.write("1234567890", 10);
     TEST_ASSERT_INT_WITHIN(MARGIN, 100, cycles::micros()-start);
 
     start = cycles::micros();
-    uartSync.transfer(true, (uint8_t*) "123456789012345678901234567890", 30);
+    uartSync.write("123456789012345678901234567890", 30);
     TEST_ASSERT_INT_WITHIN(MARGIN, 300, cycles::micros()-start);
 }
 
 void testWait () {
-    uartAsync.init(UART_PINS, 1'000'000);
+    uartAsync.init(1'000'000);
 
     auto start = cycles::micros();
     uartAsync.write("x", 1);
@@ -108,17 +105,20 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartAsync.write("x", 1, { tId, ONE });
+                uartAsync.setReply({ tId, ONE });
+                uartAsync.write("x", 1);
                 break;
             case ONE:
-                uartAsync.write("abcde", 5, { tId, TWO });
+                uartAsync.setReply({ tId, TWO });
+                uartAsync.write("abcde", 5);
                 break;
             case TWO:
-                uartAsync.write("1234567890", 10, { tId, THREE });
+                uartAsync.setReply({ tId, THREE });
+                uartAsync.write("1234567890", 10);
                 break;
             case THREE:
-                uartAsync.write("123456789012345678901234567890", 30,
-                               { tId, FOUR });
+                uartAsync.setReply({ tId, FOUR });
+                uartAsync.write("123456789012345678901234567890", 30);
                 break;
             case FOUR:
                 done = true;
@@ -132,7 +132,7 @@ private:
 
 void testAsync () {
     UartTask task;
-    auto uwId = uartAsync.init(UART_PINS, 1'000'000);
+    auto uwId = uartAsync.init(1'000'000);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
@@ -164,13 +164,14 @@ private:
 
         switch (in.eTag) {
             case START:
-                uartAsync.read(0, { tId, RECV });
+                uartAsync.setReply({ tId, RECV });
+                uartAsync.read(nullptr, 0);
                 [[fallthrough]];
             case MORE:
                 ++count;
                 // send 1 + 2 + 3 + ... + 25 + 26 + 27 bytes
-                uartAsync.write("~ABCDEFGHIJKLMNOPQRSTUVWXYZ", count,
-                               { tId, count < 27 ? MORE : SENT });
+                uartAsync.setReply({ tId, count < 27 ? MORE : SENT });
+                uartAsync.write("~ABCDEFGHIJKLMNOPQRSTUVWXYZ", count);
                 break;
             case SENT:
                 txDone = true;
@@ -179,10 +180,12 @@ private:
                 // count the number of bytes received
                 sum += in.eVal;
                 if (sum >= 27*28/2) {
-                    uartAsync.read(in.eVal, {}); // consume without new request
+                    uartAsync.read(nullptr, in.eVal); // consume without new request
                     rxDone = true;
-                } else // keep reading
-                    uartAsync.read(in.eVal, { tId, RECV });
+                } else { // keep reading
+                    uartAsync.setReply({ tId, RECV });
+                    uartAsync.read(nullptr, in.eVal);
+                }
                 break;
             default:
                 fail();
@@ -193,7 +196,7 @@ private:
 
 void testLoop () {
     LoopTask task;
-    auto uwId = uartAsync.init(UART_PINS, 1'000'000);
+    auto uwId = uartAsync.init(1'000'000);
     auto wkId = task.init();
 
     TEST_ASSERT_GREATER_THAN(0, wkId);
