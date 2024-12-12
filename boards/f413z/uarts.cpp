@@ -45,22 +45,23 @@ struct Matrix : Task {
     bool verbose =true;
 
     template< typename T >
-    void read (T& u, uint16_t n, TAG t) {
+    void reader (T& u, uint16_t n, TAG t) {
         u.setReply({ tId, t });
         u.read(nullptr, n);
     }
 
     template< typename T >
-    void write (T& u, uint16_t n, TAG r, TAG t) {
+    void writer (T& u, uint16_t n, TAG r, TAG t) {
         u.setReply({ tId, t });
         u.write(bufs[r], n);
     }
 
     template< typename T >
-    void passData (T& u, uint16_t n, TAG r, TAG t) {
+    void copier (T& u, uint16_t n, TAG r, TAG t) {
+        assert(n <= NR);
         memcpy(bufs[r], u.rxPtr, n); // keep copy of recv'd data
-        read(u, n, r); // consume and start new read
-        write(u, n, r, t); // send data out again
+        reader(u, n, r); // consume and start new read
+        writer(u, n, r, t); // send data out again
     }
 
     Event process (Event in, Event out) {
@@ -71,23 +72,23 @@ struct Matrix : Task {
             logf("%s %d", names[tag], in.eVal);
         switch (tag) {
             case START: // issue read requests on all UARTs
-                read(uart1, 0, R1);
-                read(uart2, 0, R2);
-                read(uart3, 0, R3);
-                read(uart4, 0, R4);
-                read(uart5, 0, R5);
-                read(uart6, 0, R6);
-                //uart10.read(0, { tId, R10 });
+                reader(uart1, 0, R1);
+                reader(uart2, 0, R2);
+                reader(uart3, 0, R3);
+                reader(uart4, 0, R4);
+                reader(uart5, 0, R5);
+                reader(uart6, 0, R6);
+                //reader(uart10, 0, R10);
                 break;
             case R1:
-                passData(uart1, in.eVal, R1, T1);
+                copier(uart1, in.eVal, R1, T1);
                 break;
             case R2:
-                passData(uart2, in.eVal, R2, T2);
+                copier(uart2, in.eVal, R2, T2);
                 break;
             case R3: // console input
                 memcpy(bufs[R3], uart3.rxPtr, in.eVal);
-                read(uart3, in.eVal, R3);
+                reader(uart3, in.eVal, R3);
                 switch (bufs[R3][0]) {
                     case 'q': verbose = false; break;
                     case 'v': verbose = true; break;
@@ -99,17 +100,17 @@ struct Matrix : Task {
                 }
                 break;
             case R4:
-                passData(uart4, in.eVal, R4, T4);
+                copier(uart4, in.eVal, R4, T4);
                 break;
             case R5:
-                passData(uart5, in.eVal, R5, T5);
+                copier(uart5, in.eVal, R5, T5);
                 break;
             case R6:
-                passData(uart6, in.eVal, R6, T6);
+                copier(uart6, in.eVal, R6, T6);
                 break;
             case R10:
                 memcpy(bufs[R10], uart10.rxPtr, in.eVal);
-                read(uart10, in.eVal, R10);
+                reader(uart10, in.eVal, R10);
                 break;
             case T1:
             case T2:
