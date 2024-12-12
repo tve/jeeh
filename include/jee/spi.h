@@ -182,7 +182,6 @@ struct Sync : Poll<C> {
         BASE::init(khz);
         SPI[BASE::CR2](0,2) = 0b11; // TXDMAEN RXDMAEN
         dma.init(C.base + BASE::DR, C.base + BASE::DR);
-        SCB[0x10](4) = 1; // SEVONPEND
     }
 
     void deinit () {

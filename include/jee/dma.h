@@ -56,6 +56,8 @@ struct DmaConfig {
 
         DTX[CPAR] = txAddr;
         DRX[CPAR] = rxAddr;
+
+        SCB[0x10](4) = 1; // SEVONPEND
     }
 
     void deinit () const {

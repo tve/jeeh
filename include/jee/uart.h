@@ -76,4 +76,64 @@ struct Poll {
     }
 };
 
+template< Config const& C >
+struct Sync : Poll<C> {
+    using BASE = Poll<C>;
+    using BASE::UART;
+
+    static constexpr dma::DmaConfig<Config,C> dma {};
+
+    void init (int hz =115'200) {
+        BASE::init(hz);
+        UART[BASE::CR3](6,2) = 0b11; // DMAT DMAR
+        dma.init(C.base + BASE::TDR, C.base + BASE::RDR);
+    }
+
+    void deinit () {
+        UART[BASE::CR2](6,2) = 0; // ~DMAT ~DMAR
+        dma.deinit();
+        BASE::deinit();
+    }
+
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        int r = 0;
+        for (auto i = 0U; i < n; ++i) {
+            auto& t = v[i];
+            r = ioRequest(t.mode, t.ptr, t.len);
+            if (r < 0)
+                break;
+        }
+        return r;
+    }
+
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        assert(!Task::pendingIrq());
+        if (n > 0) {
+            startReq(m, p, n);
+            while (!Task::pendingIrq())
+                asm ("wfe");
+            dma.completed();
+            assert(!dma.isRunning());
+            Task::irqClear(C.uartIrq);
+            Task::irqClear(C.txIrq);
+            Task::irqClear(C.rxIrq);
+            finishReq(m, p, n);
+        }
+        return n;
+    }
+
+protected:
+    void startReq (uint16_t m, void* p, uint16_t n) const {
+        if (m & IO_WRITE)
+            dma.txStart(p, n);
+        else
+            dma.rxStart(p, n);
+    }
+
+    void finishReq (uint16_t m, void* p, uint16_t n) const {
+        if (m & IO_READ)
+            cache::inval(p, n);
+    }
+};
+
 } // namespace jeeh::uart

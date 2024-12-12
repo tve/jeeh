@@ -324,7 +324,6 @@ struct Sync : Poll<C> {
         BASE::init(khz);
         I2C[BASE::CR1](14,2) = 0b11; // RXDMAEN TXDMAEN
         dma.init(C.base + BASE::TXDR, C.base + BASE::RXDR);
-        SCB[0x10](4) = 1; // SEVONPEND
     }
 
     void deinit () {

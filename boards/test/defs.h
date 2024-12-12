@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "async"
+#define PIOENV  "sync"
 
 //CG1 board leds
 #define LED  "B8"
@@ -9,7 +9,7 @@
 const Pin led (LED,"P");
 
 //CG1 board mode
-#define MODE_ASYNC 1
+#define MODE_SYNC 1
 
 //CG[ board pins
 #define PINS_VCC "B6"
@@ -39,9 +39,9 @@ constexpr uart::Config UART_CONF {
 };
 //CG]
 
-Dev<uart::Poll<UART_CONF>> console;
-//uart::Sync<UART_CONF> console;
-//uart::Async<UART_CONF> console;
+//Dev<uart::Poll<UART_CONF>> console;
+Dev<uart::Sync<UART_CONF>> console;
+//Dev<uart::Async<UART_CONF>> console;
 //UART_TRIGGER(console)
 
 //CG[ board spi
