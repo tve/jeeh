@@ -40,9 +40,9 @@ constexpr uart::Config UART_CONF {
 //CG]
 
 //Dev<uart::Poll<UART_CONF>> console;
-Dev<uart::Sync<UART_CONF>> console;
-//Dev<uart::Async<UART_CONF>> console;
-//UART_TRIGGER(console)
+//Dev<uart::Sync<UART_CONF>> console;
+Dev<uart::Async<UART_CONF>> console;
+UART_TRIGGER(console)
 
 //CG[ board spi
 #define SPI_NAME SPI1

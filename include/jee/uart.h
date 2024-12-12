@@ -136,4 +136,80 @@ protected:
     }
 };
 
+template< Config const& C >
+struct Async : Sync<C>, Task {
+    using BASE = Sync<C>;
+    using BASE::dma;
+
+    enum TAG { START, REQUEST, DONE };
+
+    uint8_t init (int hz =115'200) {
+        BASE::init(hz);
+        return Task::init();
+    }
+
+    void setReply (Event out) const {
+        pend = out;
+    }
+
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        if (!pend)
+            return BASE::ioRequest(v, n); // use sync version
+        reqs = v;
+        num = n;
+        send({ tId, REQUEST });
+        return 0;
+    }
+
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        curr = { m, n, p };
+        return ioRequest(&curr, 1);
+    }
+
+    void irqDma () {
+        auto f = dma.completed();
+        assert(f > 0);
+        trigger(DONE);
+    }
+
+    void irqIdle () {
+        BASE::UART[BASE::ICR] = (1<<4); // IDLECF
+        trigger(DONE);
+    }
+
+private:
+    mutable IoReq curr ={ 0, 0, nullptr };
+    mutable IoReq const* reqs;
+    mutable int num =0;
+    mutable Event pend;
+
+    Event process (Event in, Event out) override {
+        assert(!out); // should use setReply instead
+        switch (in.eTag) {
+            case START:
+                break;
+            case REQUEST:
+                irqEnable(C.uartIrq);
+                irqEnable(C.txIrq);
+                irqEnable(C.rxIrq);
+                while (--num >= 0) {
+                    curr = *reqs++;
+                    BASE::startReq(curr.mode, curr.ptr, curr.len);
+                    break; // transfer started, wait for DONE trigger
+            case DONE:     // this jumps back into the transfer loop!
+                    BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                    pend.eVal = curr.len;
+                }
+                irqDisable(C.uartIrq);
+                irqDisable(C.txIrq);
+                irqDisable(C.rxIrq);
+                out = take(pend);
+                break;
+            default:
+                fail();
+        }
+        return out;
+    }
+};
+
 } // namespace jeeh::uart
