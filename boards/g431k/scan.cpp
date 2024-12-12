@@ -1,5 +1,3 @@
-// Test FRAM via I2C.
-
 #include <jee.h>
 #include <jee/hal.h>
 using namespace jeeh;
@@ -9,13 +7,13 @@ using namespace jeeh;
 //Dev<i2c::Poll<I2C_CONF>> i2cBus;
 Dev<i2c::Sync<I2C_CONF>> i2cBus;
 
-#include "t-fram.cpp"
+#include "t-scan.cpp"
 
 int main () {
     initBoard();
     i2cBus.init(1000);
 
-    testFram();
+    testScan();
 
     while (true) { cycles::msBusy(500); led.toggle(); }
 }

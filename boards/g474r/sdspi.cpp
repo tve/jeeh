@@ -3,8 +3,8 @@
 using namespace jeeh;
 #include "defs.h"
 
-spi::Poll<SPI_NAME.ADDR> sdSpi (ena::SPI_NAME, SPI_FREQ);
-//spi::Sync<SPI_TYPE> sdSpi (SPI_CONF);
+Dev<spi::Poll<SPI_CONF>> sdSpi;
+//Dev<spi::Sync<SPI_CONF>> sdSpi;
 
 struct SdConnect : spi::Gpio {
 
@@ -187,7 +187,7 @@ int main () {
     auto bsh = r ? 0 : 9;
     logf("sdhc %d, bsh %d, %d us", r, bsh, cycles::micros()-start);
 
-    sdSpi.init(SPI_PINS, 20'000);
+    sdSpi.init(20'000);
 
     uint8_t buf [512];
     for (auto i = 0; i < 3; ++i) {

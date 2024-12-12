@@ -8,28 +8,28 @@
 using namespace jeeh;
 #include "defs.h"
 
-uart::Async<UART_TYPE> uart3 (UART_CONF);
+Dev<uart::Async<UART_CONF> uart3;
 UART_TRIGGER(uart3)
 
-uart::Async<UART1_TYPE> uart1 (UART1_CONF);
+Dev<uart::Async<UART1_CONF> uart1;
 UART1_TRIGGER(uart1)
 
-uart::Async<UART2_TYPE> uart2 (UART2_CONF);
+Dev<uart::Async<UART2_CONF> uart2;
 UART2_TRIGGER(uart2)
 
-uart::Async<UART4_TYPE> uart4 (UART4_CONF);
+Dev<uart::Async<UART4_CONF> uart4;
 UART4_TRIGGER(uart4)
 
-uart::Async<UART5_TYPE> uart5 (UART5_CONF);
+Dev<uart::Async<UART5_CONF> uart5;
 UART5_TRIGGER(uart5)
 
-uart::Async<UART6_TYPE> uart6 (UART6_CONF);
+Dev<uart::Async<UART6_CONF> uart6;
 UART6_TRIGGER(uart6)
 
-uart::Sync<UART9_TYPE> uart9 (UART9_CONF);
+Dev<uart::Sync<UART9_CONF> uart9;
 //UART9_TRIGGER(uart9)
 
-uart::Async<UART10_TYPE> uart10 (UART10_CONF);
+Dev<uart::Async<UART10_CONF> uart10;
 #define UART10_IRQHandler USART10_IRQHandler 
 UART10_TRIGGER(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
@@ -120,14 +120,14 @@ struct Matrix : Task {
 int main () {
     initBoard();
 
-    uart1.init(UART1_PINS, 1'000'000);    // tx: B6  rx: B3  < D15 #9
-    uart2.init(UART2_PINS, 1'000'000);    // tx: A2  rx: A3  < B6  #1
-    uart3.init(UART_PINS, 1'000'000);     // tx: D8  rx: D9
-    uart4.init(UART4_PINS, 1'000'000);    // tx: A0  rx: C11 < A2  #2
-    uart5.init(UART5_PINS, 1'000'000);    // tx: C12 rx: D2  < A0  #4
-    uart6.init(UART6_PINS, 1'000'000);    // tx: G14 rx: G9  < C12 #5
-    uart9.init(UART9_PINS, 1'000'000);    // tx: D15 rx: D14
-    uart10.init(UART10_PINS, 1'000'000);  // tx: E3  rx: E2  < G14 #6
+    uart1.init(1'000'000);    // tx: B6  rx: B3  < D15 #9
+    uart2.init(1'000'000);    // tx: A2  rx: A3  < B6  #1
+    uart3.init(1'000'000);    // tx: D8  rx: D9
+    uart4.init(1'000'000);    // tx: A0  rx: C11 < A2  #2
+    uart5.init(1'000'000);    // tx: C12 rx: D2  < A0  #4
+    uart6.init(1'000'000);    // tx: G14 rx: G9  < C12 #5
+    uart9.init(1'000'000);    // tx: D15 rx: D14
+    uart10.init(1'000'000);   // tx: E3  rx: E2  < G14 #6
 
     auto s = " abcdefghijklmnopqrstuvwxyz + ABCDEFGHIJKLMNOPQRSTUVWXYZ /\n";
     auto n = strlen(s);

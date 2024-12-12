@@ -31,16 +31,16 @@ SPI_TRIGGER(spiBus)
 
 #endif
 
-#include "t-bmp-i.cpp"
-#include "t-bmp-s.cpp"
-#include "t-fram.cpp"
-#include "t-imu.cpp"
-#include "t-lcd.cpp"
-#include "t-oled.cpp"
-#include "t-scan.cpp"
-//#include "t-sdspi.cpp"
-#include "t-sht21.cpp"
-#include "t-sram.cpp"
+#include "../g431k/t-bmp-i.cpp"
+#include "../g431k/t-bmp-s.cpp"
+#include "../g431k/t-fram.cpp"
+#include "../g431k/t-imu.cpp"
+#include "../g431k/t-lcd.cpp"
+#include "../g431k/t-oled.cpp"
+#include "../g431k/t-scan.cpp"
+//#include "../g431k/t-sdspi.cpp"
+#include "../g431k/t-sht21.cpp"
+#include "../g431k/t-sram.cpp"
 
 void header (char const* text) {
     logf("%70s", text);
