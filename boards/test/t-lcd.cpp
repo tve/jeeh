@@ -158,19 +158,19 @@ void testLcd () {
 
     auto start = cycles::micros();
     init();
-    logf("init %7d us", cycles::micros()-start);
+    logf("init %7d µs", cycles::micros()-start);
 
     start = cycles::micros();
     clear();
-    logf("clear %6d us", cycles::micros()-start);
+    logf("clear %6d µs", cycles::micros()-start);
 
     start = cycles::micros();
     pixel(width/2, height/2, 0xF800);
-    logf("pixel %6d us", cycles::micros()-start);
+    logf("pixel %6d µs", cycles::micros()-start);
 
     start = cycles::micros();
     auto w = gfx.writes(font, {10, 40}, "123 Hello world!");
-    logf("font1 %6d us (16 ch, %d px)", cycles::micros()-start, w);
+    logf("font1 %6d µs (16 ch, %d px)", cycles::micros()-start, w);
     gfx.hLine({10, 52}, w, 0xF800);
 
     gfx.line({10, 60}, {110, 110});
@@ -188,13 +188,13 @@ void testLcd () {
     gfx.fg = 0xFFFF; // white
     start = cycles::micros();
     auto w2 = gfx.writes(font2, {10, 114}, "123 Hello world!");
-    logf("font2 %6d us (16 ch, %d px)", cycles::micros()-start, w2);
+    logf("font2 %6d µs (16 ch, %d px)", cycles::micros()-start, w2);
     gfx.hLine({10, 127}, w2, 0xF800);
 
 #if !STM32F3 // FIXME ???
     start = cycles::micros();
     auto w3 = gfx.writes(font3, {64, 20}, "Hello!");
-    logf("font3 %6d us (6 ch, %d px)", cycles::micros()-start, w3);
+    logf("font3 %6d µs (6 ch, %d px)", cycles::micros()-start, w3);
     gfx.hLine({64, 33}, w3, 0xF800);
 #endif
 }

@@ -8,22 +8,19 @@ using namespace jeeh;
 
 Pin led (LED, "P");
 
-uart::Async<UART_TYPE> console (UART_CONF);
+Dev<uart::Async<UART_CONF>> console;
 UART_TRIGGER(console)
 
 extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1 || fd == 2) {
-        // TODO briefly using the uart in polled mode to make this write block
-        auto& blocking = (uart::Poll<UART_NAME.ADDR>&) console;
-        blocking.transfer(true, (uint8_t*) buf, len);
-    }
+    if (fd == 1 || fd == 2)
+        console.write(buf, len);
     return len;
 }
 
 void initBoard () {
     fastClock();
     cycles::init();
-    console.init(UART_PINS, 2'000'000);
+    console.init(2'000'000);
 
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }

@@ -53,17 +53,17 @@ T: 19.67 °C RH: 46.51 %
 raw T: 007D4700 P: 005C7100 => T: 21.326 °C P: 1032.065 hPa
 raw T: 007D4800 P: 005C7100 => T: 21.331 °C P: 1032.076 hPa
 raw T: 007D4A00 P: 005C7000 => T: 21.340 °C P: 1032.122 hPa
-                                                       SPI - BMP390
+                                                          SPI - BMP390
 raw T: 007D4F00 P: 005C7200 => T: 21.363 °C P: 1032.134 hPa
 raw T: 007D5000 P: 005C7500 => T: 21.368 °C P: 1032.078 hPa
 raw T: 007D5200 P: 005C7200 => T: 21.377 °C P: 1032.168 hPa
                                                              SPI - LCD
-init      40 us
-clear  32375 us
-pixel     18 us
-font1   7572 us (16 ch, 88 px)
-font2   8963 us (16 ch, 112 px)
-font3   3982 us (6 ch, 54 px)
+init      40 µs
+clear  32375 µs
+pixel     18 µs
+font1   7572 µs (16 ch, 88 px)
+font2   8963 µs (16 ch, 112 px)
+font3   3982 µs (6 ch, 54 px)
                                                             SPI - SRAM
  000: 00000000 00000000 00006865 6c6c6f00 .... .... ..he llo.
  010: 00000000 776f726c 64000000 00000000 .... worl d... ....

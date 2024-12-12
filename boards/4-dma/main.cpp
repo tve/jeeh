@@ -6,20 +6,20 @@
 using namespace jeeh;
 #include "defs.h"
 
-Pin led (LED, "P");
+Pin led (LED,"P");
 
-uart::Sync<UART_TYPE> console (UART_CONF);
+Dev<uart::Sync<UART_CONF>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2)
-        console.transfer(true, (uint8_t*) buf, len);
+        console.write(buf, len);
     return len;
 }
 
 void initBoard () {
     fastClock();
     cycles::init();
-    console.init(UART_PINS, 2'000'000);
+    console.init(2'000'000);
 
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
