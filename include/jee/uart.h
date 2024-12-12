@@ -139,9 +139,10 @@ protected:
 template< Config const& C >
 struct Async : Sync<C>, Task {
     using BASE = Sync<C>;
-    using BASE::dma;
 
     enum TAG { START, REQUEST, DONE };
+
+    char const* rxPtr ={};
 
     uint8_t init (int hz =115'200) {
         BASE::init(hz);
@@ -167,13 +168,14 @@ struct Async : Sync<C>, Task {
     }
 
     void irqDma () {
-        auto f = dma.completed();
+        auto f = BASE::dma.completed();
         assert(f > 0);
         trigger(DONE);
     }
 
     void irqIdle () {
-        BASE::UART[BASE::ICR] = (1<<4); // IDLECF
+        // TODO BASE::UART[BASE::ICR] = (1<<4); // IDLECF
+        BASE::UART[0x20] = (1<<4); // ICR: IDLECF
         trigger(DONE);
     }
 

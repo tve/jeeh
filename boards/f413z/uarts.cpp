@@ -8,28 +8,28 @@
 using namespace jeeh;
 #include "defs.h"
 
-Dev<uart::Async<UART_CONF> uart3;
+Dev<uart::Async<UART_CONF>> uart3;
 UART_TRIGGER(uart3)
 
-Dev<uart::Async<UART1_CONF> uart1;
+Dev<uart::Async<UART1_CONF>> uart1;
 UART1_TRIGGER(uart1)
 
-Dev<uart::Async<UART2_CONF> uart2;
+Dev<uart::Async<UART2_CONF>> uart2;
 UART2_TRIGGER(uart2)
 
-Dev<uart::Async<UART4_CONF> uart4;
+Dev<uart::Async<UART4_CONF>> uart4;
 UART4_TRIGGER(uart4)
 
-Dev<uart::Async<UART5_CONF> uart5;
+Dev<uart::Async<UART5_CONF>> uart5;
 UART5_TRIGGER(uart5)
 
-Dev<uart::Async<UART6_CONF> uart6;
+Dev<uart::Async<UART6_CONF>> uart6;
 UART6_TRIGGER(uart6)
 
-Dev<uart::Sync<UART9_CONF> uart9;
+Dev<uart::Sync<UART9_CONF>> uart9;
 //UART9_TRIGGER(uart9)
 
-Dev<uart::Async<UART10_CONF> uart10;
+Dev<uart::Async<UART10_CONF>> uart10;
 #define UART10_IRQHandler USART10_IRQHandler 
 UART10_TRIGGER(uart10) // TODO wrong code: UART10... iso USART10_IRQHandler !
 
@@ -40,9 +40,28 @@ struct Matrix : Task {
     };
 
     enum { NR=200 };
-    uint8_t buf1 [NR], buf2 [NR], buf3 [NR], buf4 [NR], buf5 [NR], buf6 [NR], buf10 [NR];
+    uint8_t bufs [T1][NR];
     uint32_t counts [NE] ={}, bytes [NE] ={};
     bool verbose =true;
+
+    template< typename T >
+    void read (T& u, uint16_t n, TAG t) {
+        u.setReply({ tId, t });
+        u.read(nullptr, n);
+    }
+
+    template< typename T >
+    void write (T& u, uint16_t n, TAG r, TAG t) {
+        u.setReply({ tId, t });
+        u.write(bufs[r], n);
+    }
+
+    template< typename T >
+    void passData (T& u, uint16_t n, TAG r, TAG t) {
+        memcpy(bufs[r], u.rxPtr, n); // keep copy of recv'd data
+        read(u, n, r); // consume and start new read
+        write(u, n, r, t); // send data out again
+    }
 
     Event process (Event in, Event out) {
         auto tag = in.eTag;
@@ -52,28 +71,24 @@ struct Matrix : Task {
             logf("%s %d", names[tag], in.eVal);
         switch (tag) {
             case START: // issue read requests on all UARTs
-                uart1.read(0, { tId, R1 });
-                uart2.read(0, { tId, R2 });
-                uart3.read(0, { tId, R3 });
-                uart4.read(0, { tId, R4 });
-                uart5.read(0, { tId, R5 });
-                uart6.read(0, { tId, R6 });
+                read(uart1, 0, R1);
+                read(uart2, 0, R2);
+                read(uart3, 0, R3);
+                read(uart4, 0, R4);
+                read(uart5, 0, R5);
+                read(uart6, 0, R6);
                 //uart10.read(0, { tId, R10 });
                 break;
             case R1:
-                memcpy(buf1, uart1.rxPtr, in.eVal); // keep copy of recv'd data
-                uart1.read(in.eVal, { tId, R1 }); // consume and start new read
-                uart1.write(buf1, in.eVal, { tId, T1 }); // send data out again
+                passData(uart1, in.eVal, R1, T1);
                 break;
             case R2:
-                memcpy(buf2, uart2.rxPtr, in.eVal);
-                uart2.read(in.eVal, { tId, R2 });
-                uart2.write(buf2, in.eVal, { tId, T2 });
+                passData(uart2, in.eVal, R2, T2);
                 break;
             case R3: // console input
-                memcpy(buf3, uart3.rxPtr, in.eVal);
-                uart3.read(in.eVal, { tId, R3 });
-                switch (buf3[0]) {
+                memcpy(bufs[R3], uart3.rxPtr, in.eVal);
+                read(uart3, in.eVal, R3);
+                switch (bufs[R3][0]) {
                     case 'q': verbose = false; break;
                     case 'v': verbose = true; break;
                     case 's': showStats(); break;
@@ -84,23 +99,17 @@ struct Matrix : Task {
                 }
                 break;
             case R4:
-                memcpy(buf4, uart4.rxPtr, in.eVal);
-                uart4.read(in.eVal, { tId, R4 });
-                uart4.write(buf4, in.eVal, { tId, T4 });
+                passData(uart4, in.eVal, R4, T4);
                 break;
             case R5:
-                memcpy(buf5, uart5.rxPtr, in.eVal);
-                uart5.read(in.eVal, { tId, R5 });
-                uart5.write(buf5, in.eVal, { tId, T5 });
+                passData(uart5, in.eVal, R5, T5);
                 break;
             case R6:
-                memcpy(buf6, uart6.rxPtr, in.eVal);
-                uart6.read(in.eVal, { tId, R6 });
-                uart6.write(buf6, in.eVal, { tId, T6 });
+                passData(uart6, in.eVal, R6, T6);
                 break;
             case R10:
-                memcpy(buf10, uart10.rxPtr, in.eVal);
-                uart10.read(in.eVal, { tId, R10 });
+                memcpy(bufs[R10], uart10.rxPtr, in.eVal);
+                read(uart10, in.eVal, R10);
                 break;
             case T1:
             case T2:
@@ -117,27 +126,28 @@ struct Matrix : Task {
     }
 };
 
+Matrix matrix;
+
 int main () {
     initBoard();
 
-    uart1.init(1'000'000);    // tx: B6  rx: B3  < D15 #9
-    uart2.init(1'000'000);    // tx: A2  rx: A3  < B6  #1
-    uart3.init(1'000'000);    // tx: D8  rx: D9
-    uart4.init(1'000'000);    // tx: A0  rx: C11 < A2  #2
-    uart5.init(1'000'000);    // tx: C12 rx: D2  < A0  #4
-    uart6.init(1'000'000);    // tx: G14 rx: G9  < C12 #5
-    uart9.init(1'000'000);    // tx: D15 rx: D14
-    uart10.init(1'000'000);   // tx: E3  rx: E2  < G14 #6
+    uart1.init(1'000'000);  // tx: B6  rx: B3  < D15 #9
+    uart2.init(1'000'000);  // tx: A2  rx: A3  < B6  #1
+    uart3.init(1'000'000);  // tx: D8  rx: D9
+    uart4.init(1'000'000);  // tx: A0  rx: C11 < A2  #2
+    uart5.init(1'000'000);  // tx: C12 rx: D2  < A0  #4
+    uart6.init(1'000'000);  // tx: G14 rx: G9  < C12 #5
+    uart9.init(1'000'000);  // tx: D15 rx: D14
+    uart10.init(1'000'000); // tx: E3  rx: E2  < G14 #6
+
+    matrix.init();
 
     auto s = " abcdefghijklmnopqrstuvwxyz + ABCDEFGHIJKLMNOPQRSTUVWXYZ /\n";
     auto n = strlen(s);
 
-    Matrix matrix;
-    matrix.init();
-
     while (true) {
         //auto start = cycles::count();
-        uart9.transfer(true, (uint8_t*) s, n);
+        uart9.write(s, n);
         //logf("%d cy", cycles::count()-start);
 
         led = 1;
