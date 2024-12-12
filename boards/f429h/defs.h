@@ -27,7 +27,7 @@ constexpr uart::Config UART_CONF {
 };
 //CG]
 
-uart::Sync<UART_TYPE> console (UART_CONF);
+Dev<uart::Sync<UART_CONF>> console;
 
 void initBoard () {
     fastClock();

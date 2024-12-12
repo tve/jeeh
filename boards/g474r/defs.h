@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "sdspi"
+#define PIOENV  "lcd"
 
 //CG1 board leds
 #define LED  "A5"
@@ -22,7 +22,7 @@ constexpr uart::Config UART2_CONF {
 };
 //CG]
 
-uart::Async<UART2_TYPE> console (UART2_CONF);
+Dev<uart::Async<UART2_CONF>> console;
 UART2_TRIGGER(console)
 
 //CG[ board spi
@@ -43,7 +43,7 @@ void initBoard () {
     cycles::init();
     rtc::init();
 
-    console.init(, 10'000'000);
+    console.init(10'000'000);
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running

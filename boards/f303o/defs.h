@@ -25,7 +25,7 @@ constexpr uart::Config UART1_CONF {
 };
 //CG]
 
-uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
+Dev<uart::Async<UART1_CONF>> gpsUart;
 UART1_TRIGGER(gpsUart)
 
 //CG[ board uart2
@@ -42,7 +42,7 @@ constexpr uart::Config UART2_CONF {
 };
 //CG]
 
-uart::Async<UART2_TYPE> ttyUart (UART2_CONF);
+Dev<uart::Async<UART2_CONF>> ttyUart;
 UART2_TRIGGER(ttyUart)
 
 const Pin gpsPps ("B5","U2"), // D4 TIM3-CH2

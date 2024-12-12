@@ -28,7 +28,7 @@ constexpr uart::Config UART1_CONF {
 };
 //CG]
 
-uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
+Dev<uart::Async<UART1_CONF>> gpsUart;
 UART1_TRIGGER(gpsUart)
 
 //CG[ board uart3
@@ -45,7 +45,7 @@ constexpr uart::Config UART3_CONF {
 };
 //CG]
 
-uart::Async<UART3_TYPE> ttyUart (UART3_CONF);
+Dev<uart::Async<UART3_CONF>> ttyUart;
 UART3_TRIGGER(ttyUart)
 
 //CG[ board spi1
@@ -61,43 +61,12 @@ constexpr spi::Config SPI1_CONF {
 };
 //CG]
 
-//spi::Gpio lcdSpi;
-spi::Poll<SPI1_NAME.ADDR> lcdSpi (ena::SPI1_NAME, SPI1_FREQ);
-//spi::Sync<SPI1_TYPE> lcdSpi (SPI1_CONF);
-//spi::Aync<SPI1_TYPE> lcdSpi (SPI1_CONF);
+//spi::Gpio<SPI1_CONF>> lcdSpi;
+Dev<spi::Poll<SPI1_CONF>> lcdSpi;
+//Dev<spi::Sync<SPI1_CONF>> lcdSpi;
+//Dev<spi::Aync<SPI1_CONF>> lcdSpi;
 Pin& lcdCmd = lcdSpi.miso; // re-used as C/D output pin
 //Pin lcdRst {"D15","P"}; // tied to Vcc instead
-
-#if 0
-namespace serio {
-    enum { CR1=0x00 , BRR=0x0C, ISR=0x1C, TDR=0x28 };
-
-    void init () {
-        Pin::config("D8:U7");
-        RCC(ena::USART3,1) = 1;
-        USART3[BRR] = SystemCoreClock/2 / 2'000'000;
-        USART3[CR1] = (1<<3) | (1<<0); // TE UE
-    }
-
-    void write (void const* ptr, int len) {
-        for (auto i = 0; i < len; ++i) {
-            while (!USART3[ISR](7)) {} // TXE
-            USART3[TDR] = ((uint8_t const*) ptr)[i];
-        }
-        //while (!USART3[serio::ISR](6)) {} // TC
-    }
-}
-
-extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1)
-        serio::write(buf, len);
-    return len;
-}
-
-void jeeh::logWriter (void const* ptr, size_t len) {
-    serio::write(ptr, len);
-}
-#endif
 
 void initBoard () {
     fastClock(); // 180 MHz
@@ -106,7 +75,6 @@ void initBoard () {
 
     ttyUart.init(2'000'000);
     ttyUart.setName("tty-uart");
-    //serio::init();
 
     if (rtc::getSecs() == 0)
         rtc::set(DateTime{}); // set to compile date if RTC was not running

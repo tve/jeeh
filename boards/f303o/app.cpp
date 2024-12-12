@@ -129,7 +129,8 @@ struct Gpser : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                gpsUart.read(0, { tId, RECV });
+                gpsUart.setReply(RECV);
+                gpsUart.read(nullptr, 0);
                 break;
             case RECV: {
                 auto i = 0U;
@@ -144,7 +145,8 @@ struct Gpser : Task {
                         }
                         break;
                     }
-                gpsUart.read(i, { tId, RECV });
+                gpsUart.setReply(RECV);
+                gpsUart.read(nullptr, i);
                 break;
             }
             case SETRTC:
@@ -305,11 +307,13 @@ struct Cmder : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                ttyUart.read(0, { tId, TTYIN });
+                ttyUart.setReply({ tId, TTYIN });
+                ttyUart.read(nullptr, 0);
                 break;
             case TTYIN:
                 doCmd(*ttyUart.rxPtr);
-                ttyUart.read(1, { tId, TTYIN });
+                ttyUart.setReply({ tId, TTYIN });
+                ttyUart.read(nullptr, 1);
                 break;
             case HIST:
                 logf("history #%d max %d", ++seqNum, Task::MAX_HISTORY-1);

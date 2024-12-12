@@ -47,14 +47,17 @@ struct Echo : Task {
         //logf("t %d v %d", in.eTag, in.eVal);
         switch (in.eTag) {
             case START:
-                gpsUart.read(0, { tId, GPS_RX });
-                ttyUart.read(0, { tId, TTY_RX });
+                gpsUart.setReply(GPS_RX);
+                gpsUart.read(nullptr, 0);
+                ttyUart.setReply(TTY_RX);
+                ttyUart.read(nullptr, 0);
                 break;
 
             case GPS_RX: // gps data received
                 if (ttyPool.add(gpsUart.rxPtr, in.eVal))
                     ttyBusy = feed(ttyPool, ttyUart, TTY_TX);
-                gpsUart.read(in.eVal, { tId, GPS_RX });
+                gpsUart.setReply(GPS_RX);
+                gpsUart.read(nullptr, in.eVal);
                 break;
 
             case TTY_TX: // ttyUart data send done
@@ -65,7 +68,8 @@ struct Echo : Task {
             case TTY_RX: // tty data received
                 if (gpsPool.add(ttyUart.rxPtr, in.eVal))
                     gpsBusy = feed(gpsPool, gpsUart, GPS_TX);
-                ttyUart.read(in.eVal, { tId, TTY_RX });
+                ttyUart.setReply(TTY_RX);
+                ttyUart.read(nullptr, in.eVal);
                 break;
 
             case GPS_TX: // gps data send done
@@ -84,7 +88,8 @@ struct Echo : Task {
         auto buf = pool.next();
         if (buf == nullptr)
             return false;
-        txUart.write(buf+1, *buf, { tId, done });
+        txUart.setReply(done);
+        txUart.write(buf+1, *buf);
         return true;
     }
 };

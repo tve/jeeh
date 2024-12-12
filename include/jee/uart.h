@@ -142,7 +142,7 @@ struct Async : Sync<C>, Task {
 
     enum TAG { START, REQUEST, DONE };
 
-    char const* rxPtr ={};
+    uint8_t const* rxPtr ={};
 
     uint8_t init (int hz =115'200) {
         BASE::init(hz);

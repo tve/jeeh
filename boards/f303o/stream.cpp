@@ -35,7 +35,8 @@ struct Stream : Task {
                     else {
                         auto n = snprintf(buf, sizeof buf, "%2d %d\n",
                                             repeat, (int16_t) prev);
-                        ttyUart.write(buf, n, { tId, SENT });
+                        ttyUart.setReply(SENT);
+                        ttyUart.write(buf, n);
                         repeat = 1;
                         prev = bits;
                     }
