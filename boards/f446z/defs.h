@@ -15,46 +15,50 @@ const Pin led2 (LED2,"P");
 const Pin led3 (LED3,"P");
 
 //CG[ board uart1
-#define UART1_NAME  USART6
-#define UART1_PINS  "G14:8,G9"
-#define UART1_FREQ  180
-#define UART1_TYPE  USART6.ADDR, DMA2.ADDR, 7-0, 1-0
-#define UART1_CONF  { ena::USART6, 180, Irq::USART6, \
-                      Irq::DMA2_Stream7, Irq::DMA2_Stream1, { 2-1,5,5 } }
+#define UART1_NAME USART6
 #define UART1_TRIGGER(w) extern "C" { \
     void USART6_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream7_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream1_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART1_CONF {
+    "G14:8,G9", USART6.ADDR, ena::USART6, 180,
+    DMA2.ADDR, 2-1, 7-0,1-0, 5,5,
+    Irq::DMA2_Stream7, Irq::DMA2_Stream1, Irq::USART6,
+};
 //CG]
 
 uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
 UART1_TRIGGER(gpsUart)
 
 //CG[ board uart3
-#define UART3_NAME  USART3
-#define UART3_PINS  "D8:7,D9"
-#define UART3_FREQ  90
-#define UART3_TYPE  USART3.ADDR, DMA1.ADDR, 3-0, 1-0
-#define UART3_CONF  { ena::USART3, 90, Irq::USART3, \
-                      Irq::DMA1_Stream3, Irq::DMA1_Stream1, { 1-1,4,4 } }
+#define UART3_NAME USART3
 #define UART3_TRIGGER(w) extern "C" { \
     void USART3_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Stream3_IRQHandler () { (w).irqDma(); } \
     void DMA1_Stream1_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART3_CONF {
+    "D8:7,D9", USART3.ADDR, ena::USART3, 90,
+    DMA1.ADDR, 1-1, 3-0,1-0, 4,4,
+    Irq::DMA1_Stream3, Irq::DMA1_Stream1, Irq::USART3,
+};
 //CG]
 
 uart::Async<UART3_TYPE> ttyUart (UART3_CONF);
 UART3_TRIGGER(ttyUart)
 
 //CG[ board spi1
-#define SPI1_NAME  SPI1
-#define SPI1_PINS  "A7:5,A6,A5,D14:P"
-#define SPI1_FREQ  90
-#define SPI1_TYPE  SPI1.ADDR, DMA2.ADDR, 3-0, 2-0
-#define SPI1_CONF  { ena::SPI1, 90, \
-                     Irq::DMA2_Stream3, Irq::DMA2_Stream2, { 2-1,3,3 } }
+#define SPI1_NAME SPI1
+#define SPI1_TRIGGER(w) extern "C" { \
+    void DMA2_Stream3_IRQHandler () { (w).irqDma(); } \
+    void DMA2_Stream2_IRQHandler () { (w).irqDma(); } \
+}
+constexpr spi::Config SPI1_CONF {
+    "A7:5,A6,A5,D14:P", SPI1.ADDR, ena::SPI1, 90,
+    DMA2.ADDR, 2-1, 3-0,2-0, 3,3,
+    Irq::DMA2_Stream3, Irq::DMA2_Stream2,
+};
 //CG]
 
 //spi::Gpio lcdSpi;
@@ -100,7 +104,7 @@ void initBoard () {
     cycles::init();
     rtc::init(false);
 
-    ttyUart.init(UART3_PINS, 2'000'000);
+    ttyUart.init(2'000'000);
     ttyUart.setName("tty-uart");
     //serio::init();
 

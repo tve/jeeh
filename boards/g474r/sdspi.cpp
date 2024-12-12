@@ -183,7 +183,7 @@ int main () {
 
     SdConnect sdc;
     auto start = cycles::micros();
-    auto r = sdc.init(SPI_PINS);
+    auto r = sdc.init();
     auto bsh = r ? 0 : 9;
     logf("sdhc %d, bsh %d, %d us", r, bsh, cycles::micros()-start);
 

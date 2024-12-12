@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "tick"
+#define PIOENV  "uarts"
 
 //CG[ board leds
 #define LED  "B0"
@@ -13,108 +13,108 @@
 const Pin led (LED,"P");
 
 //CG[ board uart
-#define UART_NAME  USART3
-#define UART_PINS  "D8:U7,D9"
-#define UART_FREQ  50
-#define UART_TYPE  USART3.ADDR, DMA1.ADDR, 3-0, 1-0
-#define UART_CONF  { ena::USART3, 50, Irq::USART3, \
-                     Irq::DMA1_Stream3, Irq::DMA1_Stream1, { 1-1,4,4 } }
+#define UART_NAME USART3
 #define UART_TRIGGER(w) extern "C" { \
     void USART3_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Stream3_IRQHandler () { (w).irqDma(); } \
     void DMA1_Stream1_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART_CONF {
+    "D8:U7,D9", USART3.ADDR, ena::USART3, 50,
+    DMA1.ADDR, 1-1, 3-0,1-0, 4,4,
+    Irq::DMA1_Stream3, Irq::DMA1_Stream1, Irq::USART3,
+};
 //CG]
 //CG[ board uart1
-#define UART1_NAME  USART1
-#define UART1_PINS  "B6:U7,B3"
-#define UART1_FREQ  100
-#define UART1_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 2-0
-#define UART1_CONF  { ena::USART1, 100, Irq::USART1, \
-                      Irq::DMA2_Stream7, Irq::DMA2_Stream2, { 2-1,4,4 } }
+#define UART1_NAME USART1
 #define UART1_TRIGGER(w) extern "C" { \
     void USART1_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream7_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream2_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART1_CONF {
+    "B6:U7,B3", USART1.ADDR, ena::USART1, 100,
+    DMA2.ADDR, 2-1, 7-0,2-0, 4,4,
+    Irq::DMA2_Stream7, Irq::DMA2_Stream2, Irq::USART1,
+};
 //CG]
 //CG[ board uart2
-#define UART2_NAME  USART2
-#define UART2_PINS  "A2:U7,A3"
-#define UART2_FREQ  50
-#define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 6-0, 5-0
-#define UART2_CONF  { ena::USART2, 50, Irq::USART2, \
-                      Irq::DMA1_Stream6, Irq::DMA1_Stream5, { 1-1,4,4 } }
+#define UART2_NAME USART2
 #define UART2_TRIGGER(w) extern "C" { \
     void USART2_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Stream6_IRQHandler () { (w).irqDma(); } \
     void DMA1_Stream5_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART2_CONF {
+    "A2:U7,A3", USART2.ADDR, ena::USART2, 50,
+    DMA1.ADDR, 1-1, 6-0,5-0, 4,4,
+    Irq::DMA1_Stream6, Irq::DMA1_Stream5, Irq::USART2,
+};
 //CG]
 //CG[ board uart4
-#define UART4_NAME  UART4
-#define UART4_PINS  "A0:U8,C11"
-#define UART4_FREQ  50
-#define UART4_TYPE  UART4.ADDR, DMA1.ADDR, 4-0, 2-0
-#define UART4_CONF  { ena::UART4, 50, Irq::UART4, \
-                      Irq::DMA1_Stream4, Irq::DMA1_Stream2, { 1-1,4,4 } }
+#define UART4_NAME UART4
 #define UART4_TRIGGER(w) extern "C" { \
     void UART4_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Stream4_IRQHandler () { (w).irqDma(); } \
     void DMA1_Stream2_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART4_CONF {
+    "A0:U8,C11", UART4.ADDR, ena::UART4, 50,
+    DMA1.ADDR, 1-1, 4-0,2-0, 4,4,
+    Irq::DMA1_Stream4, Irq::DMA1_Stream2, Irq::UART4,
+};
 //CG]
 //CG[ board uart5
-#define UART5_NAME  UART5
-#define UART5_PINS  "C12:U8,D2"
-#define UART5_FREQ  50
-#define UART5_TYPE  UART5.ADDR, DMA1.ADDR, 7-0, 0-0
-#define UART5_CONF  { ena::UART5, 50, Irq::UART5, \
-                      Irq::DMA1_Stream7, Irq::DMA1_Stream0, { 1-1,8,4 } }
+#define UART5_NAME UART5
 #define UART5_TRIGGER(w) extern "C" { \
     void UART5_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Stream7_IRQHandler () { (w).irqDma(); } \
     void DMA1_Stream0_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART5_CONF {
+    "C12:U8,D2", UART5.ADDR, ena::UART5, 50,
+    DMA1.ADDR, 1-1, 7-0,0-0, 8,4,
+    Irq::DMA1_Stream7, Irq::DMA1_Stream0, Irq::UART5,
+};
 //CG]
 //CG[ board uart6
-#define UART6_NAME  USART6
-#define UART6_PINS  "G14:U8,G9"
-#define UART6_FREQ  100
-#define UART6_TYPE  USART6.ADDR, DMA2.ADDR, 6-0, 1-0
-#define UART6_CONF  { ena::USART6, 100, Irq::USART6, \
-                      Irq::DMA2_Stream6, Irq::DMA2_Stream1, { 2-1,5,5 } }
+#define UART6_NAME USART6
 #define UART6_TRIGGER(w) extern "C" { \
     void USART6_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream6_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream1_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART6_CONF {
+    "G14:U8,G9", USART6.ADDR, ena::USART6, 100,
+    DMA2.ADDR, 2-1, 6-0,1-0, 5,5,
+    Irq::DMA2_Stream6, Irq::DMA2_Stream1, Irq::USART6,
+};
 //CG]
 //CG[ board uart9
-#define UART9_NAME  UART9
-#define UART9_PINS  "D15:U11,D14"
-#define UART9_FREQ  100
-#define UART9_TYPE  UART9.ADDR, DMA2.ADDR, 0-0, 7-0
-#define UART9_CONF  { ena::UART9, 100, Irq::UART9, \
-                      Irq::DMA2_Stream0, Irq::DMA2_Stream7, { 2-1,1,0 } }
+#define UART9_NAME UART9
 #define UART9_TRIGGER(w) extern "C" { \
     void UART9_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream0_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream7_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART9_CONF {
+    "D15:U11,D14", UART9.ADDR, ena::UART9, 100,
+    DMA2.ADDR, 2-1, 0-0,7-0, 1,0,
+    Irq::DMA2_Stream0, Irq::DMA2_Stream7, Irq::UART9,
+};
 //CG]
 //CG[ board uart10
-#define UART10_NAME  UART10
-#define UART10_PINS  "E3:U11,E2"
-#define UART10_FREQ  100
-#define UART10_TYPE  UART10.ADDR, DMA2.ADDR, 5-0, 3-0
-#define UART10_CONF  { ena::UART10, 100, Irq::UART10, \
-                       Irq::DMA2_Stream5, Irq::DMA2_Stream3, { 2-1,9,9 } }
+#define UART10_NAME UART10
 #define UART10_TRIGGER(w) extern "C" { \
     void UART10_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream5_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream3_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART10_CONF {
+    "E3:U11,E2", UART10.ADDR, ena::UART10, 100,
+    DMA2.ADDR, 2-1, 5-0,3-0, 9,9,
+    Irq::DMA2_Stream5, Irq::DMA2_Stream3, Irq::UART10,
+};
 //CG]
 
 namespace serio {

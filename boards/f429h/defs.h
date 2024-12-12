@@ -14,17 +14,17 @@
 constexpr Pin ledL (LED1), ledR (LED2), ledC (LED3), ledB (LED4);
 
 //CG[ board uart
-#define UART_NAME  USART1
-#define UART_PINS  "A9:7,A10"
-#define UART_FREQ  90
-#define UART_TYPE  USART1.ADDR, DMA2.ADDR, 7-0, 5-0
-#define UART_CONF  { ena::USART1, 90, Irq::USART1, \
-                     Irq::DMA2_Stream7, Irq::DMA2_Stream5, { 2-1,4,4 } }
+#define UART_NAME USART1
 #define UART_TRIGGER(w) extern "C" { \
     void USART1_IRQHandler () { (w).irqIdle(); } \
     void DMA2_Stream7_IRQHandler () { (w).irqDma(); } \
     void DMA2_Stream5_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART_CONF {
+    "A9:7,A10", USART1.ADDR, ena::USART1, 90,
+    DMA2.ADDR, 2-1, 7-0,5-0, 4,4,
+    Irq::DMA2_Stream7, Irq::DMA2_Stream5, Irq::USART1,
+};
 //CG]
 
 uart::Sync<UART_TYPE> console (UART_CONF);
@@ -38,7 +38,7 @@ void initBoard () {
     ledC.mode("P"); ledC = 1; // inverted logic
     ledB.mode("P");
 
-    console.init(UART_PINS, 912'600);
+    console.init(912'600);
     logf("\n%s: %s @ %d MHz", PIOENV, SVDNAME, SystemCoreClock / 1'000'000);
 }
 

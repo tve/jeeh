@@ -12,34 +12,34 @@ const Pin led1 (LED1,"P"); // green
 const Pin led2 (LED2,"P"); // orange
 
 //CG[ board uart1
-#define UART1_NAME  USART1
-#define UART1_PINS  "A9:7,A10"
-#define UART1_FREQ  72
-#define UART1_TYPE  USART1.ADDR, DMA1.ADDR, 4-1, 5-1
-#define UART1_CONF  { ena::USART1, 72, Irq::USART1, \
-                      Irq::DMA1_CH4, Irq::DMA1_CH5, { 1-1,2,2 } }
+#define UART1_NAME USART1
 #define UART1_TRIGGER(w) extern "C" { \
     void USART1_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel4_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel5_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART1_CONF {
+    "A9:7,A10", USART1.ADDR, ena::USART1, 72,
+    DMA1.ADDR, 1-1, 4-1,5-1, 2,2,
+    Irq::DMA1_CH4, Irq::DMA1_CH5, Irq::USART1,
+};
 //CG]
 
 uart::Async<UART1_TYPE> gpsUart (UART1_CONF);
 UART1_TRIGGER(gpsUart)
 
 //CG[ board uart2
-#define UART2_NAME  USART2
-#define UART2_PINS  "A2:7,A3"
-#define UART2_FREQ  36
-#define UART2_TYPE  USART2.ADDR, DMA1.ADDR, 7-1, 6-1
-#define UART2_CONF  { ena::USART2, 36, Irq::USART2, \
-                      Irq::DMA1_CH7, Irq::DMA1_CH6, { 1-1,2,2 } }
+#define UART2_NAME USART2
 #define UART2_TRIGGER(w) extern "C" { \
     void USART2_IRQHandler () { (w).irqIdle(); } \
     void DMA1_Channel7_IRQHandler () { (w).irqDma(); } \
     void DMA1_Channel6_IRQHandler () { (w).irqDma(); } \
 }
+constexpr uart::Config UART2_CONF {
+    "A2:7,A3", USART2.ADDR, ena::USART2, 36,
+    DMA1.ADDR, 1-1, 7-1,6-1, 2,2,
+    Irq::DMA1_CH7, Irq::DMA1_CH6, Irq::USART2,
+};
 //CG]
 
 uart::Async<UART2_TYPE> ttyUart (UART2_CONF);
@@ -64,7 +64,7 @@ void initBoard () {
     cycles::init();
     rtc::init();
 
-    ttyUart.init(UART2_PINS, 1'000'000);
+    ttyUart.init(1'000'000);
     ttyUart.setName("tty-uart");
 
     if (rtc::getSecs() == 0)

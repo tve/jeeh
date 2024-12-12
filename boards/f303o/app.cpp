@@ -523,7 +523,7 @@ private:
 } idler;
 
 void initGps () {
-    gpsUart.init(UART1_PINS, 9600);
+    gpsUart.init(9600);
     gpsUart.setName("gps-uart");
 
     const uint8_t config [] = {
