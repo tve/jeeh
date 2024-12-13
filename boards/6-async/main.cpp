@@ -73,6 +73,7 @@ struct Streamer : Task {
 
 int main () {
     initBoard();
+    dog::init(2);
 
     Streamer streamer;
     Blinker blinker;

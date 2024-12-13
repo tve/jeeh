@@ -178,7 +178,12 @@ struct Async : Sync<C>, Task {
     }
 
     void irqIdle () {
-        UART[BASE::ICR] = (1<<4); // IDLECF
+#if STM32F1 | STM32F4
+        (void) +UART[BASE::SR];
+        (void) +UART[BASE::RDR]; // clear idle and error flags
+#else
+        UART[BASE::ICR] = 0x1F; // clear idle and error flags
+#endif
         trigger(RXDONE);
     }
 
