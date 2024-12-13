@@ -4,8 +4,9 @@ auto& sdSpi = spiBus;
 
 struct SdConnect : spi::Gpio {
 
-    int init (char const* pins) {
-        spi::Gpio::init(sdSel, 10);
+    int init () {
+        spi::Gpio::init(10);
+        select(sdSel);
 
         mosi = 1;
         for (auto i = 0; i < 10; ++i)
@@ -188,7 +189,7 @@ void testSdSpi () {
 #else
     sdSpi.init(40'000);
 #endif
-    spiSelect(sdSpi, sdSel);
+    sdSpi.select(sdSel);
 
     uint8_t buf [512];
     for (auto i = 0; i < 3; ++i) {

@@ -7,15 +7,15 @@ This is a sequence of "bring-up" examples for a variety of boards:
 * `3-fast/` - fast CPU clock, polled serial output @ 2 Mbaud
 * `4-dma/` - switch from polled serial output to DMA + WFE
 * `5-task/` - using multiple tasks with periodic event triggers
-* `6-async/` - asynchronous full speed serial + background LED blink
+* `6-async/` - full speed async serial TX + background LED blink
 
 ## Boards
 
 In the list below, each example can be built and run independently, e.g.
 
     cd g431k
-    pio run -e i2c -t upload
-    pio device monitor          # to view serial output
+    pio run -e scan -t upload
+    pio device monitor              # to view serial output
 
 **`F303K8` - Nucleo-32 @ 72 MHz**
 
@@ -63,6 +63,18 @@ In the list below, each example can be built and run independently, e.g.
 * `g431k/sdspi` - connect to the µSD card socket via SPI
 * `g431k/shell` - explore the use of a command-line shell
 
+There's also a way to test all I2C and SPI devices attached to the test board.
+The code is in `all.cpp`, these tests can exercise different driver variants:
+
+```text
+pio run -e gpio -t upload
+pio run -e poll -t upload
+pio run -e sync -t upload
+pio run -e async -t upload
+```
+
+As always, use `pio device monitor` to see the test results.
+
 **`G474RE` - Nucleo-64 @ 160 MHz**
 
 * `g474r/lcd` - graphics and text on a 480x320 LCD shield
@@ -71,17 +83,3 @@ In the list below, each example can be built and run independently, e.g.
 **`L432KC` - Nucleo-32 @ 80 MHz**
 
 * This is a plug-in variation for use with the **G431KB** test board above.
-
-## Test board
-
-There's a `test/` area which reuses some of the `g431/` code to run tests on
-all I2C and SPI devices attached to the test board. The tests can run in
-different modes, one for each driver variant (gpio, poll, etc):
-
-```
-pio run -e gpio -t upload
-pio run -e poll -t upload
-[etc...]
-```
-
-As before, use `pio device monitor` to see the test results.

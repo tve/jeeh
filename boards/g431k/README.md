@@ -63,3 +63,75 @@ Header | Nucleo | STM32 | RFM69 | Notes  |
 `4-13` | AREF   | -     |       |        |
 `4-14` | +3V3   | -     |       |        |
 `4-15` | D13    | PB3   | SCK   | LED    |
+
+Sample output, see `all.cpp` for details:
+
+```text
+sync: STM32G431xx @ 160 MHz - 2024-12-13 23:12:44.000
+	 i2c=B7:OH4,A15  spi=B5:H5,B4,B3  uart=A2:U7,A3
+	 led=B8  vcc=B6  bmp=A11  lcd=A12  sram=B0  sd=A7
+                                                            I2C - SCAN
+00:                         -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- 1E --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- 3C 3D -- --
+40: 40 -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: 50 -- -- 53 -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- 77
+        HMC5883 @ 0x1E: OK
+    128x32 OLED @ 0x3C: OK
+    128x64 OLED @ 0x3D: OK
+          SHT21 @ 0x40: OK
+     32 KB FRAM @ 0x50: OK
+        ADXL345 @ 0x53: OK
+        ITG3200 @ 0x68: OK
+         BMP390 @ 0x77: OK
+                                                            I2C - OLED
+clear 1: 14017 µs
+ oled 1:  6246 µs
+clear 2:  7012 µs
+ oled 2:  3123 µs
+                                                            I2C - FRAM
+EE EE ... EE EE
+EE EE ... EE EE
+EE EE ... EE EE
+80 80 ... 81 81
+81 81 ... EE EE
+80 81 EE
+                                                             I2C - IMU
+hmc5883 compass: xyz =     83   -264    -47
+hmc5883 compass: xyz =     83   -263    -48
+hmc5883 compass: xyz =     81   -263    -49
+adxl345 accel:   xyz =     31     -2    238
+adxl345 accel:   xyz =     34     -3    239
+adxl345 accel:   xyz =     31     -2    238
+itg3200 gyro:    xyz =     -8     26      7
+itg3200 gyro:    xyz =     -9     28      8
+itg3200 gyro:    xyz =     -7     26      7
+                                                           I2C - SHT21
+T: 19.82 °C RH: 45.16 %
+T: 19.83 °C RH: 45.11 %
+T: 19.83 °C RH: 45.06 %
+                                                          I2C - BMP390
+raw T: 007CF200 P: 005DF300 => T: 20.936 °C P: 1022.473 hPa
+raw T: 007CF400 P: 005DF500 => T: 20.945 °C P: 1022.450 hPa
+raw T: 007CF600 P: 005DF300 => T: 20.954 °C P: 1022.518 hPa
+                                                          SPI - BMP390
+raw T: 007CF900 P: 005DF600 => T: 20.968 °C P: 1022.485 hPa
+raw T: 007CFC00 P: 005DF600 => T: 20.982 °C P: 1022.519 hPa
+raw T: 007CFD00 P: 005DF900 => T: 20.986 °C P: 1022.463 hPa
+                                                             SPI - LCD
+init      40 µs
+clear  31863 µs
+pixel     18 µs
+font1   7485 µs (16 ch, 88 px)
+font2   8854 µs (16 ch, 112 px)
+font3   3932 µs (6 ch, 54 px)
+                                                            SPI - SRAM
+ 000: 00000000 00000000 00006865 6c6c6f00 .... .... ..he llo.
+ 010: 00000000 776f726c 64000000 00000000 .... worl d... ....
+ 020: 00000000 00000000 00006865 6c6c6f2d .... .... ..he llo-
+ 030: 7370692d 776f726c 64000000 00000000 spi- worl d... ....
+                                                                  DONE
+```
