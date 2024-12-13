@@ -9,7 +9,8 @@ struct Config {
     uint8_t mhz =0;
     uint32_t dmaBase =0;        // sync
     uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
-    Irq txIrq ={}, rxIrq ={}, uartIrq ={};
+    Irq txIrq ={}, rxIrq ={}, idleIrq ={};
+    uint16_t numRx =64;
 };
 
 template< Config const& C >
@@ -31,8 +32,10 @@ struct Poll {
         RCC (C.ena,1) = 1;
         baudRate(hz);
 
-        //UART[CR1] = (1<<29) | (1<<3) | (1<<2) | (1<<UE);  // FIFOEN TE RE UE
         UART[CR1] = (1<<3) | (1<<2) | (1<<UE);  // TE RE UE
+#if STM32G4
+        UART[CR1](29) = 1; // FIFOEN
+#endif
     }
 
     void deinit () {
@@ -114,9 +117,9 @@ struct Sync : Poll<C> {
                 asm ("wfe");
             dma.completed();
             assert(!dma.isRunning());
-            Task::irqClear(C.uartIrq);
             Task::irqClear(C.txIrq);
             Task::irqClear(C.rxIrq);
+            Task::irqClear(C.idleIrq);
             finishReq(m, p, n);
         }
         return n;
@@ -139,8 +142,9 @@ protected:
 template< Config const& C >
 struct Async : Sync<C>, Task {
     using BASE = Sync<C>;
+    using BASE::UART, BASE::dma;
 
-    enum TAG { START, REQUEST, DONE };
+    enum TAG { START, REQUEST, RXDONE, TXDONE };
 
     uint8_t const* rxPtr ={};
 
@@ -150,11 +154,11 @@ struct Async : Sync<C>, Task {
     }
 
     void setReply (Event out) const {
-        pend = out;
+        done = out;
     }
 
     int ioRequest (IoReq const* v, uint32_t n) const {
-        if (!pend)
+        if (!done)
             return BASE::ioRequest(v, n); // use sync version
         reqs = v;
         num = n;
@@ -168,22 +172,22 @@ struct Async : Sync<C>, Task {
     }
 
     void irqDma () {
-        auto f = BASE::dma.completed();
+        auto f = dma.completed();
         assert(f > 0);
-        trigger(DONE);
+        trigger(f == dma.TXDONE ? TXDONE : RXDONE);
     }
 
     void irqIdle () {
-        // TODO BASE::UART[BASE::ICR] = (1<<4); // IDLECF
-        BASE::UART[0x20] = (1<<4); // ICR: IDLECF
-        trigger(DONE);
+        UART[BASE::ICR] = (1<<4); // IDLECF
+        trigger(RXDONE);
     }
 
 private:
     mutable IoReq curr ={ 0, 0, nullptr };
     mutable IoReq const* reqs;
     mutable int num =0;
-    mutable Event pend;
+    mutable Event done;
+    uint8_t rxBuf [C.numRx] alignas(4);
 
     Event process (Event in, Event out) override {
         assert(!out); // should use setReply instead
@@ -191,21 +195,37 @@ private:
             case START:
                 break;
             case REQUEST:
-                irqEnable(C.uartIrq);
-                irqEnable(C.txIrq);
-                irqEnable(C.rxIrq);
                 while (--num >= 0) {
                     curr = *reqs++;
+                    if (curr.mode & IO_READ) {
+                        if (rxPtr == nullptr) { // lazily start circular rx
+                            rxPtr = rxBuf;
+                            UART[BASE::CR1](4) = 1; // IDLEIE
+#if STM32F1 | STM32F3 | STM32G4
+                            dma.DRX[dma.CCR](5) = 1; // CIRC
+#else
+                            dma.DRX[dma.CCR](8) = 1; // CIRC
+#endif
+                            dma.DRX[dma.CCR](2) = 1; // HTIE
+                            dma.rxStart(rxBuf, sizeof rxBuf);
+                        }
+                        irqEnable(C.rxIrq);
+                        irqEnable(C.idleIrq);
+                    } else
+                        irqEnable(C.txIrq);
                     BASE::startReq(curr.mode, curr.ptr, curr.len);
-                    break; // transfer started, wait for DONE trigger
-            case DONE:     // this jumps back into the transfer loop!
+                    break;  // transfer started, wait for a DONE trigger
+            case RXDONE:    // this jumps back into the transfer loop!
+                    irqDisable(C.rxIrq);
+                    irqDisable(C.idleIrq);
+                    [[fallthrough]];
+            case TXDONE:    // ... and so does this
+                    if (in.eVal == TXDONE)
+                        irqDisable(C.txIrq);
                     BASE::finishReq(curr.mode, curr.ptr, curr.len);
-                    pend.eVal = curr.len;
+                    done.eVal = curr.len;
                 }
-                irqDisable(C.uartIrq);
-                irqDisable(C.txIrq);
-                irqDisable(C.rxIrq);
-                out = take(pend);
+                out = take(done);
                 break;
             default:
                 fail();

@@ -49,7 +49,7 @@ struct Blinker : Task {
 struct Streamer : Task {
     enum TAG { START, SENT };
 
-    char buf [80];
+    char buf [90];
     int seq =0;
 
     Event process (Event in, Event out) override {

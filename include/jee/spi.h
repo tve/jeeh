@@ -265,11 +265,11 @@ struct Async : Sync<C>, Task {
     }
 
     void setReply (Event out) const {
-        pend = out;
+        done = out;
     }
 
     int ioRequest (IoReq const* v, uint32_t n) const {
-        if (!pend)
+        if (!done)
             return BASE::ioRequest(v, n); // use sync version
         reqs = v;
         num = n;
@@ -292,7 +292,7 @@ private:
     mutable IoReq curr ={ 0, 0, nullptr };
     mutable IoReq const* reqs;
     mutable int num =0;
-    mutable Event pend;
+    mutable Event done;
 
     Event process (Event in, Event out) override {
         assert(!out); // should use setReply instead
@@ -307,11 +307,11 @@ private:
                     if (BASE::startReq(curr.mode, curr.ptr, curr.len))
                         break; // transfer started, wait for DONE trigger
             case DONE:         // this jumps back into the transfer loop!
-                    pend.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                    done.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
                 }
                 irqDisable(C.txIrq);
                 irqDisable(C.rxIrq);
-                out = take(pend);
+                out = take(done);
                 break;
             default:
                 fail();
