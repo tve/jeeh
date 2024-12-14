@@ -64,15 +64,19 @@ struct Poll {
     }
 
     int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
-        if (m & IO_WRITE) {
+        if (m & IO_WRITE)
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](7)) {} // TXE
                 UART[TDR] = p[i];
             }
-            while (!UART[SR](6)) {} // ~TC
-        } else
+        else
             for (auto i = 0U; i < n; ++i) {
-                while ((UART[SR] & 0x2F) == 0) {} // ~RXNE ~OVR ~NF ~FE ~PE
+                while (!UART[SR](5)) { // RXFNE
+                    auto f = UART[SR] & 0x1F; // IDLE OVR NF FE PE
+                    UART[ICR] = f; // clear idle and error flags
+                    if (f & (1<<4)) // IDLE
+                        return i;
+                }
                 p[i] = UART[RDR];
             }
         return n;
