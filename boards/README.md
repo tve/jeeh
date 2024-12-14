@@ -8,6 +8,7 @@ This is a sequence of "bring-up" examples for a variety of boards:
 * `4-dma/` - switch from polled serial output to DMA + WFE
 * `5-task/` - using multiple tasks with periodic event triggers
 * `6-async/` - full speed async serial TX + background LED blink
+* `7-echo/` - use blocking UART reads to echo all input
 
 ## Boards
 
