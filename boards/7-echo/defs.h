@@ -16,6 +16,6 @@
 constexpr uart::Config UART_CONF {
     "A2:U7,A3", USART2.ADDR, ena::USART2, 170,
     DMA1.ADDR, 1-1, 1-1,2-1, 27,26,
-    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART2,
+    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART2, 64,
 };
 //CG]

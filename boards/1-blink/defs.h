@@ -1,4 +1,4 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 board leds
-#define LED  "D2"
+#define LED  "B1"
