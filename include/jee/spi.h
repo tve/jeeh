@@ -224,13 +224,13 @@ protected:
         if (n == 0)
             return false;
         // TODO try to get read+write working, replacing same buffer
-        if (m & IO_WRITE)
-            dma.txStart(p, n);
-        else {
+        if (m & IO_READ) {
             dma.rxStart(p, n);
             SPI[BASE::CR1](10) = 1; // RXONLY
             SPI[BASE::CR1](6) = 1; // SPE
         }
+        if (m & IO_WRITE)
+            dma.txStart(p, n);
         return true;
     }
 
@@ -283,6 +283,7 @@ struct Async : Sync<C>, Task {
     }
 
     void irqDma () {
+return; // FIXME ???
         auto f = BASE::dma.completed();
         assert(f > 0);
         trigger(DONE);

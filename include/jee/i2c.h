@@ -378,70 +378,62 @@ template< Config const& C >
 struct Async : Sync<C>, Task {
     using BASE = Sync<C>;
 
-    enum TAG { START, RXDONE, TXDONE };
-
-    Event pend;
+    enum TAG { START, REQUEST, DONE };
 
     uint8_t init (uint32_t khz =400) {
         BASE::init(khz);
-        irqEnable(C.evIrq);
-        irqEnable(C.erIrq);
         return Task::init();
     }
 
-    void deinit () {
-        irqDisable(C.evIrq);
-        irqDisable(C.erIrq);
-        BASE::deinit();
-    }
-
     void setReply (Event out) const {
-        pend = out;
+        done = out;
     }
 
-    // async version, started from a msg
-    void start (uint8_t m, uint8_t* p, uint16_t n, Event out) {
-        assert(n > 0);
-        pend = out;
-        BASE::startReq(m, p, n);
+    int ioRequest (IoReq const* v, uint32_t n) const {
+        if (!done)
+            return BASE::ioRequest(v, n); // use sync version
+        reqs = v;
+        num = n;
+        send({ tId, REQUEST });
+        return 0;
     }
 
-#if 0
-    void finish () {
-        auto mp = msgs.pull();
-        if (mp == nullptr)
-            return;
-        mp->mLen = finishReq(mp->mLen >> 8, mp->mPtr, (uint8_t) mp->mLen);
-        reply(mp);
-        if (!msgs.isEmpty())
-            startAsync(*msgs.first());
+    int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
+        curr = { m, n, p };
+        return ioRequest(&curr, 1);
     }
-
-    void startAsync (Event m) {
-        uint8_t mode = m.mLen >> 8, len = m.mLen;
-        startReq(m.mTag, mode, m.mPtr, len);
-        if (mode == BASE::W1 && len == 0)
-            finish(); // this may be recursive
-    }
-#endif
 
     void irqI2c () {
-        BASE::I2C[BASE::CR1](4,3) = 0; // ~TCIE ~STOPIE ~NACKIE
-        trigger(RXDONE); // TODO TXDONE?
+        // TODO what about TCR? (NBYTES went to zero, need to get next IoReq)
+        //  should the irq handler step to the next IoReq in this case?
+        BASE::I2C[BASE::ICR] = 0x30; // STOPCF NACKCF
+        trigger(DONE);
     }
 
 private:
+    mutable IoReq curr ={ 0, 0, nullptr };
+    mutable IoReq const* reqs;
+    mutable int num =0;
+    mutable Event done;
+
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 break;
-            case RXDONE:
-                pend.eVal = BASE::finishReq(false, nullptr, 0);
-                reply(pend);
-                break;
-            case TXDONE:
-                pend.eVal = BASE::finishReq(true, nullptr, 0);
-                reply(pend);
+            case REQUEST:
+                while (--num >= 0) {
+                    curr = *reqs++;
+                    irqEnable(C.evIrq);
+                    irqEnable(C.erIrq);
+                    BASE::startReq(curr.mode, curr.ptr, curr.len);
+                    break; // transfer started, wait for a DONE trigger
+            case DONE:     // this jumps back into the transfer loop!
+                    irqDisable(C.evIrq);
+                    irqDisable(C.erIrq);
+                    BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                    done.eVal = curr.len;
+                }
+                out = take(done);
                 break;
             default:
                 fail();

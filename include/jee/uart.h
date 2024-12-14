@@ -219,8 +219,8 @@ private:
                     } else
                         irqEnable(C.txIrq);
                     BASE::startReq(curr.mode, curr.ptr, curr.len);
-                    break;  // transfer started, wait for a DONE trigger
-            case RXDONE:    // this jumps back into the transfer loop!
+                    break; // transfer started, wait for a DONE trigger
+            case RXDONE:   // this jumps back into the transfer loop!
                     irqDisable(C.rxIrq);
                     irqDisable(C.idleIrq);
                     [[fallthrough]];
