@@ -78,7 +78,7 @@ struct DmaConfig {
         DRX[CCR](0) = 1; // EN
     }
 
-    int completed () const {
+    int rxCompleted () const {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*C.dmaRs+2)) { // HTIF
             DMA[IFCR] = 1<<(4*C.dmaRs+2);
@@ -95,11 +95,6 @@ struct DmaConfig {
             DMA[IFCR] = 1<<(4*C.dmaRs);
             return RXFULL;
         }
-        if (DMA[ISR](4*C.dmaTs)) { // GIF
-            DTX[CCR](0) = 0; // ~EN
-            DMA[IFCR] = 1<<(4*C.dmaTs);
-            return TXDONE;
-        }
 #else
         constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if ((uint8_t) DMA[C.dmaRs&~3](ifcBits[C.dmaRs&3],6)) { // rx irq
@@ -107,6 +102,19 @@ struct DmaConfig {
             DMA[IFCR+(C.dmaRs&~3)] = 0b111101 << ifcBits[C.dmaRs&3]; // clr irq
             return d;
         }
+#endif
+        return NONE;
+    }
+
+    int txCompleted () const {
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
+        if (DMA[ISR](4*C.dmaTs)) { // GIF
+            DTX[CCR](0) = 0; // ~EN
+            DMA[IFCR] = 1<<(4*C.dmaTs);
+            return TXDONE;
+        }
+#else
+        constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if ((uint8_t) DMA[C.dmaTs&~3](ifcBits[C.dmaTs&3],6)) { // tx irq
             DMA[IFCR+(C.dmaTs&~3)] = 0b111101 << ifcBits[C.dmaTs&3]; // clr irq
             return TXDONE;
@@ -115,14 +123,28 @@ struct DmaConfig {
         return NONE;
     }
 
+    int completed () const {
+        auto f = rxCompleted();
+        return f != NONE ? f : txCompleted();
+    }
+
     bool isRunning () const {
         return DTX[CCR](0) || DRX[CCR](0); // EN
     }
 
-    void done () const {
-        assert(isRunning());
-        DTX[CCR](0) = 0; // ~EN
+    void rxDone () const {
+        assert(DRX[CCR](0));
         DRX[CCR](0) = 0; // ~EN
+    }
+
+    void txDone () const {
+        assert(DTX[CCR](0));
+        DTX[CCR](0) = 0; // ~EN
+    }
+
+    void done () const {
+        rxDone();
+        txDone();
     }
 };
 

@@ -8,12 +8,18 @@ using namespace jeeh;
 
 Pin led (LED, "P");
 
-Dev<uart::Poll<UART_CONF>> console;
-//Dev<uart::Sync<UART_CONF>> console;
+//Dev<uart::Poll<UART_CONF>> console;
+Dev<uart::Sync<UART_CONF>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
-    if (fd == 1 || fd == 2)
+    if (fd == 1 || fd == 2) {
+#if 1
         console.write(buf, len);
+#else // this can be used while debugging the sync/async drivers and IRQs
+        uart::Poll<UART_CONF>& polledConsole = console;
+        polledConsole.ioRequest(IO_WRITE, (uint8_t*) buf, len);
+#endif
+    }
     return len;
 }
 

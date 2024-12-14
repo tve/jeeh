@@ -119,11 +119,19 @@ struct Sync : Poll<C> {
             startReq(m, p, n);
             while (!Task::pendingIrq())
                 asm ("wfe");
-            dma.completed();
-            assert(!dma.isRunning());
-            Task::irqClear(C.txIrq);
-            Task::irqClear(C.rxIrq);
-            Task::irqClear(C.idleIrq);
+            if (m & IO_READ) {
+                if (dma.rxCompleted() == dma.NONE) {
+                    dma.rxDone(); // dma didn't complete, the line went idle
+                    n -= dma.DRX[dma.CNDTR]; // adjust receive count
+                }
+                UART[BASE::ICR] = 0x10; // IDLE
+                Task::irqClear(C.rxIrq);
+                Task::irqClear(C.idleIrq);
+            } else {
+                auto f = dma.txCompleted();
+                assert(f == dma.TXDONE);
+                Task::irqClear(C.txIrq);
+            }
             finishReq(m, p, n);
         }
         return n;
@@ -131,15 +139,19 @@ struct Sync : Poll<C> {
 
 protected:
     void startReq (uint16_t m, void* p, uint16_t n) const {
-        if (m & IO_WRITE)
-            dma.txStart(p, n);
-        else
+        if (m & IO_READ) {
+            UART[BASE::ICR] = 0x1F; // clear idle and error flags
+            UART[BASE::CR1](4) = 1; // IDLEIE
             dma.rxStart(p, n);
+        } else
+            dma.txStart(p, n);
     }
 
     void finishReq (uint16_t m, void* p, uint16_t n) const {
-        if (m & IO_READ)
+        if (m & IO_READ) {
             cache::inval(p, n);
+            UART[BASE::CR1](4) = 0; // ~IDLEIE
+        }
     }
 };
 
