@@ -1,7 +1,7 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "async"
+#define PIOENV  "sync"
 
 //CG1 board leds
 #define LED  "B8"
@@ -9,7 +9,7 @@
 const Pin led (LED,"P");
 
 //CG1 board mode
-#define MODE_ASYNC 1
+#define MODE_SYNC 1
 
 //CG[ board pins
 #define PINS_VCC "B6"
@@ -35,7 +35,7 @@ Pin sdSel (PINS_SD,"U");     // NSEL for SD card on SPI
 constexpr uart::Config UART_CONF {
     "A2:U7,A3", USART2.ADDR, ena::USART2, 170,
     DMA1.ADDR, 1-1, 1-1,2-1, 27,26,
-    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART2,
+    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART2, 64,
 };
 //CG]
 

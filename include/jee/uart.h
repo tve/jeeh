@@ -10,7 +10,7 @@ struct Config {
     uint32_t dmaBase =0;        // sync
     uint8_t dmaIdx =0, dmaTs =0, dmaRs =0, dmaTc =0, dmaRc =0;
     Irq txIrq ={}, rxIrq ={}, idleIrq ={};
-    uint16_t numRx =64;
+    uint16_t numIn =0;
 };
 
 template< Config const& C >
@@ -192,7 +192,7 @@ private:
     mutable IoReq const* reqs;
     mutable int num =0;
     mutable Event done;
-    uint8_t rxBuf [C.numRx] alignas(4);
+    uint8_t rxBuf [C.numIn] alignas(4);
 
     Event process (Event in, Event out) override {
         assert(!out); // should use setReply instead

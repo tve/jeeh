@@ -41,7 +41,7 @@ def BOARD(block, name, suffix=''):
     if name.startswith('uart'):
         if not suffix:
             suffix = name[4:].upper();
-        f = { 'O': '0' }
+        f = { 'O': '0', 'I': '64' }
         for x in info:
             k, v = x.split(':', 1)
             f[k] = v
@@ -60,7 +60,7 @@ def BOARD(block, name, suffix=''):
         addTempl('"$P", $N.ADDR, ena::$N, $F,')
         if 'D' in f:
             addTempl('DMA$D.ADDR, $D-1, $T-$O,$R-$O, $C,')
-            addTempl('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, Irq::$N,')
+            addTempl('Irq::DMA${D}_$L$T, Irq::DMA${D}_$L$R, Irq::$N, $I,')
         r.append('};')
         return r
 
