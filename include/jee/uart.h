@@ -33,7 +33,7 @@ struct Poll {
         baudRate(hz);
 
         UART[CR1] = (1<<3) | (1<<2) | (1<<UE);  // TE RE UE
-#if STM32G4
+#if STM32G4 || STM32H7
         UART[CR1](29) = 1; // FIFOEN
 #endif
     }
@@ -128,14 +128,17 @@ protected:
         if (m & IO_READ) {
             if (UART[BASE::SR](4)) { // IDLE
                 UART[BASE::ICR] = 0x10; // IDLECF
+                //(void) +UART[BASE::RDR];
                 dma.rxDone(); // cancel dma, the line went idle
             } else if (dma.rxCompleted() == 0)
                 return false;
+dma.rxCompleted(); // TODO clears pending, but what's the logic here?
             irqClear(C.rxIrq);
             irqClear(C.idleIrq);
         } else {
             if (dma.txCompleted() == 0)
                 return false;
+dma.txCompleted(); // TODO clears pending, but what's the logic here?
             irqClear(C.txIrq);
         }
         return true;

@@ -92,13 +92,17 @@ struct DmaConfig {
                 return RXHALF;
         }
         if (DMA[ISR](4*C.dmaRs)) { // GIF
+#if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
             if (!DRX[CCR](5)) // only disable if not circular
+#else
+            if (!DRX[CCR](8)) // only disable if not circular
+#endif
                 DRX[CCR](0) = 0; // ~EN
             DMA[IFCR] = 1<<(4*C.dmaRs);
             return RXFULL;
         }
 #else
-        if ((uint8_t) DMA[C.dmaRs&~3](ifcBits[C.dmaRs&3],6)) { // rx irq
+        if (DMA[C.dmaRs&~3](ifcBits[C.dmaRs&3],6)) { // rx irq
             auto d = DMA[C.dmaRs&~3](4+ifcBits[C.dmaRs&3]) ? RXHALF : RXFULL;
             DMA[IFCR+(C.dmaRs&~3)] = 0b111101 << ifcBits[C.dmaRs&3]; // clr irq
             return d;
@@ -115,7 +119,7 @@ struct DmaConfig {
             return TXDONE;
         }
 #else
-        if ((uint8_t) DMA[C.dmaTs&~3](ifcBits[C.dmaTs&3],6)) { // tx irq
+        if (DMA[C.dmaTs&~3](ifcBits[C.dmaTs&3],6)) { // tx irq
             DMA[IFCR+(C.dmaTs&~3)] = 0b111101 << ifcBits[C.dmaTs&3]; // clr irq
             return TXDONE;
         }

@@ -66,8 +66,12 @@ void jeeh::logf (char const* fmt ...) {
 //------------------------------------------------------------------------ fail
 
 [[gnu::weak]] void jeeh::fail (void const* a, char const* f, int n) {
-    logf("\n" "failed at %s:%d\n"
-              "failed caller: %p", f, n, a);
+#if 1 // only show last section of file path
+    for (auto g = f; *g != 0; ++g)
+        if (*g == '/')
+            f = g+1;
+#endif
+    logf("\n" "failed %s:%d from %p", f, n, a);
     BlockIRQ irq;
     while (true) {}
 }

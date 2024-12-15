@@ -1,21 +1,21 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "f723d"
+#define PIOENV  "f303k"
 
 //CG1 board leds
-#define LED  "B1"
+#define LED  "B3"
 
 //CG[ board uart
-#define UART_NAME USART6
+#define UART_NAME USART2
 #define UART_TRIGGER(w) extern "C" { \
-    void USART6_IRQHandler () { (w).irqIdle(); } \
-    void DMA2_Stream6_IRQHandler () { (w).irqDma(); } \
-    void DMA2_Stream2_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel7_IRQHandler () { (w).irqTx(); } \
+    void DMA1_Channel6_IRQHandler () { (w).irqRx(); } \
+    void USART2_IRQHandler () { (w).irqRx(); } \
 }
 constexpr uart::Config UART_CONF {
-    "C6:8,C7", USART6.ADDR, ena::USART6, 108,
-    DMA2.ADDR, 2-1, 6-0,2-0, 5,5,
-    Irq::DMA2_Stream6, Irq::DMA2_Stream2, Irq::USART6, 64,
+    "A2:7,A15", USART2.ADDR, ena::USART2, 36,
+    DMA1.ADDR, 1-1, 7-1,6-1, 2,2,
+    Irq::DMA1_CH7, Irq::DMA1_CH6, Irq::USART2, 64,
 };
 //CG]
