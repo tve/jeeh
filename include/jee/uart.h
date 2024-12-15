@@ -138,7 +138,6 @@ dma.rxCompleted(); // TODO clears pending, but what's the logic here?
         } else {
             if (dma.txCompleted() == 0)
                 return false;
-dma.txCompleted(); // TODO clears pending, but what's the logic here?
             irqClear(C.txIrq);
         }
         return true;
