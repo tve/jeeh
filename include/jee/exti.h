@@ -10,7 +10,7 @@ namespace jeeh {
 #define EXTI2       EXTI2_TSC
 #endif
 
-struct ExtIrq : Task {
+struct ExtIrq : IrqHandler, Task {
     enum TAG { START, FIRED };
     enum MODE { NONE, RISE, FALL, BOTH };
 

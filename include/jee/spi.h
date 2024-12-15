@@ -172,7 +172,7 @@ struct Poll : Gpio<C> {
 };
 
 template< Config const& C >
-struct Sync : Poll<C> {
+struct Sync : Poll<C>, IrqHandler {
     using BASE = Poll<C>;
     using BASE::SPI;
 
@@ -202,52 +202,57 @@ struct Sync : Poll<C> {
     }
 
     int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
-        assert(!Task::pendingIrq());
-        if (startReq(m, p, n)) {
-            while (!Task::pendingIrq())
-                asm ("wfe");
-            dma.completed();
-            assert(!dma.isRunning());
-            Task::irqClear(C.txIrq);
-            Task::irqClear(C.rxIrq);
-        }
+        assert(!irqPending());
+        //assert(n > 0);
+        if (n == 0)
+            return 0;
+        startReq(m, p, n);
+        while (!checkIrq(m))
+            asm ("wfe");
         return finishReq(m, p, n);
     }
 
 protected:
-    bool startReq (uint16_t m, void* p, uint16_t n) const {
+    static inline bool checkIrq (uint16_t m) {
+        if (m & IO_READ) {
+            if (dma.rxCompleted() == 0)
+                return false;
+            irqClear(C.rxIrq);
+        } else {
+            if (dma.txCompleted() == 0)
+                return false;
+            irqClear(C.txIrq);
+        }
+        return true;
+    }
+
+    void startReq (uint16_t m, void* p, uint16_t n) const {
         assert(!SPI[BASE::SR](7)); // ~BSY
         assert(SPI[BASE::SR](11,2) == 0); // FTLVL
         assert(SPI[BASE::SR](9,2) == 0); // FRLVL
 
         BASE::checkStart(m);
-        if (n == 0)
-            return false;
-        // TODO try to get read+write working, replacing same buffer
+        // TODO add support for read+write, replacing same buffer
         if (m & IO_READ) {
             dma.rxStart(p, n);
             SPI[BASE::CR1](10) = 1; // RXONLY
             SPI[BASE::CR1](6) = 1; // SPE
-        }
-        if (m & IO_WRITE)
+        } else
             dma.txStart(p, n);
-        return true;
     }
 
     uint16_t finishReq (uint16_t m, void* p, uint16_t n) const {
         uint8_t r = 0;
-        if (n > 0) {
-            if (m & IO_READ) {
-                cache::inval(p, n);
-                SPI[BASE::CR1](10) = 0; // ~RXONLY
-            }
-
-            while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
-            while (SPI[BASE::SR](7)) {} // BSY
-
-            while (SPI[BASE::SR](9,2) != 0) // FRLVL
-                r = +SPI.byte(BASE::DR);
+        if (m & IO_READ) {
+            cache::inval(p, n);
+            SPI[BASE::CR1](10) = 0; // ~RXONLY
         }
+
+        while (SPI[BASE::SR](11,2) != 0) {} // FTLVL
+        while (SPI[BASE::SR](7)) {} // BSY
+
+        while (SPI[BASE::SR](9,2) != 0) // FRLVL
+            r = +SPI.byte(BASE::DR);
         BASE::checkStop(m);
         return m & IO_LAST ? r : n;
     }
@@ -283,9 +288,8 @@ struct Async : Sync<C>, Task {
     }
 
     void irqDma () {
-return; // FIXME ???
-        auto f = BASE::dma.completed();
-        assert(f > 0);
+        auto f = BASE::checkIrq(curr.mode);
+        assert(f);
         trigger(DONE);
     }
 
@@ -301,17 +305,19 @@ private:
             case START:
                 break;
             case REQUEST:
-                irqEnable(C.txIrq);
-                irqEnable(C.rxIrq);
+                BASE::irqEnable(C.txIrq);
+                BASE::irqEnable(C.rxIrq);
                 while (--num >= 0) {
                     curr = *reqs++;
-                    if (BASE::startReq(curr.mode, curr.ptr, curr.len))
+                    if (curr.len > 0) {
+                        BASE::startReq(curr.mode, curr.ptr, curr.len);
                         break; // transfer started, wait for DONE trigger
+                    }
             case DONE:         // this jumps back into the transfer loop!
                     done.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
                 }
-                irqDisable(C.txIrq);
-                irqDisable(C.rxIrq);
+                BASE::irqDisable(C.txIrq);
+                BASE::irqDisable(C.rxIrq);
                 out = take(done);
                 break;
             default:

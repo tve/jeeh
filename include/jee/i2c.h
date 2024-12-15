@@ -314,7 +314,7 @@ private:
 };
 
 template< Config const& C >
-struct Sync : Poll<C> {
+struct Sync : Poll<C>, IrqHandler {
     using BASE = Poll<C>;
     using BASE::I2C;
 
@@ -344,14 +344,20 @@ struct Sync : Poll<C> {
     }
 
     int ioRequest (uint16_t m, uint8_t* p, uint8_t n) const {
-        assert(!Task::pendingIrq());
+        assert(!irqPending());
+        //assert(n > 0);
         startReq(m, p, n);
-        while (!Task::pendingIrq())
+        while (!irqPending())
             asm ("wfe");
         return finishReq(m, p, n);
     }
 
 protected:
+    static inline bool checkIrq (uint16_t m) {
+        (void) m;
+        return irqPending();
+    }
+
     void startReq (uint16_t m, void* p, uint8_t n) const {
         // must set up DMA before START, see 33.4.16, p.1003 in RM0393 v2
         if (m & IO_WRITE)
@@ -368,8 +374,8 @@ protected:
         if (m & IO_READ)
             cache::inval(p, n);
         I2C[BASE::CR1](4,4) = 0; // ~ERRIE ~TCIE ~STOPIE ~NACKIE
-        Task::irqClear(C.evIrq);
-        Task::irqClear(C.erIrq);
+        irqClear(C.evIrq);
+        irqClear(C.erIrq);
         return BASE::finishReq(m, n);
     }
 };
@@ -423,13 +429,13 @@ private:
             case REQUEST:
                 while (--num >= 0) {
                     curr = *reqs++;
-                    irqEnable(C.evIrq);
-                    irqEnable(C.erIrq);
+                    BASE::irqEnable(C.evIrq);
+                    BASE::irqEnable(C.erIrq);
                     BASE::startReq(curr.mode, curr.ptr, curr.len);
                     break; // transfer started, wait for a DONE trigger
             case DONE:     // this jumps back into the transfer loop!
-                    irqDisable(C.evIrq);
-                    irqDisable(C.erIrq);
+                    BASE::irqDisable(C.evIrq);
+                    BASE::irqDisable(C.erIrq);
                     BASE::finishReq(curr.mode, curr.ptr, curr.len);
                     done.eVal = curr.len;
                 }

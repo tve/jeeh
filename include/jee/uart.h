@@ -84,7 +84,7 @@ struct Poll {
 };
 
 template< Config const& C >
-struct Sync : Poll<C> {
+struct Sync : Poll<C>, IrqHandler {
     using BASE = Poll<C>;
     using BASE::UART;
 
@@ -114,30 +114,33 @@ struct Sync : Poll<C> {
     }
 
     int ioRequest (uint16_t m, uint8_t* p, uint16_t n) const {
-        assert(!Task::pendingIrq());
-        if (n > 0) {
-            startReq(m, p, n);
-            while (!Task::pendingIrq())
-                asm ("wfe");
-            if (m & IO_READ) {
-                if (dma.rxCompleted() == dma.NONE) {
-                    dma.rxDone(); // dma didn't complete, the line went idle
-                    n -= dma.DRX[dma.CNDTR]; // adjust receive count
-                }
-                UART[BASE::ICR] = 0x10; // IDLE
-                Task::irqClear(C.rxIrq);
-                Task::irqClear(C.idleIrq);
-            } else {
-                auto f = dma.txCompleted();
-                assert(f == dma.TXDONE);
-                Task::irqClear(C.txIrq);
-            }
-            finishReq(m, p, n);
-        }
-        return n;
+        assert(!irqPending());
+        if (n == 0)
+            return 0; // TODO return # available for reading
+        startReq(m, p, n);
+        while (!checkIrq(m))
+            asm ("wfe");
+        return finishReq(m, p, n);
     }
 
 protected:
+    static inline bool checkIrq (uint16_t m) {
+        if (m & IO_READ) {
+            if (UART[BASE::SR](4)) { // IDLE
+                UART[BASE::ICR] = 0x10; // IDLECF
+                dma.rxDone(); // cancel dma, the line went idle
+            } else if (dma.rxCompleted() == 0)
+                return false;
+            irqClear(C.rxIrq);
+            irqClear(C.idleIrq);
+        } else {
+            if (dma.txCompleted() == 0)
+                return false;
+            irqClear(C.txIrq);
+        }
+        return true;
+    }
+
     void startReq (uint16_t m, void* p, uint16_t n) const {
         if (m & IO_READ) {
             UART[BASE::ICR] = 0x1F; // clear idle and error flags
@@ -147,11 +150,13 @@ protected:
             dma.txStart(p, n);
     }
 
-    void finishReq (uint16_t m, void* p, uint16_t n) const {
+    int finishReq (uint16_t m, void* p, uint16_t n) const {
         if (m & IO_READ) {
+            n -= dma.DRX[dma.CNDTR]; // adjust receive count if IDLE detected
             cache::inval(p, n);
             UART[BASE::CR1](4) = 0; // ~IDLEIE
         }
+        return n;
     }
 };
 
@@ -170,7 +175,7 @@ struct Async : Sync<C>, Task {
     }
 
     void setReply (Event out) const {
-        done = out;
+        done = out; // TODO this can't handle simultaneous async tx & rx
     }
 
     int ioRequest (IoReq const* v, uint32_t n) const {
@@ -187,19 +192,21 @@ struct Async : Sync<C>, Task {
         return ioRequest(&curr, 1);
     }
 
-    void irqDma () {
-        auto f = dma.completed();
-        assert(f > 0);
-        trigger(f == dma.TXDONE ? TXDONE : RXDONE);
+    void irqTx () {
+        auto f = BASE::checkIrq(IO_WRITE);
+        assert(f);
+        trigger(TXDONE);
     }
 
-    void irqIdle () {
-#if STM32F1 | STM32F4
-        (void) +UART[BASE::SR];
-        (void) +UART[BASE::RDR]; // clear idle and error flags
-#else
-        UART[BASE::ICR] = 0x1F; // clear idle and error flags
-#endif
+    void irqRx () {
+        auto f = BASE::checkIrq(IO_READ);
+        assert(f);
+//#if STM32F1 | STM32F4
+//        (void) +UART[BASE::SR];
+//        (void) +UART[BASE::RDR]; // clear idle and error flags
+//#else
+//        UART[BASE::ICR] = 0x1F; // clear idle and error flags
+//#endif
         trigger(RXDONE);
     }
 
@@ -230,21 +237,20 @@ private:
                             dma.DRX[dma.CCR](2) = 1; // HTIE
                             dma.rxStart(rxBuf, sizeof rxBuf);
                         }
-                        irqEnable(C.rxIrq);
-                        irqEnable(C.idleIrq);
+                        BASE::irqEnable(C.rxIrq);
+                        BASE::irqEnable(C.idleIrq);
                     } else
-                        irqEnable(C.txIrq);
+                        BASE::irqEnable(C.txIrq);
                     BASE::startReq(curr.mode, curr.ptr, curr.len);
                     break; // transfer started, wait for a DONE trigger
             case RXDONE:   // this jumps back into the transfer loop!
-                    irqDisable(C.rxIrq);
-                    irqDisable(C.idleIrq);
-                    [[fallthrough]];
-            case TXDONE:    // ... and so does this
-                    if (in.eVal == TXDONE)
-                        irqDisable(C.txIrq);
-                    BASE::finishReq(curr.mode, curr.ptr, curr.len);
-                    done.eVal = curr.len;
+            case TXDONE:   // ... and so does this
+                    done.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
+                    if (in.eTag == RXDONE) {
+                        BASE::irqDisable(C.rxIrq);
+                        BASE::irqDisable(C.idleIrq);
+                    } else
+                        BASE::irqDisable(C.txIrq);
                 }
                 out = take(done);
                 break;

@@ -52,9 +52,9 @@ def BOARD(block, name, suffix=''):
         if 'D' in f:
             f['X'] = 'Channel' if f['L'] == 'CH' else 'Stream'
             r.append(f'#define UART{suffix}_TRIGGER(w) extern "C" {{ \\')
-            addTempl('void ${N}_IRQHandler () { (w).irqIdle(); } \\')
-            addTempl('void DMA${D}_$X${T}_IRQHandler () { (w).irqDma(); } \\')
-            addTempl('void DMA${D}_$X${R}_IRQHandler () { (w).irqDma(); } \\')
+            addTempl('void DMA${D}_$X${T}_IRQHandler () { (w).irqTx(); } \\')
+            addTempl('void DMA${D}_$X${R}_IRQHandler () { (w).irqRx(); } \\')
+            addTempl('void ${N}_IRQHandler () { (w).irqRx(); } \\')
             r.append(f'}}')
         r.append(f'constexpr uart::Config UART{suffix}_CONF {{')
         addTempl('"$P", $N.ADDR, ena::$N, $F,')

@@ -5,6 +5,28 @@
 #define MAX_EVENTS 50
 #endif
 
+struct IrqHandler {
+    static inline void irqEnable (Irq irq, uint8_t prio =0x80) {
+        auto num = (uint16_t) irq;
+        NVIC.byte(0x300+num) = prio;
+        NVIC[0x000 + 4*(num/32)] = 1 << num % 32;
+    }
+
+    static inline void irqDisable (Irq irq) {
+        auto num = (uint16_t) irq;
+        NVIC[0x080 + 4*(num/32)] = 1 << num % 32;
+    }
+
+    static inline void irqClear (Irq irq) {
+        auto num = (uint16_t) irq;
+        NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
+    }
+
+    static inline bool irqPending () {
+        return SCB[0x04](22);
+    }
+};
+
 struct Event {
     uint32_t eDst :8;
     uint32_t eTag :8;
@@ -177,29 +199,9 @@ struct Task {
     static void showHistory () {}
 #endif // HIST_BASE
 
-    static bool pendingIrq () {
-        return SCB[0x04](22);
-    }
-
-    static void irqClear (Irq irq) {
-        auto num = (uint16_t) irq;
-        NVIC[0x180 + 4*(num/32)] = 1 << num % 32;
-    }
-
     uint8_t tId =0; // index (and priority) of this task
 protected:
     virtual Event process (Event in, Event out) =0;
-
-    static void irqEnable (Irq irq, uint8_t prio =0x80) {
-        auto num = (uint16_t) irq;
-        NVIC.byte(0x300+num) = prio;
-        NVIC[0x000 + 4*(num/32)] = 1 << num % 32;
-    }
-
-    static void irqDisable (Irq irq) {
-        auto num = (uint16_t) irq;
-        NVIC[0x080 + 4*(num/32)] = 1 << num % 32;
-    }
 
     void trigger (uint8_t tag, uint16_t val =0) {
         assert(irqState() != 0); // may only be called from an IRQ handler

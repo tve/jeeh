@@ -78,6 +78,8 @@ struct DmaConfig {
         DRX[CCR](0) = 1; // EN
     }
 
+    constexpr static uint8_t ifcBits [] = { 0, 6, 16, 22 };
+
     int rxCompleted () const {
 #if STM32F1 | STM32F3 | STM32G4 | STM32L0 | STM32L4
         if (DMA[ISR](4*C.dmaRs+2)) { // HTIF
@@ -96,7 +98,6 @@ struct DmaConfig {
             return RXFULL;
         }
 #else
-        constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if ((uint8_t) DMA[C.dmaRs&~3](ifcBits[C.dmaRs&3],6)) { // rx irq
             auto d = DMA[C.dmaRs&~3](4+ifcBits[C.dmaRs&3]) ? RXHALF : RXFULL;
             DMA[IFCR+(C.dmaRs&~3)] = 0b111101 << ifcBits[C.dmaRs&3]; // clr irq
@@ -114,7 +115,6 @@ struct DmaConfig {
             return TXDONE;
         }
 #else
-        constexpr uint8_t ifcBits [] = { 0, 6, 16, 22 };
         if ((uint8_t) DMA[C.dmaTs&~3](ifcBits[C.dmaTs&3],6)) { // tx irq
             DMA[IFCR+(C.dmaTs&~3)] = 0b111101 << ifcBits[C.dmaTs&3]; // clr irq
             return TXDONE;

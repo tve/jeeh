@@ -49,7 +49,7 @@ void header (char const* text) {
 int main () {
     initBoard();
 
-#if 1
+#if 0
     i2cBus.init(1000);
     header("I2C - SCAN");   testScan();
     header("I2C - OLED");   testOled();

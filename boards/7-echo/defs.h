@@ -9,9 +9,9 @@
 //CG[ board uart
 #define UART_NAME USART2
 #define UART_TRIGGER(w) extern "C" { \
+    void DMA1_Channel1_IRQHandler () { (w).irqTxDma(); } \
+    void DMA1_Channel2_IRQHandler () { (w).irqRxDma(); } \
     void USART2_IRQHandler () { (w).irqIdle(); } \
-    void DMA1_Channel1_IRQHandler () { (w).irqDma(); } \
-    void DMA1_Channel2_IRQHandler () { (w).irqDma(); } \
 }
 constexpr uart::Config UART_CONF {
     "A2:U7,A3", USART2.ADDR, ena::USART2, 170,
