@@ -5,11 +5,28 @@
 
 enum struct Irq : uint8_t {
     //CG: svd irqs
-#if STM32G4
-    LPUART1 = LPUART,
-#endif
 #if STM32F1
     DMA2_Channel5 = DMA2_Channel4_5,
+#elif STM32F411xE // BlackPill
+    DMA1_Stream0 = 11,
+    DMA1_Stream1 = 12,
+    DMA1_Stream2 = 13,
+    DMA1_Stream3 = 14,
+    DMA1_Stream4 = 15,
+    DMA1_Stream5 = 16,
+    DMA1_Stream6 = 17,
+    DMA1_Stream7 = 47,
+    DMA2_Stream0 = 56,
+    DMA2_Stream1 = 57,
+    DMA2_Stream2 = 58,
+    DMA2_Stream3 = 59,
+    DMA2_Stream4 = 60,
+    DMA2_Stream5 = 68,
+    DMA2_Stream6 = 69,
+    DMA2_Stream7 = 70,
+    USART1 = 37,
+    USART2 = 38,
+    USART6 = 71,
 #elif STM32G0
     DMA1_Channel1 = DMA_Channel1,
     DMA1_Channel2 = DMA_Channel2_3,
@@ -20,6 +37,8 @@ enum struct Irq : uint8_t {
     DMA1_Channel7 = DMA_Channel4_5_6_7,
     I2C1_EV = I2C1,
     I2C1_ER = I2C1,
+#elif STM32G4
+    LPUART1 = LPUART,
 #elif STM32L0
     DMA1_Channel2 = DMA1_Channel2_3,
     DMA1_Channel3 = DMA1_Channel2_3,
