@@ -17,12 +17,12 @@ struct Replier : Task {
                 logf("replier");
                 break;
             case MSG:
-                logf("  msg %d", cycles::millis());
+                logf("  msg %d", cycles::millis()/100);
                 done = take(out);
                 ticker.delay(500, DELAY);
                 break;
             case DELAY:
-                logf("delay %d", cycles::millis());
+                logf("delay %d", cycles::millis()/100);
                 out = take(done);
                 break;
             default:
@@ -35,25 +35,24 @@ struct Replier : Task {
 Replier replier;
 
 struct Sender : Task {
-    enum TAG { START, TICK, REPLY, BLOCK };
+    enum TAG { START, TICK, BLOCK };
 
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
                 logf("sender");
                 ticker.periodic(2000, TICK);
-                break;
+                [[fallthrough]];
             case TICK:
-                logf("\n tick %d", cycles::millis());
-                led.toggle();
-                ticker.delay(250, BLOCK);
-                send({ replier.tId, replier.MSG }, { tId, REPLY });
-                break;
-            case REPLY:
-                logf("reply %d", cycles::millis());
+                led = 1;
+                ticker.delay(100, BLOCK);
+                logf("\n call %d", cycles::millis()/100);
+                call({ replier.tId, replier.MSG });
+                logf(" back %d", cycles::millis()/100);
                 break;
             case BLOCK:
-                logf("block %d", cycles::millis());
+                led = 0;
+                logf("block %d", cycles::millis()/100);
                 break;
             default:
                 fail();

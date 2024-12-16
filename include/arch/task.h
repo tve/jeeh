@@ -130,6 +130,14 @@ struct Task {
         dispatch(evt.eDst, evt, done);
     }
 
+    uint16_t call (Event evt) {
+        tBlock = evt.eDst;
+        send(evt, { tId });
+        while (tBlock != 0)
+            asm ("wfi");
+        return tPend.pull(evt.eDst).eVal;
+    }
+
     static void irqPendSV () {
         assert(irqState() == 0);         // PendSV magic ...
         dispatch(MAX_taskS-1, {}, {}); // TODO worst case
@@ -152,14 +160,14 @@ struct Task {
         logf("%20s %9s %9s %9s %9s",
                 "TASK", "SEND", "DELAY", "PREEMPT", "REPLY");
         for (auto i = 0; i < MAX_taskS; ++i) {
-            auto w = tasks[i];
-            if (w != nullptr)
+            auto t = tasks[i];
+            if (t != nullptr)
                 logf("%15s #%3d %9u %9u %9u %9u",
-                    w->tName != nullptr ? w->tName : "", i,
-                    w->tStats[S_SEND],
-                    w->tStats[S_DELAY],
-                    w->tStats[S_PREEMPT],
-                    w->tStats[S_REPLY]);
+                    t->tName != nullptr ? t->tName : "", i,
+                    t->tStats[S_SEND],
+                    t->tStats[S_DELAY],
+                    t->tStats[S_PREEMPT],
+                    t->tStats[S_REPLY]);
         }
     }
 #endif // NOSTATS
@@ -208,26 +216,29 @@ protected:
         assert(tag != 0);
         Event evt { tId, tag, val };
         saveInHist(H_IRQ, evt);
-        wPend.push(evt);
+        tPend.push(evt);
         if (tId > level) {
             SCB[0x04](28) = 1; // ICSR PENDSVSET
             stats(S_PREEMPT);
         }
     }
 
-    static void reply (Event evt) {
+    void reply (Event evt) {
         auto dst = evt.eDst;
         if (dst != 0) {
-            auto w = tasks[dst];
-            assert(dst <= level && w != nullptr);
-            w->stats(S_REPLY);
+            auto t = tasks[dst];
+            assert(dst <= level && t != nullptr);
+            t->stats(S_REPLY);
             saveInHist(H_REPLY, evt);
-            w->wPend.push(evt);
+            if (t->tBlock == tId) // special case, unblock the caller
+                t->tBlock = 0;
+            t->tPend.push(evt);
         }
     }
 
 private:
-    EventList wPend;  // pending events
+    uint8_t tBlock =0; // blocked, waiting for reply from this task
+    EventList tPend;  // pending events
 
     static inline Task* tasks [MAX_taskS];
 
@@ -261,10 +272,10 @@ private:
         auto prev = level;
         level = up;
         if (evt.eDst == level) {
-            auto w = tasks[level];
-            assert(w != nullptr);
-            w->stats(S_SEND);
-            reply(w->process(evt, done));
+            auto t = tasks[level];
+            assert(t != nullptr);
+            t->stats(S_SEND);
+            t->reply(t->process(evt, done));
         }
         while (level > prev && tasks[level] != nullptr) {
             tasks[level]->unpend();
@@ -275,7 +286,7 @@ private:
 
     void unpend () {
         assert(tId != 0);
-        auto evt = wPend.pull(tId);
+        auto evt = tPend.pull(tId);
         if (evt.eDst != 0) {
             unpend(); // use recursion to process in FIFO iso LIFO order
             stats(S_DELAY);
