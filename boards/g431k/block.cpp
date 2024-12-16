@@ -14,7 +14,6 @@ struct Replier : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                logf("replier");
                 break;
             case MSG:
                 logf("  msg %d", cycles::millis()/100);
@@ -40,7 +39,6 @@ struct Sender : Task {
     Event process (Event in, Event out) override {
         switch (in.eTag) {
             case START:
-                logf("sender");
                 ticker.periodic(2000, TICK);
                 [[fallthrough]];
             case TICK:

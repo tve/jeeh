@@ -103,7 +103,7 @@ private:
 };
 
 struct Task {
-    constexpr static auto MAX_taskS = 20, MAX_HISTORY = 16;
+    constexpr static auto MAX_TASKS = 20, MAX_HISTORY = 16;
     enum STATS { S_SEND, S_DELAY, S_PREEMPT, S_REPLY };
     enum HISTS { H_SEND, H_REPLY, H_IRQ, H_PULL };
 
@@ -114,7 +114,7 @@ struct Task {
 
     uint8_t init () {
         if (tId == 0) {
-            tId = MAX_taskS; // assign id's in decreasing order
+            tId = MAX_TASKS; // assign id's in decreasing order
             while (tasks[--tId] != nullptr)
                 assert(tId > 0);
             tasks[tId] = this;
@@ -135,12 +135,14 @@ struct Task {
         send(evt, { tId });
         while (tBlock != 0)
             asm ("wfi");
-        return tPend.pull(evt.eDst).eVal;
+        evt = tPend.pull(tId);
+        assert(evt);
+        return evt.eVal;
     }
 
     static void irqPendSV () {
         assert(irqState() == 0);         // PendSV magic ...
-        dispatch(MAX_taskS-1, {}, {}); // TODO worst case
+        dispatch(MAX_TASKS-1, {}, {}); // TODO worst case
     }
 
 #if NOSTATS && !HIST_BASE
@@ -159,7 +161,7 @@ struct Task {
     static void showStats () {
         logf("%20s %9s %9s %9s %9s",
                 "TASK", "SEND", "DELAY", "PREEMPT", "REPLY");
-        for (auto i = 0; i < MAX_taskS; ++i) {
+        for (auto i = 0; i < MAX_TASKS; ++i) {
             auto t = tasks[i];
             if (t != nullptr)
                 logf("%15s #%3d %9u %9u %9u %9u",
@@ -191,7 +193,7 @@ struct Task {
             if (!evt)
                 break;
             auto id = evt.eDst & 0x3F;
-            auto name = id < MAX_taskS && tasks[id] != nullptr ?
+            auto name = id < MAX_TASKS && tasks[id] != nullptr ?
                                 tasks[id]->tName : "";
             logf("%4d: [%c] dst %-3d tag %-3d val %-5d %s", 
                     i+1, "SRIP"[evt.eDst>>6], id, evt.eTag, evt.eVal, name);
@@ -230,8 +232,10 @@ protected:
             assert(dst <= level && t != nullptr);
             t->stats(S_REPLY);
             saveInHist(H_REPLY, evt);
+#if 1
             if (t->tBlock == tId) // special case, unblock the caller
                 t->tBlock = 0;
+#endif
             t->tPend.push(evt);
         }
     }
@@ -240,7 +244,7 @@ private:
     uint8_t tBlock =0; // blocked, waiting for reply from this task
     EventList tPend;  // pending events
 
-    static inline Task* tasks [MAX_taskS];
+    static inline Task* tasks [MAX_TASKS];
 
 #if NOSTATS
     void stats (STATS) {}
@@ -277,6 +281,7 @@ private:
             t->stats(S_SEND);
             t->reply(t->process(evt, done));
         }
+        assert(level >= prev);
         while (level > prev && tasks[level] != nullptr) {
             tasks[level]->unpend();
             --level;
