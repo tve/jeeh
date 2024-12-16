@@ -260,6 +260,7 @@ struct Poll : Gpio<C> {
     }
 
 protected:
+#if !STM32F4
     void startReq (uint8_t m, uint8_t n) const {
         I2C[CR2] = (((m & IO_STOP) != 0)  << 25) // AUTOEND
                  | (((m & IO_MORE) != 0)  << 24) // RELOAD
@@ -276,6 +277,7 @@ protected:
         I2C[ICR] = I2C[ISR];
         return ok ? n : -1;
     }
+#endif
 
 private:
     void setTiming (uint32_t khz) {

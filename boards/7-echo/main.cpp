@@ -13,7 +13,7 @@ Dev<uart::Sync<UART_CONF>> console;
 
 extern "C" int _write (int fd, char* buf, int len) {
     if (fd == 1 || fd == 2) {
-#if 1
+#if 0
         console.write(buf, len);
 #else // this can be used while debugging the sync/async drivers and IRQs
         uart::Poll<UART_CONF>& polledConsole = console;

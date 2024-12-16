@@ -73,7 +73,11 @@ struct Poll {
             for (auto i = 0U; i < n; ++i) {
                 while (!UART[SR](5)) { // RXFNE
                     auto f = UART[SR] & 0x1F; // IDLE OVR NF FE PE
+#if STM32F1 | STM32F4
+                    (void) +UART[RDR]; // clear idle and error flags
+#else
                     UART[ICR] = f; // clear idle and error flags
+#endif
                     if (f & (1<<4)) // IDLE
                         return i;
                 }
@@ -127,8 +131,11 @@ protected:
     static inline bool checkIrq (uint16_t m) {
         if (m & IO_READ) {
             if (UART[BASE::SR](4)) { // IDLE
+#if STM32F1 | STM32F4
+                (void) +UART[BASE::RDR];
+#else
                 UART[BASE::ICR] = 0x10; // IDLECF
-                //(void) +UART[BASE::RDR];
+#endif
                 dma.rxDone(); // cancel dma, the line went idle
             } else if (dma.rxCompleted() == 0)
                 return false;
@@ -145,7 +152,12 @@ dma.rxCompleted(); // TODO clears pending, but what's the logic here?
 
     void startReq (uint16_t m, void* p, uint16_t n) const {
         if (m & IO_READ) {
+#if STM32F1 | STM32F4
+            (void) +UART[BASE::SR];
+            (void) +UART[BASE::RDR]; // TODO this will lose input chars
+#else
             UART[BASE::ICR] = 0x1F; // clear idle and error flags
+#endif
             UART[BASE::CR1](4) = 1; // IDLEIE
             dma.rxStart(p, n);
         } else
