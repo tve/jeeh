@@ -192,18 +192,12 @@ def parseSvd():
                         bb = int(byName(f, 'bitOffset'))
                         enables[nn] = (bb, rn)
 
-    def fixup(n, d, f=None):
+    def fixup(n, d, f=lambda x: int(x, 0)):
         s1, s2, *_ = (s+':').split(':')
         if s1 == n and (not s2 or svdName.startswith(s2)):
             for k, v in config[s].items():
                 if not k in d:
-                    if v in d:
-                        v = d[v] # it's an alias
-                    elif f:
-                        v = f(v)
-                    else:
-                        v = int(v, 0)
-                    d[k] = v
+                    d[k] = d[v] if v in d else f(v)
 
     for s in config.sections():
         fixup('IOREG', ioregs)
