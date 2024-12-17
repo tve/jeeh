@@ -1,15 +1,5 @@
 namespace jeeh {
 
-#if STM32F1
-#define SYSCFG      AFIO
-#elif STM32L0 && !STM32L073xx
-#define SYSCFG      SYSCFG_COMP
-#endif
-
-#if STM32F3
-#define EXTI2       EXTI2_TSC
-#endif
-
 struct ExtIrq : IrqHandler, Task {
     enum TAG { START, FIRED };
     enum MODE { NONE, RISE, FALL, BOTH };

@@ -1,14 +1,16 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "f411bp"
+#define PIOENV  "f303o"
 
-//CG1 board leds
-#define LED  "C13"
+//CG3 board leds
+#define LED  "A5"
+#define LED1 "A5"
+#define LED2 "A1"
 
 //CG[ board uart
-#define UART_NAME USART1
+#define UART_NAME USART3
 constexpr uart::Config UART_CONF {
-    "A9:U7,A10", USART1.ADDR, ena::USART1, 100,
+    "B10:7,B11", USART3.ADDR, ena::USART3, 36,
 };
 //CG]

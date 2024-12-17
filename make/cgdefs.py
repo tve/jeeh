@@ -154,7 +154,7 @@ def parseSvd():
     svdName = byName(parsed.getElementsByTagName('device')[0], 'description')
     print('[codegen]', svdName)
 
-    irqs, ioregs, rccs, enables = {}, [], [], {}
+    irqs, ioregs, rccs, enables = {}, {}, {}, {}
     irqLimit = 0
 
     for p in parsed.getElementsByTagName('peripheral'):
@@ -162,7 +162,7 @@ def parseSvd():
         b = int(byName(p, 'baseAddress'), 0)
         if u == 'NVIC':
             b = 0xE000E100 # fix: sometimes it's defined as 0xE000E000
-        ioregs.append("constexpr IoReg<0x%04X'%04X> %s;" % (b>>16, b&0xFFFF, u))
+        ioregs[u] = b
 
         interrupts = p.getElementsByTagName('interrupt')
         for x in interrupts:
@@ -180,7 +180,7 @@ def parseSvd():
             rn = byName(x, 'name')
             if u == 'RCC' and re.match(r'A[HP]B\d?L?ENR', rn):
                 b = int(byName(x, 'addressOffset'), 0)
-                rccs.append((rn, b))
+                rccs[rn] = b
                 for f in x.getElementsByTagName('field'):
                     if type(f) is str:
                         continue
@@ -192,24 +192,37 @@ def parseSvd():
                         bb = int(byName(f, 'bitOffset'))
                         enables[nn] = (bb, rn)
 
-    hasScb, hasStk = False, False
-    for x in ioregs:
-        hasScb = hasScb or x.endswith(' SCB;')
-        hasStk = hasStk or x.endswith(' STK;')
-    if not hasScb:
-        ioregs.append("constexpr IoReg<0xE000'ED00> SCB;")
-    if not hasStk:
-        ioregs.append("constexpr IoReg<0xE000'E010> STK;")
+    def fixup(n, d, f=None):
+        s1, s2, *_ = (s+':').split(':')
+        if s1 == n and (not s2 or svdName.startswith(s2)):
+            for k, v in config[s].items():
+                if not k in d:
+                    if v in d:
+                        v = d[v] # it's an alias
+                    elif f:
+                        v = f(v)
+                    else:
+                        v = int(v, 0)
+                    d[k] = v
+
+    for s in config.sections():
+        fixup('IOREG', ioregs)
+        fixup('IRQ', irqs)
+        fixup('RCC', rccs)
+        fixup('ENA', enables, lambda x: x.split())
 
     svdInfo['defines'] = [f'#define STM32   1',
                           f'#define {svdName[:7]} 1',
                           f'#define SVDNAME "{svdName}"']
-    svdInfo['ioregs'] = sorted(ioregs, key=lambda s: natsort(s[28:]))
+    svdInfo['ioregs'] = ["constexpr IoReg<0x%04X'%04X> %s;" % \
+                            (ioregs[t]>>16, ioregs[t]&0xFFFF, t) \
+                            for t in sorted(ioregs, key=natsort)]
     svdInfo['irqs'] = ['%-22s = %3s,' % (t, irqs[t]) \
                             for t in sorted(irqs, key=natsort)] + \
                       [f'limit = {irqLimit},']
-    svdInfo['rccs'] = ['%-8s = 0x%X,' % t for t in sorted(rccs)]
-    svdInfo['enables'] = ['%-13s = %2d + 8 * %s,' % (t, *enables[t]) \
+    svdInfo['rccs'] = ['%-8s = 0x%X,' % (t, rccs[t]) \
+                            for t in sorted(rccs)]
+    svdInfo['enables'] = ['%-13s = %2s + 8 * %s,' % (t, *enables[t]) \
                             for t in sorted(enables)]
 
 def SVD(block, name):
@@ -228,5 +241,19 @@ def I2C(block, cmd, mhz):
     r = [f'// {mhz} Mhz: (remove this line to re-generate)']
     r.extend(i2c.genTimings(int(mhz)))
     return r
+
+#-------------------------------------------------------- Load cgdefs.ini file
+
+print(__file__)
+import configparser
+config = configparser.ConfigParser()
+config.optionxform = lambda opt: opt # don't convert to lowercase
+config.read(__file__[:-2] + 'ini')
+
+if 0:
+    for s in config.sections():
+        print(s)
+        for t in config[s]:
+            print(' ', t)
 
 #-----------------------------------------------------------------------------

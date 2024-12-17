@@ -1,15 +1,14 @@
 // Lines with "CG" control the code-generated parts of this file.
 
 //CG1 pio
-#define PIOENV  "poll"
+#define PIOENV  "block"
 
 //CG1 board leds
 #define LED  "B8"
 
 const Pin led (LED,"P");
 
-//CG1 board mode
-#define MODE_POLL 1
+//CG: board mode
 
 //CG[ board pins
 #define PINS_VCC "B6"
