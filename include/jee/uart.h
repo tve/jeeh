@@ -232,6 +232,7 @@ private:
     uint8_t rxBuf [C.numIn] alignas(4);
 
     Event process (Event in, Event out) override {
+        trace(IRQDISP);
         assert(!out); // should use setReply instead
         switch (in.eTag) {
             case START:
@@ -259,6 +260,7 @@ private:
                     break; // transfer started, wait for a DONE trigger
             case RXDONE:   // this jumps back into the transfer loop!
             case TXDONE:   // ... and so does this
+                    { trace(TRIGGER); }
                     done.eVal = BASE::finishReq(curr.mode, curr.ptr, curr.len);
                     if (in.eTag == RXDONE) {
                         BASE::irqDisable(C.rxIrq);
