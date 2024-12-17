@@ -291,12 +291,24 @@ private:
 
     void unpend () {
         assert(tId != 0);
-        auto evt = tPend.pull(tId);
-        if (evt.eDst != 0) {
+#if 0 // TODO fixes call, but messes up back-to-back async tx
+        while (true) {
+            auto evt = tPend.pull(tId);
+            if (!evt)
+                break;
             unpend(); // use recursion to process in FIFO iso LIFO order
             stats(S_DELAY);
             saveInHist(H_PULL, evt);
             reply(process(evt, {}));
         }
+#else
+        auto evt = tPend.pull(tId);
+        if (evt) {
+            unpend(); // use recursion to process in FIFO iso LIFO order
+            stats(S_DELAY);
+            saveInHist(H_PULL, evt);
+            reply(process(evt, {}));
+        }
+#endif
     }
 };
