@@ -48,7 +48,7 @@ extern "C" int _write (int fd, char* buf, int len);
     _write(2, (char*) ptr, len);
 }
 
-void jeeh::logf (char const* fmt ...) {
+void jeeh::logf (char const* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     auto n = vsnprintf(logBuf, sizeof logBuf, fmt, ap);

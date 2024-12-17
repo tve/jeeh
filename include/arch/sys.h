@@ -1,5 +1,6 @@
 // Header file for the the central system types and functions.
 
+// see https://interrupt.memfault.com/blog/asserts-in-embedded-systems
 [[noreturn]]
 void fail (void const* =__builtin_return_address(0),
             char const* =__builtin_FILE(), int =__builtin_LINE());
@@ -15,7 +16,7 @@ uint32_t clockChange (uint32_t hz);
 void swoInit (uint32_t baud, uint32_t hz =SystemCoreClock);
 void swoWrite (void const* ptr =nullptr, size_t len =0);
 
-void logf (char const* fmt ...);
+void logf (char const* fmt, ...);
 void logDump (void const* ptr, int len =16, char const* msg =nullptr);
 void logWriter (void const* ptr, size_t len); // weak, can be redefined
 

@@ -238,7 +238,6 @@ def I2C(block, cmd, mhz):
 
 #-------------------------------------------------------- Load cgdefs.ini file
 
-print(__file__)
 import configparser
 config = configparser.ConfigParser()
 config.optionxform = lambda opt: opt # don't convert to lowercase
