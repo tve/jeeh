@@ -38,7 +38,7 @@ constexpr auto VERSION = "<stripped>";
 #if TRACE
 #include "trace.h"
 #else
-#define trace(x)
+#define trace(...)
 #endif // TRACE
 
 } // namespace jeeh
