@@ -21,11 +21,11 @@ struct Streamer : Task {
                 { trace(INIT); }
                 [[fallthrough]];
             case SENT: {
-                trace(SEND);
                 auto n = snprintf(buf, sizeof buf,
                             "+%*c %d ms #%d\n",
                             32 - seq%32, '/', (int) cycles::millis(), seq);
                 ++seq;
+                trace(SEND);
                 uartx.setReply({ tId, SENT });
                 { trace(TICKED); uartx.write(buf, n); }
                 break;
