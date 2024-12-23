@@ -4,7 +4,7 @@
 #define PIOENV  "serial"
 
 //CG1 board leds
-#define LED  "B8"
+#define LED  "A5"
 
 const Pin led (LED,"P");
 

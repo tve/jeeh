@@ -3,16 +3,18 @@
 using namespace jeeh;
 #include "defs.h"
 
+constexpr auto N = 5;
+
+template< typename T >
+void loopBack (char const* s, T& u) {
+    uint8_t buf [] = "abcdefghijklmnopqrstuvwxyz";
+    u.write(buf, N);
+    auto n = u.read(buf, N);
+    logDump(buf, n, s);
+}
+
 int main () {
     initBoard();
-
-
-    auto loopBack = [&](auto s, auto& u) {
-        uint8_t buf [] = "abcdefghijklmnopqrstuvwxyz";
-        u.write(buf, 5);
-        auto n = u.read(buf, 5);
-        logDump(buf, n, s);
-    };
 
     loopBack("A", uartA);
     loopBack("B", uartB);
