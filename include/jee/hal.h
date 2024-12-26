@@ -1,5 +1,7 @@
 #include "crc.h"
 #include "cycles.h"
+#include "adc.h"
+#include "dac.h"
 #include "dma.h"
 #include "exti.h"
 #include "i2c.h"

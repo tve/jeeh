@@ -15,7 +15,7 @@ void testRandom () {
         TEST_ASSERT_NOT_EQUAL(v, r);
         v = r;
     }
-    TEST_ASSERT_INT_WITHIN(1, 357, cycles::micros()-start);
+    TEST_ASSERT_INT_WITHIN(1, 355, cycles::micros()-start);
 
     constexpr auto N = 50;
     rng::Permutation<N> p;

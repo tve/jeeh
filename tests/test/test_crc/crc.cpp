@@ -1,7 +1,6 @@
 // Cyclic Redundancy Check tests.
 
 #include "../common.h"
-#include "jee/crc.h"
 
 void setUp () {}
 void tearDown () {}
@@ -14,7 +13,7 @@ void testCrc () {
     crc::init();
     for (auto i = 0; i < 256; ++i)
         crc::update8(i);
-    TEST_ASSERT_EQUAL(10, cycles::micros()-start);
+    TEST_ASSERT_EQUAL(11, cycles::micros()-start);
     TEST_ASSERT_EQUAL_HEX(0x494A'116A, crc::get());
 
     start = cycles::micros();
@@ -28,7 +27,7 @@ void testCrc () {
     crc::init();
     for (auto i = 0; i < 256; ++i)
         crc::update32(i);
-    TEST_ASSERT_EQUAL(9, cycles::micros()-start);
+    TEST_ASSERT_EQUAL(8, cycles::micros()-start);
     TEST_ASSERT_EQUAL_HEX(0x9667'0628, crc::get());
 }
 

@@ -6,6 +6,11 @@
 //CG1 board leds
 #define LED  "B8"
 
+//CG3 board pins
+#define PINS_ADC "A1"
+#define PINS_ACH (2)
+#define PINS_DAC "A4"
+
 const Pin led (LED,"P");
 
 //CG[ board uart
