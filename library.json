@@ -1,6 +1,6 @@
 {
     "name": "JeeH",
-    "version": "7.0.0-a1",
+    "version": "7.0.0-a2",
     "description": "Hardware abstraction and event-tasker for ARM Cortex µCs",
     "keywords": "experimental",
     "authors": {
