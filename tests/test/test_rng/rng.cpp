@@ -1,7 +1,6 @@
 // Random Number Generator tests.
 
 #include "../common.h"
-#include "jee/rng.h"
 
 void setUp () {}
 void tearDown () {}
