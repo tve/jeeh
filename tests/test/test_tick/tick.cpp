@@ -1,7 +1,6 @@
 // System tick tests.
 
 #include "../common.h"
-#include "jee/ticker.h"
 
 Ticker ticker;
 TICKER_TRIGGER(ticker)

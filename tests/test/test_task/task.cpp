@@ -13,13 +13,15 @@ struct SimpleTask : Task {
 
 private:
     Event process (Event in, Event out) override {
-        ++calls;
-        lastTag = in.eTag;
-        lastVal = in.eVal;
+        if (in.eTag != 0) {
+            ++calls;
+            lastTag = in.eTag;
+            lastVal = in.eVal;
 
-        TEST_ASSERT_EQUAL(tId, level);
+            TEST_ASSERT_EQUAL(tId, level);
 
-        out.eVal *= 2; // change the reply value
+            out.eVal *= 2; // change the reply value
+        }
         return out;
     }
 };

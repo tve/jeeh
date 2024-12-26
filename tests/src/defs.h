@@ -11,14 +11,14 @@ const Pin led (LED,"P");
 //CG[ board uart
 #define UART_NAME USART1
 #define UART_TRIGGER(w) extern "C" { \
-    void USART1_IRQHandler () { (w).irqIdle(); } \
-    void DMA1_Channel1_IRQHandler () { (w).irqDma(); } \
-    void DMA1_Channel2_IRQHandler () { (w).irqDma(); } \
+    void DMA1_Channel1_IRQHandler () { (w).irqTx(); } \
+    void DMA1_Channel2_IRQHandler () { (w).irqRx(); } \
+    void USART1_IRQHandler () { (w).irqRx(); } \
 }
 constexpr uart::Config UART_CONF {
     "A9:U7,A10", USART1.ADDR, ena::USART1, 170,
     DMA1.ADDR, 1-1, 1-1,2-1, 25,24,
-    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART1,
+    Irq::DMA1_CH1, Irq::DMA1_CH2, Irq::USART1, 64,
 };
 //CG]
 

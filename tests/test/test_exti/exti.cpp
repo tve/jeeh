@@ -1,8 +1,6 @@
 // External pin interrupt tests.
 
 #include "../common.h"
-#include "jee/ticker.h"
-#include <jee/exti.h>
 
 Ticker ticker;
 TICKER_TRIGGER(ticker)
