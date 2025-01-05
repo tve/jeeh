@@ -28,7 +28,7 @@ struct Pin {
             write(~reg(ODR)(pin()));
         else {
             auto mask = 1 << pin();
-            reg(BSRR) = ((mask<<16) | mask) ^ (reg(IDR) & mask);
+            reg(BSRR) = ~reg(ODR) & ((mask<<16) | mask);
         }
     }
 
